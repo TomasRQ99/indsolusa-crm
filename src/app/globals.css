@@ -1,0 +1,78 @@
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --border: #e2e5ea;
+  --text: #1c2330;
+  --muted: #677085;
+  --accent: #2f5bd3;
+  --accent-text: #ffffff;
+  --danger: #c23b3b;
+  --ok: #1f8a4c;
+  --radius: 8px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1 { font-size: 1.5rem; margin: 0 0 1rem; }
+h2 { font-size: 1.1rem; margin: 0 0 0.75rem; }
+
+.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.sidebar { background: #111827; color: #e5e7eb; padding: 1.25rem 1rem; display: flex; flex-direction: column; gap: 1.5rem; }
+.sidebar .brand { font-weight: 700; font-size: 1.1rem; }
+.sidebar nav { display: flex; flex-direction: column; gap: 0.25rem; }
+.sidebar nav a { color: #cbd5e1; padding: 0.45rem 0.6rem; border-radius: 6px; }
+.sidebar nav a:hover { background: #1f2937; text-decoration: none; color: #fff; }
+.sidebar .me { margin-top: auto; font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.content { padding: 1.75rem 2rem; max-width: 1400px; width: 100%; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.grid { display: grid; gap: 1rem; }
+.grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.grid.cols-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.stat .label { color: var(--muted); font-size: 0.85rem; }
+.stat .value { font-size: 1.6rem; font-weight: 650; margin-top: 0.25rem; }
+.row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.spread { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+th, td { text-align: left; padding: 0.55rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+
+form.inline { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-end; }
+form.stack { display: flex; flex-direction: column; gap: 0.6rem; }
+label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.82rem; color: var(--muted); }
+input, select, textarea { font: inherit; color: var(--text); padding: 0.45rem 0.55rem; border: 1px solid var(--border); border-radius: 6px; background: #fff; min-width: 0; }
+textarea { min-height: 70px; }
+button { font: inherit; cursor: pointer; padding: 0.45rem 0.9rem; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); }
+button.secondary { background: #fff; color: var(--text); border-color: var(--border); }
+button.danger { background: #fff; color: var(--danger); border-color: var(--danger); }
+button.link { background: none; border: none; color: inherit; padding: 0; text-decoration: underline; text-align: left; }
+
+.badge { display: inline-block; font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: #e8edfb; color: var(--accent); font-weight: 600; }
+.badge.won { background: #e3f4ea; color: var(--ok); }
+.badge.lost, .badge.overdue { background: #fbe9e9; color: var(--danger); }
+.error { color: var(--danger); font-size: 0.9rem; }
+.done { text-decoration: line-through; color: var(--muted); }
+
+.kanban { display: grid; grid-template-columns: repeat(6, minmax(200px, 1fr)); gap: 0.75rem; overflow-x: auto; }
+.kanban .column { background: #eceef2; border-radius: var(--radius); padding: 0.6rem; min-height: 300px; }
+.kanban .column h2 { font-size: 0.9rem; display: flex; justify-content: space-between; }
+.deal { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem; margin-bottom: 0.5rem; font-size: 0.88rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.deal select { font-size: 0.8rem; padding: 0.2rem; }
+
+.timeline { list-style: none; margin: 0; padding: 0; }
+.timeline li { padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+
+.login { min-height: 100vh; display: grid; place-items: center; }
+.login .card { width: 360px; }
+
+@media (max-width: 800px) {
+  .shell { grid-template-columns: 1fr; }
+  .content { padding: 1rem; }
+}

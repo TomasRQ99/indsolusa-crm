@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  REP
+}
+
+enum DealStage {
+  LEAD
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+}
+
+enum ActivityType {
+  CALL
+  MEETING
+  EMAIL
+  NOTE
+}
+
+// Users are deactivated, never deleted, so ownership history stays intact.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(REP)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  accounts   Account[]
+  deals      Deal[]
+  tasks      Task[]
+  activities Activity[]
+}
+
+model Account {
+  id        String   @id @default(cuid())
+  name      String
+  industry  String?
+  website   String?
+  phone     String?
+  address   String?
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contacts   Contact[]
+  deals      Deal[]
+  tasks      Task[]
+  activities Activity[]
+
+  @@index([ownerId])
+  @@index([name])
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  title     String?
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deals      Deal[]
+  tasks      Task[]
+  activities Activity[]
+
+  @@index([accountId])
+  @@index([lastName, firstName])
+}
+
+model Deal {
+  id        String    @id @default(cuid())
+  title     String
+  amount    Decimal   @default(0) @db.Decimal(14, 2)
+  stage     DealStage @default(LEAD)
+  closeDate DateTime?
+  accountId String
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  contactId String?
+  contact   Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  ownerId   String
+  owner     User      @relation(fields: [ownerId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tasks      Task[]
+  activities Activity[]
+
+  @@index([stage])
+  @@index([ownerId])
+  @@index([accountId])
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  dueDate     DateTime?
+  status      TaskStatus @default(OPEN)
+  completedAt DateTime?
+  assigneeId  String
+  assignee    User       @relation(fields: [assigneeId], references: [id])
+  accountId   String?
+  account     Account?   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  contactId   String?
+  contact     Contact?   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  dealId      String?
+  deal        Deal?      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+
+  @@index([assigneeId, status])
+}
+
+model Activity {
+  id         String       @id @default(cuid())
+  type       ActivityType
+  subject    String
+  body       String?
+  occurredAt DateTime     @default(now())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id])
+  accountId  String?
+  account    Account?     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  contactId  String?
+  contact    Contact?     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  dealId     String?
+  deal       Deal?        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, occurredAt])
+  @@index([occurredAt])
+}

@@ -1,0 +1,31 @@
+# Render Blueprint for the IndSolUSA CRM.
+# In Render: New + -> Blueprint -> pick this repository. Render asks for the values marked sync: false.
+services:
+  - type: web
+    name: indsolusa-crm
+    runtime: node
+    plan: free # switch to "starter" at launch so the app no longer sleeps
+    region: virginia # keep close to the Neon database (AWS US East 1)
+    # Each deploy applies pending database migrations and makes sure the admin user exists.
+    buildCommand: npm install && npx prisma migrate deploy && npx prisma db seed && npm run build
+    startCommand: npm start
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: DATABASE_URL # Neon connection string
+        sync: false
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: MAIL_FROM
+        value: sales@indsolusa.com
+      - key: GRAPH_TENANT_ID
+        value: 1485cd10-53c3-47e1-b2c2-6a5c5ab82d16
+      - key: GRAPH_CLIENT_ID
+        value: 8729883e-0014-48da-901f-72902623318a
+      - key: GRAPH_CLIENT_SECRET
+        sync: false
+      - key: SEED_ADMIN_EMAIL
+        value: sales@indsolusa.com
+      - key: SEED_ADMIN_PASSWORD # only used the first time, to create the admin login
+        sync: false
