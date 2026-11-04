@@ -11,11 +11,18 @@ type Recipient = Mail.Address | string;
 
 class MailError extends Error {}
 
+// Values pasted into hosting dashboards often pick up stray spaces or the quote marks
+// copied from a .env line; strip those so they don't break sign-in.
+function env(name: string) {
+  const v = process.env[name]?.trim().replace(/^(["'])(.*)\1$/, "$2").trim();
+  return v ? v : undefined;
+}
+
 export function mailConfig() {
-  const from = process.env.MAIL_FROM || process.env.SMTP_USER;
-  const tenant = process.env.GRAPH_TENANT_ID;
-  const clientId = process.env.GRAPH_CLIENT_ID;
-  const clientSecret = process.env.GRAPH_CLIENT_SECRET;
+  const from = env("MAIL_FROM") || env("SMTP_USER");
+  const tenant = env("GRAPH_TENANT_ID");
+  const clientId = env("GRAPH_CLIENT_ID");
+  const clientSecret = env("GRAPH_CLIENT_SECRET");
 
   if (tenant && clientId && clientSecret) {
     return {
@@ -27,11 +34,11 @@ export function mailConfig() {
     };
   }
 
-  const port = Number(process.env.SMTP_PORT ?? 465);
-  const secure = (process.env.SMTP_SECURE ?? String(port === 465)) === "true";
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  const port = Number(env("SMTP_PORT") ?? 465);
+  const secure = (env("SMTP_SECURE") ?? String(port === 465)) === "true";
+  const host = env("SMTP_HOST");
+  const user = env("SMTP_USER");
+  const pass = env("SMTP_PASS");
   return {
     provider: "smtp" as const,
     from,
