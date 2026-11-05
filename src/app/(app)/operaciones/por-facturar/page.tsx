@@ -46,7 +46,7 @@ export default async function DeliveredNotInvoicedPage() {
         {r.blockers.length === 0 && canEdit(user, r.d.deal.ownerId) ? (
           <form action={issueInvoice.bind(null, r.d.id)}><button className="sm" type="submit">{t("Emitir factura", "Issue invoice")}</button></form>
         ) : (
-          <Link className="btn secondary sm" href={`/operaciones/remisiones/${r.d.id}`}>{t("Resolver", "Resolve")}</Link>
+          <Link className="btn secondary sm" href={`/deals/${r.d.deal.id}/facturacion`}>{t("Ver requisitos", "See requirements")}</Link>
         )}
       </td>
     </tr>

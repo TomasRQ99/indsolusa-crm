@@ -37,6 +37,13 @@ export async function issueInvoice(deliveryId: string) {
   if (d.invoice) redirect(`/administracion/cobrar?f=${d.invoice.id}`);
   const blockers = invoiceBlockers(d, d.deal, d.deal.account);
   if (blockers.length) throw new Error("La remisión aún tiene bloqueos / The delivery note still has blockers.");
+  // Partial billing follows the customer's billing profile (see Billing Readiness).
+  const ordered = (await db.dealItem.aggregate({ where: { dealId: d.dealId }, _sum: { qty: true } }))._sum.qty ?? 0;
+  const partial = ordered > 0 && d.lines.reduce((s, l) => s + l.qty, 0) < ordered;
+  if (partial && !d.deal.account.allowsPartialBilling) {
+    const approved = await db.billingRequest.findFirst({ where: { deliveryId: d.id, kind: "PARTIAL", resolvedAt: { not: null } }, select: { id: true } });
+    if (!approved) redirect(`/deals/${d.dealId}/facturacion?err=no-listo`);
+  }
 
   const invoiced = d.deal.invoices.reduce((s, i) => s + Number(i.amount), 0);
   const amount = d.lines.length
@@ -63,6 +70,7 @@ export async function issueInvoice(deliveryId: string) {
         issuedById: user.id,
         quoteId: quote?.id ?? null,
         docLang: quote?.lang ?? d.deal.account.docLang,
+        partial,
       },
     });
   });

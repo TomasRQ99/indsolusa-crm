@@ -799,9 +799,15 @@ export default async function JourneyPage({
 
   const Finance = () => (
     <>
+      <section className="jblock bil-entry">
+        <div className="jbh"><b>{t("¿LISTO PARA FACTURAR?", "READY TO BILL?")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/facturacion`}>{t("Abrir facturación y cobro", "Open billing & cash")}</Link></div>
+        <p className="small">{J.uninvoicedDeliveries.length
+          ? t(`${J.uninvoicedDeliveries.length} ${J.uninvoicedDeliveries.length === 1 ? "entrega sin facturar" : "entregas sin facturar"}: revisa qué requisitos del cliente están cumplidos y cuáles faltan.`, `${J.uninvoicedDeliveries.length} uninvoiced ${J.uninvoicedDeliveries.length === 1 ? "delivery" : "deliveries"}: check which customer requirements are met and which are missing.`)
+          : t("Requisitos del cliente, facturas con sus cuatro fechas (vencimiento, esperado, prometido, cobrado) y dinero por asignar.", "Customer requirements, invoices with their four dates (due, expected, promised, collected) and cash to allocate.")}</p>
+      </section>
       <section className="jblock">
         <div className="jbh"><b>{t("COBRO AL CLIENTE", "CUSTOMER COLLECTION")}</b><span className="grow" /><span className="src">{t("Facturado", "Invoiced")} USD {i.n(J.invoiced)} / {i.n(deal.amount)} · {t("conciliado", "reconciled")} {i.n(J.reconciled)}</span></div>
-        {J.cash.length === 0 ? <p className="quiet-p">{J.uninvoicedDeliveries.length ? t("Hay entregas sin facturar: ", "There are uninvoiced deliveries: ") : t("Aún no hay facturas.", "No invoices yet.")}{J.uninvoicedDeliveries.length > 0 && <Link href="/operaciones/por-facturar">{t("ir a facturar", "go invoice")}</Link>}</p> : (
+        {J.cash.length === 0 ? <p className="quiet-p">{J.uninvoicedDeliveries.length ? t("Hay entregas sin facturar: ", "There are uninvoiced deliveries: ") : t("Aún no hay facturas.", "No invoices yet.")}{J.uninvoicedDeliveries.length > 0 && <Link href={`${self}/facturacion`}>{t("¿listo para facturar?", "ready to bill?")}</Link>}</p> : (
           <div className="pos">
             {J.cash.map((c) => {
               const prom = c.inv.promises[0];

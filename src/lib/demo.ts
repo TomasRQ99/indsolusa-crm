@@ -58,8 +58,8 @@ export async function loadDemo(adminId: string) {
         });
 
       const lacteos = await account("Lácteos del Valle", { creditLimit: 30000, address: "Planta Tuluá, Valle" });
-      const sider = await account("Siderúrgica del Norte", { creditLimit: 40000, requiresReceptionCode: true });
-      const cementos = await account("Cementos Andinos", { creditLimit: 50000, requiresPortal: true, portalValidUntil: d(-4) });
+      const sider = await account("Siderúrgica del Norte", { creditLimit: 40000, requiresReceptionCode: true, billingContact: "cuentasporpagar@siderurgica.example", taxId: "900.412.118-3" });
+      const cementos = await account("Cementos Andinos", { creditLimit: 50000, requiresPortal: true, portalValidUntil: d(-4), billingContact: "facturas@cementos.example", allowsPartialBilling: false });
       const minera = await account("Minera El Roble", { creditLimit: 17000 });
       const ingenio = await account("Ingenio San Rafael", { creditLimit: 40000 });
       const pacifico = await account("Alimentos del Pacífico", { taxDataComplete: false, createdAt: d(-20) });
@@ -124,7 +124,9 @@ export async function loadDemo(adminId: string) {
       await confirmed(lacPay.id, 4600, d(-36), "Wire 54210");
       const lacDel = await delivery(lac1.id, d(-28), [{ dealItemId: lacItem.id, qty: 2, serials: "CPX50-8812, CPX50-8813" }]);
       const lacInv = await invoice(lac1.id, lacteos.id, 6240, 1310, d(-27), 30, lacDel.id);
-      await tx.customerPayment.create({ data: { accountId: lacteos.id, amount: 6240, receivedAt: d(-1), reference: "TRF 88231", createdById: adminId, applications: { create: [{ invoiceId: lacInv.id, amount: 6240 }] } } });
+      // Overpayment: the transfer is USD 60 more than the invoice and Lácteos has no other open invoice.
+      await tx.customerPayment.create({ data: { accountId: lacteos.id, amount: 6300, receivedAt: d(-1), reference: "TRF 88231", createdById: adminId, applications: { create: [{ invoiceId: lacInv.id, amount: 6240 }] } } });
+      await tx.invoice.update({ where: { id: lacInv.id }, data: { syncState: "CONFIRMED", externalSystem: "QuickBooks", externalId: "QB-10482", syncAt: d(-27) } });
 
       // 2. Lácteos: transmitters, 4 of 6 delivered and ready to invoice; 2 in transit.
       const lac2 = await deal({ title: "Transmisores de presión Siemens", amount: 3600, supplierCost: 2600, freightCost: 200, otherCosts: 98, accountId: lacteos.id, stage: "WON", customerPo: "4500-1902", poAcceptedAt: d(-20), promiseText: "6 transmisores antes del 15", promisedDate: d(9) });
@@ -147,17 +149,24 @@ export async function loadDemo(adminId: string) {
       const sidItem = await tx.dealItem.create({ data: { dealId: sid1.id, qty: 1, code: "RD-450", description: "Reductor helicoidal 450 kW", unitPrice: 9800 } });
       const sidDel = await delivery(sid1.id, d(-52), [{ dealItemId: sidItem.id, qty: 1 }], { receptionCode: "EM-55102" });
       const sidInv = await invoice(sid1.id, sider.id, 9800, 1860, d(-50), 30, sidDel.id);
+      // Accounting integration uncertain: sent to QuickBooks, connection error, no ID came back.
+      await tx.invoice.update({ where: { id: sidInv.id }, data: { syncState: "UNCERTAIN", externalSystem: "QuickBooks", syncAt: d(-50), syncNote: "Error de conexión al enviar; QuickBooks no devolvió ID." } });
       await tx.paymentPromise.create({ data: { invoiceId: sidInv.id, promisedFor: d(2), promisedBy: "Sandra Gómez (Tesorería)", source: "Llamada: \"queda programado para el viernes\"", recordedById: paola.id } });
 
       // 4. Siderúrgica: rollers delivered, invoice blocked by the goods-receipt code.
       const sid2 = await deal({ title: "Rodillos de transporte", amount: 5600, supplierCost: 4300, freightCost: 150, accountId: sider.id, stage: "WON", customerPo: "SN-77311", poAcceptedAt: d(-25), waitingFor: "Código de recepción de mercancía (Sandra)", waitingUntil: d(1) });
       const rodItem = await tx.dealItem.create({ data: { dealId: sid2.id, qty: 8, code: "RT-120", description: "Rodillo de transporte 120 mm", unitPrice: 700 } });
-      await delivery(sid2.id, d(-6), [{ dealItemId: rodItem.id, qty: 8 }]);
+      // Billing Readiness: receiving code already requested (still missing) and no signed POD.
+      const sidDel2 = await delivery(sid2.id, d(-6), [{ dealItemId: rodItem.id, qty: 8 }], { podReceived: false, receivedByName: null });
+      await tx.billingRequest.create({ data: { dealId: sid2.id, deliveryId: sidDel2.id, kind: "RECEPTION_CODE", sentTo: "sandra.gomez@siderurgica.example", note: "Por correo, con copia a almacén", requestedAt: d(-2), requestedById: paola.id } });
 
       // 5. Cementos: broken payment promise; portal registration expired.
       const cem1 = await deal({ title: "Motorreductor molino de crudo", amount: 12380, supplierCost: 9500, freightCost: 400, otherCosts: 252, accountId: cementos.id, stage: "WON", customerPo: "CA-OC-2609-031", poAcceptedAt: d(-60) });
       const cemInv = await invoice(cem1.id, cementos.id, 12380, 2228, d(-45));
       await tx.paymentPromise.create({ data: { invoiceId: cemInv.id, promisedFor: d(-2), promisedBy: "A. Mejía (Tesorería)", source: "Correo: \"el pago sale el lunes\"", recordedById: paola.id } });
+      await tx.invoice.update({ where: { id: cemInv.id }, data: { syncState: "CONFIRMED", externalSystem: "QuickBooks", externalId: "QB-10377", syncAt: d(-45) } });
+      // Cash arrives unallocated: a transfer with no reference. It is NOT "invoice paid" until allocated and reconciled.
+      await tx.customerPayment.create({ data: { accountId: cementos.id, amount: 12380, receivedAt: d(-1), reference: null, createdById: adminId } });
 
       // 6. Cementos: urgent bearing; supplier payment blocked by a bank change by email.
       const cem2 = await deal({ title: "Rodamiento 23148 molino", amount: 17900, supplierCost: 14200, freightCost: 600, accountId: cementos.id, stage: "WON", customerPo: "CA-OC-2611-058", poAcceptedAt: d(-3), desiredResult: "Molino andando antes del sábado", promiseText: "Molino andando antes del sábado", promisedDate: d(3) });
@@ -203,6 +212,14 @@ export async function loadDemo(adminId: string) {
       const pac = await deal({ title: "Sellos mecánicos envasadora", amount: 1870, supplierCost: 1300, freightCost: 140, accountId: pacifico.id, stage: "WON", customerPo: "ADP-0012", poAcceptedAt: d(-12) });
       const pacItem = await tx.dealItem.create({ data: { dealId: pac.id, qty: 4, code: "SM-35", description: "Sello mecánico 35 mm", unitPrice: 467.5 } });
       await delivery(pac.id, d(-3), [{ dealItemId: pacItem.id, qty: 4 }]);
+
+      // 10b. Química Andina: short payment. The customer withheld 2 % and paid USD 96 less; the balance stays open.
+      const qkit = await deal({ title: "Kit de mantenimiento bombas dosificadoras", amount: 4800, supplierCost: 3500, freightCost: 120, accountId: quimica.id, ownerId: adminId, stage: "WON", customerPo: "QA-OC-1102", poAcceptedAt: d(-50), resultAchievedAt: d(-30) });
+      const qkitItem = await tx.dealItem.create({ data: { dealId: qkit.id, qty: 4, code: "KM-BD", description: "Kit de mantenimiento bomba dosificadora", unitPrice: 1200 } });
+      const qkitDel = await delivery(qkit.id, d(-40), [{ dealItemId: qkitItem.id, qty: 4 }], { receivedByName: "Carlos Duarte" });
+      const qkitInv = await invoice(qkit.id, quimica.id, 4800, 1180, d(-38), 30, qkitDel.id);
+      await tx.invoice.update({ where: { id: qkitInv.id }, data: { syncState: "CONFIRMED", externalSystem: "QuickBooks", externalId: "QB-10455", syncAt: d(-38) } });
+      await tx.customerPayment.create({ data: { accountId: quimica.id, amount: 4704, receivedAt: d(-7), reference: "QA PAGO 5521", createdById: adminId, reconciledAt: d(-6), reconciledById: diana.id, applications: { create: [{ invoiceId: qkitInv.id, amount: 4704 }] } } });
 
       // 11. Pipeline owned by the admin, so Mi Día and Mi Plan show real movements.
       const carlos = await tx.contact.create({ data: { firstName: "Carlos", lastName: "Duarte", title: "Jefe de Mantenimiento", email: "carlos.duarte@quimica.example", accountId: quimica.id } });

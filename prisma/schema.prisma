@@ -72,6 +72,7 @@ model User {
   invoicesIssued      Invoice[]
   promisesRecorded    PaymentPromise[]
   cashRecorded        CustomerPayment[] @relation("CashRecorder")
+  billingRequests     BillingRequest[]
   cashReconciled      CustomerPayment[] @relation("CashReconciler")
   commissionsEarned   CommissionEntry[] @relation("CommissionOwner")
   commissionsApproved CommissionEntry[] @relation("CommissionApprover")
@@ -106,6 +107,9 @@ model Account {
   isDemo                Boolean   @default(false)
   // Default language of the documents sent to this customer (Quote, Invoice).
   docLang               Lang      @default(EN)
+  // Billing profile: whether the customer accepts one invoice per partial delivery, and who receives invoices.
+  allowsPartialBilling  Boolean   @default(true)
+  billingContact        String?
 
   contacts   Contact[]
   deals      Deal[]
@@ -198,6 +202,7 @@ model Deal {
   shipments   Shipment[]
   deliveries  Delivery[]
   invoices    Invoice[]
+  billingRequests BillingRequest[]
 
   @@index([stage])
   @@index([ownerId])
@@ -401,6 +406,26 @@ model Delivery {
   lines    DeliveryLine[]
   shipment Shipment?
   invoice  Invoice?
+  billingRequests BillingRequest[]
+
+  @@index([dealId])
+}
+
+// Billing evidence asked of the customer (POD, receiving code, PO, portal, tax data).
+// Resolved when the evidence is recorded, not when someone says it was sent.
+model BillingRequest {
+  id            String    @id @default(cuid())
+  dealId        String
+  deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  deliveryId    String?
+  delivery      Delivery? @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  kind          String
+  sentTo        String?
+  note          String?
+  requestedAt   DateTime  @default(now())
+  requestedById String
+  requestedBy   User      @relation(fields: [requestedById], references: [id])
+  resolvedAt    DateTime?
 
   @@index([dealId])
 }
@@ -445,9 +470,27 @@ model Invoice {
   quoteId      String?
   quote        Quote?               @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   docLang      Lang                 @default(EN)
+  // Partial invoice (covers only part of the ordered quantities).
+  partial        Boolean        @default(false)
+  // Controlled bridge to the accounting system: SOLU's invoice is the business object;
+  // the accounting ID is recorded only when the accounting system confirms it.
+  externalSystem String?
+  externalId     String?
+  syncState      AccountingSync @default(NOT_SENT)
+  syncAt         DateTime?
+  syncNote       String?
+  // Why the customer paid less (withholding, deduction, bank fee). The balance stays open until resolved.
+  shortPayNote   String?
 
   @@index([accountId])
   @@index([dueAt])
+}
+
+enum AccountingSync {
+  NOT_SENT
+  SENT
+  CONFIRMED
+  UNCERTAIN
 }
 
 model CustomerPayment {
@@ -463,6 +506,8 @@ model CustomerPayment {
   createdById    String
   createdBy      User      @relation("CashRecorder", fields: [createdById], references: [id])
   createdAt      DateTime  @default(now())
+  // What to do with cash left over after allocation (credit on account, refund, ask the customer).
+  residualNote   String?
 
   applications PaymentApplication[]
 
