@@ -270,11 +270,39 @@ export async function loadDemo(adminId: string) {
         { key: "o3", title: "Devolver y emitir nota crédito", detail: "", eta: null },
       ], selectedKey: "o1", selectedAt: d(-20), selectedByName: paola.name, expectedBy: d(-12), resolvedAt: d(-10), outcome: "RECOVERED", outcomeNote: "Sellos FKM instalados el 26 de oct, sin costo para el cliente" } });
       await ev(lac4.id, "CUSTOMER", "SUPPORTS", "Con los sellos en Viton la bomba lleva 10 días sin una gota", "Jorge Pérez (Mantenimiento)", d(-10), "WhatsApp");
+      await tx.continuitySignal.create({ data: { dealId: lac4.id, kind: "TRIGGER", what: "Sellos FKM para la bomba CIP 2 en la parada de enero", basis: "Jorge dijo que la bomba CIP 2 tiene los mismos sellos EPDM y la cambian en la parada de enero", triggerOn: d(60), createdByName: paola.name, createdAt: d(-10) } });
       await tx.deal.update({ where: { id: lac4.id }, data: { resultState: "ACHIEVED", actualResult: "Bomba de CIP sin fugas con sellos FKM", reliefNote: "La limpieza CIP volvió a su ciclo normal sin goteo", resultConfirmedAt: d(-10), resultConfirmedByName: paola.name, resultAchievedAt: d(-10) } });
       // Closed: achieved, collected, with one legitimate continuity trigger.
       await ev(min0.id, "CUSTOMER", "SUPPORTS", "Las válvulas cierran bien; ya no tenemos fugas de lodo en la descarga", "Laura Ríos (Compras)", d(-70), "Llamada");
       await tx.continuitySignal.create({ data: { dealId: min0.id, kind: "TRIGGER", what: "Cambiar las válvulas del espesador 2 en la parada anual", basis: "Laura dijo que en la parada de diciembre cambian las del espesador 2, mismo modelo", triggerOn: d(30), createdByName: paola.name, createdAt: d(-60) } });
       await tx.deal.update({ where: { id: min0.id }, data: { resultState: "ACHIEVED", desiredResult: "Descarga de lodos sin fugas", actualResult: "Válvulas cerrando sin fugas en la descarga", reliefNote: "Dejaron de limpiar derrames cada turno", resultConfirmedAt: d(-70), resultConfirmedByName: paola.name, closedAt: d(-60), closedByName: paola.name, closureSummary: "Minera buscaba descarga de lodos sin fugas. Entregamos las válvulas, el cliente confirmó que cierran bien y todo quedó cobrado.", closureLearning: "Confirmar el material del asiento con el análisis del lodo antes de cotizar." } });
+
+      // 10d. History for the 360 views: older Journeys closed with results, real purchases (RTS + price
+      // history) and observed product facts. Rich: Siemens / 7MF0340 / Lácteos. Stale: RT-120 price (14 months).
+      type Hist = { accountId: string; supplierId: string; title: string; code: string; desc: string; qty: number; price: number; cost: number; start: number; shipDelta: number; payDelay: number; evidence: string; who: string; desired: string };
+      const hist = async (h: Hist) => {
+        const s = h.start;
+        const dl = await deal({ title: h.title, amount: h.qty * h.price, supplierCost: h.qty * h.cost, accountId: h.accountId, stage: "WON", customerPo: `HIST-${-s}`, poAcceptedAt: d(s), createdAt: d(s), desiredResult: h.desired, resultState: "ACHIEVED", actualResult: h.evidence, resultAchievedAt: d(s + 40), resultConfirmedAt: d(s + 40), resultConfirmedByName: paola.name, closedAt: d(s + 50), closedByName: paola.name, closureSummary: `${h.desired}: entregado y confirmado por el cliente.`, closureLearning: "Compra repetible; mismo proveedor y referencia.", closureNoSignalReason: "Sin necesidad nueva declarada" });
+        const it = await tx.dealItem.create({ data: { dealId: dl.id, qty: h.qty, code: h.code, description: h.desc, unitPrice: h.price } });
+        await spo(dl.id, h.supplierId, h.qty * h.cost, "USD", { confirmedAt: d(s + 2), shipBy: d(s + 7), shippedAt: d(s + 7 + h.shipDelta), receivedAt: d(s + 12 + h.shipDelta), terms: "100 % antes de despacho", createdAt: d(s + 1) }, [{ qty: h.qty, code: h.code, description: h.desc, unitCost: h.cost }]);
+        const del = await delivery(dl.id, d(s + 15 + h.shipDelta), [{ dealItemId: it.id, qty: h.qty }], { receptionCode: "EM-H" + -s });
+        const inv = await invoice(dl.id, h.accountId, h.qty * h.price, Math.round(h.qty * (h.price - h.cost)), d(s + 16 + h.shipDelta), 30, del.id);
+        await tx.invoice.update({ where: { id: inv.id }, data: { syncState: "CONFIRMED", externalSystem: "QuickBooks", externalId: `QB-H${-s}`, syncAt: d(s + 16 + h.shipDelta) } });
+        await tx.customerPayment.create({ data: { accountId: h.accountId, amount: h.qty * h.price, receivedAt: d(s + 46 + h.shipDelta + h.payDelay), reference: `TRF H${-s}`, createdById: adminId, reconciledAt: d(s + 47 + h.shipDelta + h.payDelay), reconciledById: diana.id, applications: { create: [{ invoiceId: inv.id, amount: h.qty * h.price }] } } });
+        await ev(dl.id, "CUSTOMER", "SUPPORTS", h.evidence, h.who, d(s + 40), "Llamada");
+      };
+      const tx7 = { code: "7MF0340", desc: "Transmisor de presión Sitrans P", price: 600 };
+      await hist({ ...tx7, accountId: sider.id, supplierId: siemens.id, title: "Transmisores de presión horno 1", qty: 3, cost: 395, start: -460, shipDelta: 2, payDelay: 14, desired: "Presión del horno 1 medida en continuo", evidence: "Los transmisores quedaron leyendo bien; ya no medimos a mano", who: "Ing. Ramiro Torres (Mantenimiento)" });
+      await hist({ ...tx7, accountId: lacteos.id, supplierId: siemens.id, title: "Transmisores de presión pasteurizador", qty: 2, cost: 410, start: -210, shipDelta: 0, payDelay: 2, desired: "Control de presión del pasteurizador sin lecturas falsas", evidence: "El pasteurizador ya no se dispara por lecturas falsas", who: "Jorge Pérez (Mantenimiento)" });
+      await hist({ ...tx7, accountId: lacteos.id, supplierId: siemens.id, title: "Transmisores de presión línea CIP", qty: 2, cost: 425, start: -125, shipDelta: 5, payDelay: 4, desired: "Presión de la línea CIP visible en el SCADA", evidence: "Ya vemos la presión del CIP en el SCADA", who: "Jorge Pérez (Mantenimiento)" });
+      await hist({ accountId: sider.id, supplierId: rodamientos.id, title: "Rodillos de transporte (lote anterior)", code: "RT-120", desc: "Rodillo de transporte 120 mm", qty: 8, price: 640, cost: 480, start: -420, shipDelta: 1, payDelay: 10, desired: "Banda de transporte sin rodillos trabados", evidence: "La banda corre sin trabarse desde el cambio", who: "Ing. Ramiro Torres (Mantenimiento)" });
+      const pf = (code: string, kind: string, text: string, source: string, at: Date) => tx.productFact.create({ data: { code, kind, text, source, observedAt: at, recordedByName: paola.name } });
+      await pf("7MF0340", "SPEC", "0–16 bar · salida 4–20 mA HART · conexión ½\" NPT", "Hoja técnica Siemens", d(-460));
+      await pf("7MF0340", "ALIAS", "Sitrans P DS III", "Proforma SIE-4498", d(-18));
+      await pf("7MF0340", "ALIAS", "Transmisor 7MF0340-1EC00", "OC del cliente 4500-1902", d(-20));
+      await pf("7MF0340", "PACKING", "Caja individual 22×18×12 cm, 1,4 kg; 4 por caja master", "Recibo en bodega, lote 1", d(-2));
+      await pf("7MF0340", "COMPAT_OK", "Montaje en manifold de 3 válvulas ½\" NPT (Lácteos, línea CIP)", "Jorge Pérez, visita", d(-90));
+      await pf("M-40HP", "COMPAT_NO", "Brida IEC B5 no monta en base NEMA 286T (ventilador secador Ingenio)", "Técnico de montaje, Ingenio", d(-3));
 
       // 11. Pipeline owned by the admin, so Mi Día and Mi Plan show real movements.
       const carlos = await tx.contact.create({ data: { firstName: "Carlos", lastName: "Duarte", title: "Jefe de Mantenimiento", email: "carlos.duarte@quimica.example", accountId: quimica.id } });
@@ -603,6 +631,7 @@ export async function removeDemo() {
       await tx.contact.deleteMany({ where: { account: { isDemo: true } } });
       await tx.account.deleteMany({ where: { isDemo: true } });
       await tx.supplier.deleteMany({ where: { isDemo: true } });
+      await tx.productFact.deleteMany({ where: { recordedByName: { endsWith: TAG } } });
       if (ids.length) {
         await tx.task.deleteMany({ where: { assigneeId: { in: ids } } });
         await tx.commissionEntry.deleteMany({ where: { OR: [{ userId: { in: ids } }, { approvedById: { in: ids } }] } });

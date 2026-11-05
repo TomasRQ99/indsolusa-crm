@@ -290,6 +290,21 @@ model ContinuitySignal {
   @@index([dealId])
 }
 
+// Observed knowledge about a product, keyed by its code: alias, packing, compatibility, spec.
+// Every fact keeps where it came from and when it was observed (freshness + provenance).
+model ProductFact {
+  id             String   @id @default(cuid())
+  code           String
+  kind           String
+  text           String
+  source         String?
+  observedAt     DateTime
+  recordedByName String
+  createdAt      DateTime @default(now())
+
+  @@index([code])
+}
+
 model DealItem {
   id          String  @id @default(cuid())
   dealId      String

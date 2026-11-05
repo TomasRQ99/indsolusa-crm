@@ -168,7 +168,7 @@ export function whatHappened(deal: ResultDeal, i: I) {
 }
 
 /** The strongest piece of evidence behind the current result state. */
-export function basisOf(deal: ResultDeal) {
+export function basisOf<E extends { stance: string; kind: string; at: Date }>(deal: { resultState: ResultState; resultEvidence: E[] }) {
   const want = stanceFor(deal.resultState);
   const rank = (k: string) => (k === "CUSTOMER" ? 0 : k === "VISIT" ? 1 : k === "MEASURE" ? 2 : k === "TECHNICAL" ? 3 : 4);
   const pool = deal.resultEvidence.filter((e) => e.stance === want);

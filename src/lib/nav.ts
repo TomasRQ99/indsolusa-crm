@@ -19,11 +19,12 @@ export const MODULES: NavModule[] = [
     ],
   },
   {
-    key: "mercado", es: "MERCADO", en: "MARKET", match: ["/accounts", "/contacts", "/suppliers"],
+    key: "mercado", es: "MERCADO", en: "MARKET", match: ["/accounts", "/contacts", "/suppliers", "/productos"],
     tabs: [
       { href: "/accounts", es: "Clientes", en: "Customers" },
       { href: "/contacts", es: "Contactos", en: "Contacts" },
       { href: "/suppliers", es: "Proveedores", en: "Suppliers" },
+      { href: "/productos", es: "Productos", en: "Products" },
     ],
   },
   {

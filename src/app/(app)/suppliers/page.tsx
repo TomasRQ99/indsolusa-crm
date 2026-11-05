@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
@@ -51,7 +52,7 @@ export default async function SuppliersPage() {
           <tbody>
             {suppliers.map((s) => (
               <tr key={s.id} id={s.id}>
-                <td><b>{s.name}</b><span className="src">{s.country ?? ""} · {s.currency}</span></td>
+                <td><Link href={`/suppliers/${s.id}`}><b>{s.name}</b></Link><span className="src">{s.country ?? ""} · {s.currency}</span></td>
                 <td className="small">{s.email ?? "—"}<span className="src">{s.phone ?? ""}</span></td>
                 <td>
                   {s.bankVerifiedAt ? (
