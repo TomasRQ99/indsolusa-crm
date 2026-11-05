@@ -933,3 +933,44 @@ details.ci-more > summary { font-size: 13px; color: var(--ink-2); cursor: pointe
 .po-will { margin: 12px 0; padding: 10px 12px; background: var(--bg); border-radius: 6px; font-size: 12px; line-height: 17px; }
 .po-will ul { margin: 4px 0 0; padding-left: 16px; color: var(--ink-2); }
 .po button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ---------- Supplier PO + Treasury ---------- */
+.spo-why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.spo-why > div { background: var(--surface); padding: 12px 16px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.spo-why .k { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+.spo-why b { font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+.spo-why .src { font-size: 12px; color: var(--ink-3); }
+.spo-why .prom { background: var(--brand-soft); }
+.spo-why .prom .mono { font-size: 13px; color: var(--brand-strong); font-weight: 600; }
+.pay-steps { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; font-size: 11px; line-height: 14px; }
+.pay-steps li { flex: 1 1 0; min-width: 0; padding: 6px 6px 0; border-top: 3px solid var(--line); color: var(--ink-3); display: flex; flex-direction: column; gap: 2px; }
+.pay-steps li.done { border-top-color: var(--ok); color: var(--ink); font-weight: 600; text-decoration: none; }
+.pay-steps li.warn { border-top-color: var(--risk); color: var(--risk); font-weight: 600; }
+.pay-steps li small { font-weight: 400; color: var(--ink-3); font-size: 11px; }
+.pay-steps.big { margin-top: 10px; font-size: 13px; line-height: 18px; }
+.pay-steps.big li { border-top-width: 4px; padding-top: 8px; }
+.pay-plan { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.pay-ms { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; background: var(--surface); min-width: 0; }
+.pay-ms .h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.pay-ms .h b { font-size: 14px; }
+.pay-ms .h .val { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pay-ms.paid { border-color: var(--ok); background: var(--ok-soft); }
+.pay-ms.stop { border-color: var(--risk); border-left: 4px solid var(--risk); }
+.qv-checks li.no.info .ic { background: var(--surface-sunken); color: var(--ink-2); }
+.tre-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.tre-checks > :first-child { grid-column: 1 / -1; }
+.jw .tre-checks .jblock { border-top-width: 4px; display: flex; flex-direction: column; gap: 8px; }
+.jw .tre-checks .jblock .jbh { margin-bottom: 0; }
+.jw .tre-checks .jblock.bad { border-top-color: var(--risk); }
+.jw .tre-checks .jblock.warn { border-top-color: var(--attn); }
+.jw .tre-checks .jblock.good { border-top-color: var(--ok); }
+.tre-bank { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tre-bank th { text-align: left; font-weight: 600; color: var(--ink-3); padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.tre-bank td { padding: 4px 6px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; vertical-align: top; }
+.tre-bank td:first-child { color: var(--ink-3); white-space: nowrap; }
+.tre-bank tr.diff td { background: var(--risk-soft); }
+.tre-bank tr.diff td:last-child { color: var(--risk); font-weight: 700; }
+.tre-route { margin: 6px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 19px; }
+.tre-route li::marker { font-weight: 700; color: var(--risk); }
+@media (max-width: 800px) { .tre-checks { grid-template-columns: 1fr; } }
+@media (max-width: 800px) { .spo-why { grid-template-columns: 1fr; } .pay-steps { flex-wrap: wrap; } .pay-steps li { flex-basis: 30%; } }

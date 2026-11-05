@@ -295,6 +295,10 @@ model Supplier {
   bankVerifiedBy   User?     @relation(fields: [bankVerifiedById], references: [id])
   isDemo           Boolean   @default(false)
   createdAt        DateTime  @default(now())
+  // Commercial terms the supplier usually gives (used to prepare the Supplier PO and its payment milestones).
+  paymentTerms     String?
+  advancePct       Int       @default(100)
+  transitDays      Int?
 
   pos SupplierPO[]
 }
@@ -319,19 +323,31 @@ model SupplierPO {
   carrierEtaAt     DateTime?
   carrierEtaSource String?
   createdAt        DateTime  @default(now())
+  // Versioned document: released terms are not edited; a change creates the next version.
+  version          Int       @default(1)
+  releasedAt       DateTime?
+  releasedByName   String?
+  incoterm         String?
+  terms            String?
+  proformaRef      String?
+  shipBy           DateTime?
+  costNote         String?
+  history          Json?
 
-  payments SupplierPayment[]
+  lines        SupplierPOLine[]
+  requirements PaymentRequirement[]
+  payments     SupplierPayment[]
 
   @@index([dealId])
 }
 
 model SupplierPayment {
-  id               String     @id @default(cuid())
+  id               String              @id @default(cuid())
   supplierPoId     String
-  supplierPo       SupplierPO @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
-  amount           Decimal    @db.Decimal(14, 2)
-  currency         String     @default("USD")
-  amountUsd        Decimal?   @db.Decimal(14, 2)
+  supplierPo       SupplierPO          @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
+  amount           Decimal             @db.Decimal(14, 2)
+  currency         String              @default("USD")
+  amountUsd        Decimal?            @db.Decimal(14, 2)
   reason           String
   dueBy            DateTime?
   // Bank data as it appears on the supplier's proforma / invoice / instruction.
@@ -341,19 +357,25 @@ model SupplierPayment {
   docSwift         String?
   docSource        String?
   requestedById    String
-  requestedBy      User       @relation("PaymentRequester", fields: [requestedById], references: [id])
+  requestedBy      User                @relation("PaymentRequester", fields: [requestedById], references: [id])
   verifiedById     String?
-  verifiedBy       User?      @relation("PaymentVerifier", fields: [verifiedById], references: [id])
+  verifiedBy       User?               @relation("PaymentVerifier", fields: [verifiedById], references: [id])
   verifiedAt       DateTime?
   verificationNote String?
   approvedById     String?
-  approvedBy       User?      @relation("PaymentApprover", fields: [approvedById], references: [id])
+  approvedBy       User?               @relation("PaymentApprover", fields: [approvedById], references: [id])
   approvedAt       DateTime?
   executedById     String?
-  executedBy       User?      @relation("PaymentExecutor", fields: [executedById], references: [id])
+  executedBy       User?               @relation("PaymentExecutor", fields: [executedById], references: [id])
   executedAt       DateTime?
   executedRef      String?
-  createdAt        DateTime   @default(now())
+  createdAt        DateTime            @default(now())
+  // Payment Requirement this request pays (milestone), and the separate execution attempts.
+  requirementId    String?
+  requirement      PaymentRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  dupCheckedByName String?
+  dupCheckNote     String?
+  executions       PaymentExecution[]
 
   @@index([supplierPoId])
 }
@@ -786,4 +808,57 @@ model PoAcceptance {
   resolutionId   String?
   // What was true when the command ran: comparison, preconditions and effects.
   snapshot       Json
+}
+
+model SupplierPOLine {
+  id           String     @id @default(cuid())
+  supplierPoId String
+  supplierPo   SupplierPO @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
+  position     Int        @default(0)
+  qty          Int
+  code         String?
+  description  String
+  unitCost     Decimal    @db.Decimal(14, 2)
+}
+
+// What must be paid and when (a milestone of the supplier's terms). It is not a request and not a payment.
+model PaymentRequirement {
+  id           String     @id @default(cuid())
+  supplierPoId String
+  supplierPo   SupplierPO @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
+  position     Int        @default(0)
+  label        String
+  percent      Int
+  amount       Decimal    @db.Decimal(14, 2)
+  trigger      String
+  dueBy        DateTime?
+
+  payments SupplierPayment[]
+}
+
+enum ExecutionState {
+  SENT
+  UNCERTAIN
+  CONFIRMED
+  FAILED
+}
+
+// An attempt to move the money outside SOLU (bank portal). Only CONFIRMED means paid.
+model PaymentExecution {
+  id             String          @id @default(cuid())
+  paymentId      String
+  payment        SupplierPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amount         Decimal         @db.Decimal(14, 2)
+  sentAt         DateTime
+  bankRef        String?
+  state          ExecutionState  @default(SENT)
+  note           String?
+  recordedById   String
+  recordedByName String
+  resolvedAt     DateTime?
+  resolvedByName String?
+  evidence       String?
+  createdAt      DateTime        @default(now())
+
+  @@index([paymentId])
 }

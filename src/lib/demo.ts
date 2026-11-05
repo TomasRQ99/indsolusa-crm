@@ -77,10 +77,10 @@ export async function loadDemo(adminId: string) {
 
       const supplier = (name: string, extra: Partial<Prisma.SupplierUncheckedCreateInput>) =>
         tx.supplier.create({ data: { name: name + TAG, isDemo: true, ...extra } });
-      const siemens = await supplier("Distribuidor Siemens Miami", { country: "Estados Unidos", currency: "USD", phone: "+1 305 000 0000", bankBeneficiary: "Siemens Dist. LLC", bankName: "Bank of America", bankAccount: "000123456789", bankSwift: "BOFAUS3N", bankVerifiedAt: d(-200), bankVerifiedById: diana.id });
-      const rodamientos = await supplier("Rodamientos Bogotá", { country: "Colombia", currency: "USD", phone: "+57 601 000 0000", bankBeneficiary: "Rodamientos Bogotá SAS", bankName: "Bancolombia", bankAccount: "1234-5678-90", bankSwift: "COLOCOBM", bankVerifiedAt: d(-120), bankVerifiedById: diana.id });
-      const iberica = await supplier("Bombas Ibérica", { country: "España", currency: "EUR", phone: "+34 900 000 000" });
-      const general = await supplier("Distribuidor Industrial A", { country: "Estados Unidos", currency: "USD", phone: "+1 786 000 0000", bankBeneficiary: "Industrial A Inc", bankName: "Chase", bankAccount: "987654321", bankSwift: "CHASUS33", bankVerifiedAt: d(-300), bankVerifiedById: diana.id });
+      const siemens = await supplier("Distribuidor Siemens Miami", { paymentTerms: "100 % contra pago antes de despacho", advancePct: 100, transitDays: 4, country: "Estados Unidos", currency: "USD", phone: "+1 305 000 0000", bankBeneficiary: "Siemens Dist. LLC", bankName: "Bank of America", bankAccount: "000123456789", bankSwift: "BOFAUS3N", bankVerifiedAt: d(-200), bankVerifiedById: diana.id });
+      const rodamientos = await supplier("Rodamientos Bogotá", { paymentTerms: "100 % antes de despacho", advancePct: 100, transitDays: 1, country: "Colombia", currency: "USD", phone: "+57 601 000 0000", bankBeneficiary: "Rodamientos Bogotá SAS", bankName: "Bancolombia", bankAccount: "1234-5678-90", bankSwift: "COLOCOBM", bankVerifiedAt: d(-120), bankVerifiedById: diana.id });
+      const iberica = await supplier("Bombas Ibérica", { paymentTerms: "50 % anticipo / 50 % contra despacho", advancePct: 50, transitDays: 12, country: "España", currency: "EUR", phone: "+34 900 000 000" });
+      const general = await supplier("Distribuidor Industrial A", { paymentTerms: "100 % antes de despacho", advancePct: 100, transitDays: 5, country: "Estados Unidos", currency: "USD", phone: "+1 786 000 0000", bankBeneficiary: "Industrial A Inc", bankName: "Chase", bankAccount: "987654321", bankSwift: "CHASUS33", bankVerifiedAt: d(-300), bankVerifiedById: diana.id });
 
       type DealIn = Partial<Prisma.DealUncheckedCreateInput> & { title: string; amount: number; accountId: string };
       const deal = async (data: DealIn) => {
@@ -95,15 +95,33 @@ export async function loadDemo(adminId: string) {
         const code = await nextCode("REM", "delivery", tx);
         return tx.delivery.create({ data: { code, dealId, deliveredAt, deliveredBy: "Transportes Rápidos", receivedByName: "Almacén", podReceived: true, ...extra, lines: { create: lines } } });
       };
-      const spo = async (dealId: string, supplierId: string, amount: number, currency: string, extra: Partial<Prisma.SupplierPOUncheckedCreateInput> = {}) => {
+      // Supplier PO released (v1) with its lines and payment milestones (Payment Requirements).
+      type Ln = { qty: number; code: string; description: string; unitCost: number };
+      type Ms = { label: string; percent: number; amount: number; trigger: string; dueBy: Date | null };
+      const spo = async (dealId: string, supplierId: string, amount: number, currency: string, extra: Partial<Prisma.SupplierPOUncheckedCreateInput> = {}, lines: Ln[] = [], reqs: Ms[] = []) => {
         const code = await nextCode("SPO", "supplierPO", tx);
-        return tx.supplierPO.create({ data: { code, dealId, supplierId, amount, currency, ...extra } });
+        const releasedAt = extra.confirmedAt ? addDays(extra.confirmedAt as Date, -1) : d(-1);
+        return tx.supplierPO.create({
+          data: {
+            code, dealId, supplierId, amount, currency, releasedAt, releasedByName: paola.name, ...extra,
+            lines: { create: lines.map((l, n) => ({ ...l, position: n })) },
+            requirements: { create: reqs.map((r, n) => ({ ...r, position: n })) },
+          },
+          include: { requirements: { orderBy: { position: "asc" } } },
+        });
       };
+      // A payment counts as paid only with a CONFIRMED execution (bank or supplier evidence).
+      const confirmed = (paymentId: string, amount: number, sentAt: Date, bankRef: string) =>
+        tx.paymentExecution.create({ data: { paymentId, amount, sentAt, bankRef, state: "CONFIRMED", recordedById: diana.id, recordedByName: diana.name, resolvedAt: sentAt, resolvedByName: diana.name, evidence: "Confirmación del banco (ejemplo)" } });
 
       // 1. Lácteos del Valle: pumps invoiced, payment received but not reconciled.
       const lac1 = await deal({ title: "Bombas centrífugas línea de pasteurización", amount: 6240, supplierCost: 4600, freightCost: 230, otherCosts: 100, accountId: lacteos.id, stage: "WON", customerPo: "4500-1877", poAcceptedAt: d(-40), desiredResult: "Pasteurizadora operando sin paradas", promiseText: "Bombas instaladas antes del cierre de mes", promisedDate: d(-28), waitingFor: "Que Tesorería concilie el pago", waitingUntil: d(2) });
       const lacItem = await tx.dealItem.create({ data: { dealId: lac1.id, qty: 2, code: "CPX-50", description: "Bomba centrífuga sanitaria 5 HP", unitPrice: 3120 } });
-      await spo(lac1.id, general.id, 4600, "USD", { confirmedAt: d(-38), shippedAt: d(-35), receivedAt: d(-31) });
+      const lacSpo = await spo(lac1.id, general.id, 4600, "USD", { confirmedAt: d(-38), shippedAt: d(-35), receivedAt: d(-31), terms: "100 % antes de despacho", shipBy: d(-35), proformaRef: "Cotización Distribuidor Industrial A" },
+        [{ qty: 2, code: "CPX-50", description: "Bomba centrífuga sanitaria 5 HP", unitCost: 2300 }],
+        [{ label: "Pago total antes de despacho", percent: 100, amount: 4600, trigger: "El proveedor despacha contra pago", dueBy: d(-36) }]);
+      const lacPay = await tx.supplierPayment.create({ data: { supplierPoId: lacSpo.id, requirementId: lacSpo.requirements[0].id, amount: 4600, currency: "USD", amountUsd: 4600, reason: "El distribuidor despacha contra pago", dueBy: d(-36), docBeneficiary: "Industrial A Inc", docBankName: "Chase", docAccount: "987654321", docSwift: "CHASUS33", docSource: "Cotización Distribuidor Industrial A", requestedById: paola.id, approvedById: adminId, approvedAt: d(-37), executedById: diana.id, executedAt: d(-36), executedRef: "Wire 54210", createdAt: d(-38) } });
+      await confirmed(lacPay.id, 4600, d(-36), "Wire 54210");
       const lacDel = await delivery(lac1.id, d(-28), [{ dealItemId: lacItem.id, qty: 2, serials: "CPX50-8812, CPX50-8813" }]);
       const lacInv = await invoice(lac1.id, lacteos.id, 6240, 1310, d(-27), 30, lacDel.id);
       await tx.customerPayment.create({ data: { accountId: lacteos.id, amount: 6240, receivedAt: d(-1), reference: "TRF 88231", createdById: adminId, applications: { create: [{ invoiceId: lacInv.id, amount: 6240 }] } } });
@@ -111,7 +129,17 @@ export async function loadDemo(adminId: string) {
       // 2. Lácteos: transmitters, 4 of 6 delivered and ready to invoice; 2 in transit.
       const lac2 = await deal({ title: "Transmisores de presión Siemens", amount: 3600, supplierCost: 2600, freightCost: 200, otherCosts: 98, accountId: lacteos.id, stage: "WON", customerPo: "4500-1902", poAcceptedAt: d(-20), promiseText: "6 transmisores antes del 15", promisedDate: d(9) });
       const txItem = await tx.dealItem.create({ data: { dealId: lac2.id, qty: 6, code: "7MF0340", description: "Transmisor de presión Sitrans P", unitPrice: 600 } });
-      await spo(lac2.id, siemens.id, 2600, "USD", { confirmedAt: d(-18), shippedAt: d(-2), eta: d(6) });
+      // Partial / milestone payment: Siemens ships in two lots and is paid per lot. Lot 1 paid (confirmed);
+      // lot 2 requested, bank profile verified, no duplicates: ready for approval ("Payment ready").
+      const lac2Spo = await spo(lac2.id, siemens.id, 2598, "USD", { confirmedAt: d(-18), shippedAt: d(-2), eta: d(6), terms: "Pago por lote, antes de cada despacho", shipBy: d(1), proformaRef: "Proforma SIE-4498" },
+        [{ qty: 6, code: "7MF0340", description: "Transmisor de presión Sitrans P", unitCost: 433 }],
+        [
+          { label: "Lote 1 · 4 transmisores", percent: 67, amount: 1732, trigger: "Antes del despacho del lote 1", dueBy: d(-4) },
+          { label: "Lote 2 · 2 transmisores", percent: 33, amount: 866, trigger: "Antes del despacho del lote 2", dueBy: d(1) },
+        ]);
+      const lot1 = await tx.supplierPayment.create({ data: { supplierPoId: lac2Spo.id, requirementId: lac2Spo.requirements[0].id, amount: 1732, currency: "USD", amountUsd: 1732, reason: "Siemens despacha el lote 1 (4 transmisores) contra pago", dueBy: d(-4), docBeneficiary: "Siemens Dist. LLC", docBankName: "Bank of America", docAccount: "000123456789", docSwift: "BOFAUS3N", docSource: "Proforma SIE-4498 · lote 1", requestedById: paola.id, approvedById: adminId, approvedAt: d(-5), executedById: diana.id, executedAt: d(-4), executedRef: "Wire 55302", createdAt: d(-6) } });
+      await confirmed(lot1.id, 1732, d(-4), "Wire 55302");
+      await tx.supplierPayment.create({ data: { supplierPoId: lac2Spo.id, requirementId: lac2Spo.requirements[1].id, amount: 866, currency: "USD", amountUsd: 866, reason: "Siemens despacha el lote 2 (2 transmisores) contra pago; sin ellos no se cumple \"6 transmisores antes del 15\"", dueBy: d(1), docBeneficiary: "Siemens Dist. LLC", docBankName: "Bank of America", docAccount: "000123456789", docSwift: "BOFAUS3N", docSource: "Proforma SIE-4498 · lote 2", requestedById: paola.id } });
       await delivery(lac2.id, d(-1), [{ dealItemId: txItem.id, qty: 4, serials: "SP-1101…1104" }]);
 
       // 3. Siderúrgica: freight arrived after invoicing (esagra 19 % → 16 %); promise for Friday.
@@ -134,8 +162,10 @@ export async function loadDemo(adminId: string) {
       // 6. Cementos: urgent bearing; supplier payment blocked by a bank change by email.
       const cem2 = await deal({ title: "Rodamiento 23148 molino", amount: 17900, supplierCost: 14200, freightCost: 600, accountId: cementos.id, stage: "WON", customerPo: "CA-OC-2611-058", poAcceptedAt: d(-3), desiredResult: "Molino andando antes del sábado", promiseText: "Molino andando antes del sábado", promisedDate: d(3) });
       await tx.dealItem.create({ data: { dealId: cem2.id, qty: 1, code: "23148 CC/W33", description: "Rodamiento de rodillos a rótula", unitPrice: 17900 } });
-      const cemSpo = await spo(cem2.id, rodamientos.id, 17600, "USD", { confirmedAt: d(-2) });
-      await tx.supplierPayment.create({ data: { supplierPoId: cemSpo.id, amount: 17600, currency: "USD", amountUsd: 17600, reason: "El proveedor despacha al confirmar el pago; el molino debe arrancar el sábado", dueBy: d(1), docBeneficiary: "Rodamientos Bogotá SAS", docBankName: "Banco de Bogotá", docAccount: "9988-7766-55", docSwift: "BBOGCOBB", docSource: "Correo del 4 nov: \"cambiamos de cuenta\"", requestedById: paola.id } });
+      const cemSpo = await spo(cem2.id, rodamientos.id, 17600, "USD", { confirmedAt: d(-2), terms: "100 % antes de despacho", shipBy: d(1), proformaRef: "Cotización RB-1187" },
+        [{ qty: 1, code: "23148 CC/W33", description: "Rodamiento de rodillos a rótula", unitCost: 17600 }],
+        [{ label: "Pago total antes de despacho", percent: 100, amount: 17600, trigger: "El proveedor despacha contra pago", dueBy: d(0) }]);
+      await tx.supplierPayment.create({ data: { supplierPoId: cemSpo.id, requirementId: cemSpo.requirements[0].id, amount: 17600, currency: "USD", amountUsd: 17600, reason: "El proveedor despacha al confirmar el pago; el molino debe arrancar el sábado", dueBy: d(1), docBeneficiary: "Rodamientos Bogotá SAS", docBankName: "Banco de Bogotá", docAccount: "9988-7766-55", docSwift: "BBOGCOBB", docSource: "Correo del 4 nov: \"cambiamos de cuenta\"", requestedById: paola.id } });
 
       // 7. Minera: overdue invoice without promise; new order exceeds the credit limit.
       const min1 = await deal({ title: "Repuestos bomba de lodos", amount: 8400, supplierCost: 6800, freightCost: 200, accountId: minera.id, stage: "WON", customerPo: "MER-OC-9810", poAcceptedAt: d(-55) });
@@ -157,9 +187,17 @@ export async function loadDemo(adminId: string) {
       // 9. Ingenio: foreign payment in EUR, verified by Diana, waiting for management approval.
       const ing = await deal({ title: "Impulsor bomba de jugo", amount: 11850, supplierCost: 9100, freightCost: 450, otherCosts: 180, accountId: ingenio.id, stage: "WON", customerPo: "ISR-4410-77", poAcceptedAt: d(-5), desiredResult: "Bomba instalada antes de la zafra", promiseText: "Instalado antes de la zafra", promisedDate: d(19) });
       await tx.dealItem.create({ data: { dealId: ing.id, qty: 1, code: "IMP-JG-320", description: "Impulsor bomba de jugo 320 mm", unitPrice: 11850 } });
-      const ingSpo = await spo(ing.id, iberica.id, 8420, "EUR", { confirmedAt: d(-4) });
-      await tx.supplierPayment.create({ data: { supplierPoId: ingSpo.id, amount: 8420, currency: "EUR", amountUsd: 9100, reason: "Fabricación arranca con el pago; la zafra empieza el 23", dueBy: d(2), docBeneficiary: "Bombas Ibérica S.L.", docBankName: "CaixaBank", docAccount: "ES12 2100 0000 0000 0000", docSwift: "CAIXESBB", docSource: "Proforma PF-2611-118", requestedById: paola.id, verifiedById: diana.id, verifiedAt: d(-1), verificationNote: "Llamada al teléfono registrado: confirmó beneficiario, banco e IBAN." } });
-      await tx.supplier.update({ where: { id: iberica.id }, data: { bankBeneficiary: "Bombas Ibérica S.L.", bankName: "CaixaBank", bankAccount: "ES12 2100 0000 0000 0000", bankSwift: "CAIXESBB", bankVerifiedAt: d(-1), bankVerifiedById: diana.id } });
+      // Uncertain external execution: the 50 % advance was sent, the bank says "in process" and Ibérica
+      // hasn't confirmed receipt. It doesn't count as paid and isn't retried until reconciled.
+      const ingSpo = await spo(ing.id, iberica.id, 8420, "EUR", { confirmedAt: d(-4), terms: "50 % anticipo / 50 % contra despacho", shipBy: d(3), proformaRef: "Proforma PF-2611-118" },
+        [{ qty: 1, code: "IMP-JG-320", description: "Impulsor bomba de jugo 320 mm", unitCost: 8420 }],
+        [
+          { label: "Anticipo 50 %", percent: 50, amount: 4210, trigger: "Al liberar la Supplier PO · la fabricación arranca con el pago", dueBy: d(-2) },
+          { label: "Saldo 50 %", percent: 50, amount: 4210, trigger: "Contra aviso de despacho", dueBy: d(3) },
+        ]);
+      const ingPay = await tx.supplierPayment.create({ data: { supplierPoId: ingSpo.id, requirementId: ingSpo.requirements[0].id, amount: 4210, currency: "EUR", amountUsd: 4550, reason: "Fabricación arranca con el anticipo; la zafra empieza el 23", dueBy: d(-2), docBeneficiary: "Bombas Ibérica S.L.", docBankName: "CaixaBank", docAccount: "ES12 2100 0000 0000 0000", docSwift: "CAIXESBB", docSource: "Proforma PF-2611-118", requestedById: paola.id, verifiedById: diana.id, verifiedAt: d(-4), verificationNote: "Llamada al teléfono registrado: confirmó beneficiario, banco e IBAN.", approvedById: adminId, approvedAt: d(-3), dupCheckedByName: "Administrador", createdAt: d(-4) } });
+      await tx.paymentExecution.create({ data: { paymentId: ingPay.id, amount: 4210, sentAt: d(-2), bankRef: "MT103 88-4471", state: "UNCERTAIN", note: "Banco: \"en proceso\". Ibérica no confirma recepción y no arranca la fabricación.", recordedById: diana.id, recordedByName: diana.name } });
+      await tx.supplier.update({ where: { id: iberica.id }, data: { bankBeneficiary: "Bombas Ibérica S.L.", bankName: "CaixaBank", bankAccount: "ES12 2100 0000 0000 0000", bankSwift: "CAIXESBB", bankVerifiedAt: d(-4), bankVerifiedById: diana.id } });
 
       // 10. Alimentos del Pacífico (new customer): delivered, invoice blocked by tax data.
       const pac = await deal({ title: "Sellos mecánicos envasadora", amount: 1870, supplierCost: 1300, freightCost: 140, accountId: pacifico.id, stage: "WON", customerPo: "ADP-0012", poAcceptedAt: d(-12) });
@@ -207,8 +245,13 @@ export async function loadDemo(adminId: string) {
       const sjSpo = await spo(sj.id, siemens.id, 20400, "USD", {
         confirmedAt: d(-10), shippedAt: d(-5), eta: d(4),
         carrierName: "DHL Global Forwarding", tracking: "DHL 7781 5520", carrierEta: d(7), carrierEtaAt: new Date(d(-4).getTime() + 15 * 3600e3), carrierEtaSource: "Tracking web DHL",
-      });
-      await tx.supplierPayment.create({ data: { supplierPoId: sjSpo.id, amount: 20400, currency: "USD", amountUsd: 20400, reason: "El distribuidor despacha contra pago", dueBy: d(-9), docBeneficiary: "Siemens Dist. LLC", docBankName: "Bank of America", docAccount: "000123456789", docSwift: "BOFAUS3N", docSource: "Proforma SIE-4471", requestedById: adminId, approvedById: diana.id, approvedAt: d(-9), executedById: diana.id, executedAt: d(-9), executedRef: "Wire 55120" } });
+        terms: "100 % contra pago antes de despacho", shipBy: d(-5), proformaRef: "Proforma SIE-4471", incoterm: "FCA Miami",
+      }, [
+        { qty: 2, code: "1FK7063", description: "Servomotor Siemens 1FK7 con drive S210", unitCost: 6200 },
+        { qty: 1, code: "KF-L3-1KG", description: "Kit de cambio de formato 1 kg línea 3", unitCost: 8000 },
+      ], [{ label: "Pago total antes de despacho", percent: 100, amount: 20400, trigger: "El distribuidor despacha contra pago", dueBy: d(-9) }]);
+      const sjPay = await tx.supplierPayment.create({ data: { supplierPoId: sjSpo.id, requirementId: sjSpo.requirements[0].id, amount: 20400, currency: "USD", amountUsd: 20400, reason: "El distribuidor despacha contra pago", dueBy: d(-9), docBeneficiary: "Siemens Dist. LLC", docBankName: "Bank of America", docAccount: "000123456789", docSwift: "BOFAUS3N", docSource: "Proforma SIE-4471", requestedById: adminId, approvedById: diana.id, approvedAt: d(-9), executedById: diana.id, executedAt: d(-9), executedRef: "Wire 55120", createdAt: d(-11) } });
+      await confirmed(sjPay.id, 20400, d(-9), "Wire 55120");
       await tx.activity.createMany({
         data: [
           { type: "MEETING", subject: "Visita a planta: Ana necesita pasar de 500 g a 1 kg sin parar más de un turno", occurredAt: ago(30, 10), userId: adminId, accountId: abc.id, contactId: ana.id, dealId: sj.id, phase: "need", source: "Visita a planta Funza" },
@@ -356,6 +399,18 @@ export async function loadDemo(adminId: string) {
         },
       });
       await tx.invoice.update({ where: { id: lacInv.id }, data: { quoteId: lacQ.id } });
+
+      // Minera · kit de bomba de lodos: PO accepted, quote accepted, no Supplier PO yet → one click prepares it.
+      await tx.quote.create({
+        data: {
+          dealId: min2.id, number: await nextDocNumber(tx), lang: "ES", createdById: paola.id, status: "ACCEPTED", createdAt: d(-6), issuedAt: d(-6), presentedAt: d(-6), decidedAt: d(-1),
+          billTo: "Minera El Roble", shipTo: "Minera El Roble", solution: "Bomba de lodos de vuelta a operación con un kit completo de desgaste.",
+          supplyPrimary: "Distribuidor Industrial A · kit en stock Miami", promiseText: "Entrega lunes 16",
+          supplierCost: 8900, supplierSrc: "Cotización IA-7712", freightCost: 300, freightSrc: "DHL aéreo",
+          protSale: 11200, protCost: 9200, protEsagra: 2000, protPolicy: 1, leadMinDays: 8, leadMaxDays: 10, incoterm: "DAP planta", paymentTerms: "Net 30",
+          lines: { create: [{ position: 0, qty: 1, code: "KBL-6", description: "Kit de bomba de lodos 6\"", unitPrice: 11200 }] },
+        },
+      });
 
       await tx.task.createMany({
         data: [

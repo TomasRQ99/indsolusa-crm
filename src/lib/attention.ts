@@ -29,6 +29,7 @@ export async function shellAttention(user: SessionUser, i: I18n) {
 
   const broken = receivables.filter((r) => r.state === "BROKEN");
   const toVerify = payments.filter((p) => p.state === "VERIFY" && p.requestedById !== user.id);
+  const toReconcile = payments.filter((p) => p.state === "UNCERTAIN");
   const toApprove = manager ? payments.filter((p) => p.state === "APPROVE" && p.requestedById !== user.id && p.verifiedById !== user.id) : [];
   const readyToInvoice = ready.filter((d) => invoiceBlockers(d, d.deal, d.deal.account).length === 0).length;
   const creditDecisions = credit.flatMap((a) => a.blocking.map((d) => ({ a, d })));
@@ -39,13 +40,14 @@ export async function shellAttention(user: SessionUser, i: I18n) {
   };
   set("midia", midia.needCount, midia.needs.some((n) => n.tone === "risk") ? "risk" : "attn");
   set("operaciones", readyToInvoice, "attn");
-  if (broken.length) set("administracion", broken.length + toVerify.length, "risk");
+  if (broken.length || toReconcile.length) set("administracion", broken.length + toVerify.length + toReconcile.length, "risk");
   else set("administracion", toVerify.length, "attn");
   set("gerencia", toApprove.length + creditDecisions.length, "attn");
 
   const alerts: Alert[] = [
     ...broken.map((r) => ({ key: `b${r.id}`, tone: "risk" as const, href: `/administracion/cobrar?f=${r.id}`, text: t(`Compromiso incumplido: ${r.account.name} · ${i.money(r.cash.balance)}`, `Commitment missed: ${r.account.name} · ${i.money(r.cash.balance)}`) })),
     ...toVerify.map((p) => ({ key: `v${p.id}`, tone: "risk" as const, href: `/administracion/pagos-proveedores/${p.id}`, text: t(`Verificar datos bancarios de ${p.supplierPo.supplier.name}`, `Verify ${p.supplierPo.supplier.name}'s bank data`) })),
+    ...toReconcile.map((p) => ({ key: `u${p.id}`, tone: "risk" as const, href: `/administracion/pagos-proveedores/${p.id}`, text: t(`Conciliar pago incierto a ${p.supplierPo.supplier.name} · ${p.currency} ${i.n(p.amount)}`, `Reconcile uncertain payment to ${p.supplierPo.supplier.name} · ${p.currency} ${i.n(p.amount)}`) })),
     ...toApprove.map((p) => ({ key: `a${p.id}`, tone: "attn" as const, href: `/administracion/pagos-proveedores/${p.id}`, text: t(`Aprobar pago a ${p.supplierPo.supplier.name} · ${p.currency} ${i.n(p.amount)}`, `Approve payment to ${p.supplierPo.supplier.name} · ${p.currency} ${i.n(p.amount)}`) })),
     ...creditDecisions.map(({ a, d }) => ({ key: `c${d.id}`, tone: "attn" as const, href: `/administracion/cupos#${a.id}`, text: t(`Decidir el cupo de ${a.name}`, `Decide ${a.name}'s credit limit`) })),
   ];

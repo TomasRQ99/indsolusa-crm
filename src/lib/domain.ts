@@ -125,17 +125,24 @@ export function bankDiscrepancies(
     .map(([field, p, d]) => ({ field, profile: p, doc: d }));
 }
 
-export type PaymentState = "VERIFY" | "APPROVE" | "EXECUTE" | "DONE";
+// Requested → (verified if the bank data differs) → approved → sent to the bank → paid.
+// "Approved" and "sent" are never "paid": DONE only exists when an execution is CONFIRMED
+// (executedAt is written only at that moment).
+export type PaymentState = "VERIFY" | "APPROVE" | "EXECUTE" | "SENT" | "UNCERTAIN" | "DONE";
 
 export function paymentState(p: {
   verifiedAt: Date | null;
   approvedAt: Date | null;
   executedAt: Date | null;
   discrepancies: number;
+  executions?: { state: "SENT" | "UNCERTAIN" | "CONFIRMED" | "FAILED" }[];
 }): PaymentState {
   if (p.executedAt) return "DONE";
   if (p.discrepancies > 0 && !p.verifiedAt) return "VERIFY";
   if (!p.approvedAt) return "APPROVE";
+  const open = (p.executions ?? []).filter((e) => e.state === "SENT" || e.state === "UNCERTAIN");
+  if (open.some((e) => e.state === "UNCERTAIN")) return "UNCERTAIN";
+  if (open.length) return "SENT";
   return "EXECUTE";
 }
 

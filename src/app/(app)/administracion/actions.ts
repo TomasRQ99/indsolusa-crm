@@ -8,6 +8,8 @@ import { assertCanEdit, canManageAll } from "@/lib/permissions";
 import { optionalDate, optionalText, parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
 import { addDays, bankDiscrepancies, esagra, invoiceBlockers, invoiceCash, nextDocNumber, paymentState, today } from "@/lib/domain";
+import { makeI18n } from "@/lib/i18n";
+import { authorityFor, treasuryChecks } from "@/lib/purchasing";
 
 const money = z.coerce.number().min(0).max(1e12);
 const currency = z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, "3-letter currency code").default("USD");
@@ -185,9 +187,9 @@ export async function requestSupplierPayment(spoId: string, formData: FormData) 
 }
 
 async function loadPayment(id: string) {
-  const p = await db.supplierPayment.findUniqueOrThrow({ where: { id }, include: { supplierPo: { include: { supplier: true } } } });
+  const p = await db.supplierPayment.findUniqueOrThrow({ where: { id }, include: { supplierPo: { include: { supplier: true } }, executions: true } });
   const disc = bankDiscrepancies(p.supplierPo.supplier, p);
-  return { p, disc, state: paymentState({ ...p, discrepancies: disc.length }) };
+  return { p, disc, state: paymentState({ ...p, discrepancies: disc.length, executions: p.executions }) };
 }
 
 /**
@@ -200,6 +202,8 @@ export async function verifySupplierPayment(id: string, formData: FormData) {
   if (state !== "VERIFY") throw new Error("Este pago no requiere verificación / This payment needs no verification.");
   if (p.requestedById === user.id) throw new Error("Quien solicita el pago no puede verificarlo / The requester cannot verify.");
   const { verificationNote } = parseForm(z.object({ verificationNote: requiredText }), formData);
+  // The verification route: the registered phone (never the document's), every field confirmed.
+  if (formData.get("calledRegistered") !== "on" || formData.get("allFields") !== "on") payBack(id, "err=ruta");
   const updateProfile = formData.get("updateProfile") === "on";
   await db.$transaction(async (tx) => {
     await tx.supplierPayment.update({
@@ -220,30 +224,92 @@ export async function verifySupplierPayment(id: string, formData: FormData) {
       });
     }
   });
-  refreshApp();
+  payBack(id, "ok=verificado");
 }
 
-export async function approveSupplierPayment(id: string) {
-  const user = await requireManager();
-  const { p, state } = await loadPayment(id);
-  if (state !== "APPROVE") throw new Error("Este pago aún no está listo para aprobar / Not ready for approval.");
-  if (p.requestedById === user.id || p.verifiedById === user.id)
-    throw new Error("Aprueba una persona distinta de quien solicitó o verificó / Approver must differ from requester and verifier.");
-  await db.supplierPayment.updateMany({ where: { id, approvedAt: null }, data: { approvedById: user.id, approvedAt: new Date() } });
+const payBack = (id: string, qs: string): never => {
   refreshApp();
-}
+  redirect(`/administracion/pagos-proveedores/${id}?${qs}`);
+};
 
-/** Recording the bank transfer. Idempotent: a payment can only be marked executed once. */
-export async function executeSupplierPayment(id: string, formData: FormData) {
-  const user = await requireManager();
-  const { state } = await loadPayment(id);
-  if (state !== "EXECUTE") throw new Error("Este pago no está aprobado / Not approved.");
-  const { executedRef } = parseForm(z.object({ executedRef: requiredText }), formData);
+/**
+ * Approve Payment Request. Server-side: bank hard stop cleared, duplicate check acknowledged (and no hard
+ * duplicate), authority (role limit in USD, different person from requester and verifier).
+ * Approving does NOT pay: it only allows Treasury to send the transfer.
+ */
+export async function approveSupplierPayment(id: string, formData: FormData) {
+  const user = await requireUser();
+  const p = await db.supplierPayment.findUniqueOrThrow({ where: { id }, include: { executions: true, supplierPo: { include: { supplier: true } } } });
+  const disc = bankDiscrepancies(p.supplierPo.supplier, p);
+  const state = paymentState({ ...p, discrepancies: disc.length, executions: p.executions });
+  if (state !== "APPROVE") payBack(id, "err=estado");
+  const i = makeI18n(user.lang);
+  const { dup, usd } = await treasuryChecks(p, p.supplierPo, i);
+  if (dup.hard) payBack(id, "err=duplicado");
+  if (dup.hits.length && formData.get("dupChecked") !== "1") payBack(id, "err=revisar-duplicados");
+  const auth = authorityFor(user, p, usd, i);
+  if (!auth.can) payBack(id, "err=autoridad");
   await db.supplierPayment.updateMany({
-    where: { id, executedAt: null },
-    data: { executedAt: new Date(), executedById: user.id, executedRef },
+    where: { id, approvedAt: null },
+    data: { approvedById: user.id, approvedAt: new Date(), dupCheckedByName: user.name, dupCheckNote: dup.hits.length ? `Revisados ${dup.hits.length} posibles duplicados` : "Sin duplicados" },
   });
-  refreshApp();
+  payBack(id, "ok=aprobado");
+}
+
+/**
+ * Record external payment execution (done in the bank's portal, outside SOLU).
+ * If the bank already shows the debit, it is confirmed (= paid). Otherwise it stays "sent, not confirmed".
+ */
+export async function recordExecution(id: string, formData: FormData) {
+  const user = await requireManager();
+  const p = await db.supplierPayment.findUniqueOrThrow({ where: { id }, include: { executions: true, supplierPo: { include: { supplier: true } } } });
+  const state = paymentState({ ...p, discrepancies: bankDiscrepancies(p.supplierPo.supplier, p).length, executions: p.executions });
+  if (state !== "EXECUTE") payBack(id, "err=estado");
+  const bankRef = String(formData.get("bankRef") ?? "").trim().slice(0, 80) || null;
+  const confirmed = formData.get("confirmed") === "yes";
+  if (confirmed && !bankRef) payBack(id, "err=referencia");
+  const now = new Date();
+  await db.$transaction(async (tx) => {
+    await tx.paymentExecution.create({
+      data: {
+        paymentId: id, amount: p.amount, sentAt: now, bankRef, state: confirmed ? "CONFIRMED" : "SENT",
+        recordedById: user.id, recordedByName: user.name,
+        ...(confirmed ? { resolvedAt: now, resolvedByName: user.name, evidence: `Débito visible en el banco · ref. ${bankRef}` } : {}),
+      },
+    });
+    if (confirmed) await tx.supplierPayment.updateMany({ where: { id, executedAt: null }, data: { executedAt: now, executedById: user.id, executedRef: bankRef } });
+  });
+  payBack(id, confirmed ? "ok=pagado" : "ok=enviado");
+}
+
+/** Mark a sent transfer as uncertain (the bank or supplier contradicts it, or it's taking too long). */
+export async function markUncertain(executionId: string, formData: FormData) {
+  const user = await requireUser();
+  const e = await db.paymentExecution.findUniqueOrThrow({ where: { id: executionId } });
+  if (e.state !== "SENT") payBack(e.paymentId, "err=estado");
+  const note = String(formData.get("note") ?? "").trim().slice(0, 300);
+  if (!note) payBack(e.paymentId, "err=nota");
+  await db.paymentExecution.update({ where: { id: executionId }, data: { state: "UNCERTAIN", note: `${note} (${user.name})` } });
+  payBack(e.paymentId, "ok=incierto");
+}
+
+/**
+ * Reconcile an uncertain (or sent) execution with evidence. CONFIRMED = paid. FAILED = the money did not
+ * leave (or came back): the request goes back to "approved · not sent" and a new attempt can be recorded.
+ * Never retry before reconciling: that's how double payments happen.
+ */
+export async function reconcileExecution(executionId: string, outcome: "CONFIRMED" | "FAILED", formData: FormData) {
+  const user = await requireManager();
+  const e = await db.paymentExecution.findUniqueOrThrow({ where: { id: executionId } });
+  if (e.state !== "SENT" && e.state !== "UNCERTAIN") payBack(e.paymentId, "err=estado");
+  const evidence = String(formData.get("evidence") ?? "").trim().slice(0, 300);
+  if (!evidence) payBack(e.paymentId, "err=evidencia");
+  const now = new Date();
+  await db.$transaction(async (tx) => {
+    await tx.paymentExecution.update({ where: { id: executionId }, data: { state: outcome, resolvedAt: now, resolvedByName: user.name, evidence } });
+    if (outcome === "CONFIRMED") await tx.supplierPayment.updateMany({ where: { id: e.paymentId, executedAt: null }, data: { executedAt: now, executedById: user.id, executedRef: e.bankRef } });
+  });
+  payBack(e.paymentId, outcome === "CONFIRMED" ? "ok=pagado" : "ok=fallido");
 }
 
 // ---------- Credit ----------

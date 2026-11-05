@@ -5,7 +5,8 @@ import { loadSupplierPayments } from "@/lib/queries";
 import { paymentStateLabel } from "@/lib/labels";
 import type { PaymentState } from "@/lib/domain";
 
-const ORDER: PaymentState[] = ["VERIFY", "APPROVE", "EXECUTE", "DONE"];
+// Hard stops first; "approved" and "sent" are their own groups, never inside "paid".
+const ORDER: PaymentState[] = ["VERIFY", "UNCERTAIN", "APPROVE", "EXECUTE", "SENT", "DONE"];
 
 export default async function SupplierPaymentsPage() {
   const user = await requireUser();

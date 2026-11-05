@@ -4,7 +4,8 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { canEdit } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
-import { dayInput } from "@/lib/domain";
+import { bankDiscrepancies, dayInput, paymentState } from "@/lib/domain";
+import { paymentStateLabel } from "@/lib/labels";
 import { stageLabel } from "@/lib/labels";
 import { buildJourney, journeyInclude, typeLabel, type TabKey, type Tone } from "@/lib/journey";
 import { OutlookNote } from "@/components/OutlookNote";
@@ -29,8 +30,8 @@ import {
 } from "../actions";
 import { defineNext, doneAndNext, logHappened, newPromise, postpone, scheduleMove, scheduleMoveAt } from "../../mi-dia/actions";
 import { createSupplierPo, markSupplierPo } from "../../operaciones/actions";
-import { requestSupplierPayment } from "../../administracion/actions";
 import { createQuote } from "../../cotizaciones/actions";
+import { prepareSpo } from "../../compras/actions";
 
 const TAB_ORDER: TabKey[] = ["resumen", "need", "source", "quote", "execute", "finance", "file", "result"];
 
@@ -709,7 +710,7 @@ export default async function JourneyPage({
                 : { c: "attn", x: t("Sin confirmar", "Not confirmed") };
               return (
                 <div key={p.id} className="po">
-                  <div className="po-h"><b>{p.code}</b><span>{p.supplier.name} · {p.currency} {i.n2(p.amount)}</span><span className="grow" /><span className={`sig ${st.c}`}>{st.x}</span></div>
+                  <div className="po-h"><Link href={`/compras/${p.id}`} className="val">{p.code}</Link><span>{p.supplier.name} · {p.currency} {i.n2(p.amount)}</span><span className="grow" />{p.releasedAt ? <span className={`sig ${st.c}`}>{st.x}</span> : <span className="sig dash">{t("Borrador · sin liberar", "Draft · not released")}</span>}</div>
                   <dl className="po-d">
                     <dt>{t("ETA proveedor", "Supplier ETA")}</dt><dd>{dateMono(p.eta)}</dd>
                     <dt>{t("ETA transportista", "Carrier ETA")}</dt><dd>{dateMono(p.carrierEta)}{p.carrierName ? ` · ${p.carrierName}` : ""}{p.tracking ? ` · ${p.tracking}` : ""}</dd>
@@ -729,8 +730,14 @@ export default async function JourneyPage({
           </div>
         )}
         {editable && (
+          <div className="qa-bar" style={{ marginTop: 10 }}>
+            <form action={prepareSpo.bind(null, deal.id)}><button type="submit" className="btn sm">{t("Preparar Supplier PO desde la cotización", "Prepare Supplier PO from the quote")}</button></form>
+            {sp.ok === "sin-proveedor" && <span className="attn-t small">{t("La base de suministro de la cotización no coincide con ningún proveedor registrado.", "The quote's supply basis doesn't match any registered supplier.")}</span>}
+          </div>
+        )}
+        {editable && (
           <details style={{ marginTop: 10 }}>
-            <summary>{t("Nueva Supplier PO", "New supplier PO")}</summary>
+            <summary className="small">{t("Crear manualmente (sin cotización)", "Create manually (no quote)")}</summary>
             {suppliers.length === 0 ? <p className="small">{t("Primero crea el proveedor en ", "First create the supplier in ")}<Link href="/suppliers">{t("Proveedores", "Suppliers")}</Link>.</p> : (
               <form action={createSupplierPo.bind(null, deal.id)} className="inline">
                 <label>{t("Proveedor", "Supplier")}<select name="supplierId" required defaultValue=""><option value="" disabled>{t("Elegir…", "Choose…")}</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
@@ -797,37 +804,19 @@ export default async function JourneyPage({
         <div className="jbh"><b>{t("PAGOS A PROVEEDORES", "SUPPLIER PAYMENTS")}</b></div>
         {deal.supplierPos.length === 0 ? <p className="quiet-p">{t("Sin Supplier PO todavía.", "No supplier PO yet.")}</p> : (
           <div className="pos">
-            {deal.supplierPos.map((p) => {
-              const pay = p.payments[0];
-              return (
-                <div key={p.id} className="po">
-                  <div className="po-h"><b>{p.code}</b><span>{p.supplier.name} · {p.currency} {i.n2(p.amount)}</span><span className="grow" />
-                    {pay ? <Link href={`/administracion/pagos-proveedores/${pay.id}`} className={`sig ${pay.executedAt ? "ok" : "attn"}`}>{pay.executedAt ? t("Pagado", "Paid") : pay.approvedAt ? t("Aprobado, por ejecutar", "Approved, to execute") : t("En verificación", "Being verified")}</Link> : <span className="sig wait">{t("Sin solicitud de pago", "No payment request")}</span>}
-                  </div>
-                  {!pay && editable && (
-                    <details>
-                      <summary className="small">{t("Solicitar pago", "Request payment")}</summary>
-                      <form action={requestSupplierPayment.bind(null, p.id)} className="stack jform">
-                        <div className="qa-row">
-                          <label>{t("Monto", "Amount")}<input name="amount" type="number" step="0.01" min="0" defaultValue={Number(p.amount)} required /></label>
-                          <label>{t("Moneda", "Currency")}<input name="currency" defaultValue={p.currency} /></label>
-                          <label>≈ USD<input name="amountUsd" type="number" step="0.01" min="0" /></label>
-                        </div>
-                        <label>{t("Por qué debe moverse este dinero", "Why this money must move")}<input name="reason" required /></label>
-                        <label>{t("Pagar a más tardar", "Pay by")}<input name="dueBy" type="date" /></label>
-                        <span className="src">{t("Datos bancarios tal como vienen en la proforma del proveedor. Se comparan con el perfil verificado; un cambio de cuenta frena el pago hasta verificarlo por teléfono.", "Bank data exactly as on the supplier's proforma. It is compared with the verified profile; an account change stops the payment until verified by phone.")}</span>
-                        <label>{t("Beneficiario", "Beneficiary")}<input name="docBeneficiary" /></label>
-                        <label>{t("Banco", "Bank")}<input name="docBankName" /></label>
-                        <label>{t("Cuenta / IBAN", "Account / IBAN")}<input name="docAccount" /></label>
-                        <label>SWIFT<input name="docSwift" /></label>
-                        <label>{t("Documento de origen", "Source document")}<input name="docSource" placeholder="PF-…" /></label>
-                        <button type="submit">{t("Preparar pago", "Prepare payment")}</button>
-                      </form>
-                    </details>
-                  )}
-                </div>
-              );
-            })}
+            {deal.supplierPos.map((p) => (
+              <div key={p.id} className="po">
+                <div className="po-h"><Link href={`/compras/${p.id}`} className="val">{p.code}</Link><span>{p.supplier.name} · {p.currency} {i.n2(p.amount)}</span><span className="grow" /><Link className="qa-btn" href={`/compras/${p.id}`}>{t("Plan de pago", "Payment plan")}</Link></div>
+                {p.payments.length === 0 ? <p className="src">{t("Sin solicitudes de pago. Se piden por hito desde la Supplier PO.", "No payment requests. They're requested per milestone from the Supplier PO.")}</p> : (
+                  <ul className="plain">
+                    {p.payments.map((pay) => {
+                      const L = paymentStateLabel(i, paymentState({ ...pay, discrepancies: bankDiscrepancies(p.supplier, pay).length, executions: pay.executions }));
+                      return <li key={pay.id}><span className="mono">{pay.currency} {i.n2(pay.amount)}</span> · <Link href={`/administracion/pagos-proveedores/${pay.id}`} className={`sig ${L.cls}`}>{L.text}</Link></li>;
+                    })}
+                  </ul>
+                )}
+              </div>
+            ))}
           </div>
         )}
         <p className="src" style={{ marginTop: 8 }}>{t("Esagra calculada", "Calculated esagra")}: USD {i.n(J.eg.value)} · {i.pct(J.eg.pct)}</p>

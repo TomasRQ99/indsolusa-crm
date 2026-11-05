@@ -18,7 +18,7 @@ export const journeyInclude = {
   owner: { select: { id: true, name: true } },
   items: { include: { deliveryLines: { select: { qty: true } } }, orderBy: { id: "asc" } },
   supplierPos: {
-    include: { supplier: true, payments: { orderBy: { createdAt: "desc" } } },
+    include: { supplier: true, payments: { orderBy: { createdAt: "desc" }, include: { executions: true } } },
     orderBy: { createdAt: "asc" },
   },
   deliveries: { include: { lines: true, invoice: { select: { id: true, number: true } } }, orderBy: { deliveredAt: "asc" } },
@@ -215,7 +215,19 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
     } else if (p.confirmedAt) facts.push({ key: `po-${p.id}`, text: t(`${p.supplier.name} confirmó ${p.code}${p.eta ? ` · ETA ${i.day(p.eta)}` : ""}`, `${p.supplier.name} confirmed ${p.code}${p.eta ? ` · ETA ${i.day(p.eta)}` : ""}`), when: p.confirmedAt, src: p.code });
     else facts.push({ key: `po-${p.id}`, text: t(`${p.code} enviada a ${p.supplier.name}, sin confirmar`, `${p.code} sent to ${p.supplier.name}, not confirmed`), when: p.createdAt, src: p.code, uncertain: daysBetween(day0(p.createdAt), now) > 2 });
     const pay = p.payments[0];
-    if (pay) facts.push({ key: `pay-${pay.id}`, text: pay.executedAt ? t(`Pago a ${p.supplier.name} ejecutado`, `Payment to ${p.supplier.name} executed`) : t(`Pago a ${p.supplier.name} en trámite`, `Payment to ${p.supplier.name} in progress`), when: pay.executedAt ?? pay.createdAt, src: pay.executedRef ?? pay.docSource ?? t("Pago a proveedor", "Supplier payment") });
+    if (pay) {
+      const sent = pay.executions.find((e) => e.state === "SENT" || e.state === "UNCERTAIN");
+      facts.push({
+        key: `pay-${pay.id}`,
+        text: pay.executedAt ? t(`Pago a ${p.supplier.name} confirmado`, `Payment to ${p.supplier.name} confirmed`)
+          : sent ? (sent.state === "UNCERTAIN" ? t(`Pago a ${p.supplier.name}: ejecución incierta`, `Payment to ${p.supplier.name}: uncertain execution`) : t(`Pago a ${p.supplier.name} enviado al banco, sin confirmar`, `Payment to ${p.supplier.name} sent to bank, not confirmed`))
+          : pay.approvedAt ? t(`Pago a ${p.supplier.name} aprobado, no enviado`, `Payment to ${p.supplier.name} approved, not sent`)
+          : t(`Pago a ${p.supplier.name} solicitado`, `Payment to ${p.supplier.name} requested`),
+        when: pay.executedAt ?? sent?.sentAt ?? pay.approvedAt ?? pay.createdAt,
+        src: pay.executedRef ?? pay.docSource ?? t("Pago a proveedor", "Supplier payment"),
+        uncertain: !!sent,
+      });
+    }
   }
   if (deal.deliveries.length) facts.push({ key: "deliv", text: ordered ? t(`Entregadas ${delivered} de ${ordered} unidades`, `${delivered} of ${ordered} units delivered`) : t(`${deal.deliveries.length} entrega(s) registradas`, `${deal.deliveries.length} deliveries recorded`), when: lastDelivery, src: deal.deliveries[deal.deliveries.length - 1].code });
   for (const c of cash) {
@@ -247,7 +259,8 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
     add(p.receivedAt, t(`${p.code} llegó a bodega`, `${p.code} arrived at the warehouse`));
     for (const pay of p.payments) {
       add(pay.createdAt, t(`Se solicitó pago a ${p.supplier.name}`, `Payment to ${p.supplier.name} requested`));
-      add(pay.executedAt, t(`Pago a ${p.supplier.name} ejecutado`, `Payment to ${p.supplier.name} executed`));
+      add(pay.approvedAt, t(`Pago a ${p.supplier.name} aprobado (aún no pagado)`, `Payment to ${p.supplier.name} approved (not paid yet)`));
+      add(pay.executedAt, t(`Pago a ${p.supplier.name} confirmado`, `Payment to ${p.supplier.name} confirmed`));
     }
   }
   for (const d of deal.deliveries) add(d.createdAt, t(`Entrega ${d.code} registrada`, `Delivery ${d.code} recorded`), d.invoice ? undefined : t("Falta facturarla", "Needs invoicing"));

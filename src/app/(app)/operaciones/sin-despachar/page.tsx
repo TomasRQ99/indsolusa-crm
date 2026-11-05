@@ -22,7 +22,7 @@ export default async function UnshippedPage() {
         items: { include: { deliveryLines: { select: { qty: true } } } },
         deliveries: { select: { id: true } },
         invoices: { select: { amount: true } },
-        supplierPos: { include: { supplier: true, payments: true } },
+        supplierPos: { include: { supplier: true, payments: { include: { executions: true } } } },
       },
       orderBy: { promisedDate: { sort: "asc", nulls: "last" } },
     }),
@@ -46,18 +46,23 @@ export default async function UnshippedPage() {
       for (const po of d.supplierPos) {
         for (const p of po.payments) {
           const disc = bankDiscrepancies(po.supplier, p);
-          const st = paymentState({ ...p, discrepancies: disc.length });
-          if (st === "VERIFY" || st === "APPROVE" || st === "EXECUTE") {
+          const st = paymentState({ ...p, discrepancies: disc.length, executions: p.executions });
+          if (st !== "DONE") {
+            const stopped = st === "VERIFY" || st === "UNCERTAIN";
             cause = {
               key: "pay",
-              label: st === "VERIFY" ? t("Pago al proveedor bloqueado", "Supplier payment blocked") : t("Pago al proveedor en curso", "Supplier payment in progress"),
-              cls: st === "VERIFY" ? "risk" : "attn",
+              label: st === "VERIFY" ? t("Pago al proveedor bloqueado", "Supplier payment blocked") : st === "UNCERTAIN" ? t("Pago al proveedor incierto", "Supplier payment uncertain") : t("Pago al proveedor en curso", "Supplier payment in progress"),
+              cls: stopped ? "risk" : "attn",
               detail: st === "VERIFY"
                 ? t(`${disc.length} diferencias entre la instrucción y el perfil bancario verificado de ${po.supplier.name}.`, `${disc.length} differences between the instruction and ${po.supplier.name}'s verified bank profile.`)
+                : st === "UNCERTAIN" ? t(`No sabemos si el dinero llegó a ${po.supplier.name}; no se reintenta hasta conciliar.`, `We don't know whether the money reached ${po.supplier.name}; no retry until reconciled.`)
                 : t(`${po.supplier.name} despacha cuando reciba el pago.`, `${po.supplier.name} ships once paid.`),
               missing: st === "VERIFY"
                 ? [t("Verificación independiente por el teléfono registrado", "Independent verification via registered phone"), t("Aprobación de gerencia", "Management approval")]
-                : st === "APPROVE" ? [t("Aprobación de gerencia", "Management approval")] : [t("Ejecutar la transferencia aprobada", "Execute the approved transfer")],
+                : st === "APPROVE" ? [t("Aprobación de gerencia", "Management approval")]
+                : st === "EXECUTE" ? [t("Enviar la transferencia aprobada (aprobado no es pagado)", "Send the approved transfer (approved isn't paid)")]
+                : st === "SENT" ? [t("Confirmación del banco o del proveedor", "Confirmation from bank or supplier")]
+                : [t("Conciliar con el banco: confirmado o fallido", "Reconcile with the bank: confirmed or failed")],
               href: `/administracion/pagos-proveedores/${p.id}`,
               cta: t("Ir al pago", "Go to payment"),
               who: t("Tesorería", "Treasury"),

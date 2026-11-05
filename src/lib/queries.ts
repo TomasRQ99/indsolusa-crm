@@ -78,12 +78,14 @@ export const paymentInclude = {
   verifiedBy: { select: { id: true, name: true } },
   approvedBy: { select: { id: true, name: true } },
   executedBy: { select: { id: true, name: true } },
+  executions: { orderBy: { sentAt: "asc" } },
+  requirement: true,
 } satisfies Prisma.SupplierPaymentInclude;
 
 export async function loadSupplierPayments(where: Prisma.SupplierPaymentWhereInput = {}) {
   const rows = await db.supplierPayment.findMany({ where, include: paymentInclude, orderBy: { createdAt: "desc" } });
   return rows.map((p) => {
     const disc = bankDiscrepancies(p.supplierPo.supplier, p);
-    return { ...p, discrepancies: disc, state: paymentState({ ...p, discrepancies: disc.length }) };
+    return { ...p, discrepancies: disc, state: paymentState({ ...p, discrepancies: disc.length, executions: p.executions }) };
   });
 }

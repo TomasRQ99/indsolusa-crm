@@ -33,8 +33,10 @@ export function paymentStateLabel(i: I18n, s: PaymentState): { text: string; cls
   switch (s) {
     case "VERIFY": return { text: i.t("Requiere verificación independiente", "Needs independent verification"), cls: "risk" };
     case "APPROVE": return { text: i.t("Espera aprobación", "Awaiting approval"), cls: "attn" };
-    case "EXECUTE": return { text: i.t("Aprobado, por ejecutar", "Approved, to execute"), cls: "info" };
-    default: return { text: i.t("Pagado", "Paid"), cls: "ok" };
+    case "EXECUTE": return { text: i.t("Aprobado · no enviado", "Approved · not sent"), cls: "info" };
+    case "SENT": return { text: i.t("Enviado al banco · sin confirmar", "Sent to bank · not confirmed"), cls: "attn" };
+    case "UNCERTAIN": return { text: i.t("Ejecución incierta", "Uncertain execution"), cls: "risk" };
+    case "DONE": return { text: i.t("Pagado · confirmado", "Paid · confirmed"), cls: "ok" };
   }
 }
 
