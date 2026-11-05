@@ -1,106 +1,32 @@
-import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { canManageAll } from "@/lib/permissions";
-import { NavLinks, type NavSection } from "@/components/NavLinks";
-import { logout } from "../login/actions";
-import { setLanguage } from "./profile/actions";
+import { MODULES } from "@/lib/nav";
+import { shellAttention } from "@/lib/attention";
+import { ShellClient, type ShellModule } from "@/components/shell/ShellClient";
 
+// SOLU global shell: exactly 8 modules (MI DÍA … GERENCIA/INSIGHTS), universal search and
+// "Pregúntale a SOLU" always visible. Sections of a module are tabs inside the content.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  const { t, lang } = makeI18n(user.lang);
+  const i = makeI18n(user.lang);
+  const { t, es } = i;
   const manager = canManageAll(user);
-  const initials = user.name
-    .split(/\s+/)
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const { counters, alerts } = await shellAttention(user, i);
 
-  // Frozen global navigation: MI DÍA | MERCADO | COMERCIAL | OPERACIONES | ADMINISTRACIÓN | EQUIPO | GERENCIA
-  const sections: NavSection[] = [
-    {
-      label: t("Mi día", "My day"),
-      links: [
-        { href: "/mi-dia", label: t("Mi Día", "My Day") },
-        { href: "/mi-plan", label: t("Mi Plan", "My Plan") },
-        { href: "/tasks", label: t("Pendientes", "To-dos") },
-        { href: "/email", label: t("Correo", "Email") },
-      ],
-    },
-    {
-      label: t("Mercado", "Market"),
-      links: [
-        { href: "/accounts", label: t("Clientes", "Customers") },
-        { href: "/contacts", label: t("Contactos", "Contacts") },
-        { href: "/suppliers", label: t("Proveedores", "Suppliers") },
-      ],
-    },
-    {
-      label: t("Comercial", "Commercial"),
-      links: [{ href: "/deals", label: t("Journeys y negocios", "Journeys & deals") }],
-    },
-    {
-      label: t("Operaciones", "Operations"),
-      links: [
-        { href: "/operaciones/sin-despachar", label: t("Órdenes sin despachar", "Unshipped orders") },
-        { href: "/operaciones/remisiones", label: t("Remisiones", "Delivery notes") },
-        { href: "/operaciones/por-facturar", label: t("Entregado sin facturar", "Delivered, not invoiced") },
-      ],
-    },
-    {
-      label: t("Administración", "Administration"),
-      links: [
-        { href: "/administracion/cobrar", label: t("Cuentas por cobrar", "Receivables") },
-        { href: "/administracion/pagos-recibidos", label: t("Pagos recibidos", "Payments received") },
-        { href: "/administracion/pagos-proveedores", label: t("Pagos a proveedores", "Supplier payments") },
-        { href: "/administracion/pagos-exterior", label: t("Informe pagos al exterior", "Foreign payments report") },
-        { href: "/administracion/cupos", label: t("Cupos de crédito", "Credit limits") },
-      ],
-    },
-    {
-      label: t("Equipo", "Team"),
-      links: [
-        { href: "/profile", label: t("Mi perfil", "My profile") },
-        ...(user.role === "ADMIN" ? [{ href: "/admin/users", label: t("Usuarios y datos", "Users & data") }] : []),
-      ],
-    },
-    {
-      label: t("Gerencia", "Management"),
-      links: [
-        ...(manager ? [{ href: "/gerencia", label: t("Reporting", "Reporting") }] : []),
-        { href: "/gerencia/comisiones", label: t("Comisiones", "Commissions") },
-      ],
-    },
-  ];
+  const modules: ShellModule[] = MODULES.map((m) => {
+    const tabs = m.tabs
+      .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || user.role === "ADMIN"))
+      .map((tab) => ({ href: tab.href, label: es ? tab.es : tab.en }));
+    return { key: m.key, label: es ? m.es : m.en, href: tabs[0]?.href ?? m.match[0], match: m.match, tabs, counter: counters[m.key] };
+  });
+
+  const initials = user.name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+  const role = user.role === "ADMIN" ? t("Administración del sistema", "System admin") : user.role === "MANAGER" ? t("Gerencia", "Management") : t("Comercial", "Sales");
 
   return (
-    <>
-      <header className="topbar">
-        <Link href="/mi-dia" className="logo" style={{ textDecoration: "none" }}>
-          SOLU<small>Industry Solutions</small>
-        </Link>
-        <form className="search" action="/buscar">
-          <input name="q" type="search" placeholder={t("Buscar: cliente, Journey, OC, factura, proveedor…", "Search: customer, Journey, PO, invoice, supplier…")} aria-label={t("Buscar", "Search")} />
-        </form>
-        <div className="grow" />
-        <form action={setLanguage} className="lang" aria-label={t("Idioma", "Language")}>
-          <button type="submit" name="lang" value="ES" className={lang === "ES" ? "on" : undefined}>ES</button>
-          <button type="submit" name="lang" value="EN" className={lang === "EN" ? "on" : undefined}>EN</button>
-        </form>
-        <div className="me">
-          <Link href="/profile" className="avatar" title={user.name} style={{ textDecoration: "none" }}>{initials}</Link>
-          <form action={logout}>
-            <button className="link small" type="submit">{t("Salir", "Sign out")}</button>
-          </form>
-        </div>
-      </header>
-      <div className="shell">
-        <aside className="sidebar">
-          <NavLinks sections={sections} />
-        </aside>
-        <main className="content">{children}</main>
-      </div>
-    </>
+    <ShellClient lang={user.lang} user={{ name: user.name, role, initials }} modules={modules} alerts={alerts}>
+      {children}
+    </ShellClient>
   );
 }
