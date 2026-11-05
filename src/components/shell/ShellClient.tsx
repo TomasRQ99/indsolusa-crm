@@ -137,7 +137,7 @@ export function ShellClient({ lang, user, modules, alerts, children }: ShellProp
           <IconMenu />
         </button>
         <Link href="/mi-dia" className="wordmark">
-          SOLU<small>Industry Solutions</small>
+          SOLU USA<small>Industry Solutions</small>
         </Link>
         {current && <span className="cur-module">{current.label}</span>}
 
@@ -224,7 +224,7 @@ export function ShellClient({ lang, user, modules, alerts, children }: ShellProp
         <div className="scrim" onClick={() => setDrawer(false)}>
           <div className="drawer" role="dialog" aria-modal="true" aria-label={t("Menú", "Menu")} onClick={(e) => e.stopPropagation()}>
             <div className="drawer-head">
-              <span className="wordmark">SOLU<small>Industry Solutions</small></span>
+              <span className="wordmark">SOLU USA<small>Industry Solutions</small></span>
               <button type="button" className="ibtn" onClick={() => setDrawer(false)} aria-label={t("Cerrar", "Close")}><IconClose /></button>
             </div>
             <nav>{navList(true)}</nav>

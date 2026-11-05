@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import PDFDocument from "pdfkit";
 import { addDays, daysBetween } from "./domain";
 
@@ -116,9 +118,13 @@ export async function renderDoc(doc: QuoteDoc | InvoiceDoc): Promise<Buffer> {
   const width = right - left;
   const font = (b = false) => pdf.font(b ? "Helvetica-Bold" : "Helvetica");
 
-  // ---- Issuer (logo position: top-left; no vector logo yet → wordmark) ----
-  font(true).fontSize(17).fillColor(BRAND).text("INDUSTRY SOLUTIONS", left, 48, { lineBreak: false });
-  font(false).fontSize(8.5).fillColor(MUTED).text("USA LLC", left, 68);
+  // ---- Issuer: company logo top-left (falls back to the wordmark if the file is missing) ----
+  const logo = path.join(process.cwd(), "public", "brand", "industry-solutions.png");
+  if (fs.existsSync(logo)) pdf.image(logo, left, 36, { fit: [150, 46] });
+  else {
+    font(true).fontSize(17).fillColor(BRAND).text("INDUSTRY SOLUTIONS", left, 48, { lineBreak: false });
+    font(false).fontSize(8.5).fillColor(MUTED).text("USA LLC", left, 68);
+  }
   font(true).fontSize(9).fillColor(INK).text(ISSUER.name, left, 86);
   font(false).fontSize(9).fillColor(INK);
   ISSUER.lines.forEach((l, n) => pdf.text(l, left, 98 + n * 11.5));

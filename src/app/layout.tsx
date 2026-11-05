@@ -10,7 +10,7 @@ const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], 
 
 export const metadata: Metadata = {
   title: APP_NAME,
-  description: "SOLU · Industry Solutions",
+  description: "SOLU USA · Industry Solutions",
   // SOLU translates itself with the ES | EN switch; the browser's own translator would garble it.
   other: { google: "notranslate" },
 };
