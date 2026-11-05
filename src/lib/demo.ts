@@ -243,8 +243,8 @@ export async function loadDemo(adminId: string) {
         needSpecs: "2 × Variador Siemens SINAMICS G120C 7,5 kW (6SL3210-1KE21-7UF1), igual al instalado",
         neededBy: d(7), impactIfNot: "La línea 2 parada detiene el 30 % de la producción de mezclas",
         incoterm: "DAP Planta Funza", paymentTerms: "Net 30", quoteSentAt: d(-3), offerValidUntil: d(12), closeDate: friday,
-        promiseText: "Variadores en planta Funza 7 días después de la OC",
-        nextMove: "Presentar Rev. 2 antes del comité", nextMoveDate: T,
+        promiseText: "Variadores en planta Funza 14 días después de la OC",
+        nextMove: "Resolver la fecha de la PO ABC-PO-7902 antes de aceptarla", nextMoveDate: T,
       });
       await tx.dealItem.create({ data: { dealId: vfd.id, qty: 2, code: "6SL3210-1KE21-7UF1", description: "Variador Siemens SINAMICS G120C 7,5 kW, 3AC 380-480 V", unitPrice: 4650 } });
       const vfdNo = await nextDocNumber(tx);
@@ -253,28 +253,28 @@ export async function loadDemo(adminId: string) {
         solution: "La línea 2 de mezclado vuelve a operar con 2 variadores idénticos al instalado: se cambian sin reprogramar la mezcladora.",
         supplyPrimary: "Distribuidor Siemens Miami · 2 unidades en stock (6SL3210-1KE21-7UF1)",
         supplyAlt: "Distribuidor Industrial A · G120C equivalente, 4 días más y requiere ajustar parámetros",
-        promiseText: "Variadores en planta Funza 7 días después de la OC",
+        promiseText: "Variadores en planta Funza 14 días después de la OC",
         promiseCondition: "Si la OC llega a más tardar el lunes, mientras se sostiene el precio y el stock de Siemens Miami",
         supplierSrc: "Proforma SIE-4520 · Siemens Miami", freightSrc: "Cotización DHL", otherSrc: "Seguro y manejo en aduana (agente DHL)",
-        incoterm: "DAP Planta Funza", paymentTerms: "Net 30", validityDays: 15, leadMinDays: 5, leadMaxDays: 7,
+        incoterm: "DAP Planta Funza", paymentTerms: "Net 30", validityDays: 15, leadMinDays: 12, leadMaxDays: 14,
         decisionLabel: "Comité de compras", decisionAt: friday,
         decisionPath: "Juan Pérez (Mantenimiento) pide · Ana Torres (Producción) recomienda · Compras emite la OC",
         decisionEvidence: "WhatsApp de Juan Pérez: «el comité se reúne el viernes y Ana lo lleva»",
         supplierValidUntil: monday, promiseDecideBy: monday,
       };
       const vfdLine = (unitPrice: number) => ({ create: [{ position: 0, qty: 2, code: "6SL3210-1KE21-7UF1", description: "Variador Siemens SINAMICS G120C 7,5 kW, 3AC 380-480 V", unitPrice }] });
-      await tx.quote.create({ data: { ...vfdBase, rev: 0, status: "SUPERSEDED", createdAt: d(-6), issuedAt: d(-6), presentedAt: d(-6), supplierCost: 6300, freightCost: 380, otherCosts: 150, protSale: 9800, protCost: 6830, protEsagra: 2970, protPolicy: 1, leadMinDays: 3, leadMaxDays: 4, lines: vfdLine(4900) } });
-      await tx.quote.create({ data: { ...vfdBase, rev: 1, status: "PRESENTED", createdAt: d(-3), issuedAt: d(-3), presentedAt: d(-3), supplierCost: 6300, freightCost: 220, otherCosts: 150, protSale: 9400, protCost: 6670, protEsagra: 2730, protPolicy: 1, changeNote: "Juan pidió bajar el precio: flete aéreo directo → consolidado (USD 160 menos, 2 días más)", lines: vfdLine(4700) } });
+      await tx.quote.create({ data: { ...vfdBase, rev: 0, status: "SUPERSEDED", createdAt: d(-6), issuedAt: d(-6), presentedAt: d(-6), supplierCost: 6300, freightCost: 380, otherCosts: 150, protSale: 9800, protCost: 6830, protEsagra: 2970, protPolicy: 1, leadMinDays: 6, leadMaxDays: 8, lines: vfdLine(4900) } });
+      await tx.quote.create({ data: { ...vfdBase, rev: 1, status: "SUPERSEDED", createdAt: d(-3), issuedAt: d(-3), presentedAt: d(-3), supplierCost: 6300, freightCost: 220, otherCosts: 150, protSale: 9400, protCost: 6670, protEsagra: 2730, protPolicy: 1, changeNote: "Juan pidió bajar el precio: flete aéreo directo → consolidado (USD 160 menos, 2 días más)", lines: vfdLine(4700) } });
       await tx.quote.create({
         data: {
-          ...vfdBase, rev: 2, status: "DRAFT", createdAt: d(0), supplierCost: 6180, freightCost: 220, otherCosts: 150,
+          ...vfdBase, rev: 2, status: "PRESENTED", createdAt: d(-2), issuedAt: d(-2), presentedAt: d(-2), decisionAt: d(0), supplierCost: 6180, freightCost: 220, otherCosts: 150, protSale: 9300, protCost: 6550, protEsagra: 2750, protPolicy: 1,
           changeNote: "Siemens Miami bajó USD 60 por unidad (proforma SIE-4520 del 4 nov); se traslada al precio para el comité",
           lines: vfdLine(4650),
           scenarios: {
             create: [
-              { position: 0, label: "Más rápido · aéreo directo", price: 9700, cost: 6710, leadMinDays: 3, leadMaxDays: 4, risk: "Bajo", promise: "En planta 4 días después de la OC" },
-              { position: 1, label: "Recomendado · consolidado", price: 9300, cost: 6550, leadMinDays: 5, leadMaxDays: 7, risk: "Bajo: stock confirmado por Siemens Miami", promise: "En planta 7 días después de la OC", recommended: true, why: "El comité decide el viernes, así que el aéreo no adelanta una OC que todavía no existe: consolidado llega en una fecha útil igual y cuesta USD 400 menos." },
-              { position: 2, label: "Más económico · equivalente", price: 8600, cost: 6270, leadMinDays: 9, leadMaxDays: 11, risk: "Medio: hay que ajustar parámetros en la mezcladora", promise: "En planta 11 días después de la OC" },
+              { position: 0, label: "Más rápido · aéreo directo", price: 9700, cost: 6710, leadMinDays: 6, leadMaxDays: 8, risk: "Bajo: Siemens Miami despacha aéreo el mismo día", promise: "En planta 8 días después de la OC" },
+              { position: 1, label: "Recomendado · consolidado", price: 9300, cost: 6550, leadMinDays: 12, leadMaxDays: 14, risk: "Bajo: stock confirmado por Siemens Miami", promise: "En planta 14 días después de la OC", recommended: true, why: "Consolidado cubre la necesidad con USD 400 menos; el aéreo queda de respaldo si el cliente exige una fecha anterior." },
+              { position: 2, label: "Más económico · equivalente", price: 8600, cost: 6270, leadMinDays: 18, leadMaxDays: 21, risk: "Medio: hay que ajustar parámetros en la mezcladora", promise: "En planta 21 días después de la OC" },
             ],
           },
         },
@@ -285,6 +285,30 @@ export async function loadDemo(adminId: string) {
           { type: "NOTE", subject: "Juan pidió mejor precio; aceptaría 2 días más de entrega", occurredAt: ago(4, 10), userId: adminId, accountId: abc.id, contactId: juan.id, dealId: vfd.id, phase: "quote", source: "WhatsApp de Juan Pérez" },
           { type: "EMAIL", subject: `Cotización ${vfdNo} Rev. 1 presentada`, occurredAt: ago(3, 11), userId: adminId, accountId: abc.id, contactId: juan.id, dealId: vfd.id, phase: "quote", source: "Correo a Juan Pérez" },
         ],
+      });
+
+      // ABC's PO arrives today answering Quote v3, but it demands delivery 6 days before what the quote protects.
+      const v3 = await tx.quote.findFirstOrThrow({ where: { number: vfdNo, rev: 2 } });
+      await tx.customerPO.create({
+        data: {
+          dealId: vfd.id, quoteId: v3.id, number: "ABC-PO-7902", receivedAt: T, requiredBy: d(8),
+          incoterm: "DAP Planta Funza", paymentTerms: "Net 30", shipTo: "Planta Funza, Cundinamarca", quoteRef: `Cotización ${vfdNo} Rev. 2`,
+          source: "PDF adjunto · correo de Compras ABC Foods", createdById: adminId, createdByName: "IndSolUSA Sales",
+          lines: { create: [{ position: 0, qty: 2, code: "6SL3210-1KE21-7UF1", description: "VARIADOR DE FRECUENCIA SIEMENS G120C 7.5KW", unitPrice: 4650 }] },
+        },
+      });
+      await tx.activity.create({ data: { type: "EMAIL", subject: "PO ABC-PO-7902 recibida · por comparar con cotización", occurredAt: ago(0, 9), userId: adminId, accountId: abc.id, contactId: juan.id, dealId: vfd.id, phase: "quote", source: "Correo de Compras ABC Foods" } });
+
+      // Papeles del Sur: a quote still in preparation, with one item blocking "Ready to Present".
+      await tx.deal.update({ where: { id: dos.id }, data: { desiredResult: "Dosificación estable de químicos en la máquina 2", supplierCost: 10200, freightCost: 450 } });
+      await tx.quote.create({
+        data: {
+          dealId: dos.id, number: await nextDocNumber(tx), lang: "ES", createdById: adminId, status: "DRAFT",
+          billTo: "Papeles del Sur", shipTo: "Papeles del Sur", solution: "Dosificación estable en la máquina 2 con bombas de diafragma y control por señal 4–20 mA.",
+          supplyPrimary: "Distribuidor Industrial A", promiseText: "Bombas instaladas antes del comité del mes", promiseCondition: "Si la OC llega en los próximos 10 días",
+          supplierCost: 10200, freightCost: 450, freightSrc: "Cotización DHL", leadMinDays: 15, leadMaxDays: 20, incoterm: "DAP Cali", paymentTerms: "Net 30",
+          lines: { create: [{ position: 0, qty: 3, code: "DDA-30", description: "Bomba dosificadora de diafragma 30 l/h", unitPrice: 4800 }] },
+        },
       });
 
       // Química Andina: quote presented, the customer depends on its 2027 budget → Waiting with Control, no action today.

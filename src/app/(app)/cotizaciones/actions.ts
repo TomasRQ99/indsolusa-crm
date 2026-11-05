@@ -259,20 +259,8 @@ export async function createRevision(id: string) {
   back(nq.id, "ok=revision");
 }
 
-/** The customer accepted: records their PO on the Journey (an invoice needs it). */
-export async function markAccepted(id: string, fd: FormData) {
-  const { user, q } = await editableQuote(id);
-  if (q.status !== "PRESENTED") back(id, "err=estado");
-  const po = txt(fd, "customerPo", 80);
-  if (!po) back(id, "err=sin-oc");
-  const on = dayOf(fd.get("acceptedOn")) ?? today();
-  await db.$transaction(async (tx) => {
-    await tx.quote.update({ where: { id }, data: { status: "ACCEPTED", decidedAt: on } });
-    await tx.deal.update({ where: { id: q.dealId }, data: { customerPo: po, poAcceptedAt: on, stage: "WON", waitingFor: null, waitingUntil: null } });
-    await tx.activity.create({ data: { type: "NOTE", subject: `Cotización ${quoteNo(q)} aceptada · OC ${po}`, userId: user.id, accountId: q.deal.accountId, dealId: q.dealId, phase: "quote", source: txt(fd, "source", 200) ?? "OC del cliente", occurredAt: on } });
-  });
-  back(id, "ok=aceptada");
-}
+// Accepting a customer's PO is not done here: it is the "Accept PO" command (po/actions.ts),
+// which first compares the PO with this quote.
 
 export async function markDeclined(id: string, fd: FormData) {
   const { user, q } = await editableQuote(id);

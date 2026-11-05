@@ -46,41 +46,41 @@ enum CommissionHalf {
 
 // Users are deactivated, never deleted, so ownership history stays intact.
 model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  name           String
-  passwordHash   String
-  role           Role     @default(REP)
-  active         Boolean  @default(true)
-  lang           Lang     @default(ES)
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  name               String
+  passwordHash       String
+  role               Role      @default(REP)
+  active             Boolean   @default(true)
+  lang               Lang      @default(ES)
   // Length of a normal working day, used by Mi Plan to size capacity.
-  workdayMinutes Int      @default(570)
+  workdayMinutes     Int       @default(570)
   // Outlook calendar of the person's own mailbox (login email), read and written via Microsoft Graph.
   outlookConnectedAt DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   accounts   Account[]
   deals      Deal[]
   tasks      Task[]
   activities Activity[]
 
-  paymentsRequested SupplierPayment[] @relation("PaymentRequester")
-  paymentsVerified  SupplierPayment[] @relation("PaymentVerifier")
-  paymentsApproved  SupplierPayment[] @relation("PaymentApprover")
-  paymentsExecuted  SupplierPayment[] @relation("PaymentExecutor")
-  invoicesIssued    Invoice[]
-  promisesRecorded  PaymentPromise[]
-  cashRecorded      CustomerPayment[] @relation("CashRecorder")
-  cashReconciled    CustomerPayment[] @relation("CashReconciler")
-  commissionsEarned CommissionEntry[] @relation("CommissionOwner")
+  paymentsRequested   SupplierPayment[] @relation("PaymentRequester")
+  paymentsVerified    SupplierPayment[] @relation("PaymentVerifier")
+  paymentsApproved    SupplierPayment[] @relation("PaymentApprover")
+  paymentsExecuted    SupplierPayment[] @relation("PaymentExecutor")
+  invoicesIssued      Invoice[]
+  promisesRecorded    PaymentPromise[]
+  cashRecorded        CustomerPayment[] @relation("CashRecorder")
+  cashReconciled      CustomerPayment[] @relation("CashReconciler")
+  commissionsEarned   CommissionEntry[] @relation("CommissionOwner")
   commissionsApproved CommissionEntry[] @relation("CommissionApprover")
-  creditExceptions  Deal[]            @relation("CreditException")
-  suppliersVerified Supplier[]
-  journeyViews      JourneyView[]
-  commMessages      CommMessage[]
-  commDecisions     CommItem[]
-  quotesCreated     Quote[]
+  creditExceptions    Deal[]            @relation("CreditException")
+  suppliersVerified   Supplier[]
+  journeyViews        JourneyView[]
+  commMessages        CommMessage[]
+  commDecisions       CommItem[]
+  quotesCreated       Quote[]
 }
 
 model Account {
@@ -158,39 +158,40 @@ model Deal {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  desiredResult    String?
-  customerPo       String?
-  poAcceptedAt     DateTime?
-  promisedDate     DateTime?
-  promiseText      String?
-  supplierCost     Decimal   @default(0) @db.Decimal(14, 2)
-  freightCost      Decimal   @default(0) @db.Decimal(14, 2)
-  otherCosts       Decimal   @default(0) @db.Decimal(14, 2)
-  nextMove         String?
-  nextMoveDate     DateTime?
-  waitingFor       String?
-  waitingUntil     DateTime?
-  resultAchievedAt DateTime?
-  offerValidUntil  DateTime?
+  desiredResult       String?
+  customerPo          String?
+  poAcceptedAt        DateTime?
+  promisedDate        DateTime?
+  promiseText         String?
+  supplierCost        Decimal   @default(0) @db.Decimal(14, 2)
+  freightCost         Decimal   @default(0) @db.Decimal(14, 2)
+  otherCosts          Decimal   @default(0) @db.Decimal(14, 2)
+  nextMove            String?
+  nextMoveDate        DateTime?
+  waitingFor          String?
+  waitingUntil        DateTime?
+  resultAchievedAt    DateTime?
+  offerValidUntil     DateTime?
   creditExceptionById String?
   creditExceptionBy   User?     @relation("CreditException", fields: [creditExceptionById], references: [id])
   creditExceptionAt   DateTime?
   creditExceptionNote String?
   // Journey Workspace: what is needed, how it is measured and what it costs not to solve it.
-  needSpecs        String?
-  neededBy         DateTime?
-  successMeasure   String?
-  impactIfNot      String?
-  sourcingNote     String?
-  incoterm         String?
-  paymentTerms     String?
-  quoteSentAt      DateTime?
-  resultNote       String?
+  needSpecs           String?
+  neededBy            DateTime?
+  successMeasure      String?
+  impactIfNot         String?
+  sourcingNote        String?
+  incoterm            String?
+  paymentTerms        String?
+  quoteSentAt         DateTime?
+  resultNote          String?
 
   tasks       Task[]
   views       JourneyView[]
   threads     CommThread[]
   quotes      Quote[]
+  customerPos CustomerPO[]
   activities  Activity[]
   items       DealItem[]
   supplierPos SupplierPO[]
@@ -277,47 +278,47 @@ model Activity {
 // ---------- Suppliers and purchasing ----------
 
 model Supplier {
-  id            String    @id @default(cuid())
-  name          String
-  country       String?
-  currency      String    @default("USD")
-  email         String?
+  id               String    @id @default(cuid())
+  name             String
+  country          String?
+  currency         String    @default("USD")
+  email            String?
   // Phone registered when the supplier was onboarded; used for independent verification.
-  phone         String?
+  phone            String?
   // Verified bank profile. Only changed through an independent verification.
-  bankBeneficiary String?
-  bankName        String?
-  bankAccount     String?
-  bankSwift       String?
-  bankVerifiedAt  DateTime?
+  bankBeneficiary  String?
+  bankName         String?
+  bankAccount      String?
+  bankSwift        String?
+  bankVerifiedAt   DateTime?
   bankVerifiedById String?
-  bankVerifiedBy  User?     @relation(fields: [bankVerifiedById], references: [id])
-  isDemo        Boolean   @default(false)
-  createdAt     DateTime  @default(now())
+  bankVerifiedBy   User?     @relation(fields: [bankVerifiedById], references: [id])
+  isDemo           Boolean   @default(false)
+  createdAt        DateTime  @default(now())
 
   pos SupplierPO[]
 }
 
 model SupplierPO {
-  id          String    @id @default(cuid())
-  code        String    @unique
-  dealId      String
-  deal        Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  supplierId  String
-  supplier    Supplier  @relation(fields: [supplierId], references: [id])
-  amount      Decimal   @db.Decimal(14, 2)
-  currency    String    @default("USD")
-  confirmedAt DateTime?
-  shippedAt   DateTime?
-  eta         DateTime?
-  receivedAt  DateTime?
+  id               String    @id @default(cuid())
+  code             String    @unique
+  dealId           String
+  deal             Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  supplierId       String
+  supplier         Supplier  @relation(fields: [supplierId], references: [id])
+  amount           Decimal   @db.Decimal(14, 2)
+  currency         String    @default("USD")
+  confirmedAt      DateTime?
+  shippedAt        DateTime?
+  eta              DateTime?
+  receivedAt       DateTime?
   // Carrier's own ETA (a separate truth from SOLU's expected date and the customer promise).
   carrierName      String?
   tracking         String?
   carrierEta       DateTime?
   carrierEtaAt     DateTime?
   carrierEtaSource String?
-  createdAt   DateTime  @default(now())
+  createdAt        DateTime  @default(now())
 
   payments SupplierPayment[]
 
@@ -325,34 +326,34 @@ model SupplierPO {
 }
 
 model SupplierPayment {
-  id            String     @id @default(cuid())
-  supplierPoId  String
-  supplierPo    SupplierPO @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
-  amount        Decimal    @db.Decimal(14, 2)
-  currency      String     @default("USD")
-  amountUsd     Decimal?   @db.Decimal(14, 2)
-  reason        String
-  dueBy         DateTime?
+  id               String     @id @default(cuid())
+  supplierPoId     String
+  supplierPo       SupplierPO @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
+  amount           Decimal    @db.Decimal(14, 2)
+  currency         String     @default("USD")
+  amountUsd        Decimal?   @db.Decimal(14, 2)
+  reason           String
+  dueBy            DateTime?
   // Bank data as it appears on the supplier's proforma / invoice / instruction.
-  docBeneficiary String?
-  docBankName    String?
-  docAccount     String?
-  docSwift       String?
-  docSource      String?
-  requestedById String
-  requestedBy   User       @relation("PaymentRequester", fields: [requestedById], references: [id])
-  verifiedById  String?
-  verifiedBy    User?      @relation("PaymentVerifier", fields: [verifiedById], references: [id])
-  verifiedAt    DateTime?
+  docBeneficiary   String?
+  docBankName      String?
+  docAccount       String?
+  docSwift         String?
+  docSource        String?
+  requestedById    String
+  requestedBy      User       @relation("PaymentRequester", fields: [requestedById], references: [id])
+  verifiedById     String?
+  verifiedBy       User?      @relation("PaymentVerifier", fields: [verifiedById], references: [id])
+  verifiedAt       DateTime?
   verificationNote String?
-  approvedById  String?
-  approvedBy    User?      @relation("PaymentApprover", fields: [approvedById], references: [id])
-  approvedAt    DateTime?
-  executedById  String?
-  executedBy    User?      @relation("PaymentExecutor", fields: [executedById], references: [id])
-  executedAt    DateTime?
-  executedRef   String?
-  createdAt     DateTime   @default(now())
+  approvedById     String?
+  approvedBy       User?      @relation("PaymentApprover", fields: [approvedById], references: [id])
+  approvedAt       DateTime?
+  executedById     String?
+  executedBy       User?      @relation("PaymentExecutor", fields: [executedById], references: [id])
+  executedAt       DateTime?
+  executedRef      String?
+  createdAt        DateTime   @default(now())
 
   @@index([supplierPoId])
 }
@@ -360,18 +361,18 @@ model SupplierPayment {
 // ---------- Delivery, invoicing and cash ----------
 
 model Delivery {
-  id             String    @id @default(cuid())
-  code           String    @unique
+  id             String   @id @default(cuid())
+  code           String   @unique
   dealId         String
-  deal           Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  deal           Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
   deliveredAt    DateTime
   place          String?
   deliveredBy    String?
   receivedByName String?
-  podReceived    Boolean   @default(false)
+  podReceived    Boolean  @default(false)
   receptionCode  String?
   notes          String?
-  createdAt      DateTime  @default(now())
+  createdAt      DateTime @default(now())
 
   lines   DeliveryLine[]
   invoice Invoice?
@@ -417,8 +418,8 @@ model Invoice {
   promises     PaymentPromise[]
   commissions  CommissionEntry[]
   quoteId      String?
-  quote        Quote?    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
-  docLang      Lang      @default(EN)
+  quote        Quote?               @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  docLang      Lang                 @default(EN)
 
   @@index([accountId])
   @@index([dueAt])
@@ -592,6 +593,7 @@ model CommItem {
 
   @@index([threadId])
 }
+
 // ---------- Quotes ----------
 // A Quote is the solution that protects a customer result. Drafts are internal; presenting
 // freezes the version and protects its economics. Any later change is "Rev. N" with the same number.
@@ -620,48 +622,49 @@ model Quote {
   decidedAt   DateTime?
 
   // The solution
-  solution        String?
-  supplyPrimary   String?
-  supplyAlt       String?
-  promiseText     String?
-  promiseCondition String?
+  solution           String?
+  supplyPrimary      String?
+  supplyAlt          String?
+  promiseText        String?
+  promiseCondition   String?
   // Landed cost (current version), each component with its source
-  costCurrency    String   @default("USD")
-  fxRate          Decimal? @db.Decimal(14, 6)
-  fxSource        String?
-  supplierCost    Decimal  @default(0) @db.Decimal(14, 2)
-  supplierSrc     String?
-  freightCost     Decimal  @default(0) @db.Decimal(14, 2)
-  freightSrc      String?
-  otherCosts      Decimal  @default(0) @db.Decimal(14, 2)
-  otherSrc        String?
-  changeNote      String?
+  costCurrency       String    @default("USD")
+  fxRate             Decimal?  @db.Decimal(14, 6)
+  fxSource           String?
+  supplierCost       Decimal   @default(0) @db.Decimal(14, 2)
+  supplierSrc        String?
+  freightCost        Decimal   @default(0) @db.Decimal(14, 2)
+  freightSrc         String?
+  otherCosts         Decimal   @default(0) @db.Decimal(14, 2)
+  otherSrc           String?
+  changeNote         String?
   // Protected economics: fixed when presented, never changed afterwards
-  protSale        Decimal? @db.Decimal(14, 2)
-  protCost        Decimal? @db.Decimal(14, 2)
-  protEsagra      Decimal? @db.Decimal(14, 2)
-  protPolicy      Int?
+  protSale           Decimal?  @db.Decimal(14, 2)
+  protCost           Decimal?  @db.Decimal(14, 2)
+  protEsagra         Decimal?  @db.Decimal(14, 2)
+  protPolicy         Int?
   // Terms printed on the document
-  billTo          String?
-  shipTo          String?
-  leadMinDays     Int?
-  leadMaxDays     Int?
-  incoterm        String?
-  paymentTerms    String?
-  validityDays    Int      @default(30)
-  condition       String   @default("New & original")
+  billTo             String?
+  shipTo             String?
+  leadMinDays        Int?
+  leadMaxDays        Int?
+  incoterm           String?
+  paymentTerms       String?
+  validityDays       Int       @default(30)
+  condition          String    @default("New & original")
   // Customer decision future
   supplierValidUntil DateTime?
-  supplyConfirmed Boolean  @default(false)
-  decisionAt      DateTime?
-  decisionLabel   String?
-  decisionPath    String?
-  decisionEvidence String?
-  promiseDecideBy DateTime?
+  supplyConfirmed    Boolean   @default(false)
+  decisionAt         DateTime?
+  decisionLabel      String?
+  decisionPath       String?
+  decisionEvidence   String?
+  promiseDecideBy    DateTime?
 
-  lines     QuoteLine[]
-  scenarios QuoteScenario[]
-  invoices  Invoice[]
+  lines       QuoteLine[]
+  scenarios   QuoteScenario[]
+  invoices    Invoice[]
+  customerPos CustomerPO[]
 
   @@unique([number, rev])
   @@index([dealId])
@@ -679,17 +682,108 @@ model QuoteLine {
 }
 
 model QuoteScenario {
-  id           String  @id @default(cuid())
-  quoteId      String
-  quote        Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  position     Int     @default(0)
-  label        String
-  price        Decimal @db.Decimal(14, 2)
-  cost         Decimal @db.Decimal(14, 2)
-  leadMinDays  Int
-  leadMaxDays  Int
-  risk         String
-  promise      String
-  recommended  Boolean @default(false)
-  why          String?
+  id          String  @id @default(cuid())
+  quoteId     String
+  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  position    Int     @default(0)
+  label       String
+  price       Decimal @db.Decimal(14, 2)
+  cost        Decimal @db.Decimal(14, 2)
+  leadMinDays Int
+  leadMaxDays Int
+  risk        String
+  promise     String
+  recommended Boolean @default(false)
+  why         String?
+}
+
+// ---------- Customer PO received ----------
+// A PO is compared with the quote it answers before anything is promised.
+// Accepting it is a Command (PoAcceptance, immutable, with its preconditions and effects), never a status edit.
+
+enum ResolutionOption {
+  AMEND_DATE
+  EXPEDITE_ABSORB
+  EXPEDITE_CHARGE
+}
+
+enum ResolutionState {
+  REQUESTED
+  CONFIRMED
+  WITHDRAWN
+}
+
+model CustomerPO {
+  id             String    @id @default(cuid())
+  dealId         String
+  deal           Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  quoteId        String?
+  quote          Quote?    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  number         String
+  receivedAt     DateTime
+  requiredBy     DateTime?
+  incoterm       String?
+  paymentTerms   String?
+  shipTo         String?
+  currency       String    @default("USD")
+  quoteRef       String?
+  source         String?
+  createdById    String
+  createdByName  String
+  createdAt      DateTime  @default(now())
+  rejectedAt     DateTime?
+  rejectedByName String?
+  rejectReason   String?
+
+  lines       CustomerPOLine[]
+  resolutions PoResolution[]
+  acceptance  PoAcceptance?
+
+  @@index([dealId])
+}
+
+model CustomerPOLine {
+  id          String     @id @default(cuid())
+  poId        String
+  po          CustomerPO @relation(fields: [poId], references: [id], onDelete: Cascade)
+  position    Int        @default(0)
+  qty         Int
+  code        String?
+  description String
+  unitPrice   Decimal    @db.Decimal(14, 2)
+}
+
+model PoResolution {
+  id              String           @id @default(cuid())
+  poId            String
+  po              CustomerPO       @relation(fields: [poId], references: [id], onDelete: Cascade)
+  field           String
+  option          ResolutionOption
+  state           ResolutionState  @default(REQUESTED)
+  promiseDate     DateTime
+  costDelta       Decimal          @default(0) @db.Decimal(14, 2)
+  priceDelta      Decimal          @default(0) @db.Decimal(14, 2)
+  scenarioLabel   String?
+  message         String?
+  evidence        String?
+  chosenById      String
+  chosenByName    String
+  chosenAt        DateTime         @default(now())
+  confirmedByName String?
+  confirmedAt     DateTime?
+
+  @@index([poId])
+}
+
+model PoAcceptance {
+  id             String     @id @default(cuid())
+  poId           String     @unique
+  po             CustomerPO @relation(fields: [poId], references: [id], onDelete: Cascade)
+  acceptedById   String
+  acceptedByName String
+  acceptedAt     DateTime   @default(now())
+  promiseDate    DateTime
+  resolutionId   String?
+  // What was true when the command ran: comparison, preconditions and effects.
+  snapshot       Json
 }

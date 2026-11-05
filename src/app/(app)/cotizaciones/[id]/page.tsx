@@ -8,9 +8,10 @@ import { addDays, dayInput, daysBetween } from "@/lib/domain";
 import { buildQuote, policyFloor, quoteInclude, quoteNo, saleOf } from "@/lib/quote";
 import { Popovers } from "@/components/Popovers";
 import {
-  createRevision, markAccepted, markDeclined, presentQuote, recommendScenario, removeLine, removeScenario,
+  createRevision, markDeclined, presentQuote, recommendScenario, removeLine, removeScenario,
   saveCosts, saveLine, saveScenario, saveSolution, saveTerms, waitWithControl,
 } from "../actions";
+import { registerPo } from "../../po/actions";
 
 export default async function QuotePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; cmp?: string }> }) {
   const user = await requireUser();
@@ -29,6 +30,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const latest = siblings[siblings.length - 1];
   const todayStr = dayInput(B.now);
   const contact = d.contact ? `${d.contact.firstName} ${d.contact.lastName}` : null;
+  const pos = await db.customerPO.findMany({ where: { quoteId: q.id }, orderBy: { receivedAt: "desc" }, select: { id: true, number: true, receivedAt: true, rejectedAt: true, acceptance: { select: { id: true } } } });
   const dealInvoices = await db.invoice.findMany({ where: { dealId: d.id }, orderBy: { issuedAt: "asc" }, select: { id: true, number: true, amount: true, issuedAt: true } });
 
   const statusSig = {
@@ -509,12 +511,21 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
           <div>
             <div className="jbh"><b>{t("EL CLIENTE RESPONDIÓ", "THE CUSTOMER ANSWERED")}</b></div>
             <div className="qa-bar" style={{ borderTop: 0, paddingTop: 0 }}>
-              <QA label={t("✓ Aceptó · registrar OC", "✓ Accepted · record PO")} wide>
-                <form action={markAccepted.bind(null, q.id)} className="qa-form">
-                  <label>{t("Número de OC del cliente", "Customer PO number")}<input name="customerPo" required maxLength={80} /></label>
-                  <label>{t("Fecha", "Date")}<input name="acceptedOn" type="date" defaultValue={todayStr} /></label>
-                  <label>{t("Fuente", "Source")}<input name="source" maxLength={200} placeholder={t("Ej.: correo de compras", "E.g.: purchasing email")} /></label>
-                  <button type="submit">{t("Registrar aceptación", "Record acceptance")}</button>
+              <QA label={t("Llegó la PO · registrarla", "PO arrived · record it")} wide>
+                <form action={registerPo.bind(null, q.id)} className="qa-form">
+                  <b>{t("Tal como viene en la PO del cliente", "Exactly as on the customer's PO")}</b>
+                  <div className="qa-row"><label>{t("Número de PO", "PO number")}<input name="number" required maxLength={80} /></label><label>{t("Recibida", "Received")}<input name="receivedAt" type="date" defaultValue={todayStr} /></label></div>
+                  <label>{t("Fecha de entrega que exige", "Delivery date it demands")}<input name="requiredBy" type="date" /></label>
+                  {q.lines.map((l, n) => (
+                    <div key={l.id} className="qa-row">
+                      <label style={{ flex: "0 0 64px" }}>{t("Cant.", "Qty")}<input name={`qty_${n}`} type="number" min="0" defaultValue={l.qty} /></label>
+                      <label>{l.code ?? t("Precio", "Price")}<input name={`price_${n}`} type="number" min="0" step="0.01" defaultValue={Number(l.unitPrice)} /></label>
+                    </div>
+                  ))}
+                  <div className="qa-row"><label>Incoterm<input name="incoterm" defaultValue={q.incoterm ?? ""} /></label><label>{t("Pago", "Payment")}<input name="paymentTerms" defaultValue={q.paymentTerms ?? ""} /></label></div>
+                  <label>{t("Cotización que cita", "Quote it cites")}<input name="quoteRef" defaultValue={`${quoteNo(q)}`} /></label>
+                  <label>{t("Fuente", "Source")}<input name="source" maxLength={200} placeholder={t("Ej.: PDF adjunto en correo de Compras", "E.g.: PDF attached to Purchasing email")} /></label>
+                  <button type="submit">{t("Registrar y comparar", "Record and compare")}</button>
                 </form>
               </QA>
               <QA label={t("No aceptó", "Declined")} wide>
@@ -525,7 +536,17 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
                 </form>
               </QA>
             </div>
-            <p className="src" style={{ marginTop: 6 }}>{t("¿Pide un cambio? Crea una revisión (arriba): mismo número, Rev. siguiente.", "Asking for a change? Create a revision (top): same number, next Rev.")}</p>
+            <p className="src" style={{ marginTop: 6 }}>{t("Registrar la PO no la acepta: SOLU la compara primero con esta cotización. ¿Pide un cambio? Crea una revisión (arriba).", "Recording the PO doesn't accept it: SOLU first compares it with this quote. Asking for a change? Create a revision (top).")}</p>
+          </div>
+        )}
+        {pos.length > 0 && (
+          <div>
+            <div className="jbh"><b>{t("PO RECIBIDAS", "POs RECEIVED")}</b></div>
+            <ul className="plain">
+              {pos.map((p) => (
+                <li key={p.id}><Link href={`/po/${p.id}`} className="val">PO {p.number}</Link> · {i.day(p.receivedAt)} · {p.acceptance ? <span className="sig ok">{t("Aceptada", "Accepted")}</span> : p.rejectedAt ? <span className="sig wait">{t("No aceptada", "Not accepted")}</span> : <span className="sig attn">{t("Por comparar y decidir", "To compare and decide")}</span>}</li>
+              ))}
+            </ul>
           </div>
         )}
         {q.status === "ACCEPTED" && (
