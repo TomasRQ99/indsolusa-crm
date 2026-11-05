@@ -55,7 +55,19 @@ export async function requestCommissionReview(formData: FormData) {
   refreshApp();
 }
 
-const tierLine = /^\s*(\d+(?:[.,]\d+)?)\s*[:=→>-]+\s*(\d+(?:[.,]\d+)?)\s*$/;
+/** A SOLU product defect reported by anyone (re-entry, unneeded warning, missing warning). */
+export async function reportProductSignal(formData: FormData) {
+  const user = await requireUser();
+  const kind = String(formData.get("kind") ?? "");
+  const note = String(formData.get("note") ?? "").trim().slice(0, 300);
+  if (!["REENTRY", "ATTENTION_NOISE", "ATTENTION_MISSED"].includes(kind) || !note) return false;
+  const screen = String(formData.get("screen") ?? "").trim().slice(0, 120) || null;
+  await db.productSignal.create({ data: { kind, note, screen, reportedByName: user.name } });
+  refreshApp();
+  return true;
+}
+
+const tierLine =/^\s*(\d+(?:[.,]\d+)?)\s*[:=→>-]+\s*(\d+(?:[.,]\d+)?)\s*$/;
 
 /** New policy version. Old versions stay untouched; each Deal uses the version in force on its PO date. */
 export async function createPolicyVersion(formData: FormData) {

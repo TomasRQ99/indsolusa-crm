@@ -8,6 +8,7 @@ import { assertCanEdit } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { today } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
+import { CAUSE_KEYS } from "@/lib/causes";
 import { closureChecks, EVIDENCE_KINDS, optionsOf, resultInclude, STANCES, stanceFor, type RecoveryOption } from "@/lib/result";
 
 const dayOf = (s: FormDataEntryValue | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(`${String(s)}T00:00:00Z`) : null);
@@ -89,7 +90,8 @@ export async function openRecovery(dealId: string, fd: FormData) {
     if (title) options.push({ key: `o${n}`, title, detail: txt(fd, `opt${n}_detail`, 400) ?? "", eta: String(fd.get(`opt${n}_eta`) ?? "") || null });
   }
   if (!whatChanged || !impact || !options.length) back(dealId, "err=recovery&recovery=1", "#recovery");
-  await db.recovery.create({ data: { dealId, openedByName: user.name, whatChanged: whatChanged!, impact: impact!, options: options as unknown as Prisma.InputJsonValue } });
+  const cause = String(fd.get("cause") ?? "");
+  await db.recovery.create({ data: { dealId, openedByName: user.name, whatChanged: whatChanged!, impact: impact!, cause: CAUSE_KEYS.includes(cause) ? cause : null, options: options as unknown as Prisma.InputJsonValue } });
   // A result that was marked achieved is no longer achieved while a Recovery is open.
   if (deal.resultState === "ACHIEVED") await db.deal.update({ where: { id: dealId }, data: { resultState: "PARTIAL", resultAchievedAt: null } });
   await fact(user.id, deal, i.t(`Recovery abierta: ${whatChanged}`, `Recovery opened: ${whatChanged}`));

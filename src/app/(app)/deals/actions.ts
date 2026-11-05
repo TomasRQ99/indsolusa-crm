@@ -8,6 +8,7 @@ import { assertCanEdit } from "@/lib/permissions";
 import { optionalDate, optionalId, optionalText, parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
 import { nextCode, today } from "@/lib/domain";
+import { CAUSE_KEYS } from "@/lib/causes";
 
 const stage = z.enum(["LEAD", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON", "LOST"]);
 const money = z.coerce.number().min(0).max(1e12);
@@ -198,12 +199,22 @@ export async function saveNeed(id: string, fd: FormData) {
 /** Customer promise. A change is kept as a fact so "What changed?" shows it. */
 export async function savePromise(id: string, fd: FormData) {
   const { user } = await editableDeal(id);
-  const before = await db.deal.findUniqueOrThrow({ where: { id }, select: { promiseText: true, promisedDate: true, accountId: true } });
+  const before = await db.deal.findUniqueOrThrow({ where: { id }, select: { promiseText: true, promisedDate: true, originalPromisedDate: true, accountId: true } });
   const promiseText = txt(fd, "promiseText", 300);
   const promisedDate = dayOf(fd.get("promisedDate"));
-  await db.deal.update({ where: { id }, data: { promiseText, promisedDate } });
   const was = fmtDay(before.promisedDate);
   const now = fmtDay(promisedDate);
+  // The first promise stays as the original; every later date change is a revision with its cause.
+  const revised = !!before.promisedDate && !!promisedDate && was !== now;
+  const cause = String(fd.get("changeCause") ?? "");
+  await db.deal.update({
+    where: { id },
+    data: {
+      promiseText, promisedDate,
+      ...(!before.originalPromisedDate && (before.promisedDate || promisedDate) ? { originalPromisedDate: before.promisedDate ?? promisedDate } : {}),
+      ...(revised ? { promiseRevisions: { increment: 1 }, promiseRevisedAt: today(), promiseChangeCause: CAUSE_KEYS.includes(cause) ? cause : null } : {}),
+    },
+  });
   if (was !== now || (before.promiseText ?? "") !== (promiseText ?? "")) {
     await logFact(user.id, id, before.accountId, "promise", `Promesa al cliente: ${was} → ${now}${promiseText ? ` · ${promiseText}` : ""}`, txt(fd, "source", 200) ?? "Cambio registrado en el Journey");
   }

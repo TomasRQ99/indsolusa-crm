@@ -135,6 +135,7 @@ export async function acceptPo(id: string) {
         data: {
           customerPo: po.number, poAcceptedAt: B.base, stage: "WON",
           promisedDate: B.promiseDate, promiseText: `Entrega de la PO ${po.number}`,
+          ...(deal.originalPromisedDate ? {} : { originalPromisedDate: B.promiseDate }),
           waitingFor: null, waitingUntil: null,
           nextMove: `Colocar la compra al proveedor${r?.scenarioLabel ? ` (${r.scenarioLabel})` : ""} para cumplir el ${i.date(B.promiseDate)}`.slice(0, 200),
           nextMoveDate: today(),

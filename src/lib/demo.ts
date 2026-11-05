@@ -57,14 +57,14 @@ export async function loadDemo(adminId: string) {
           data: { name: name + TAG, ownerId: paola.id, isDemo: true, taxDataComplete: true, industry: "Industria", createdAt: d(-700), ...extra },
         });
 
-      const lacteos = await account("Lácteos del Valle", { creditLimit: 30000, address: "Planta Tuluá, Valle" });
-      const sider = await account("Siderúrgica del Norte", { creditLimit: 40000, requiresReceptionCode: true, billingContact: "cuentasporpagar@siderurgica.example", taxId: "900.412.118-3" });
-      const cementos = await account("Cementos Andinos", { creditLimit: 50000, requiresPortal: true, portalValidUntil: d(-4), billingContact: "facturas@cementos.example", allowsPartialBilling: false });
-      const minera = await account("Minera El Roble", { creditLimit: 17000 });
-      const ingenio = await account("Ingenio San Rafael", { creditLimit: 40000 });
-      const pacifico = await account("Alimentos del Pacífico", { taxDataComplete: false, createdAt: d(-20) });
-      const quimica = await account("Química Andina", { ownerId: adminId });
-      const papeles = await account("Papeles del Sur", { ownerId: adminId });
+      const lacteos = await account("Lácteos del Valle", { industry: "Alimentos y bebidas", creditLimit: 30000, address: "Planta Tuluá, Valle" });
+      const sider = await account("Siderúrgica del Norte", { industry: "Metalurgia", creditLimit: 40000, requiresReceptionCode: true, billingContact: "cuentasporpagar@siderurgica.example", taxId: "900.412.118-3" });
+      const cementos = await account("Cementos Andinos", { industry: "Cemento y construcción", creditLimit: 50000, requiresPortal: true, portalValidUntil: d(-4), billingContact: "facturas@cementos.example", allowsPartialBilling: false });
+      const minera = await account("Minera El Roble", { industry: "Minería", creditLimit: 17000 });
+      const ingenio = await account("Ingenio San Rafael", { industry: "Azúcar y etanol", creditLimit: 40000 });
+      const pacifico = await account("Alimentos del Pacífico", { industry: "Alimentos y bebidas", taxDataComplete: false, createdAt: d(-20) });
+      const quimica = await account("Química Andina", { industry: "Química", ownerId: adminId });
+      const papeles = await account("Papeles del Sur", { industry: "Papel y pulpa", ownerId: adminId });
 
       await tx.contact.createMany({
         data: [
@@ -230,24 +230,24 @@ export async function loadDemo(adminId: string) {
       await ev(sid1.id, "CUSTOMER", "SUPPORTS", "Ya instalamos el reductor y quedó funcionando; el laminador lleva un mes sin paradas", "Ing. Ramiro Torres (Mantenimiento)", d(-30), "WhatsApp");
       await tx.deal.update({ where: { id: sid1.id }, data: { resultState: "ACHIEVED", actualResult: "Laminador operando con el reductor nuevo, sin paradas desde la instalación", reliefNote: "Dejaron de perder unas 6 horas por semana en paradas del laminador", resultConfirmedAt: d(-30), resultConfirmedByName: paola.name, desiredResult: "Laminador sin paradas por falla del reductor" } });
       // Partial: production restored, redundancy pending → Recovery open with an option chosen.
-      const sidCw = await deal({ title: "Bombas de agua de enfriamiento horno (principal + respaldo)", amount: 5800, supplierCost: 4300, freightCost: 180, accountId: sider.id, stage: "WON", customerPo: "SN-77502", poAcceptedAt: d(-20), desiredResult: "Horno enfriado con bomba principal y respaldo (redundancia N+1)", successMeasure: "Respaldo arranca solo si falla la principal" });
+      const sidCw = await deal({ title: "Bombas de agua de enfriamiento horno (principal + respaldo)", amount: 5800, supplierCost: 4300, freightCost: 180, accountId: sider.id, stage: "WON", customerPo: "SN-77502", poAcceptedAt: d(-20), desiredResult: "Horno enfriado con bomba principal y respaldo (redundancia N+1)", successMeasure: "Respaldo arranca solo si falla la principal", promiseText: "Bombas en planta Barranquilla", originalPromisedDate: d(-14), promisedDate: d(-9), promiseRevisions: 1, promiseRevisedAt: d(-16), promiseChangeCause: "SUPPLIER" });
       const sidCwItem = await tx.dealItem.create({ data: { dealId: sidCw.id, qty: 2, code: "CW-80", description: "Bomba de agua de enfriamiento 80 m³/h", unitPrice: 2900 } });
       const sidCwDel = await delivery(sidCw.id, d(-9), [{ dealItemId: sidCwItem.id, qty: 2 }], { receptionCode: "EM-55870", receivedByName: "Almacén · J. Ruiz" });
       await invoice(sidCw.id, sider.id, 5800, 1050, d(-8), 30, sidCwDel.id);
       await ev(sidCw.id, "CUSTOMER", "PARTIAL", "La principal ya quedó andando y el horno volvió a producir, pero la de respaldo no la pudimos montar: no trae el acople", "Ing. Ramiro Torres (Mantenimiento)", d(-6), "Llamada");
       await tx.deal.update({ where: { id: sidCw.id }, data: { resultState: "PARTIAL", actualResult: "Horno enfriando con la bomba principal: producción restaurada", resultPendingNote: "Bomba de respaldo sin instalar (falta el acople flexible): no hay redundancia N+1", reliefNote: "El horno volvió a producir después de 2 días parado", resultConfirmedAt: d(-6), resultConfirmedByName: paola.name, nextMove: "Recovery: enviar el acople por courier", nextMoveDate: d(2) } });
       await tx.recovery.create({ data: { dealId: sidCw.id, openedAt: d(-6), openedByName: paola.name, whatChanged: "La bomba de respaldo llegó sin el acople flexible", impact: "El horno opera sin redundancia: si falla la principal, para la producción", options: [
-        { key: "o1", title: "Enviar el acople original por courier", detail: "El proveedor lo despacha hoy; llega en 2 días hábiles", eta: ds(2) },
+        { key: "o1", title: "Enviar el acople original por courier", detail: "El proveedor lo despacha hoy; llega en 2 días hábiles", eta: ds(-1) },
         { key: "o2", title: "Mecanizar un acople localmente", detail: "Taller en Barranquilla; más rápido pero sin garantía del fabricante", eta: ds(1) },
         { key: "o3", title: "Prestar una bomba de respaldo mientras llega", detail: "De nuestro inventario de demostración", eta: ds(0) },
-      ], selectedKey: "o1", selectedAt: d(-5), selectedByName: paola.name, selectedNote: "Ramiro prefiere la pieza original", expectedBy: d(2) } });
+      ], selectedKey: "o1", selectedAt: d(-5), selectedByName: paola.name, selectedNote: "Ramiro prefiere la pieza original", expectedBy: d(-1), cause: "SUPPLIER" } });
       // Not achieved: incompatible product → Recovery open, no option chosen yet.
       const ing2 = await deal({ title: "Motor ventilador secador de bagazo", amount: 6900, supplierCost: 5200, freightCost: 210, accountId: ingenio.id, stage: "WON", customerPo: "ISR-4415-02", poAcceptedAt: d(-18), desiredResult: "Secador de bagazo funcionando a plena carga antes de la zafra", promiseText: "Motor en planta el 1 de noviembre", promisedDate: d(-4) });
       const ing2Item = await tx.dealItem.create({ data: { dealId: ing2.id, qty: 1, code: "M-40HP", description: "Motor eléctrico 40 HP 4 polos", unitPrice: 6900 } });
       await delivery(ing2.id, d(-4), [{ dealItemId: ing2Item.id, qty: 1 }], { receivedByName: "Almacén Ingenio" });
       await ev(ing2.id, "TECHNICAL", "CONTRADICTS", "El motor llegó con brida IEC B5; la base del ventilador es NEMA 286T. No se puede montar.", "Técnico de montaje (Ingenio)", d(-3), "Visita de montaje");
       await tx.deal.update({ where: { id: ing2.id }, data: { resultState: "NOT_ACHIEVED", actualResult: "El motor llegó pero no se puede montar: el secador sigue parado", resultConfirmedAt: d(-3), resultConfirmedByName: paola.name } });
-      await tx.recovery.create({ data: { dealId: ing2.id, openedAt: d(-3), openedByName: paola.name, whatChanged: "El motor es IEC B5 y la base del cliente es NEMA 286T (producto incompatible)", impact: "El secador de bagazo sigue parado; la zafra empieza el 23 y sin secador no hay combustible para calderas", options: [
+      await tx.recovery.create({ data: { dealId: ing2.id, openedAt: d(-3), openedByName: paola.name, whatChanged: "El motor es IEC B5 y la base del cliente es NEMA 286T (producto incompatible)", cause: "SPEC",impact: "El secador de bagazo sigue parado; la zafra empieza el 23 y sin secador no hay combustible para calderas", options: [
         { key: "o1", title: "Reemplazar por motor NEMA 286T", detail: "El proveedor tiene stock en Miami; 7 días a planta", eta: ds(9) },
         { key: "o2", title: "Fabricar placa adaptadora IEC→NEMA", detail: "Taller local; el cliente debe aprobar el montaje", eta: ds(3) },
         { key: "o3", title: "Devolver y emitir nota crédito", detail: "Asumimos el error de especificación", eta: null },
@@ -264,7 +264,7 @@ export async function loadDemo(adminId: string) {
       const lac4Inv = await invoice(lac4.id, lacteos.id, 2600, 610, d(-24), 30, lac4Del.id);
       await tx.customerPayment.create({ data: { accountId: lacteos.id, amount: 2600, receivedAt: d(-3), reference: "TRF 88104", createdById: adminId, reconciledAt: d(-2), reconciledById: diana.id, applications: { create: [{ invoiceId: lac4Inv.id, amount: 2600 }] } } });
       await ev(lac4.id, "CUSTOMER", "CONTRADICTS", "Los sellos empezaron a gotear a los 3 días: la soda cáustica del CIP los atacó", "Jorge Pérez (Mantenimiento)", d(-21), "WhatsApp");
-      await tx.recovery.create({ data: { dealId: lac4.id, openedAt: d(-21), openedByName: paola.name, whatChanged: "El elastómero EPDM no resiste la soda caliente del CIP", impact: "La bomba de CIP gotea; riesgo sanitario en la limpieza de la línea", options: [
+      await tx.recovery.create({ data: { dealId: lac4.id, openedAt: d(-21), openedByName: paola.name, whatChanged: "El elastómero EPDM no resiste la soda caliente del CIP", cause: "SPEC",impact: "La bomba de CIP gotea; riesgo sanitario en la limpieza de la línea", options: [
         { key: "o1", title: "Cambiar a sellos en FKM (Viton) sin costo", detail: "Resisten soda caliente; el proveedor los tiene en Bogotá", eta: ds(-12) },
         { key: "o2", title: "Bajar la temperatura del CIP", detail: "Requiere aprobación de calidad del cliente", eta: null },
         { key: "o3", title: "Devolver y emitir nota crédito", detail: "", eta: null },
@@ -279,23 +279,59 @@ export async function loadDemo(adminId: string) {
 
       // 10d. History for the 360 views: older Journeys closed with results, real purchases (RTS + price
       // history) and observed product facts. Rich: Siemens / 7MF0340 / Lácteos. Stale: RT-120 price (14 months).
-      type Hist = { accountId: string; supplierId: string; title: string; code: string; desc: string; qty: number; price: number; cost: number; start: number; shipDelta: number; payDelay: number; evidence: string; who: string; desired: string };
+      // Each history Journey also carries its promise (original / revised / actual) and the economics
+      // protected when its quote was presented, so Gerencia/Insights has real months to compare.
+      type Hist = {
+        accountId: string; supplierId: string; title: string; code: string; desc: string; qty: number; price: number; cost: number; start: number; shipDelta: number; payDelay: number; evidence: string; who: string; desired: string;
+        ownerId?: string; protCost?: number; freight?: number; protFreight?: number;
+        revise?: { to: number; at: number; cause: string };
+        result?: "PARTIAL" | "NOT_ACHIEVED"; rec?: { cause: string; what: string; impact: string; outcome?: "RECOVERED" | "NOT_RECOVERED" };
+      };
       const hist = async (h: Hist) => {
         const s = h.start;
-        const dl = await deal({ title: h.title, amount: h.qty * h.price, supplierCost: h.qty * h.cost, accountId: h.accountId, stage: "WON", customerPo: `HIST-${-s}`, poAcceptedAt: d(s), createdAt: d(s), desiredResult: h.desired, resultState: "ACHIEVED", actualResult: h.evidence, resultAchievedAt: d(s + 40), resultConfirmedAt: d(s + 40), resultConfirmedByName: paola.name, closedAt: d(s + 50), closedByName: paola.name, closureSummary: `${h.desired}: entregado y confirmado por el cliente.`, closureLearning: "Compra repetible; mismo proveedor y referencia.", closureNoSignalReason: "Sin necesidad nueva declarada" });
+        const delAt = s + 15 + h.shipDelta;
+        const resAt = Math.min(-1, delAt + 25);
+        const closeAt = resAt + 10 <= -1 ? resAt + 10 : null;
+        const sale = h.qty * h.price, cost = h.qty * h.cost, freight = h.freight ?? 0;
+        const state = h.result ?? "ACHIEVED";
+        const dl = await deal({
+          title: h.title, amount: sale, supplierCost: cost, freightCost: freight, accountId: h.accountId, ownerId: h.ownerId ?? paola.id, stage: "WON", customerPo: `HIST-${-s}`, poAcceptedAt: d(s), createdAt: d(s), desiredResult: h.desired,
+          promiseText: `Entrega de la PO HIST-${-s}`, originalPromisedDate: d(s + 15), promisedDate: d(h.revise ? h.revise.to : s + 15),
+          ...(h.revise ? { promiseRevisions: 1, promiseRevisedAt: d(h.revise.at), promiseChangeCause: h.revise.cause } : {}),
+          resultState: state, actualResult: h.evidence, resultAchievedAt: state === "ACHIEVED" ? d(resAt) : null, resultConfirmedAt: d(resAt), resultConfirmedByName: paola.name,
+          ...(closeAt != null ? { closedAt: d(closeAt), closedByName: paola.name, closureSummary: `${h.desired}: ${state === "ACHIEVED" ? "entregado y confirmado por el cliente" : "resultado no logrado por completo"}.`, closureLearning: h.rec ? "Confirmar la aplicación con el cliente antes de cotizar." : "Compra repetible; mismo proveedor y referencia.", closureNoSignalReason: "Sin necesidad nueva declarada" } : {}),
+        });
+        const pc = h.qty * (h.protCost ?? h.cost) + (h.protFreight ?? freight);
+        await tx.quote.create({ data: { dealId: dl.id, number: await nextDocNumber(tx), rev: 0, status: "ACCEPTED", createdById: adminId, createdAt: d(s - 6), issuedAt: d(s - 6), presentedAt: d(s - 6), decidedAt: d(s), supplierCost: h.qty * (h.protCost ?? h.cost), freightCost: h.protFreight ?? freight, protSale: sale, protCost: pc, protEsagra: sale - pc, protPolicy: 1, leadMinDays: 12, leadMaxDays: 15 } });
         const it = await tx.dealItem.create({ data: { dealId: dl.id, qty: h.qty, code: h.code, description: h.desc, unitPrice: h.price } });
-        await spo(dl.id, h.supplierId, h.qty * h.cost, "USD", { confirmedAt: d(s + 2), shipBy: d(s + 7), shippedAt: d(s + 7 + h.shipDelta), receivedAt: d(s + 12 + h.shipDelta), terms: "100 % antes de despacho", createdAt: d(s + 1) }, [{ qty: h.qty, code: h.code, description: h.desc, unitCost: h.cost }]);
-        const del = await delivery(dl.id, d(s + 15 + h.shipDelta), [{ dealItemId: it.id, qty: h.qty }], { receptionCode: "EM-H" + -s });
-        const inv = await invoice(dl.id, h.accountId, h.qty * h.price, Math.round(h.qty * (h.price - h.cost)), d(s + 16 + h.shipDelta), 30, del.id);
-        await tx.invoice.update({ where: { id: inv.id }, data: { syncState: "CONFIRMED", externalSystem: "QuickBooks", externalId: `QB-H${-s}`, syncAt: d(s + 16 + h.shipDelta) } });
-        await tx.customerPayment.create({ data: { accountId: h.accountId, amount: h.qty * h.price, receivedAt: d(s + 46 + h.shipDelta + h.payDelay), reference: `TRF H${-s}`, createdById: adminId, reconciledAt: d(s + 47 + h.shipDelta + h.payDelay), reconciledById: diana.id, applications: { create: [{ invoiceId: inv.id, amount: h.qty * h.price }] } } });
-        await ev(dl.id, "CUSTOMER", "SUPPORTS", h.evidence, h.who, d(s + 40), "Llamada");
+        await spo(dl.id, h.supplierId, cost, "USD", { confirmedAt: d(s + 2), shipBy: d(s + 7), shippedAt: d(s + 7 + h.shipDelta), receivedAt: d(s + 12 + h.shipDelta), terms: "100 % antes de despacho", createdAt: d(s + 1) }, [{ qty: h.qty, code: h.code, description: h.desc, unitCost: h.cost }]);
+        const del = await delivery(dl.id, d(delAt), [{ dealItemId: it.id, qty: h.qty }], { receptionCode: "EM-H" + -s });
+        const inv = await invoice(dl.id, h.accountId, sale, Math.round(sale - cost - freight), d(delAt + 1), 30, del.id);
+        await tx.invoice.update({ where: { id: inv.id }, data: { syncState: "CONFIRMED", externalSystem: "QuickBooks", externalId: `QB-H${-s}`, syncAt: d(delAt + 1) } });
+        const paidAt = delAt + 31 + h.payDelay;
+        if (paidAt <= -1) await tx.customerPayment.create({ data: { accountId: h.accountId, amount: sale, receivedAt: d(paidAt), reference: `TRF H${-s}`, createdById: adminId, reconciledAt: d(Math.min(-1, paidAt + 1)), reconciledById: diana.id, applications: { create: [{ invoiceId: inv.id, amount: sale }] } } });
+        if (h.rec) {
+          await tx.recovery.create({ data: { dealId: dl.id, openedAt: d(delAt + 3), openedByName: paola.name, whatChanged: h.rec.what, impact: h.rec.impact, cause: h.rec.cause, options: [{ key: "o1", title: "Reponer con la referencia correcta", detail: "", eta: null }, { key: "o2", title: "Nota crédito", detail: "", eta: null }], selectedKey: h.rec.outcome === "RECOVERED" ? "o1" : "o2", selectedAt: d(delAt + 4), selectedByName: paola.name, resolvedAt: d(Math.min(-1, delAt + 12)), outcome: h.rec.outcome ?? "NOT_RECOVERED", outcomeNote: h.rec.outcome === "RECOVERED" ? "Repuesto instalado; el cliente confirmó" : "Nota crédito emitida; el cliente buscó otra solución" } });
+        }
+        await ev(dl.id, "CUSTOMER", state === "ACHIEVED" ? "SUPPORTS" : state === "PARTIAL" ? "PARTIAL" : "CONTRADICTS", h.evidence, h.who, d(resAt), "Llamada");
       };
       const tx7 = { code: "7MF0340", desc: "Transmisor de presión Sitrans P", price: 600 };
       await hist({ ...tx7, accountId: sider.id, supplierId: siemens.id, title: "Transmisores de presión horno 1", qty: 3, cost: 395, start: -460, shipDelta: 2, payDelay: 14, desired: "Presión del horno 1 medida en continuo", evidence: "Los transmisores quedaron leyendo bien; ya no medimos a mano", who: "Ing. Ramiro Torres (Mantenimiento)" });
       await hist({ ...tx7, accountId: lacteos.id, supplierId: siemens.id, title: "Transmisores de presión pasteurizador", qty: 2, cost: 410, start: -210, shipDelta: 0, payDelay: 2, desired: "Control de presión del pasteurizador sin lecturas falsas", evidence: "El pasteurizador ya no se dispara por lecturas falsas", who: "Jorge Pérez (Mantenimiento)" });
-      await hist({ ...tx7, accountId: lacteos.id, supplierId: siemens.id, title: "Transmisores de presión línea CIP", qty: 2, cost: 425, start: -125, shipDelta: 5, payDelay: 4, desired: "Presión de la línea CIP visible en el SCADA", evidence: "Ya vemos la presión del CIP en el SCADA", who: "Jorge Pérez (Mantenimiento)" });
+      await hist({ ...tx7, accountId: lacteos.id, supplierId: siemens.id, title: "Transmisores de presión línea CIP", qty: 2, cost: 425, start: -125, shipDelta: 5, payDelay: 4, revise: { to: -105, at: -115, cause: "SUPPLIER" }, desired: "Presión de la línea CIP visible en el SCADA", evidence: "Ya vemos la presión del CIP en el SCADA", who: "Jorge Pérez (Mantenimiento)" });
       await hist({ accountId: sider.id, supplierId: rodamientos.id, title: "Rodillos de transporte (lote anterior)", code: "RT-120", desc: "Rodillo de transporte 120 mm", qty: 8, price: 640, cost: 480, start: -420, shipDelta: 1, payDelay: 10, desired: "Banda de transporte sin rodillos trabados", evidence: "La banda corre sin trabarse desde el cambio", who: "Ing. Ramiro Torres (Mantenimiento)" });
+      // Recent months for Gerencia/Insights: kept, revised in time, missed without warning, esagra lost, not achieved.
+      await hist({ accountId: cementos.id, supplierId: general.id, title: "Correas trapezoidales molino crudo", code: "CT-B88", desc: "Correa trapezoidal B88", qty: 12, price: 95, cost: 61, start: -50, shipDelta: 0, payDelay: 0, desired: "Molino crudo sin patinamiento de correas", evidence: "El molino ya no patina; cambiamos las 12 correas en la parada", who: "Andrés Mejía (Tesorería)" });
+      await hist({ accountId: minera.id, supplierId: general.id, title: "Bomba dosificadora de floculante", code: "BD-FL20", desc: "Bomba dosificadora 20 L/h", qty: 2, price: 1980, cost: 1450, protCost: 1300, start: -48, shipDelta: 6, payDelay: 3, revise: { to: -27, at: -36, cause: "SUPPLIER" }, desired: "Dosificación de floculante estable en el espesador", evidence: "La dosificación quedó estable; el agua sale clara", who: "Laura Ríos (Compras)" });
+      await hist({ accountId: quimica.id, supplierId: general.id, ownerId: adminId, title: "Válvula de alivio reactor 2", code: "VA-R2-150", desc: "Válvula de alivio 1½\" 150 psi", qty: 1, price: 2850, cost: 1900, freight: 420, protFreight: 150, start: -45, shipDelta: 4, payDelay: 0, desired: "Reactor 2 con alivio de presión certificado", evidence: "La válvula quedó instalada y calibrada; pasamos la inspección", who: "Carlos Mora (Mantenimiento)" });
+      await hist({ accountId: papeles.id, supplierId: general.id, ownerId: adminId, title: "Sensor de nivel tanque de pulpa", code: "LR-80", desc: "Sensor de nivel radar 80 GHz", qty: 1, price: 2400, cost: 1650, start: -49, shipDelta: 0, payDelay: 2, result: "NOT_ACHIEVED", rec: { cause: "SPEC", what: "El sensor radar no lee bien con la espuma del tanque de pulpa", impact: "El tanque sigue controlándose a mano" }, desired: "Nivel del tanque de pulpa medido sin intervención", evidence: "Con la espuma el radar marca lecturas falsas; volvimos al control manual", who: "Marta León (Compras)" });
+      await hist({ accountId: ingenio.id, supplierId: rodamientos.id, title: "Rodamientos molino 3", code: "RB-22320", desc: "Rodamiento de rodillos 22320", qty: 4, price: 820, cost: 590, start: -85, shipDelta: 1, payDelay: 6, desired: "Molino 3 sin calentamiento en chumaceras", evidence: "Las chumaceras del molino 3 trabajan a 55 °C, normal", who: "Técnico de montaje (Ingenio)" });
+      await hist({ accountId: minera.id, supplierId: general.id, title: "Válvulas de cuchilla espesador 1", code: "VK-8", desc: "Válvula de cuchilla 8\"", qty: 4, price: 1350, cost: 980, start: -80, shipDelta: 2, payDelay: 5, result: "PARTIAL", rec: { cause: "SUPPLIER", what: "Llegaron 3 de 4 válvulas; la cuarta quedó en backorder del fabricante", impact: "Una línea del espesador sigue con la válvula vieja" }, desired: "Espesador 1 con las 4 válvulas nuevas", evidence: "Tres válvulas funcionan bien; la cuarta línea sigue con la vieja", who: "Laura Ríos (Compras)" });
+      await tx.productSignal.createMany({ data: [
+        { kind: "REENTRY", screen: "Journey · Facturación", note: "Volví a escribir el código de recepción de Siderúrgica que ya estaba en la remisión", reportedByName: paola.name, createdAt: d(-12) },
+        { kind: "REENTRY", screen: "Operaciones · Compras", note: "Copié a mano las líneas de la cotización en la OC al proveedor", reportedByName: paola.name, createdAt: d(-30) },
+        { kind: "ATTENTION_NOISE", screen: "Mi Día", note: "Marcó la ETA de Siemens como riesgo y seguía dentro de la promesa", reportedByName: diana.name, createdAt: d(-8) },
+      ] });
       const pf = (code: string, kind: string, text: string, source: string, at: Date) => tx.productFact.create({ data: { code, kind, text, source, observedAt: at, recordedByName: paola.name } });
       await pf("7MF0340", "SPEC", "0–16 bar · salida 4–20 mA HART · conexión ½\" NPT", "Hoja técnica Siemens", d(-460));
       await pf("7MF0340", "ALIAS", "Sitrans P DS III", "Proforma SIE-4498", d(-18));
@@ -320,7 +356,7 @@ export async function loadDemo(adminId: string) {
 
       // 12. ABC Foods · SJ-01842: the Journey Workspace example. Carrier ETA, SOLU expected and the
       // customer promise disagree, so the promise is at risk and the three truths are visible apart.
-      const abc = await account("ABC Foods", { ownerId: adminId, creditLimit: 60000, address: "Planta Funza, Cundinamarca", createdAt: d(-400) });
+      const abc = await account("ABC Foods", { industry: "Alimentos y bebidas", ownerId: adminId, creditLimit: 60000, address: "Planta Funza, Cundinamarca", createdAt: d(-400) });
       const ana = await tx.contact.create({ data: { firstName: "Ana", lastName: "Torres", title: "Jefe de Producción", email: "ana.torres@abcfoods.example", accountId: abc.id } });
       const sj = await tx.deal.create({
         data: {
@@ -632,6 +668,7 @@ export async function removeDemo() {
       await tx.account.deleteMany({ where: { isDemo: true } });
       await tx.supplier.deleteMany({ where: { isDemo: true } });
       await tx.productFact.deleteMany({ where: { recordedByName: { endsWith: TAG } } });
+      await tx.productSignal.deleteMany({ where: { reportedByName: { endsWith: TAG } } });
       if (ids.length) {
         await tx.task.deleteMany({ where: { assigneeId: { in: ids } } });
         await tx.commissionEntry.deleteMany({ where: { OR: [{ userId: { in: ids } }, { approvedById: { in: ids } }] } });

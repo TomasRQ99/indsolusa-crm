@@ -202,6 +202,11 @@ model Deal {
   closureSummary        String?
   closureLearning       String?
   closureNoSignalReason String?
+  // Promise performance: the first promise is kept; later changes count as revisions (when, and why).
+  originalPromisedDate  DateTime?
+  promiseRevisions      Int         @default(0)
+  promiseRevisedAt      DateTime?
+  promiseChangeCause    String?
 
   resultEvidence ResultEvidence[]
   recoveries     Recovery[]
@@ -259,6 +264,8 @@ model Recovery {
   openedByName   String
   whatChanged    String
   impact         String
+  // Material cause: SPEC / SUPPLIER / LOGISTICS / CUSTOMER / COST / OTHER
+  cause          String?
   options        Json
   selectedKey    String?
   selectedAt     DateTime?
@@ -303,6 +310,20 @@ model ProductFact {
   createdAt      DateTime @default(now())
 
   @@index([code])
+}
+
+// Product health of SOLU itself (never of people): a person reports that SOLU made them
+// re-enter something it already knew, warned without need, or failed to warn.
+model ProductSignal {
+  id             String    @id @default(cuid())
+  kind           String // REENTRY / ATTENTION_NOISE / ATTENTION_MISSED
+  screen         String?
+  note           String
+  reportedByName String
+  createdAt      DateTime  @default(now())
+  resolvedAt     DateTime?
+
+  @@index([createdAt])
 }
 
 model DealItem {

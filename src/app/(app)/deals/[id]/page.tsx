@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { canEdit } from "@/lib/permissions";
+import { CAUSE_KEYS, causeLabel } from "@/lib/causes";
 import { makeI18n } from "@/lib/i18n";
 import { bankDiscrepancies, dayInput, paymentState } from "@/lib/domain";
 import { paymentStateLabel } from "@/lib/labels";
@@ -216,6 +217,7 @@ export default async function JourneyPage({
           <label>{t("Qué le prometimos", "What we promised")}<input name="promiseText" maxLength={300} defaultValue={deal.promiseText ?? ""} placeholder={t("Ej.: 2 bombas instaladas en planta", "E.g.: 2 pumps installed on site")} /></label>
           <label>{t("Para cuándo", "By when")}<input name="promisedDate" type="date" defaultValue={dayInput(deal.promisedDate)} /></label>
           <label>{t("Fuente del cambio", "Source of the change")}<input name="source" placeholder={t("Ej.: acordado en llamada con Carlos", "E.g.: agreed on a call with Carlos")} /></label>
+          {deal.promisedDate && <label>{t("Si cambia la fecha: por qué", "If the date changes: why")}<select name="changeCause" defaultValue=""><option value="">{t("— elige la causa —", "— choose the cause —")}</option>{CAUSE_KEYS.map((c) => <option key={c} value={c}>{causeLabel(t, c)}</option>)}</select></label>}
           <span className="src">{t("La promesa es lo que dijimos al cliente. No cambia sola cuando cambia la ETA.", "The promise is what we told the customer. It doesn't change by itself when the ETA does.")}</span>
           <button type="submit">{t("Guardar promesa", "Save promise")}</button>
         </form>

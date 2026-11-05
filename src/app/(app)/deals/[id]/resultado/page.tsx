@@ -7,6 +7,7 @@ import { makeI18n } from "@/lib/i18n";
 import { today } from "@/lib/domain";
 import { basisOf, closureChecks, kindLabel, optionsOf, optionTemplates, resultInclude, resultTimeline, stanceLabel, stateLabel, whatHappened } from "@/lib/result";
 import { Popovers } from "@/components/Popovers";
+import { CAUSE_KEYS, causeLabel, causeOf } from "@/lib/causes";
 import { addEvidence, chooseRecoveryOption, closeJourney, confirmResult, createContinuity, openRecovery, reopenJourney, resolveRecovery } from "./actions";
 
 export default async function ResultClosurePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; recovery?: string }> }) {
@@ -131,6 +132,7 @@ export default async function ResultClosurePage({ params, searchParams }: { para
           <div className="jbh"><b>RECOVERY</b><span className="grow" /><span className="sig risk">{t(`Abierta ${i.day(openRec.openedAt)}`, `Open since ${i.day(openRec.openedAt)}`)}</span></div>
           <dl className="rrec-dl">
             <dt>{t("Qué cambió", "What changed")}</dt><dd>{openRec.whatChanged}</dd>
+            <dt>{t("Causa material", "Material cause")}</dt><dd>{causeLabel(t, causeOf(openRec.cause, openRec.whatChanged))}{!openRec.cause && <span className="src"> · {t("deducida del texto", "inferred from the text")}</span>}</dd>
             <dt>{t("Impacto para el cliente", "Impact for the customer")}</dt><dd>{openRec.impact}</dd>
             {openRec.selectedKey && <><dt>{t("Recuperación esperada", "Expected recovery")}</dt><dd className="mono">{openRec.expectedBy ? i.day(openRec.expectedBy) : "—"}{openRec.expectedBy && openRec.expectedBy < now ? <span className="risk-t"> · {t("vencida", "overdue")}</span> : null}</dd></>}
           </dl>
@@ -179,6 +181,7 @@ export default async function ResultClosurePage({ params, searchParams }: { para
           <div className="jbh"><b>{t("ABRIR RECOVERY", "OPEN RECOVERY")}</b><span className="grow" /><span className="src">{t("el producto llegó, pero el resultado no está", "the product arrived, but the result isn't there")}</span></div>
           <form action={openRecovery.bind(null, deal.id)} className="stack jform">
             <label>{t("Qué cambió", "What changed")}<input name="whatChanged" required placeholder={t("Ej.: el motor llegó con brida IEC y la base del cliente es NEMA", "E.g.: the motor arrived with an IEC flange and the customer's base is NEMA")} /></label>
+            <label>{t("Causa material", "Material cause")}<select name="cause" required defaultValue=""><option value="" disabled>{t("— elige la causa —", "— choose the cause —")}</option>{CAUSE_KEYS.map((c) => <option key={c} value={c}>{causeLabel(t, c)}</option>)}</select></label>
             <label>{t("Impacto para el cliente", "Impact for the customer")}<input name="impact" required placeholder={t("Ej.: el secador sigue parado; pierden 2 turnos por día", "E.g.: the dryer is still down; they lose 2 shifts a day")} /></label>
             <div className="rrec-opts">
               {templates.map((o, n) => (

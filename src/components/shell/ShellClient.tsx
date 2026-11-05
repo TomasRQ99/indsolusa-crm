@@ -7,6 +7,7 @@ import type { ModuleKey } from "@/lib/nav";
 import type { Alert, Counter } from "@/lib/attention";
 import { setLanguage } from "@/app/(app)/profile/actions";
 import { logout } from "@/app/login/actions";
+import { ReportSignal } from "@/components/ReportSignal";
 import { IconBell, IconChevron, IconClose, IconMenu, IconSearch, IconSparkle, MODULE_ICONS } from "./Icons";
 
 export type ShellModule = {
@@ -312,6 +313,7 @@ function AskPanel({ es, where, inputRef, onClose }: { es: boolean; where: string
           "AI-written answers are not connected yet. For now SOLU shows the records and screens that match your question, with their source.",
         )}
       </p>
+      <ReportSignal es={es} screen={where} />
       {res && (
         <div className="ask-res">
           {res.hits.length === 0 && res.screens.length === 0 && <p className="pop-empty">{t(`No encontré nada para "${res.q}".`, `I found nothing for "${res.q}".`)}</p>}

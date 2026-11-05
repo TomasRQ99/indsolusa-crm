@@ -65,7 +65,7 @@ export const MODULES: NavModule[] = [
   {
     key: "gerencia", es: "GERENCIA/INSIGHTS", en: "MANAGEMENT/INSIGHTS", match: ["/gerencia"],
     tabs: [
-      { href: "/gerencia", es: "Reporting", en: "Reporting", managerOnly: true },
+      { href: "/gerencia", es: "Insights", en: "Insights", managerOnly: true },
       { href: "/gerencia/comisiones", es: "Comisiones", en: "Commissions" },
     ],
   },
