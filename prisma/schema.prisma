@@ -77,6 +77,7 @@ model User {
   commissionsApproved CommissionEntry[] @relation("CommissionApprover")
   creditExceptions  Deal[]            @relation("CreditException")
   suppliersVerified Supplier[]
+  journeyViews      JourneyView[]
 }
 
 model Account {
@@ -168,8 +169,19 @@ model Deal {
   creditExceptionBy   User?     @relation("CreditException", fields: [creditExceptionById], references: [id])
   creditExceptionAt   DateTime?
   creditExceptionNote String?
+  // Journey Workspace: what is needed, how it is measured and what it costs not to solve it.
+  needSpecs        String?
+  neededBy         DateTime?
+  successMeasure   String?
+  impactIfNot      String?
+  sourcingNote     String?
+  incoterm         String?
+  paymentTerms     String?
+  quoteSentAt      DateTime?
+  resultNote       String?
 
   tasks       Task[]
+  views       JourneyView[]
   activities  Activity[]
   items       DealItem[]
   supplierPos SupplierPO[]
@@ -193,6 +205,18 @@ model DealItem {
   deliveryLines DeliveryLine[]
 
   @@index([dealId])
+}
+
+// Last time each person opened a Journey, to answer "what changed since I last looked?".
+model JourneyView {
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dealId     String
+  deal       Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  seenAt     DateTime
+  prevSeenAt DateTime?
+
+  @@id([userId, dealId])
 }
 
 model Task {
@@ -232,6 +256,10 @@ model Activity {
   contact    Contact?     @relation(fields: [contactId], references: [id], onDelete: Cascade)
   dealId     String?
   deal       Deal?        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  // Journey Workspace: which phase this fact feeds, where it came from, and whether it still needs confirming.
+  phase      String?
+  source     String?
+  uncertain  Boolean      @default(false)
 
   @@index([accountId, occurredAt])
   @@index([occurredAt])
@@ -274,6 +302,12 @@ model SupplierPO {
   shippedAt   DateTime?
   eta         DateTime?
   receivedAt  DateTime?
+  // Carrier's own ETA (a separate truth from SOLU's expected date and the customer promise).
+  carrierName      String?
+  tracking         String?
+  carrierEta       DateTime?
+  carrierEtaAt     DateTime?
+  carrierEtaSource String?
   createdAt   DateTime  @default(now())
 
   payments SupplierPayment[]

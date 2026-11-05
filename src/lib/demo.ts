@@ -179,6 +179,45 @@ export async function loadDemo(adminId: string) {
       await tx.activity.create({ data: { type: "CALL", subject: "Marta comentó que la bomba actual pierde dosificación", body: "Quiere una propuesta antes de su comité del mes.", occurredAt: ago(6, 9), userId: adminId, accountId: papeles.id, contactId: marta.id, dealId: dos.id } });
       await deal({ title: "Instrumentación caldera", amount: 8000, accountId: papeles.id, contactId: marta.id, ownerId: adminId, stage: "QUALIFIED", nextMove: "Confirmar fuente con Distribuidor A", nextMoveDate: d(2) });
 
+      // 12. ABC Foods · SJ-01842: the Journey Workspace example. Carrier ETA, SOLU expected and the
+      // customer promise disagree, so the promise is at risk and the three truths are visible apart.
+      const abc = await account("ABC Foods", { ownerId: adminId, creditLimit: 60000, address: "Planta Funza, Cundinamarca", createdAt: d(-400) });
+      const ana = await tx.contact.create({ data: { firstName: "Ana", lastName: "Torres", title: "Jefe de Producción", email: "ana.torres@abcfoods.example", accountId: abc.id } });
+      const sj = await tx.deal.create({
+        data: {
+          code: "SJ-01842", title: "Kit de cambio de formato línea 3", amount: 28600, supplierCost: 20400, freightCost: 900, otherCosts: 480,
+          accountId: abc.id, contactId: ana.id, ownerId: adminId, stage: "WON", customerPo: "ABC-PO-7781", poAcceptedAt: d(-12),
+          desiredResult: "Línea 3 envasando 1 kg al 100 % antes del lanzamiento del 24 de noviembre",
+          needSpecs: "2 servomotores 1FK7 con drive S210 + kit de cambio de formato 500 g → 1 kg, compatible con la envasadora actual",
+          neededBy: d(10), successMeasure: "Cambio de formato en menos de un turno y 0 paradas la primera semana",
+          impactIfNot: "Sin la línea 3 el lanzamiento se corre; ABC estima USD 12.000 por día de retraso",
+          sourcingNote: "Servos desde Distribuidor Siemens Miami (stock). Kit de formato fabricado a pedido por el mismo distribuidor (2 semanas).",
+          incoterm: "DAP Funza", paymentTerms: "30 días fecha factura", quoteSentAt: d(-24), offerValidUntil: d(-10), closeDate: d(-12),
+          promiseText: "Kit instalado y probado en línea 3", promisedDate: d(9),
+          nextMove: "Confirmar con DHL si puede pasar el envío a aéreo expreso", nextMoveDate: T,
+        },
+      });
+      await tx.dealItem.createMany({
+        data: [
+          { dealId: sj.id, qty: 2, code: "1FK7063", description: "Servomotor Siemens 1FK7 con drive S210", unitPrice: 9800 },
+          { dealId: sj.id, qty: 1, code: "KF-L3-1KG", description: "Kit de cambio de formato 1 kg línea 3", unitPrice: 9000 },
+        ],
+      });
+      const sjSpo = await spo(sj.id, siemens.id, 20400, "USD", {
+        confirmedAt: d(-10), shippedAt: d(-5), eta: d(4),
+        carrierName: "DHL Global Forwarding", tracking: "DHL 7781 5520", carrierEta: d(7), carrierEtaAt: new Date(d(-4).getTime() + 15 * 3600e3), carrierEtaSource: "Tracking web DHL",
+      });
+      await tx.supplierPayment.create({ data: { supplierPoId: sjSpo.id, amount: 20400, currency: "USD", amountUsd: 20400, reason: "El distribuidor despacha contra pago", dueBy: d(-9), docBeneficiary: "Siemens Dist. LLC", docBankName: "Bank of America", docAccount: "000123456789", docSwift: "BOFAUS3N", docSource: "Proforma SIE-4471", requestedById: adminId, approvedById: diana.id, approvedAt: d(-9), executedById: diana.id, executedAt: d(-9), executedRef: "Wire 55120" } });
+      await tx.activity.createMany({
+        data: [
+          { type: "MEETING", subject: "Visita a planta: Ana necesita pasar de 500 g a 1 kg sin parar más de un turno", occurredAt: ago(30, 10), userId: adminId, accountId: abc.id, contactId: ana.id, dealId: sj.id, phase: "need", source: "Visita a planta Funza" },
+          { type: "EMAIL", subject: "Siemens Miami confirma stock de servos; el kit se fabrica en 2 semanas", occurredAt: ago(26, 9), userId: adminId, accountId: abc.id, dealId: sj.id, phase: "source", source: "Correo de Siemens Miami" },
+          { type: "CALL", subject: "Ana pidió 3 % de descuento por pago anticipado; se mantuvo el precio con plazo de 30 días", occurredAt: ago(20, 15), userId: adminId, accountId: abc.id, contactId: ana.id, dealId: sj.id, phase: "quote", source: "Llamada con Ana" },
+          { type: "EMAIL", subject: "DHL avisa posible inspección en aduana de Miami", body: "Podría sumar 2–3 días; lo confirman cuando el contenedor llegue a puerto.", occurredAt: ago(1, 11), userId: paola.id, accountId: abc.id, dealId: sj.id, phase: "execute", source: "Correo del agente DHL", uncertain: true },
+          { type: "CALL", subject: "Ana preguntó si la fecha de instalación sigue firme", body: "Le dije que lo confirmamos hoy con DHL.", occurredAt: ago(1, 16), userId: paola.id, accountId: abc.id, contactId: ana.id, dealId: sj.id },
+        ],
+      });
+
       await tx.task.createMany({
         data: [
           { title: "Preparar visita técnica a Química Andina", assigneeId: adminId, accountId: quimica.id, dealId: q1.id, dueDate: d(3), estimateMinutes: 90 },
