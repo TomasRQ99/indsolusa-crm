@@ -195,6 +195,7 @@ model Deal {
   activities  Activity[]
   items       DealItem[]
   supplierPos SupplierPO[]
+  shipments   Shipment[]
   deliveries  Delivery[]
   invoices    Invoice[]
 
@@ -337,6 +338,7 @@ model SupplierPO {
   lines        SupplierPOLine[]
   requirements PaymentRequirement[]
   payments     SupplierPayment[]
+  shipments    Shipment[]
 
   @@index([dealId])
 }
@@ -396,8 +398,9 @@ model Delivery {
   notes          String?
   createdAt      DateTime @default(now())
 
-  lines   DeliveryLine[]
-  invoice Invoice?
+  lines    DeliveryLine[]
+  shipment Shipment?
+  invoice  Invoice?
 
   @@index([dealId])
 }
@@ -861,4 +864,126 @@ model PaymentExecution {
   createdAt      DateTime        @default(now())
 
   @@index([paymentId])
+}
+
+// ---------- Logistics Forward View ----------
+// A Shipment is its own object: physical movement with the carrier's truth (ETA, scans),
+// kept apart from SOLU's expected delivery and from the customer promise (on the Deal).
+enum ShipmentMode {
+  AIR
+  COURIER
+  OCEAN
+  GROUND
+}
+
+enum CustomsState {
+  NOT_REQUIRED
+  PENDING
+  HOLD
+  CLEARED
+}
+
+enum ReceiptState {
+  PENDING
+  CONFIRMED
+  DISPUTED
+}
+
+enum ShipEventKind {
+  SCAN
+  ETA_CHANGE
+  EXCEPTION
+  CUSTOMS
+  DELIVERED
+  NOTE
+}
+
+model Shipment {
+  id               String       @id @default(cuid())
+  code             String       @unique
+  dealId           String
+  deal             Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  supplierPoId     String?
+  supplierPo       SupplierPO?  @relation(fields: [supplierPoId], references: [id], onDelete: SetNull)
+  carrierName      String
+  tracking         String?
+  mode             ShipmentMode @default(AIR)
+  origin           String?
+  destination      String?
+  destLat          Float?
+  destLng          Float?
+  international    Boolean      @default(true)
+  // true = the carrier hands it to the customer; false = it arrives to us/our broker first
+  toCustomer       Boolean      @default(false)
+  // Baseline (what we planned when it was recorded) vs actual
+  plannedRts       DateTime?
+  rtsAt            DateTime?
+  plannedPickup    DateTime?
+  pickedUpAt       DateTime?
+  plannedDelivery  DateTime?
+  carrierEta       DateTime?
+  carrierEtaAt     DateTime?
+  carrierEtaSource String?
+  deliveredAt      DateTime?
+  deliveredNote    String?
+  customs          CustomsState @default(NOT_REQUIRED)
+  customsNote      String?
+  docs             Json?
+  receipt          ReceiptState @default(PENDING)
+  receivedAt       DateTime?
+  receivedByName   String?
+  receiptNote      String?
+  disputedAt       DateTime?
+  disputeNote      String?
+  deliveryId       String?      @unique
+  delivery         Delivery?    @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
+  createdByName    String
+  createdAt        DateTime     @default(now())
+
+  lines     ShipmentLine[]
+  events    ShipmentEvent[]
+  decisions ShipmentDecision[]
+
+  @@index([dealId])
+}
+
+model ShipmentLine {
+  id          String   @id @default(cuid())
+  shipmentId  String
+  shipment    Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  dealItemId  String?
+  qty         Int
+  description String
+}
+
+model ShipmentEvent {
+  id             String        @id @default(cuid())
+  shipmentId     String
+  shipment       Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  at             DateTime
+  kind           ShipEventKind @default(SCAN)
+  location       String?
+  lat            Float?
+  lng            Float?
+  text           String
+  // Material = changes the outcome or needs a person. Normal scans are summarised, never notified.
+  material       Boolean       @default(false)
+  etaBefore      DateTime?
+  etaAfter       DateTime?
+  source         String?
+  recordedByName String?
+
+  @@index([shipmentId, at])
+}
+
+model ShipmentDecision {
+  id            String    @id @default(cuid())
+  shipmentId    String
+  shipment      Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  option        String
+  title         String
+  note          String?
+  newExpected   DateTime?
+  decidedByName String
+  decidedAt     DateTime  @default(now())
 }

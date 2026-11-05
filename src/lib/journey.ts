@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { addDays, daysBetween, esagra, invoiceCash, today } from "./domain";
 import type { makeI18n } from "./i18n";
+import { expectedOf } from "./logistics";
 
 // Journey Workspace: everything the page needs to tell the Journey as a living story.
 // Three separate truths are never merged: Carrier ETA (what the carrier says),
@@ -22,6 +23,7 @@ export const journeyInclude = {
     orderBy: { createdAt: "asc" },
   },
   deliveries: { include: { lines: true, invoice: { select: { id: true, number: true } } }, orderBy: { deliveredAt: "asc" } },
+  shipments: { include: { events: { where: { material: true }, orderBy: { at: "desc" }, take: 5 } }, orderBy: { createdAt: "asc" } },
   invoices: {
     include: {
       applications: { select: { amount: true, payment: { select: { reconciledAt: true, receivedAt: true, reference: true } } } },
@@ -68,10 +70,30 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
   const uninvoicedDeliveries = deal.deliveries.filter((d) => !d.invoice);
 
   // ---------- Three truths ----------
+  // 0. Shipments are the source of the carrier's truth when they exist (the latest-expected open one).
+  const openShips = deal.shipments
+    .filter((s) => s.receipt !== "CONFIRMED")
+    .map((s) => ({ s, e: expectedOf({ ...s, customs: s.customs, receipt: s.receipt }, i) }))
+    .sort((a, b) => (b.e.date?.getTime() ?? Infinity) - (a.e.date?.getTime() ?? Infinity));
+  const mainShip = openShips[0] ?? null;
+  const shippedPoIds = new Set(deal.shipments.map((s) => s.supplierPoId).filter(Boolean));
   // 1. Carrier ETA: the most relevant open PO (latest date among those still travelling).
-  const carrierPo = openPos.filter((p) => p.carrierEta).sort((a, b) => +b.carrierEta! - +a.carrierEta!)[0] ?? null;
+  const carrierPo = openPos.filter((p) => p.carrierEta && !shippedPoIds.has(p.id)).sort((a, b) => +b.carrierEta! - +a.carrierEta!)[0] ?? null;
   const supplierEtaPo = openPos.filter((p) => p.eta).sort((a, b) => +b.eta! - +a.eta!)[0] ?? null;
-  const carrier = carrierPo
+  const shipDate = mainShip ? mainShip.s.deliveredAt ?? mainShip.s.carrierEta : null;
+  const carrier = mainShip && shipDate
+    ? {
+        date: shipDate,
+        who: mainShip.s.carrierName,
+        src: mainShip.s.deliveredAt ? t("Entregado según el transportista", "Delivered per carrier") : mainShip.s.carrierEtaSource ?? (mainShip.s.tracking ? `${t("Guía", "Tracking")} ${mainShip.s.tracking}` : mainShip.s.code),
+        reportedAt: mainShip.s.carrierEtaAt,
+        stale: !mainShip.s.deliveredAt && !!mainShip.s.carrierEtaAt && daysBetween(day0(mainShip.s.carrierEtaAt), now) > 3,
+        late: !mainShip.s.deliveredAt && shipDate < now,
+        po: null as (typeof deal.supplierPos)[number] | null,
+        ship: mainShip.s as (typeof deal.shipments)[number] | null,
+        fallback: false,
+      }
+    : carrierPo
     ? {
         date: carrierPo.carrierEta!,
         who: carrierPo.carrierName ?? t("Transportista", "Carrier"),
@@ -79,7 +101,8 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
         reportedAt: carrierPo.carrierEtaAt,
         stale: !!carrierPo.carrierEtaAt && daysBetween(day0(carrierPo.carrierEtaAt), now) > 3,
         late: carrierPo.carrierEta! < now,
-        po: carrierPo,
+        po: carrierPo as (typeof deal.supplierPos)[number] | null,
+        ship: null as (typeof deal.shipments)[number] | null,
         fallback: false,
       }
     : supplierEtaPo
@@ -90,7 +113,8 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
           reportedAt: null as Date | null,
           stale: false,
           late: supplierEtaPo.eta! < now,
-          po: supplierEtaPo,
+          po: supplierEtaPo as (typeof deal.supplierPos)[number] | null,
+          ship: null as (typeof deal.shipments)[number] | null,
           fallback: true,
         }
       : null;
@@ -99,6 +123,8 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
   let expected: { date: Date | null; done: boolean; calc: string } = { date: null, done: false, calc: "" };
   if (fullyDelivered && lastDelivery) {
     expected = { date: lastDelivery, done: true, calc: t("Entregado al cliente", "Delivered to the customer") };
+  } else if (mainShip && (mainShip.e.date || mainShip.s.receipt === "DISPUTED")) {
+    expected = { date: mainShip.e.date, done: false, calc: `${mainShip.s.code} · ${mainShip.e.calc}` };
   } else if (allReceived) {
     const base = maxDate([...deal.supplierPos.map((p) => p.receivedAt), now])!;
     expected = { date: addDays(base, LAST_MILE_DAYS), done: false, calc: t(`Todo está en bodega · + ${LAST_MILE_DAYS} día de entrega`, `Everything is in the warehouse · + ${LAST_MILE_DAYS} day to deliver`) };
@@ -145,7 +171,7 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
   if (!lost && !deal.resultAchievedAt) {
     if (won) {
       const unconfirmed = deal.supplierPos.find((p) => !p.confirmedAt);
-      const noEta = deal.supplierPos.find((p) => p.shippedAt && !p.receivedAt && !p.carrierEta);
+      const noEta = deal.supplierPos.find((p) => p.shippedAt && !p.receivedAt && !p.carrierEta && !shippedPoIds.has(p.id));
       if (!deal.supplierPos.length) suggestion = { what: t("Emitir la compra al proveedor", "Issue the supplier purchase"), why: t("La OC del cliente está aceptada y aún no hay Supplier PO.", "The customer PO is accepted and there is no supplier PO yet."), tab: "execute" };
       else if (unconfirmed) suggestion = { what: t(`Confirmar ${unconfirmed.code} con ${unconfirmed.supplier.name}`, `Confirm ${unconfirmed.code} with ${unconfirmed.supplier.name}`), why: t("Sin confirmación del proveedor no hay fecha confiable.", "Without supplier confirmation there is no reliable date."), tab: "execute" };
       else if (noEta) suggestion = { what: t(`Pedir la ETA del transportista para ${noEta.code}`, `Ask the carrier for the ETA of ${noEta.code}`), why: t("Ya salió, pero SOLU no puede calcular la llegada sin la fecha del transportista.", "It has shipped, but SOLU can't estimate arrival without the carrier's date."), tab: "execute" };
@@ -198,7 +224,8 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
     if (p.receivedAt) facts.push({ key: `po-${p.id}`, text: t(`${p.code} llegó a bodega`, `${p.code} arrived at the warehouse`), when: p.receivedAt, src: p.supplier.name });
     else if (p.shippedAt) {
       facts.push({ key: `po-${p.id}`, text: t(`${p.supplier.name} despachó ${p.code}`, `${p.supplier.name} shipped ${p.code}`), when: p.shippedAt, src: p.code });
-      if (p.carrierEta) {
+      if (shippedPoIds.has(p.id)) { /* the Shipment carries the carrier's truth */ }
+      else if (p.carrierEta) {
         const stale = !!p.carrierEtaAt && daysBetween(day0(p.carrierEtaAt), now) > 3;
         const late = p.carrierEta < now;
         facts.push({
@@ -229,6 +256,20 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
       });
     }
   }
+  for (const { s, e } of openShips) {
+    const ex = s.events[0];
+    facts.push({
+      key: `shp-${s.id}`,
+      text: s.receipt === "DISPUTED" ? t(`${s.carrierName} dice entregado; el cliente disputa el recibo`, `${s.carrierName} says delivered; customer disputes receipt`)
+        : s.customs === "HOLD" ? t(`${s.code} retenido en aduana`, `${s.code} held at customs`)
+        : s.deliveredAt ? t(`${s.carrierName} entregó ${s.code}`, `${s.carrierName} delivered ${s.code}`)
+        : s.carrierEta ? t(`${s.carrierName} reporta llegada el ${i.day(s.carrierEta)}${e.date ? ` · SOLU espera ${i.day(e.date)}` : ""}`, `${s.carrierName} reports arrival on ${i.day(s.carrierEta)}${e.date ? ` · SOLU expects ${i.day(e.date)}` : ""}`)
+        : t(`${s.code} sin ETA del transportista`, `${s.code} without carrier ETA`),
+      when: ex?.at ?? s.carrierEtaAt ?? s.createdAt,
+      src: s.tracking ? `${s.carrierName} · ${s.tracking}` : s.code,
+      uncertain: s.receipt === "DISPUTED" || s.customs === "HOLD" || !s.carrierEta,
+    });
+  }
   if (deal.deliveries.length) facts.push({ key: "deliv", text: ordered ? t(`Entregadas ${delivered} de ${ordered} unidades`, `${delivered} of ${ordered} units delivered`) : t(`${deal.deliveries.length} entrega(s) registradas`, `${deal.deliveries.length} deliveries recorded`), when: lastDelivery, src: deal.deliveries[deal.deliveries.length - 1].code });
   for (const c of cash) {
     const prom = c.inv.promises[0];
@@ -251,11 +292,13 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
     add(a.occurredAt > new Date() ? null : a.occurredAt, `${a.user.name}: ${a.subject}`, a.body && a.body !== "✓" ? a.body : a.uncertain ? t("Pendiente de confirmar", "Needs confirming") : undefined);
   }
   add(deal.poAcceptedAt, t(`El cliente aceptó la OC ${deal.customerPo ?? ""}`, `The customer accepted PO ${deal.customerPo ?? ""}`), t("Comienza la compra", "Purchasing starts"));
+  // Shipments: only material events reach "what changed" (normal scans never do).
+  for (const s of deal.shipments) for (const e of s.events) add(e.at, `${s.code}: ${e.text}`);
   for (const p of deal.supplierPos) {
-    add(p.createdAt, t(`Se emitió ${p.code} a ${p.supplier.name}`, `${p.code} issued to ${p.supplier.name}`));
+    add(p.createdAt,t(`Se emitió ${p.code} a ${p.supplier.name}`, `${p.code} issued to ${p.supplier.name}`));
     add(p.confirmedAt, t(`${p.supplier.name} confirmó ${p.code}`, `${p.supplier.name} confirmed ${p.code}`));
     add(p.shippedAt, t(`${p.supplier.name} despachó ${p.code}`, `${p.supplier.name} shipped ${p.code}`));
-    add(p.carrierEtaAt, t(`ETA del transportista: ${i.day(p.carrierEta)}`, `Carrier ETA: ${i.day(p.carrierEta)}`), expected.date && !expected.done ? t(`SOLU ahora espera ${i.day(expected.date)}`, `SOLU now expects ${i.day(expected.date)}`) : undefined);
+    if (!shippedPoIds.has(p.id)) add(p.carrierEtaAt, t(`ETA del transportista: ${i.day(p.carrierEta)}`, `Carrier ETA: ${i.day(p.carrierEta)}`), expected.date && !expected.done ? t(`SOLU ahora espera ${i.day(expected.date)}`, `SOLU now expects ${i.day(expected.date)}`) : undefined);
     add(p.receivedAt, t(`${p.code} llegó a bodega`, `${p.code} arrived at the warehouse`));
     for (const pay of p.payments) {
       add(pay.createdAt, t(`Se solicitó pago a ${p.supplier.name}`, `Payment to ${p.supplier.name} requested`));

@@ -32,6 +32,8 @@ import { defineNext, doneAndNext, logHappened, newPromise, postpone, scheduleMov
 import { createSupplierPo, markSupplierPo } from "../../operaciones/actions";
 import { createQuote } from "../../cotizaciones/actions";
 import { prepareSpo } from "../../compras/actions";
+import { recordShipment } from "../../logistica/actions";
+import { forwardOf, fwdLabel } from "@/lib/logistics";
 
 const TAB_ORDER: TabKey[] = ["resumen", "need", "source", "quote", "execute", "finance", "file", "result"];
 
@@ -115,6 +117,7 @@ export default async function JourneyPage({
     agendado: t(`Agendado a las ${sp.t ?? ""}.`, `Scheduled at ${sp.t ?? ""}.`),
     "sin-dato": t("Escribe un movimiento o lo que esperas.", "Write a movement or what you're waiting for."),
     "sin-fecha": t("Elige una fecha.", "Pick a date."),
+    "envio-sin-dato": t("Escribe el transportista del envío.", "Write the shipment's carrier."),
   };
 
   const H = ({ tb = tab }: { tb?: TabKey }) => (
@@ -328,13 +331,15 @@ export default async function JourneyPage({
             <span className="tsub">{J.carrier.fallback ? t("Aún no hay ETA del transportista; esta es la del proveedor", "No carrier ETA yet; this is the supplier's") : J.carrier.who}</span>
             <span className="src">{J.carrier.src}{J.carrier.reportedAt ? ` · ${t("reportada", "reported")} ${i.day(J.carrier.reportedAt)}` : ""}</span>
             {(J.carrier.stale || J.carrier.late) && <span className="sig dash">{J.carrier.late ? t("Fecha pasada sin llegada", "Date passed, not arrived") : t("Desactualizada", "Out of date")}</span>}
-            <CarrierForm po={J.carrier.po} label={J.carrier.fallback ? t("Registrar ETA del transportista", "Record carrier ETA") : t("Actualizar ETA", "Update ETA")} />
+            {J.carrier.ship ? <Link className="qa-btn" href={`/logistica/${J.carrier.ship.id}`}>{t(`Ver envío ${J.carrier.ship.code}`, `See shipment ${J.carrier.ship.code}`)}</Link>
+              : J.carrier.po && <CarrierForm po={J.carrier.po} label={J.carrier.fallback ? t("Registrar ETA del transportista", "Record carrier ETA") : t("Actualizar ETA", "Update ETA")} />}
           </>
         ) : (
           <>
             <b className="tv muted">—</b>
             <span className="tsub">{deal.supplierPos.length ? (deal.supplierPos.every((p) => p.receivedAt) ? t("Todo llegó a bodega", "Everything arrived") : t("Sin ETA todavía", "No ETA yet")) : t("Sin compra todavía", "No purchase yet")}</span>
-            {deal.supplierPos.find((p) => !p.receivedAt) && <CarrierForm po={deal.supplierPos.find((p) => !p.receivedAt)!} label={t("Registrar ETA", "Record ETA")} />}
+            {deal.shipments.length > 0 ? <Link className="qa-btn" href={`/logistica/${deal.shipments[deal.shipments.length - 1].id}`}>{t("Ver envío", "See shipment")}</Link>
+              : J.won && <Link className="qa-btn" href={`${self}?tab=execute#envios`}>{t("Registrar envío", "Record shipment")}</Link>}
           </>
         )}
       </div>
@@ -713,7 +718,7 @@ export default async function JourneyPage({
                   <div className="po-h"><Link href={`/compras/${p.id}`} className="val">{p.code}</Link><span>{p.supplier.name} · {p.currency} {i.n2(p.amount)}</span><span className="grow" />{p.releasedAt ? <span className={`sig ${st.c}`}>{st.x}</span> : <span className="sig dash">{t("Borrador · sin liberar", "Draft · not released")}</span>}</div>
                   <dl className="po-d">
                     <dt>{t("ETA proveedor", "Supplier ETA")}</dt><dd>{dateMono(p.eta)}</dd>
-                    <dt>{t("ETA transportista", "Carrier ETA")}</dt><dd>{dateMono(p.carrierEta)}{p.carrierName ? ` · ${p.carrierName}` : ""}{p.tracking ? ` · ${p.tracking}` : ""}</dd>
+                    {!deal.shipments.some((s) => s.supplierPoId === p.id) && <><dt>{t("ETA transportista", "Carrier ETA")}</dt><dd>{dateMono(p.carrierEta)}{p.carrierName ? ` · ${p.carrierName}` : ""}{p.tracking ? ` · ${p.tracking}` : ""}</dd></>}
                   </dl>
                   {editable && !p.receivedAt && (
                     <div className="qa-bar">
@@ -721,7 +726,7 @@ export default async function JourneyPage({
                         {p.confirmedAt && !p.shippedAt && <input name="eta" type="date" aria-label="ETA" title="ETA" />}
                         <button className="qa-btn" type="submit">{!p.confirmedAt ? t("✓ El proveedor confirmó", "✓ Supplier confirmed") : !p.shippedAt ? t("✓ Despachó", "✓ Shipped") : t("✓ Llegó a bodega", "✓ Arrived")}</button>
                       </form>
-                      <CarrierForm po={p} label={p.carrierEta ? t("Actualizar ETA transportista", "Update carrier ETA") : t("Registrar ETA transportista", "Record carrier ETA")} />
+                      {!deal.shipments.some((s) => s.supplierPoId === p.id) && p.shippedAt && <Link className="qa-btn" href="#envios">{t("Registrar envío", "Record shipment")}</Link>}
                     </div>
                   )}
                 </div>
@@ -747,6 +752,32 @@ export default async function JourneyPage({
                 <button type="submit">{t("Crear", "Create")}</button>
               </form>
             )}
+          </details>
+        )}
+      </section>
+      <section className="jblock" id="envios">
+        <div className="jbh"><b>{t("ENVÍOS", "SHIPMENTS")}</b><span className="grow" /><span className="src">{t("cada envío es su propio objeto; las lecturas normales no generan acciones", "each shipment is its own object; normal scans create no actions")}</span></div>
+        {deal.shipments.length === 0 ? <p className="quiet-p">{t("Aún no hay envíos registrados.", "No shipments recorded yet.")}</p> : (
+          <ul className="plain">
+            {deal.shipments.map((s) => {
+              const L = fwdLabel(i, forwardOf({ ...s, promisedDate: deal.promisedDate }, i));
+              return <li key={s.id}><Link href={`/logistica/${s.id}`}><b>{s.code}</b></Link> · {s.carrierName}{s.tracking ? ` · ${s.tracking}` : ""} · <span className={`sig ${L.cls}`}>{L.text}</span></li>;
+            })}
+          </ul>
+        )}
+        {editable && J.won && (
+          <details style={{ marginTop: 10 }} open={deal.shipments.length === 0 && deal.supplierPos.some((p) => p.releasedAt && !p.receivedAt)}>
+            <summary className="small">{t("Registrar envío externo", "Record external shipment")}</summary>
+            <form action={recordShipment.bind(null, deal.id)} className="inline">
+              <label>{t("Transportista", "Carrier")}<input name="carrierName" required placeholder="DHL, FedEx…" style={{ width: 140 }} /></label>
+              <label>{t("Guía", "Tracking")}<input name="tracking" style={{ width: 140 }} /></label>
+              <label>{t("Modo", "Mode")}<select name="mode" defaultValue="AIR"><option value="AIR">{t("Aéreo", "Air")}</option><option value="COURIER">Courier</option><option value="OCEAN">{t("Marítimo", "Ocean")}</option><option value="GROUND">{t("Terrestre", "Ground")}</option></select></label>
+              <label>{t("ETA del transportista", "Carrier ETA")}<input name="carrierEta" type="date" /></label>
+              {deal.supplierPos.length > 1 && <label>Supplier PO<select name="supplierPoId">{deal.supplierPos.map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}</select></label>}
+              <label className="chk"><input type="checkbox" name="toCustomer" value="1" /> {t("Entrega directa al cliente", "Delivers straight to customer")}</label>
+              <button type="submit">{t("Registrar", "Record")}</button>
+            </form>
+            <span className="src">{t("El contenido se toma de lo que falta por entregar; aduana y documentos según el origen del proveedor.", "Contents come from what's still undelivered; customs and documents follow the supplier's origin.")}</span>
           </details>
         )}
       </section>

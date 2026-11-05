@@ -34,9 +34,10 @@ export const MODULES: NavModule[] = [
     ],
   },
   {
-    key: "operaciones", es: "OPERACIONES", en: "OPERATIONS", match: ["/operaciones", "/compras"],
+    key: "operaciones", es: "OPERACIONES", en: "OPERATIONS", match: ["/operaciones", "/compras", "/logistica"],
     tabs: [
       { href: "/compras", es: "Compras", en: "Purchasing" },
+      { href: "/logistica", es: "Envíos", en: "Shipments" },
       { href: "/operaciones/sin-despachar", es: "Sin despachar", en: "Unshipped" },
       { href: "/operaciones/remisiones", es: "Remisiones", en: "Delivery notes" },
       { href: "/operaciones/por-facturar", es: "Entregado sin facturar", en: "Delivered, not invoiced" },

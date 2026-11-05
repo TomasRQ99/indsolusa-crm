@@ -6,6 +6,7 @@ import { canManageAll } from "./permissions";
 import { invoiceBlockers } from "./domain";
 import { loadCredit, loadReceivables, loadSupplierPayments } from "./queries";
 import { buildMiDia } from "./midia";
+import { forwardOf } from "./logistics";
 
 // Attention for the shell: a module shows a counter only when it holds objects that
 // need THIS person (amber = needs movement or clarity, red = result at risk).
@@ -19,13 +20,18 @@ export async function shellAttention(user: SessionUser, i: I18n) {
   const manager = canManageAll(user);
   const mineDeal = manager ? {} : { ownerId: user.id };
 
-  const [midia, receivables, payments, ready, credit] = await Promise.all([
+  const [midia, receivables, payments, ready, credit, ships] = await Promise.all([
     buildMiDia(user, i, { agenda: false }), // same number Mi Día shows in its heading
     loadReceivables({ deal: mineDeal }),
     loadSupplierPayments({ executedAt: null }),
     db.delivery.findMany({ where: { invoice: null, deal: mineDeal }, include: { deal: { include: { account: true } } } }),
     manager ? loadCredit() : Promise.resolve([]),
+    db.shipment.findMany({ where: { receipt: { not: "CONFIRMED" }, deal: mineDeal }, include: { deal: { select: { promisedDate: true, account: { select: { name: true } } } } } }),
   ]);
+  // Shipments interrupt only when the result is at stake — never per carrier scan.
+  const shipNeeds = ships
+    .map((s) => ({ s, k: forwardOf({ ...s, promisedDate: s.deal.promisedDate }, i) }))
+    .filter((x) => x.k === "RISK" || x.k === "DISPUTED" || x.k === "HOLD");
 
   const broken = receivables.filter((r) => r.state === "BROKEN");
   const toVerify = payments.filter((p) => p.state === "VERIFY" && p.requestedById !== user.id);
@@ -39,7 +45,7 @@ export async function shellAttention(user: SessionUser, i: I18n) {
     if (n > 0) counters[k] = { n, tone };
   };
   set("midia", midia.needCount, midia.needs.some((n) => n.tone === "risk") ? "risk" : "attn");
-  set("operaciones", readyToInvoice, "attn");
+  set("operaciones", readyToInvoice + shipNeeds.length, shipNeeds.some((x) => x.k !== "HOLD") ? "risk" : "attn");
   if (broken.length || toReconcile.length) set("administracion", broken.length + toVerify.length + toReconcile.length, "risk");
   else set("administracion", toVerify.length, "attn");
   set("gerencia", toApprove.length + creditDecisions.length, "attn");
@@ -47,6 +53,7 @@ export async function shellAttention(user: SessionUser, i: I18n) {
   const alerts: Alert[] = [
     ...broken.map((r) => ({ key: `b${r.id}`, tone: "risk" as const, href: `/administracion/cobrar?f=${r.id}`, text: t(`Compromiso incumplido: ${r.account.name} · ${i.money(r.cash.balance)}`, `Commitment missed: ${r.account.name} · ${i.money(r.cash.balance)}`) })),
     ...toVerify.map((p) => ({ key: `v${p.id}`, tone: "risk" as const, href: `/administracion/pagos-proveedores/${p.id}`, text: t(`Verificar datos bancarios de ${p.supplierPo.supplier.name}`, `Verify ${p.supplierPo.supplier.name}'s bank data`) })),
+    ...shipNeeds.map(({ s, k }) => ({ key: `s${s.id}`, tone: (k === "HOLD" ? "attn" : "risk") as "attn" | "risk", href: `/logistica/${s.id}`, text: k === "RISK" ? t(`Resultado en riesgo: envío ${s.code} · ${s.deal.account.name}`, `Result at Risk: shipment ${s.code} · ${s.deal.account.name}`) : k === "DISPUTED" ? t(`Recibo en disputa: ${s.code} · ${s.deal.account.name}`, `Receipt disputed: ${s.code} · ${s.deal.account.name}`) : t(`Retenido en aduana: ${s.code} · ${s.deal.account.name}`, `Held at customs: ${s.code} · ${s.deal.account.name}`) })),
     ...toReconcile.map((p) => ({ key: `u${p.id}`, tone: "risk" as const, href: `/administracion/pagos-proveedores/${p.id}`, text: t(`Conciliar pago incierto a ${p.supplierPo.supplier.name} · ${p.currency} ${i.n(p.amount)}`, `Reconcile uncertain payment to ${p.supplierPo.supplier.name} · ${p.currency} ${i.n(p.amount)}`) })),
     ...toApprove.map((p) => ({ key: `a${p.id}`, tone: "attn" as const, href: `/administracion/pagos-proveedores/${p.id}`, text: t(`Aprobar pago a ${p.supplierPo.supplier.name} · ${p.currency} ${i.n(p.amount)}`, `Approve payment to ${p.supplierPo.supplier.name} · ${p.currency} ${i.n(p.amount)}`) })),
     ...creditDecisions.map(({ a, d }) => ({ key: `c${d.id}`, tone: "attn" as const, href: `/administracion/cupos#${a.id}`, text: t(`Decidir el cupo de ${a.name}`, `Decide ${a.name}'s credit limit`) })),

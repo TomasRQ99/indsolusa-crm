@@ -412,6 +412,99 @@ export async function loadDemo(adminId: string) {
         },
       });
 
+      // ---------- Logistics Forward View: five shipment states ----------
+      const hrs = (h: number) => new Date(Date.now() - h * 3600e3);
+      type Sup = typeof siemens;
+      // A purchase already paid (confirmed) so the shipment has a coherent chain behind it.
+      const paidSpo = async (dealId: string, sup: Sup, lines: Ln[], shippedAt: Date) => {
+        const amount = lines.reduce((a, l) => a + l.qty * l.unitCost, 0);
+        const p = await spo(dealId, sup.id, amount, sup.currency, { confirmedAt: addDays(shippedAt, -3), shippedAt, terms: sup.paymentTerms, shipBy: shippedAt }, lines,
+          [{ label: "Pago total antes de despacho", percent: 100, amount, trigger: "El proveedor despacha contra pago", dueBy: addDays(shippedAt, -1) }]);
+        const pay = await tx.supplierPayment.create({ data: { supplierPoId: p.id, requirementId: p.requirements[0].id, amount, currency: sup.currency, amountUsd: amount, reason: "El proveedor despacha contra pago", dueBy: addDays(shippedAt, -1), docBeneficiary: sup.bankBeneficiary, docBankName: sup.bankName, docAccount: sup.bankAccount, docSwift: sup.bankSwift, docSource: "Proforma (ejemplo)", requestedById: paola.id, approvedById: adminId, approvedAt: addDays(shippedAt, -2), executedById: diana.id, executedAt: addDays(shippedAt, -1), executedRef: "Wire (ejemplo)", createdAt: addDays(shippedAt, -3) } });
+        await confirmed(pay.id, amount, addDays(shippedAt, -1), "Wire (ejemplo)");
+        return p;
+      };
+      type Ev = { h: number; loc?: string; lat?: number; lng?: number; text: string; kind?: "SCAN" | "ETA_CHANGE" | "EXCEPTION" | "CUSTOMS" | "DELIVERED" | "NOTE"; material?: boolean; etaBefore?: Date; etaAfter?: Date; source?: string };
+      const fd = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", timeZone: "UTC" }).format;
+      const shipment = async (data: Omit<Prisma.ShipmentUncheckedCreateInput, "code" | "createdByName">, lines: { dealItemId: string; qty: number; description: string }[], events: Ev[]) => {
+        const code = await nextCode("SHP", "shipment", tx);
+        return tx.shipment.create({
+          data: {
+            ...data, code, createdByName: paola.name,
+            lines: { create: lines },
+            events: { create: events.map((e) => ({ at: hrs(e.h), kind: e.kind ?? "SCAN", location: e.loc, lat: e.lat, lng: e.lng, text: e.text, material: e.material ?? false, etaBefore: e.etaBefore, etaAfter: e.etaAfter, source: e.source ?? "Tracking del transportista", recordedByName: e.kind === "SCAN" || !e.kind ? null : paola.name })) },
+          },
+        });
+      };
+      const docsIntl = (co: boolean, awb = "Guía aérea (AWB)") => [
+        { key: "ci", label: "Factura comercial", ready: true }, { key: "pl", label: "Lista de empaque", ready: true },
+        { key: "awb", label: awb, ready: true }, { key: "co", label: "Certificado de origen", ready: co },
+      ];
+      const HOU = { lat: 29.76, lng: -95.37 }, MEM = { lat: 35.15, lng: -90.05 }, MIA = { lat: 25.79, lng: -80.29 }, BOG = { lat: 4.7, lng: -74.15 };
+
+      // (a) Normal transit, 0 interruptions: 10 normal scans → no actions.
+      const pap = await deal({ title: "Válvulas de control caldera 2", amount: 9200, supplierCost: 6900, freightCost: 320, accountId: papeles.id, contactId: marta.id, ownerId: adminId, stage: "WON", customerPo: "PDS-OC-3310", poAcceptedAt: d(-8), desiredResult: "Caldera 2 regulando presión sin intervención manual", promiseText: "Válvulas en planta Cali antes del 17", promisedDate: d(12) });
+      const papItem = await tx.dealItem.create({ data: { dealId: pap.id, qty: 2, code: "CV-2-150", description: "Válvula de control 2\" ANSI 150", unitPrice: 4600 } });
+      const papSpo = await paidSpo(pap.id, general, [{ qty: 2, code: "CV-2-150", description: "Válvula de control 2\" ANSI 150", unitCost: 3450 }], d(-3));
+      await shipment({ dealId: pap.id, supplierPoId: papSpo.id, carrierName: "FedEx", tracking: "7729 4410 3381", mode: "AIR", origin: "Houston, TX", destination: "Papeles del Sur · Cali", destLat: 3.45, destLng: -76.53, international: true, customs: "PENDING", plannedRts: d(-3), rtsAt: d(-3), plannedPickup: d(-3), pickedUpAt: d(-3), plannedDelivery: d(4), carrierEta: d(4), carrierEtaAt: hrs(5), carrierEtaSource: "Tracking web FedEx", docs: docsIntl(true) },
+        [{ dealItemId: papItem.id, qty: 2, description: "CV-2-150 · Válvula de control 2\" ANSI 150" }],
+        [
+          { h: 70, loc: "Houston, TX", ...HOU, text: "Recogido" }, { h: 66, loc: "Houston, TX", ...HOU, text: "En instalación FedEx" }, { h: 60, loc: "Houston, TX", ...HOU, text: "Salió de la instalación" },
+          { h: 52, loc: "Memphis, TN", ...MEM, text: "Llegó al hub" }, { h: 48, loc: "Memphis, TN", ...MEM, text: "En proceso en el hub" }, { h: 41, loc: "Memphis, TN", ...MEM, text: "Salió del hub" },
+          { h: 30, loc: "Miami, FL", ...MIA, text: "Llegó a la puerta internacional" }, { h: 22, loc: "Miami, FL", ...MIA, text: "Documentación de exportación verificada" }, { h: 12, loc: "Miami, FL", ...MIA, text: "En vuelo programado" },
+          { h: 5, loc: "Miami, FL", ...MIA, text: "Salió hacia Bogotá" },
+        ]);
+
+      // (b) ETA churn within the buffer: three ETA changes, still protected → "Protected · no action".
+      const sid3 = await deal({ title: "Acoples para laminador", amount: 4200, supplierCost: 3100, freightCost: 180, accountId: sider.id, stage: "WON", customerPo: "SN-77402", poAcceptedAt: d(-9), promiseText: "Acoples instalados en la parada del 17", promisedDate: d(12) });
+      const sidItem3 = await tx.dealItem.create({ data: { dealId: sid3.id, qty: 4, code: "AC-90", description: "Acople flexible 90 mm", unitPrice: 1050 } });
+      const sidSpo3 = await paidSpo(sid3.id, siemens, [{ qty: 4, code: "AC-90", description: "Acople flexible 90 mm", unitCost: 775 }], d(-4));
+      await shipment({ dealId: sid3.id, supplierPoId: sidSpo3.id, carrierName: "UPS", tracking: "1Z 88E 412 03 5521 7704", mode: "AIR", origin: "Miami, FL", destination: "Siderúrgica del Norte · Barranquilla", destLat: 10.96, destLng: -74.8, international: true, customs: "PENDING", plannedRts: d(-4), rtsAt: d(-4), plannedPickup: d(-4), pickedUpAt: d(-4), plannedDelivery: d(3), carrierEta: d(5), carrierEtaAt: hrs(8), carrierEtaSource: "Tracking web UPS", docs: docsIntl(true) },
+        [{ dealItemId: sidItem3.id, qty: 4, description: "AC-90 · Acople flexible 90 mm" }],
+        [
+          { h: 92, loc: "Miami, FL", ...MIA, text: "Recogido" }, { h: 80, loc: "Miami, FL", ...MIA, text: "En instalación UPS" },
+          { h: 70, kind: "ETA_CHANGE", text: `ETA del transportista: ${fd(d(3))} → ${fd(d(4))}`, etaBefore: d(3), etaAfter: d(4) },
+          { h: 44, loc: "Miami, FL", ...MIA, text: "Esperando espacio en vuelo" },
+          { h: 40, kind: "ETA_CHANGE", text: `ETA del transportista: ${fd(d(4))} → ${fd(d(5))}`, etaBefore: d(4), etaAfter: d(5) },
+          { h: 20, loc: "Miami, FL", ...MIA, text: "Salió hacia Barranquilla" }, { h: 8, loc: "Barranquilla", lat: 10.89, lng: -74.78, text: "Llegó al país de destino" },
+        ]);
+
+      // (c) Result at Risk: SJ-01842. A missed connection pushes the carrier ETA past what the promise allows.
+      const sjItems = await tx.dealItem.findMany({ where: { dealId: sj.id }, orderBy: { id: "asc" } });
+      await shipment({ dealId: sj.id, supplierPoId: sjSpo.id, carrierName: "DHL Global Forwarding", tracking: "DHL 7781 5520", mode: "AIR", origin: "Miami, FL", destination: "ABC Foods · Funza", destLat: 4.72, destLng: -74.21, international: true, customs: "PENDING", plannedRts: d(-6), rtsAt: d(-5), plannedPickup: d(-5), pickedUpAt: d(-5), plannedDelivery: d(4), carrierEta: d(7), carrierEtaAt: new Date(d(-4).getTime() + 15 * 3600e3), carrierEtaSource: "Tracking web DHL", docs: docsIntl(true) },
+        sjItems.map((it) => ({ dealItemId: it.id, qty: it.qty, description: `${it.code} · ${it.description}` })),
+        [
+          { h: 118, loc: "Miami, FL", ...MIA, text: "Recogido en Distribuidor Siemens Miami" }, { h: 110, loc: "Miami, FL", ...MIA, text: "Recibido en bodega DHL" },
+          { h: 104, kind: "ETA_CHANGE", text: `ETA del transportista: ${fd(d(4))} → ${fd(d(5))}`, etaBefore: d(4), etaAfter: d(5) },
+          { h: 98, loc: "Miami, FL", ...MIA, text: "Consolidado para vuelo" },
+          { h: 92, kind: "EXCEPTION", loc: "Miami, FL", ...MIA, text: "Conexión perdida: la carga no subió al vuelo y se reprogramó", material: true, etaBefore: d(5), etaAfter: d(7), source: "Tracking web DHL" },
+          { h: 60, loc: "Miami, FL", ...MIA, text: "En espera de vuelo reprogramado" }, { h: 30, loc: "Miami, FL", ...MIA, text: "Manifestado para vuelo" },
+        ]);
+
+      // (d) Customs hold: arrived in Bogotá, held for a missing certificate of origin; still protectable.
+      const qcs = await deal({ title: "Sellos mecánicos para reactor", amount: 5400, supplierCost: 3900, freightCost: 260, accountId: quimica.id, contactId: carlos.id, ownerId: adminId, stage: "WON", customerPo: "QA-OC-1188", poAcceptedAt: d(-10), desiredResult: "Reactor 3 sin fugas en el arranque", promiseText: "Sellos en planta Cartagena el 10", promisedDate: d(5) });
+      const qcsItem = await tx.dealItem.create({ data: { dealId: qcs.id, qty: 3, code: "SM-RX-60", description: "Sello mecánico doble 60 mm", unitPrice: 1800 } });
+      const qcsSpo = await paidSpo(qcs.id, general, [{ qty: 3, code: "SM-RX-60", description: "Sello mecánico doble 60 mm", unitCost: 1300 }], d(-5));
+      await shipment({ dealId: qcs.id, supplierPoId: qcsSpo.id, carrierName: "DHL Express", tracking: "JD0146 0000 7712 3390", mode: "COURIER", origin: "Houston, TX", destination: "Química Andina · Cartagena", destLat: 10.39, destLng: -75.48, international: true, customs: "HOLD", customsNote: "La DIAN pide el certificado de origen para aplicar el arancel preferencial.", plannedRts: d(-5), rtsAt: d(-5), plannedPickup: d(-5), pickedUpAt: d(-5), plannedDelivery: d(-1), carrierEta: d(-1), carrierEtaAt: hrs(30), carrierEtaSource: "Tracking web DHL", docs: docsIntl(false) },
+        [{ dealItemId: qcsItem.id, qty: 3, description: "SM-RX-60 · Sello mecánico doble 60 mm" }],
+        [
+          { h: 116, loc: "Houston, TX", ...HOU, text: "Recogido" }, { h: 100, loc: "Cincinnati, OH", lat: 39.05, lng: -84.66, text: "En hub DHL" },
+          { h: 80, loc: "Miami, FL", ...MIA, text: "En puerta internacional" }, { h: 50, loc: "Bogotá", ...BOG, text: "Llegó al país de destino" },
+          { h: 30, kind: "CUSTOMS", loc: "Bogotá", ...BOG, text: "Retenido en aduana: falta certificado de origen", material: true },
+        ]);
+
+      // (e) Carrier delivered, customer disputes receipt.
+      const lac3 = await deal({ title: "Empaques para válvulas mariposa", amount: 1400, supplierCost: 980, freightCost: 60, accountId: lacteos.id, stage: "WON", customerPo: "4500-1931", poAcceptedAt: d(-6), promiseText: "Empaques en planta Tuluá el 6", promisedDate: d(1) });
+      const lacItem3 = await tx.dealItem.create({ data: { dealId: lac3.id, qty: 20, code: "EMP-MV-4", description: "Empaque EPDM válvula mariposa 4\"", unitPrice: 70 } });
+      const lacSpo3 = await paidSpo(lac3.id, rodamientos, [{ qty: 20, code: "EMP-MV-4", description: "Empaque EPDM válvula mariposa 4\"", unitCost: 49 }], d(-3));
+      await shipment({ dealId: lac3.id, supplierPoId: lacSpo3.id, carrierName: "Servientrega", tracking: "SV 2044 1187 55", mode: "GROUND", origin: "Bogotá", destination: "Lácteos del Valle · Tuluá", destLat: 4.08, destLng: -76.2, international: false, toCustomer: true, customs: "NOT_REQUIRED", plannedRts: d(-3), rtsAt: d(-3), plannedPickup: d(-3), pickedUpAt: d(-3), plannedDelivery: d(-1), carrierEta: d(-1), carrierEtaAt: hrs(60), carrierEtaSource: "Tracking web Servientrega", deliveredAt: d(-1), deliveredNote: "Firmó: Portería (J. Ruiz)", receipt: "DISPUTED", disputedAt: hrs(20), disputeNote: "Almacén dice que no tiene registro de la caja; portería no la entregó a almacén.", docs: [{ key: "rem", label: "Remisión / guía nacional", ready: true }] },
+        [{ dealItemId: lacItem3.id, qty: 20, description: "EMP-MV-4 · Empaque EPDM válvula mariposa 4\"" }],
+        [
+          { h: 70, loc: "Bogotá", ...BOG, text: "Recogido" }, { h: 60, loc: "Bogotá", ...BOG, text: "Salió del centro de distribución" }, { h: 40, loc: "Cali", lat: 3.45, lng: -76.53, text: "En centro de distribución" },
+          { h: 30, kind: "DELIVERED", loc: "Tuluá", lat: 4.08, lng: -76.2, text: "Entregado · firmó Portería (J. Ruiz)" },
+          { h: 20, kind: "NOTE", text: "El cliente disputa el recibo: almacén no tiene registro de la caja", material: true, source: "Llamada de Almacén Lácteos" },
+        ]);
+
       await tx.task.createMany({
         data: [
           { title: "Preparar visita técnica a Química Andina", assigneeId: adminId, accountId: quimica.id, dealId: q1.id, dueDate: d(3), estimateMinutes: 90 },
