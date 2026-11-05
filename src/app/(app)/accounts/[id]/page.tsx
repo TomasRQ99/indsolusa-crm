@@ -121,7 +121,7 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
                 <input type="hidden" name="accountId" value={account.id} />
                 <label>{t("Nombre", "First name")}<input name="firstName" required /></label>
                 <label>{t("Apellido", "Last name")}<input name="lastName" required /></label>
-                <label>Email<input name="email" type="email" /></label>
+                <label>{t("Correo", "Email")}<input name="email" type="email" /></label>
                 <label>{t("Cargo", "Title")}<input name="title" /></label>
                 <button type="submit">{t("Agregar", "Add")}</button>
               </form>
@@ -169,7 +169,7 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
             <div className="card">
               <details>
                 <summary>{t("Escribir a un contacto", "Email a contact")}</summary>
-                <EmailComposer recipients={recipients} from={mail.from!} />
+                <EmailComposer recipients={recipients} from={mail.from!} es={i.es} />
               </details>
             </div>
           )}

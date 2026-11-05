@@ -30,7 +30,7 @@ export default async function SuppliersPage() {
             <label>{t("Moneda", "Currency")}<input name="currency" defaultValue="USD" style={{ width: 70 }} /></label>
           </div>
           <div className="row">
-            <label style={{ flex: 1 }}>Email<input name="email" type="email" /></label>
+            <label style={{ flex: 1 }}>{t("Correo", "Email")}<input name="email" type="email" /></label>
             <label style={{ flex: 1 }}>{t("Teléfono registrado (para verificar pagos)", "Registered phone (for payment verification)")}<input name="phone" /></label>
           </div>
           <span className="src">{t("Datos bancarios iniciales (quedan sin verificar hasta el primer pago):", "Initial bank data (stays unverified until the first payment):")}</span>
@@ -68,7 +68,7 @@ export default async function SuppliersPage() {
                       <label>{t("Nombre", "Name")}<input name="name" defaultValue={s.name} required /></label>
                       <label>{t("País", "Country")}<input name="country" defaultValue={s.country ?? ""} /></label>
                       <label>{t("Moneda", "Currency")}<input name="currency" defaultValue={s.currency} /></label>
-                      <label>Email<input name="email" defaultValue={s.email ?? ""} /></label>
+                      <label>{t("Correo", "Email")}<input name="email" defaultValue={s.email ?? ""} /></label>
                       <label>{t("Teléfono registrado", "Registered phone")}<input name="phone" defaultValue={s.phone ?? ""} /></label>
                       <button type="submit" className="secondary">{t("Guardar", "Save")}</button>
                     </form>

@@ -5,7 +5,8 @@ import { sendEmail, type EmailState } from "@/app/(app)/email/actions";
 
 type Recipient = { id: string; label: string };
 
-export function EmailComposer({ recipients, from }: { recipients: Recipient[]; from: string }) {
+export function EmailComposer({ recipients, from, es }: { recipients: Recipient[]; from: string; es: boolean }) {
+  const t = (a: string, b: string) => (es ? a : b);
   const [state, action, pending] = useActionState<EmailState, FormData>(sendEmail, {});
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -15,7 +16,7 @@ export function EmailComposer({ recipients, from }: { recipients: Recipient[]; f
   }, [state]);
 
   if (recipients.length === 0) {
-    return <p className="muted small">No contacts with an email address yet.</p>;
+    return <p className="muted small">{t("Aún no hay contactos con correo.", "No contacts with an email address yet.")}</p>;
   }
 
   return (
@@ -28,19 +29,19 @@ export function EmailComposer({ recipients, from }: { recipients: Recipient[]; f
         startTransition(() => action(fd));
       }}
     >
-      <p className="muted small">Sends from {from}</p>
+      <p className="muted small">{t(`Se envía desde ${from}`, `Sends from ${from}`)}</p>
       <label>
-        To
+        {t("Para", "To")}
         <select name="contactId" required defaultValue="">
-          <option value="" disabled>Select a contact…</option>
+          <option value="" disabled>{t("Elige un contacto…", "Select a contact…")}</option>
           {recipients.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
         </select>
       </label>
-      <label>Subject<input name="subject" required /></label>
-      <label>Message<textarea name="body" required style={{ minHeight: 140 }} /></label>
+      <label>{t("Asunto", "Subject")}<input name="subject" required /></label>
+      <label>{t("Mensaje", "Message")}<textarea name="body" required style={{ minHeight: 140 }} /></label>
       {state.error && <p className="error">{state.error}</p>}
       {state.ok && <p className="small" style={{ color: "var(--ok)" }}>{state.ok}</p>}
-      <button type="submit" disabled={pending}>{pending ? "Sending…" : "Send email"}</button>
+      <button type="submit" disabled={pending}>{pending ? t("Enviando…", "Sending…") : t("Enviar correo", "Send email")}</button>
     </form>
   );
 }

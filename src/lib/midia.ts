@@ -28,7 +28,10 @@ export type Need = {
   primary: { label: string; href: string };
   context: string;
   schedule?: { dealId: string; title: string; minutes: number; scheduledAt: Date | null };
+  journey?: { dealId: string; mode: "move" | "wait" | "none"; waitingFor?: string | null };
+  promise?: { invoiceId: string; promisedBy: string };
 };
+export type AgendaItem = { key: string; start: Date; end: Date; title: string; kind: "solu" | "outlook"; taskId?: string; dealId?: string | null; webLink?: string; minutes: number };
 export type FutureItem = { key: string; title: string; text: string; at: Date; chip: string; window: boolean; link: { label: string; href: string } };
 export type WaitItem = { key: string; what: string; from: string; until: Date; trigger: string; href: string };
 export type Signal = { key: string; title: string; text: string; src: string; inferred?: boolean; href?: string };
@@ -141,6 +144,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
       next: t(`Llamar a ${r.promise.promisedBy.split(" (")[0]} y acordar una fecha nueva con un responsable.`, `Call ${r.promise.promisedBy.split(" (")[0]} and agree a new date with an owner.`),
       primary: { label: t("Preparar contacto", "Prepare contact"), href: `/administracion/cobrar?f=${r.id}` },
       context: `/administracion/cobrar?f=${r.id}`,
+      promise: { invoiceId: r.id, promisedBy: r.promise.promisedBy },
     });
   }
 
@@ -223,6 +227,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
           primary: { label: t("Abrir Journey", "Open Journey"), href: `/deals/${d.id}` },
           context: `/deals/${d.id}`,
           schedule: sched(d, next),
+          journey: { dealId: d.id, mode: "wait", waitingFor: d.waitingFor },
         });
       } else controlled.add(d.id);
       continue;
@@ -241,6 +246,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
           primary: { label: t("Abrir Journey", "Open Journey"), href: `/deals/${d.id}` },
           context: `/deals/${d.id}`,
           schedule: sched(d, d.nextMove),
+          journey: { dealId: d.id, mode: "move" },
         });
       } else controlled.add(d.id);
       continue;
@@ -255,6 +261,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
       next: t("Definir el siguiente movimiento con fecha, o una espera con control.", "Set the next move with a date, or a controlled wait."),
       primary: { label: t("Definir", "Set"), href: `/deals/${d.id}` },
       context: `/deals/${d.id}`,
+      journey: { dealId: d.id, mode: "none" },
     });
   }
 
@@ -358,7 +365,32 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
   const todayEvents = agenda.events.filter((e) => !e.isAllDay && e.start < dayEnd && e.end > new Date());
   const nextMeeting = todayEvents.find((e) => !e.fromSolu);
 
+  // ---------- Today's and tomorrow's calendar: Outlook meetings + SOLU blocks ----------
+  const dayStart = new Date(now.getTime() + 5 * 3600e3); // 00:00 Bogotá
+  const twoDays = new Date(dayStart.getTime() + 2 * 864e5);
+  const blocks =
+    opts.agenda === false
+      ? []
+      : await db.task.findMany({
+          where: { assigneeId: user.id, status: "OPEN", scheduledAt: { gte: dayStart, lt: twoDays } },
+          include: { deal: { select: { code: true } } },
+        });
+  const linked = new Set(blocks.map((b) => b.outlookEventId).filter(Boolean));
+  const items: AgendaItem[] = [
+    ...blocks.map((b) => {
+      const minutes = b.estimateMinutes ?? 30;
+      return { key: `t-${b.id}`, kind: "solu" as const, taskId: b.id, dealId: b.dealId, title: `${b.deal?.code ? `${b.deal.code} · ` : ""}${b.title}`, start: b.scheduledAt!, end: new Date(b.scheduledAt!.getTime() + minutes * 60000), minutes };
+    }),
+    ...agenda.events
+      .filter((e) => !e.isAllDay && !linked.has(e.id) && e.start >= dayStart && e.start < twoDays)
+      .map((e) => ({ key: `o-${e.id}`, kind: "outlook" as const, title: e.subject.replace(/^SOLU · /, ""), start: e.start, end: e.end, webLink: e.webLink, minutes: Math.round((e.end.getTime() - e.start.getTime()) / 60000) })),
+  ].sort((a, b) => a.start.getTime() - b.start.getTime());
+  const tomorrowStart = new Date(dayStart.getTime() + 864e5);
+  const openDeals = deals.filter((d) => d.stage !== "WON").map((d) => ({ id: d.id, label: `${d.code ? `${d.code} · ` : ""}${strip(d.account.name)} · ${d.title}` }));
+
   return {
+    calendar: { today: items.filter((x) => x.start < tomorrowStart), tomorrow: items.filter((x) => x.start >= tomorrowStart) },
+    openDeals,
     needs: needs.slice(0, MAX_NEEDS),
     moreNeeds: needs.slice(MAX_NEEDS),
     needCount: needs.length,

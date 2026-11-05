@@ -125,8 +125,8 @@ export function ShellClient({ lang, user, modules, alerts, children }: ShellProp
 
   const langSwitch = (
     <form action={setLanguage} className="seg" aria-label={t("Idioma", "Language")}>
-      <button type="submit" name="lang" value="ES" className={es ? "on" : undefined} aria-pressed={es}>ES</button>
-      <button type="submit" name="lang" value="EN" className={!es ? "on" : undefined} aria-pressed={!es}>EN</button>
+      <button type="submit" name="lang" value="ES" className={es ? "on" : undefined} aria-pressed={es} title="Español">ES</button>
+      <button type="submit" name="lang" value="EN" className={!es ? "on" : undefined} aria-pressed={!es} title="English">EN</button>
     </form>
   );
 

@@ -2,9 +2,10 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { daysBetween } from "@/lib/domain";
-import { buildMiDia, type Need } from "@/lib/midia";
+import { buildMiDia, type AgendaItem, type Need } from "@/lib/midia";
 import { OutlookNote } from "@/components/OutlookNote";
-import { scheduleMove } from "./actions";
+import { Popovers } from "@/components/Popovers";
+import { blockDone, defineNext, doneAndNext, logHappened, moveBlock, newPromise, postpone, removeBlock, reserveTime, scheduleMove, scheduleMoveAt } from "./actions";
 
 const Spark = ({ s = 12 }: { s?: number }) => (
   <svg width={s} height={s} viewBox="0 0 24 24" aria-hidden><path fill="currentColor" d="M12 2.5c.6 4.6 2.9 6.9 7.5 7.5-4.6.6-6.9 2.9-7.5 7.5-.6-4.6-2.9-6.9-7.5-7.5 4.6-.6 6.9-2.9 7.5-7.5z" /></svg>
@@ -18,7 +19,7 @@ const ToneIcon = ({ tone }: { tone: Need["tone"] }) =>
     <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden><text x="6" y="10" textAnchor="middle" fontSize="11" fontWeight="700" fill="currentColor" fontFamily="sans-serif">?</text></svg>
   );
 
-export default async function MiDiaPage({ searchParams }: { searchParams: Promise<{ cal?: string; agendado?: string }> }) {
+export default async function MiDiaPage({ searchParams }: { searchParams: Promise<{ cal?: string; ok?: string; t?: string; d?: string }> }) {
   const sp = await searchParams;
   const user = await requireUser();
   const i = makeI18n(user.lang);
@@ -52,16 +53,162 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
         </div>
         <div className="actions">
           <Link className="btn sm" href={n.primary.href}>{n.primary.label}</Link>
-          {n.schedule && !n.schedule.scheduledAt && user.outlookConnectedAt && (
-            <form action={scheduleMove.bind(null, n.schedule.dealId, n.schedule.title)}>
-              <button type="submit" className="secondary sm">{t("Agendar en Outlook", "Schedule in Outlook")}</button>
-            </form>
-          )}
           <Link className="btn secondary sm" href={n.context}>{t("Ver contexto", "See context")}</Link>
         </div>
       </div>
+      <QuickActions n={n} />
     </article>
   );
+
+  // ----- Quick actions on each card: act without leaving Mi Día -----
+  const nowB = new Date(Date.now() - 5 * 3600e3); // Bogotá wall clock as UTC fields
+  const todayStr = nowB.toISOString().slice(0, 10);
+  const tomorrowStr = new Date(nowB.getTime() + 864e5).toISOString().slice(0, 10);
+  const half = Math.ceil((nowB.getUTCHours() * 60 + nowB.getUTCMinutes() + 1) / 30) * 30;
+  const nextSlot = half >= 17 * 60 || half < 8 * 60 ? "09:00" : `${String(Math.floor(half / 60)).padStart(2, "0")}:${String(half % 60).padStart(2, "0")}`;
+  const slotDay = half >= 17 * 60 ? tomorrowStr : todayStr;
+  const Dur = ({ v = 30 }: { v?: number }) => (
+    <select name="minutes" defaultValue={String(v)} aria-label={t("Duración", "Duration")}>
+      {[15, 30, 45, 60, 90, 120].map((x) => <option key={x} value={x}>{x < 60 ? `${x} min` : `${x / 60} h`.replace(".5", ",5")}</option>)}
+    </select>
+  );
+  const QA = ({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) => (
+    <details className="qa">
+      <summary className="qa-btn">{label}</summary>
+      <div className={`qa-pop${wide ? " wide" : ""}`}>{children}</div>
+    </details>
+  );
+
+  const QuickActions = ({ n }: { n: Need }) => {
+    const j = n.journey;
+    if (!j && !n.promise) return null;
+    return (
+      <div className="qa-bar" aria-label={t("Acciones rápidas", "Quick actions")}>
+        {j && j.mode !== "none" && (
+          <QA label={j.mode === "wait" ? t("✓ Ya llegó", "✓ It arrived") : t("✓ Hecho", "✓ Done")} wide>
+            <form action={doneAndNext.bind(null, j.dealId)} className="qa-form">
+              <b>{j.mode === "wait" ? t("Llegó lo que esperabas. ¿Qué sigue?", "What you waited for arrived. What's next?") : t("Hecho. ¿Qué sigue?", "Done. What's next?")}</b>
+              <label>{t("Qué pasó (opcional)", "What happened (optional)")}<input name="note" placeholder={t("Ej.: aceptó el plazo, pide descuento", "E.g.: accepted the lead time, asks for a discount")} /></label>
+              <label>{t("Siguiente movimiento", "Next move")}<input name="nextMove" placeholder={t("Ej.: enviar proforma a Carlos", "E.g.: send proforma to Carlos")} /></label>
+              <label>{t("o quedo esperando a…", "or I'm now waiting for…")}<input name="waitingFor" placeholder={t("Ej.: OC del cliente", "E.g.: customer PO")} /></label>
+              <label>{t("Para el / hasta el", "On / until")}<input name="nextDate" type="date" defaultValue={tomorrowStr} /></label>
+              <button type="submit">{t("Guardar", "Save")}</button>
+            </form>
+          </QA>
+        )}
+        {j && j.mode === "none" && (
+          <QA label={t("Definir qué sigue", "Set what's next")} wide>
+            <form action={defineNext.bind(null, j.dealId)} className="qa-form">
+              <label>{t("Siguiente movimiento", "Next move")}<input name="nextMove" placeholder={t("Ej.: llamar a Marta y proponer visita", "E.g.: call Marta and propose a visit")} /></label>
+              <label>{t("o quedo esperando a…", "or I'm waiting for…")}<input name="waitingFor" /></label>
+              <label>{t("Para el / hasta el", "On / until")}<input name="nextDate" type="date" defaultValue={todayStr} /></label>
+              <button type="submit">{t("Guardar", "Save")}</button>
+            </form>
+          </QA>
+        )}
+        {n.schedule && (
+          <QA label={n.schedule.scheduledAt ? t("Cambiar hora", "Change time") : t("Agendar", "Schedule")}>
+            <div className="qa-form">
+              {user.outlookConnectedAt && !n.schedule.scheduledAt && (
+                <form action={scheduleMove.bind(null, n.schedule.dealId, n.schedule.title)}>
+                  <button type="submit" className="wide">{t("Primer espacio libre de hoy", "First free slot today")}</button>
+                </form>
+              )}
+              <form action={scheduleMoveAt.bind(null, n.schedule.dealId, n.schedule.title)} className="qa-form">
+                <b>{t("o a esta hora", "or at this time")}</b>
+                <div className="qa-row"><input name="date" type="date" defaultValue={slotDay} required /><input name="time" type="time" defaultValue={nextSlot} step={900} required /><Dur /></div>
+                <button type="submit" className="secondary">{t("Agendar a esta hora", "Schedule at this time")}</button>
+                {!user.outlookConnectedAt && <span className="src">{t("Queda en tu agenda de SOLU. ", "It stays in your SOLU agenda. ")}<Link href="/profile#outlook">{t("Conecta Outlook", "Connect Outlook")}</Link>{t(" para verlo también allá.", " to see it there too.")}</span>}
+              </form>
+            </div>
+          </QA>
+        )}
+        {j && j.mode !== "none" && (
+          <QA label={j.mode === "wait" ? t("Extender espera", "Extend wait") : t("Posponer", "Postpone")}>
+            <form action={postpone.bind(null, j.dealId)} className="qa-form">
+              <div className="qa-row">
+                <button type="submit" name="days" value="1" className="secondary">{t("Mañana", "Tomorrow")}</button>
+                <button type="submit" name="days" value="3" className="secondary">{t("En 3 días", "In 3 days")}</button>
+                <button type="submit" name="days" value="7" className="secondary">{t("1 semana", "1 week")}</button>
+              </div>
+              <div className="qa-row"><input name="date" type="date" defaultValue={tomorrowStr} /><button type="submit">{t("A esa fecha", "To that date")}</button></div>
+            </form>
+          </QA>
+        )}
+        {j && (
+          <QA label={t("Registrar lo que pasó", "Log what happened")}>
+            <form action={logHappened.bind(null, j.dealId)} className="qa-form">
+              <div className="qa-row">
+                <select name="type" defaultValue="CALL" aria-label={t("Tipo", "Type")}>
+                  <option value="CALL">{t("Llamada", "Call")}</option>
+                  <option value="EMAIL">{t("Correo", "Email")}</option>
+                  <option value="MEETING">{t("Reunión", "Meeting")}</option>
+                  <option value="NOTE">{t("Nota", "Note")}</option>
+                </select>
+              </div>
+              <input name="subject" required placeholder={t("Qué pasó, en una línea", "What happened, in one line")} />
+              <button type="submit">{t("Registrar", "Log")}</button>
+            </form>
+          </QA>
+        )}
+        {n.promise && (
+          <QA label={t("Registrar nueva promesa", "Record new promise")} wide>
+            <form action={newPromise.bind(null, n.promise.invoiceId)} className="qa-form">
+              <label>{t("Nueva fecha de pago", "New payment date")}<input name="promisedFor" type="date" defaultValue={tomorrowStr} required /></label>
+              <label>{t("Quién lo promete", "Who promises")}<input name="promisedBy" defaultValue={n.promise.promisedBy} required /></label>
+              <label>{t("Fuente", "Source")}<input name="source" required placeholder={t("Ej.: llamada de hoy", "E.g.: today's call")} /></label>
+              <button type="submit">{t("Guardar promesa", "Save promise")}</button>
+            </form>
+          </QA>
+        )}
+      </div>
+    );
+  };
+
+  // ----- Tu agenda: today + tomorrow, managed here -----
+  const time = (d: Date) => new Intl.DateTimeFormat(i.es ? "es-CO" : "en-US", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Bogota" }).format(d);
+  const inputDate = (d: Date) => new Date(d.getTime() - 5 * 3600e3).toISOString().slice(0, 10);
+  const AgendaRow = ({ a }: { a: AgendaItem }) => (
+    <div className={`ag-row ${a.kind}`}>
+      <span className="ag-time">{time(a.start)}<small>–{time(a.end)}</small></span>
+      <span className="ag-title">
+        {a.dealId ? <Link href={`/deals/${a.dealId}`}>{a.title}</Link> : a.title}
+        <small>{a.kind === "solu" ? t("Bloque SOLU", "SOLU block") : "Outlook"}</small>
+      </span>
+      <span className="ag-act">
+        {a.kind === "solu" && a.taskId ? (
+          <>
+            <QA label={t("Mover", "Move")}>
+              <form action={moveBlock.bind(null, a.taskId)} className="qa-form">
+                <div className="qa-row"><input name="date" type="date" defaultValue={inputDate(a.start)} required /><input name="time" type="time" defaultValue={time(a.start)} step={900} required /><Dur v={a.minutes} /></div>
+                <button type="submit">{t("Mover", "Move")}</button>
+              </form>
+            </QA>
+            <form action={blockDone.bind(null, a.taskId)}><button type="submit" className="qa-btn">✓</button></form>
+            <form action={removeBlock.bind(null, a.taskId)}><button type="submit" className="qa-btn" title={t("Quitar del calendario", "Remove from calendar")} aria-label={t("Quitar", "Remove")}>✕</button></form>
+          </>
+        ) : a.webLink ? (
+          <a className="qa-btn" href={a.webLink} target="_blank" rel="noreferrer">{t("Abrir", "Open")}</a>
+        ) : null}
+      </span>
+    </div>
+  );
+
+  const okMsg: Record<string, string> = {
+    agendado: t(`Listo: quedó agendado a las ${sp.t ?? ""}.`, `Done: scheduled at ${sp.t ?? ""}.`),
+    reservado: t(`Listo: reservaste tiempo a las ${sp.t ?? ""}.`, `Done: time reserved at ${sp.t ?? ""}.`),
+    movido: t(`Listo: el bloque quedó a las ${sp.t ?? ""}.`, `Done: the block is now at ${sp.t ?? ""}.`),
+    quitado: t("Listo: lo quitaste del calendario.", "Done: removed from the calendar."),
+    "bloque-hecho": t("Bloque hecho. Si era el movimiento de un Journey, usa «✓ Hecho» en su tarjeta para decir qué sigue.", "Block done. If it was a Journey move, use \"✓ Done\" on its card to say what's next."),
+    hecho: t("Listo: quedó registrado como hecho.", "Done: logged as done."),
+    siguiente: t("Listo: el Journey ya tiene su siguiente movimiento.", "Done: the Journey has its next move."),
+    espera: t("Listo: quedó como espera con control; SOLU te avisa en la fecha.", "Done: it's a controlled wait; SOLU will remind you on the date."),
+    pospuesto: t(`Listo: pospuesto para el ${sp.d ? i.dateShort(new Date(`${sp.d}T00:00:00Z`)) : ""}.`, `Done: postponed to ${sp.d ? i.dateShort(new Date(`${sp.d}T00:00:00Z`)) : ""}.`),
+    registrado: t("Listo: quedó registrado en el Journey.", "Done: logged on the Journey."),
+    promesa: t("Listo: nueva promesa registrada; SOLU la vigila.", "Done: new promise recorded; SOLU watches it."),
+    "sin-dato": t("Escribe el siguiente movimiento o lo que esperas.", "Write the next move or what you're waiting for."),
+    "sin-fecha": t("Elige una fecha.", "Pick a date."),
+  };
 
   // Minimal 21-day timeline for "Futuro".
   const pos = (d: Date) => Math.min(100, Math.max(0, (daysBetween(m.now, d) / 21) * 100));
@@ -76,7 +223,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
             {m.needCount === 0 ? (
               t("Nada requiere tu criterio hoy. ", "Nothing needs your judgment today. ")
             ) : (
-              <>{t("Hay ", "There ")}<b>{m.needCount} {m.needCount === 1 ? t("situación", "situation") : t("situaciones", "situations")}</b>{t(" donde tu intervención puede cambiar un resultado hoy. ", m.needCount === 1 ? " where your move can change a result today. " : " where your move can change a result today. ")}</>
+              <>{t("Hay ", m.needCount === 1 ? "There is " : "There are ")}<b>{m.needCount} {m.needCount === 1 ? t("situación", "situation") : t("situaciones", "situations")}</b>{t(" donde tu intervención puede cambiar un resultado hoy. ", m.needCount === 1 ? " where your move can change a result today. " : " where your move can change a result today. ")}</>
             )}
             <b>{m.controlledCount} {m.controlledCount === 1 ? "Journey" : "Journeys"}</b>
             {m.controlledCount === 1 ? t(" está avanzando o esperando con control.", " is moving or waiting under control.") : t(" están avanzando o esperando con control.", " are moving or waiting under control.")}
@@ -99,7 +246,8 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
       </section>
 
       <OutlookNote code={sp.cal} t={t} />
-      {sp.agendado && <div className="note" style={{ marginBottom: 16 }}>{t(`Listo: quedó en tu calendario de Outlook a las ${sp.agendado}.`, `Done: it's in your Outlook calendar at ${sp.agendado}.`)}</div>}
+      {sp.ok && okMsg[sp.ok] && <div className={`note${sp.ok.startsWith("sin-") ? " attn" : " okn"}`} role="status">{okMsg[sp.ok]}</div>}
+      <Popovers />
 
       <div className="cols">
         {/* 50 % — NECESITA DE TI */}
@@ -121,6 +269,43 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
         </div>
 
         <div className="col">
+          {/* TU AGENDA — today and tomorrow, managed right here */}
+          <section className="mblock" aria-labelledby="h-ag">
+            <div className="bhead">
+              <b id="h-ag">{t("TU AGENDA", "YOUR AGENDA")}</b>
+              <span>{m.agenda.connected ? (m.agenda.error ? t("Outlook no respondió", "Outlook didn't respond") : t("sincronizada con Outlook", "synced with Outlook")) : t("solo SOLU · Outlook sin conectar", "SOLU only · Outlook not connected")}</span>
+              <span className="grow" />
+              <Link href="/mi-plan" className="small">{t("Ver semana", "See week")}</Link>
+            </div>
+            <div className="agenda">
+              <div className="ag-day">{t("Hoy", "Today")}</div>
+              {m.calendar.today.length ? m.calendar.today.map((a) => <AgendaRow key={a.key} a={a} />) : <p className="quiet-p">{t("Nada agendado hoy.", "Nothing scheduled today.")}</p>}
+              {m.calendar.tomorrow.length > 0 && (
+                <>
+                  <div className="ag-day">{t("Mañana", "Tomorrow")}</div>
+                  {m.calendar.tomorrow.map((a) => <AgendaRow key={a.key} a={a} />)}
+                </>
+              )}
+              <details className="qa ag-add">
+                <summary className="qa-btn">+ {t("Reservar tiempo", "Reserve time")}</summary>
+                <div className="qa-pop wide">
+                  <form action={reserveTime} className="qa-form">
+                    <label>{t("Para qué", "What for")}<input name="title" required placeholder={t("Ej.: preparar oferta para Química Andina", "E.g.: prepare offer for Química Andina")} /></label>
+                    <label>{t("Journey (opcional)", "Journey (optional)")}
+                      <select name="dealId" defaultValue="">
+                        <option value="">{t("— Ninguno —", "— None —")}</option>
+                        {m.openDeals.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
+                      </select>
+                    </label>
+                    <div className="qa-row"><input name="date" type="date" defaultValue={slotDay} required aria-label={t("Fecha", "Date")} /><input name="time" type="time" defaultValue={nextSlot} step={900} required aria-label={t("Hora", "Time")} /><Dur /></div>
+                    <button type="submit">{user.outlookConnectedAt ? t("Reservar en mi Outlook", "Reserve in my Outlook") : t("Reservar", "Reserve")}</button>
+                  </form>
+                </div>
+              </details>
+              {!user.outlookConnectedAt && <Link href="/profile#outlook" className="small">{t("Conectar Outlook para ver tus reuniones aquí", "Connect Outlook to see your meetings here")}</Link>}
+            </div>
+          </section>
+
           {/* 20 % — FUTURO */}
           <section className="mblock" aria-labelledby="h-fut">
             <div className="bhead"><b id="h-fut">{t("FUTURO QUE VALE LA PENA MOVER", "FUTURE WORTH MOVING")}</b><span>{t("actuar antes mejora el resultado", "acting early improves the result")}</span></div>
@@ -145,7 +330,20 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
                       <div>
                         <b>{f.title}</b>
                         <p>{f.text}</p>
-                        <div className="fmeta"><span className={`chip${f.window ? " win" : ""}`}>{f.chip}</span><Link className="flink" href={f.link.href}>{f.link.label}</Link></div>
+                        <div className="fmeta">
+                          <span className={`chip${f.window ? " win" : ""}`}>{f.chip}</span>
+                          <span className="grow" />
+                          <QA label={t("Reservar tiempo", "Reserve time")}>
+                            <form action={reserveTime} className="qa-form">
+                              <input type="hidden" name="title" value={`${f.link.label}: ${f.title}`} />
+                              {f.link.href.startsWith("/deals/") && <input type="hidden" name="dealId" value={f.link.href.slice(7)} />}
+                              <b>{f.link.label}</b>
+                              <div className="qa-row"><input name="date" type="date" defaultValue={slotDay} required /><input name="time" type="time" defaultValue={nextSlot} step={900} required /><Dur /></div>
+                              <button type="submit">{t("Reservar", "Reserve")}</button>
+                            </form>
+                          </QA>
+                          <Link className="flink" href={f.link.href}>{f.link.label}</Link>
+                        </div>
                       </div>
                     </div>
                   ))}

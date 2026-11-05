@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const requiredText = z.string().trim().min(1, "Required").max(200);
+export const requiredText = z.string().trim().min(1, "Obligatorio / Required").max(200);
 export const optionalText = z
   .string()
   .trim()

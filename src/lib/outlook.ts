@@ -125,6 +125,24 @@ export async function createEvent(mailbox: string, ev: { subject: string; start:
   return { id: data.id, start: ev.start, end };
 }
 
+export async function moveEvent(mailbox: string, id: string, start: Date, minutes: number) {
+  const end = new Date(start.getTime() + minutes * 60000);
+  await graph(`/users/${encodeURIComponent(mailbox)}/events/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      start: { dateTime: start.toISOString().slice(0, 19), timeZone: "UTC" },
+      end: { dateTime: end.toISOString().slice(0, 19), timeZone: "UTC" },
+    }),
+  });
+  return { start, end };
+}
+
+/** "2026-11-05" + "14:30" (Bogotá) → UTC instant. */
+export function bogotaInput(date: string, time: string) {
+  const [h, m] = time.split(":").map(Number);
+  return bogotaTime(new Date(`${date}T00:00:00Z`), h * 60 + (m || 0));
+}
+
 export async function deleteEvent(mailbox: string, id: string) {
   try {
     await graph(`/users/${encodeURIComponent(mailbox)}/events/${encodeURIComponent(id)}`, { method: "DELETE" });

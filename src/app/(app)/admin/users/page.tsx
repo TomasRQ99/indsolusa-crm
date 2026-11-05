@@ -46,7 +46,7 @@ export default async function UsersPage() {
         <div className="card">
           <h2>{t("Envío de correo", "Email delivery")}</h2>
           {mail.configured ? <p className="small">{t("Enviando como", "Sending as")} <b>{mail.from}</b> · {mail.description}.</p> : <p className="error">{t("No configurado.", "Not configured.")}</p>}
-          {mail.configured && <TestEmailButton />}
+          {mail.configured && <TestEmailButton es={i.es} />}
         </div>
       </div>
 
@@ -54,7 +54,7 @@ export default async function UsersPage() {
         <h2>{t("Invitar usuario", "Invite user")}</h2>
         <form action={createUser} className="inline">
           <label>{t("Nombre", "Name")}<input name="name" required /></label>
-          <label>Email<input name="email" type="email" required /></label>
+          <label>{t("Correo", "Email")}<input name="email" type="email" required /></label>
           <label>{t("Contraseña temporal", "Temporary password")}<input name="password" type="password" minLength={10} required /></label>
           <label>{t("Rol", "Role")}<select name="role" defaultValue="REP">{roleOptions}</select></label>
           <button type="submit">{t("Crear usuario", "Create user")}</button>
@@ -64,7 +64,7 @@ export default async function UsersPage() {
 
       <div className="card flush">
         <table>
-          <thead><tr><th>{t("Nombre", "Name")}</th><th>Email</th><th>{t("Rol", "Role")}</th><th>{t("Estado", "Status")}</th><th>{t("Creado", "Created")}</th><th /></tr></thead>
+          <thead><tr><th>{t("Nombre", "Name")}</th><th>{t("Correo", "Email")}</th><th>{t("Rol", "Role")}</th><th>{t("Estado", "Status")}</th><th>{t("Creado", "Created")}</th><th /></tr></thead>
           <tbody>
             {users.map((u) => {
               const self = u.id === admin.id;

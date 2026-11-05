@@ -32,7 +32,7 @@ export default async function EmailPage() {
       <div className="grid cols-2">
         <div className="card">
           <h2>{t("Nuevo correo", "New email")}</h2>
-          {configured ? <EmailComposer recipients={recipients} from={from!} /> : <p className="error">{t("El correo aún no está configurado.", "Email is not configured yet.")}</p>}
+          {configured ? <EmailComposer recipients={recipients} from={from!} es={i.es} /> : <p className="error">{t("El correo aún no está configurado.", "Email is not configured yet.")}</p>}
         </div>
         <div className="card">
           <h2>{t("Enviados desde SOLU", "Sent from SOLU")}</h2>

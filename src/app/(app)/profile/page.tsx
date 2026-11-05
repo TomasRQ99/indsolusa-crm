@@ -51,7 +51,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         </div>
         <div className="card">
           <h2>{t("Cambiar contraseña", "Change password")}</h2>
-          <PasswordForm />
+          <PasswordForm es={i.es} />
         </div>
       </div>
     </>

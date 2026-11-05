@@ -37,7 +37,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: Pro
         <form action={createContact} className="inline">
           <label>{t("Nombre", "First name")}<input name="firstName" required /></label>
           <label>{t("Apellido", "Last name")}<input name="lastName" required /></label>
-          <label>Email<input name="email" type="email" /></label>
+          <label>{t("Correo", "Email")}<input name="email" type="email" /></label>
           <label>{t("Teléfono", "Phone")}<input name="phone" /></label>
           <label>{t("Cargo", "Title")}<input name="title" /></label>
           <label>{t("Cliente", "Customer")}
@@ -51,7 +51,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: Pro
       </details>
       <div className="card flush">
         <table>
-          <thead><tr><th>{t("Nombre", "Name")}</th><th>{t("Cargo", "Title")}</th><th>{t("Cliente", "Customer")}</th><th>Email</th><th>{t("Teléfono", "Phone")}</th><th /></tr></thead>
+          <thead><tr><th>{t("Nombre", "Name")}</th><th>{t("Cargo", "Title")}</th><th>{t("Cliente", "Customer")}</th><th>{t("Correo", "Email")}</th><th>{t("Teléfono", "Phone")}</th><th /></tr></thead>
           <tbody>
             {contacts.map((c) => (
               <tr key={c.id}>

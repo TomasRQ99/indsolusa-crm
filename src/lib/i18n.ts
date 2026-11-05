@@ -47,7 +47,16 @@ export function makeI18n(lang: Lang) {
   };
 }
 
-export async function getI18n() {
+export const LANG_COOKIE = "solu_lang";
+
+/** The person's language: their profile when signed in, otherwise the last choice in this browser, otherwise Spanish. */
+export async function getLang(): Promise<Lang> {
   const user = await getCurrentUser();
-  return makeI18n(user?.lang ?? "ES");
+  if (user) return user.lang;
+  const { cookies } = await import("next/headers");
+  return (await cookies()).get(LANG_COOKIE)?.value === "EN" ? "EN" : "ES";
+}
+
+export async function getI18n() {
+  return makeI18n(await getLang());
 }
