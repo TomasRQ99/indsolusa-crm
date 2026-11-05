@@ -5,7 +5,7 @@ import type { Lang, Role } from "@prisma/client";
 import { db } from "./db";
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, signSessionToken, verifySessionToken } from "./session-token";
 
-export type SessionUser = { id: string; name: string; email: string; role: Role; lang: Lang; workdayMinutes: number };
+export type SessionUser = { id: string; name: string; email: string; role: Role; lang: Lang; workdayMinutes: number; outlookConnectedAt: Date | null };
 
 export async function createSession(userId: string) {
   const token = await signSessionToken(userId);
@@ -29,7 +29,7 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   if (!userId) return null;
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true, role: true, active: true, lang: true, workdayMinutes: true },
+    select: { id: true, name: true, email: true, role: true, active: true, lang: true, workdayMinutes: true, outlookConnectedAt: true },
   });
   if (!user || !user.active) return null;
   return {
@@ -39,6 +39,7 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
     role: user.role,
     lang: user.lang,
     workdayMinutes: user.workdayMinutes,
+    outlookConnectedAt: user.outlookConnectedAt,
   };
 });
 

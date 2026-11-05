@@ -166,10 +166,18 @@ export async function loadDemo(adminId: string) {
       await delivery(pac.id, d(-3), [{ dealItemId: pacItem.id, qty: 4 }]);
 
       // 11. Pipeline owned by the admin, so Mi Día and Mi Plan show real movements.
-      const q1 = await deal({ title: "Variador para extrusora", amount: 24000, accountId: quimica.id, ownerId: adminId, stage: "PROPOSAL", nextMove: "Enviar cotización revisada con plazo de 10 días", nextMoveDate: T, desiredResult: "Extrusora a velocidad nominal" });
-      await deal({ title: "Repotenciación línea 2", amount: 50000, accountId: quimica.id, ownerId: adminId, stage: "NEGOTIATION", waitingFor: "Que aprueben el presupuesto 2027", waitingUntil: d(5) });
-      await deal({ title: "Bombas dosificadoras", amount: 15000, accountId: papeles.id, ownerId: adminId, stage: "LEAD" });
-      await deal({ title: "Instrumentación caldera", amount: 8000, accountId: papeles.id, ownerId: adminId, stage: "QUALIFIED", nextMove: "Confirmar fuente con Distribuidor A", nextMoveDate: d(2) });
+      const carlos = await tx.contact.create({ data: { firstName: "Carlos", lastName: "Duarte", title: "Jefe de Mantenimiento", email: "carlos.duarte@quimica.example", accountId: quimica.id } });
+      const marta = await tx.contact.create({ data: { firstName: "Marta", lastName: "León", title: "Compras", email: "marta.leon@papeles.example", accountId: papeles.id } });
+      const ago = (days: number, hour: number) => new Date(d(-days).getTime() + (hour + 5) * 3600e3);
+      const q1 = await deal({ title: "Variador para extrusora", amount: 24000, supplierCost: 18100, freightCost: 650, otherCosts: 250, accountId: quimica.id, contactId: carlos.id, ownerId: adminId, stage: "PROPOSAL", nextMove: "Enviar cotización revisada con plazo de 10 días", nextMoveDate: T, desiredResult: "Extrusora a velocidad nominal", offerValidUntil: d(8), closeDate: d(12) });
+      await tx.activity.create({ data: { type: "EMAIL", subject: "Carlos pidió entrega en 10 días", body: "El variador actual falla cada semana; si la entrega pasa de 10 días evaluarán otro proveedor.", occurredAt: ago(1, 16), userId: adminId, accountId: quimica.id, contactId: carlos.id, dealId: q1.id } });
+      const rep = await deal({ title: "Repotenciación línea 2", amount: 50000, accountId: quimica.id, contactId: carlos.id, ownerId: adminId, stage: "NEGOTIATION", waitingFor: "Que aprueben el presupuesto 2027", waitingUntil: d(5), closeDate: d(18) });
+      await tx.activity.create({ data: { type: "MEETING", subject: "Presentación técnica a gerencia de planta", body: "Les gustó la propuesta; la decisión depende del presupuesto 2027.", occurredAt: ago(6, 10), userId: adminId, accountId: quimica.id, dealId: rep.id } });
+      const sel = await deal({ title: "Sellos para agitador", amount: 6800, supplierCost: 5100, freightCost: 180, accountId: quimica.id, contactId: carlos.id, ownerId: adminId, stage: "PROPOSAL", waitingFor: "Plano dimensional del agitador (Carlos)", waitingUntil: d(-1) });
+      await tx.activity.create({ data: { type: "EMAIL", subject: "Carlos quedó de enviar el plano dimensional", body: "Sin el plano no podemos confirmar la referencia del sello.", occurredAt: ago(4, 11), userId: adminId, accountId: quimica.id, contactId: carlos.id, dealId: sel.id } });
+      const dos = await deal({ title: "Bombas dosificadoras", amount: 15000, accountId: papeles.id, contactId: marta.id, ownerId: adminId, stage: "LEAD" });
+      await tx.activity.create({ data: { type: "CALL", subject: "Marta comentó que la bomba actual pierde dosificación", body: "Quiere una propuesta antes de su comité del mes.", occurredAt: ago(6, 9), userId: adminId, accountId: papeles.id, contactId: marta.id, dealId: dos.id } });
+      await deal({ title: "Instrumentación caldera", amount: 8000, accountId: papeles.id, contactId: marta.id, ownerId: adminId, stage: "QUALIFIED", nextMove: "Confirmar fuente con Distribuidor A", nextMoveDate: d(2) });
 
       await tx.task.createMany({
         data: [

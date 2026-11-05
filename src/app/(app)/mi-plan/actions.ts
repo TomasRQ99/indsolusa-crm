@@ -46,3 +46,22 @@ export async function setEstimate(taskId: string, formData: FormData) {
   await db.task.update({ where: { id: taskId, assigneeId: user.id }, data: { estimateMinutes: minutes } });
   refreshApp();
 }
+
+/** "Enviar a Outlook": place every reserved block of the coming days into free gaps of the person's calendar. */
+export async function pushPlanToOutlook() {
+  const user = await requireUser();
+  const { redirect } = await import("next/navigation");
+  if (!user.outlookConnectedAt) redirect("/profile?cal=connect");
+  const { today } = await import("@/lib/domain");
+  const { outlookErrorCode, placeTasksInOutlook } = await import("@/lib/outlook-sync");
+  const tasks = await db.task.findMany({ where: { assigneeId: user.id, status: "OPEN", plannedFor: { gte: today() }, outlookEventId: null }, select: { id: true } });
+  let target: string;
+  try {
+    const placed = await placeTasksInOutlook(user, tasks.map((x) => x.id));
+    target = `/mi-plan?outlook=${placed.length}`;
+  } catch (e) {
+    target = `/mi-plan?cal=${outlookErrorCode(e)}`;
+  }
+  refreshApp();
+  redirect(target);
+}

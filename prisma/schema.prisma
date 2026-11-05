@@ -55,6 +55,8 @@ model User {
   lang           Lang     @default(ES)
   // Length of a normal working day, used by Mi Plan to size capacity.
   workdayMinutes Int      @default(570)
+  // Outlook calendar of the person's own mailbox (login email), read and written via Microsoft Graph.
+  outlookConnectedAt DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -161,6 +163,7 @@ model Deal {
   waitingFor       String?
   waitingUntil     DateTime?
   resultAchievedAt DateTime?
+  offerValidUntil  DateTime?
   creditExceptionById String?
   creditExceptionBy   User?     @relation("CreditException", fields: [creditExceptionById], references: [id])
   creditExceptionAt   DateTime?
@@ -200,6 +203,8 @@ model Task {
   completedAt     DateTime?
   estimateMinutes Int?
   plannedFor      DateTime?
+  scheduledAt     DateTime?
+  outlookEventId  String?
   assigneeId      String
   assignee        User       @relation(fields: [assigneeId], references: [id])
   accountId       String?

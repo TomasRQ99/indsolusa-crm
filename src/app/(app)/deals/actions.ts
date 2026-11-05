@@ -67,6 +67,7 @@ const journeySchema = z.object({
   freightCost: money,
   otherCosts: money,
   closeDate: optionalDate,
+  offerValidUntil: optionalDate,
 });
 
 export async function updateJourney(id: string, formData: FormData) {

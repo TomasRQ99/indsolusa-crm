@@ -3,8 +3,9 @@ import type { I18n } from "./i18n";
 import type { ModuleKey } from "./nav";
 import { db } from "./db";
 import { canManageAll } from "./permissions";
-import { invoiceBlockers, today } from "./domain";
+import { invoiceBlockers } from "./domain";
 import { loadCredit, loadReceivables, loadSupplierPayments } from "./queries";
+import { buildMiDia } from "./midia";
 
 // Attention for the shell: a module shows a counter only when it holds objects that
 // need THIS person (amber = needs movement or clarity, red = result at risk).
@@ -16,27 +17,15 @@ export type Alert = { key: string; text: string; href: string; tone: "attn" | "r
 export async function shellAttention(user: SessionUser, i: I18n) {
   const { t } = i;
   const manager = canManageAll(user);
-  const now = today();
   const mineDeal = manager ? {} : { ownerId: user.id };
 
-  const [myDeals, myTasks, receivables, payments, ready, credit] = await Promise.all([
-    db.deal.findMany({
-      where: { ownerId: user.id, stage: { notIn: ["WON", "LOST"] }, resultAchievedAt: null },
-      select: { nextMove: true, nextMoveDate: true, waitingFor: true, waitingUntil: true },
-    }),
-    db.task.count({ where: { assigneeId: user.id, status: "OPEN", dueDate: { lte: now } } }),
+  const [midia, receivables, payments, ready, credit] = await Promise.all([
+    buildMiDia(user, i, { agenda: false }), // same number Mi Día shows in its heading
     loadReceivables({ deal: mineDeal }),
     loadSupplierPayments({ executedAt: null }),
     db.delivery.findMany({ where: { invoice: null, deal: mineDeal }, include: { deal: { include: { account: true } } } }),
     manager ? loadCredit() : Promise.resolve([]),
   ]);
-
-  const dealsNeedingMove = myDeals.filter(
-    (d) =>
-      (d.waitingFor && d.waitingUntil && d.waitingUntil < now) ||
-      (!d.waitingFor && d.nextMove && (!d.nextMoveDate || d.nextMoveDate <= now)) ||
-      (!d.waitingFor && !d.nextMove),
-  ).length;
 
   const broken = receivables.filter((r) => r.state === "BROKEN");
   const toVerify = payments.filter((p) => p.state === "VERIFY" && p.requestedById !== user.id);
@@ -48,7 +37,7 @@ export async function shellAttention(user: SessionUser, i: I18n) {
   const set = (k: ModuleKey, n: number, tone: Counter["tone"]) => {
     if (n > 0) counters[k] = { n, tone };
   };
-  set("midia", dealsNeedingMove + myTasks, "attn");
+  set("midia", midia.needCount, midia.needs.some((n) => n.tone === "risk") ? "risk" : "attn");
   set("operaciones", readyToInvoice, "attn");
   if (broken.length) set("administracion", broken.length + toVerify.length, "risk");
   else set("administracion", toVerify.length, "attn");

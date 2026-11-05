@@ -45,3 +45,29 @@ export async function setWorkday(formData: FormData) {
   await db.user.update({ where: { id: user.id }, data: { workdayMinutes: Math.round(hours * 60) } });
   refreshApp();
 }
+/**
+ * Connect the person's OWN Outlook calendar (the mailbox of the email they sign in with).
+ * We read today's calendar once to prove access before saving the connection.
+ */
+export async function connectOutlook() {
+  const user = await requireUser();
+  const { listEvents, bogotaTime } = await import("@/lib/outlook");
+  const { outlookErrorCode } = await import("@/lib/outlook-sync");
+  const { today, addDays } = await import("@/lib/domain");
+  let result = "ok";
+  try {
+    await listEvents(user.email, bogotaTime(today(), 0), bogotaTime(addDays(today(), 1), 0));
+    await db.user.update({ where: { id: user.id }, data: { outlookConnectedAt: new Date() } });
+  } catch (e) {
+    result = outlookErrorCode(e);
+  }
+  refreshApp();
+  const { redirect } = await import("next/navigation");
+  redirect(`/profile?cal=${result}`);
+}
+
+export async function disconnectOutlook() {
+  const user = await requireUser();
+  await db.user.update({ where: { id: user.id }, data: { outlookConnectedAt: null } });
+  refreshApp();
+}

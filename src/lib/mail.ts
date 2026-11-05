@@ -96,6 +96,17 @@ async function graphToken(g: { tenant: string; clientId: string; clientSecret: s
   return cachedToken.value;
 }
 
+/** App-only Microsoft Graph token (same app registration used for email). Null when Graph isn't configured. */
+export async function graphAccessToken() {
+  const c = mailConfig();
+  if (c.provider !== "graph") return null;
+  return graphToken(c.graph);
+}
+
+export function forgetGraphToken() {
+  cachedToken = null;
+}
+
 function explainTokenError(desc: string) {
   if (desc.includes("AADSTS7000215")) {
     return "Microsoft rejected the client secret. Check GRAPH_CLIENT_SECRET: use the secret's Value, not its Secret ID.";

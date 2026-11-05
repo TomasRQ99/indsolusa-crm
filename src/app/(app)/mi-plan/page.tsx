@@ -2,9 +2,11 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { buildPlan, hm, type PlanItem } from "@/lib/plan";
-import { reservePlan, unplanTask } from "./actions";
+import { OutlookNote } from "@/components/OutlookNote";
+import { pushPlanToOutlook, reservePlan, unplanTask } from "./actions";
 
-export default async function MiPlanPage() {
+export default async function MiPlanPage({ searchParams }: { searchParams: Promise<{ cal?: string; outlook?: string }> }) {
+  const sp = await searchParams;
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
@@ -37,8 +39,25 @@ export default async function MiPlanPage() {
             <button type="submit">{t(`Reservar los ${plan.worth.length} bloques`, `Reserve the ${plan.worth.length} blocks`)}</button>
           </form>
         )}
-        <a className="btn secondary" href="/mi-plan/ics">{t("Llevar a Outlook (.ics)", "Add to Outlook (.ics)")}</a>
+        {user.outlookConnectedAt ? (
+          <form action={pushPlanToOutlook}>
+            <button type="submit" className="secondary">{t("Enviar a mi Outlook", "Send to my Outlook")}</button>
+          </form>
+        ) : (
+          <>
+            <Link className="btn secondary" href="/profile#outlook">{t("Conectar Outlook", "Connect Outlook")}</Link>
+            <a className="btn secondary" href="/mi-plan/ics">{t("Descargar .ics", "Download .ics")}</a>
+          </>
+        )}
       </div>
+      <OutlookNote code={sp.cal} t={t} />
+      {sp.outlook != null && (
+        <div className="note" style={{ marginBottom: 16 }}>
+          {Number(sp.outlook) > 0
+            ? t(`Listo: ${sp.outlook} bloques quedaron en tu calendario de Outlook, en espacios libres.`, `Done: ${sp.outlook} blocks are now in your Outlook calendar, in free slots.`)
+            : t("No había bloques reservados pendientes de enviar a Outlook.", "There were no reserved blocks left to send to Outlook.")}
+        </div>
+      )}
 
       <section className="sum">
         <div><span className="k">{t("Jornada de la semana", "Week's working time")}</span><span className="v">{hm(plan.totals.workday)}</span><span className="s">{t("según tu perfil", "from your profile")}</span></div>

@@ -1,176 +1,205 @@
 import Link from "next/link";
-import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canManageAll } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
-import { addDays, invoiceBlockers, today } from "@/lib/domain";
-import { loadCredit, loadReceivables, loadSupplierPayments } from "@/lib/queries";
+import { daysBetween } from "@/lib/domain";
+import { buildMiDia, type Need } from "@/lib/midia";
+import { OutlookNote } from "@/components/OutlookNote";
+import { scheduleMove } from "./actions";
 
-type Item = { key: string; title: string; detail: string; sig?: { text: string; cls: string }; href: string; cta: string; when?: number };
+const Spark = ({ s = 12 }: { s?: number }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" aria-hidden><path fill="currentColor" d="M12 2.5c.6 4.6 2.9 6.9 7.5 7.5-4.6.6-6.9 2.9-7.5 7.5-.6-4.6-2.9-6.9-7.5-7.5 4.6-.6 6.9-2.9 7.5-7.5z" /></svg>
+);
+const ToneIcon = ({ tone }: { tone: Need["tone"] }) =>
+  tone === "risk" ? (
+    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden><path d="M6 1.5l4.8 8.5H1.2L6 1.5z" fill="none" stroke="currentColor" strokeWidth="1.5" /><path d="M6 5v2.2" stroke="currentColor" strokeWidth="1.5" /></svg>
+  ) : tone === "move" ? (
+    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden><path d="M2 6h6.5M6 3l3 3-3 3" stroke="currentColor" strokeWidth="1.6" fill="none" /></svg>
+  ) : (
+    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden><text x="6" y="10" textAnchor="middle" fontSize="11" fontWeight="700" fill="currentColor" fontFamily="sans-serif">?</text></svg>
+  );
 
-export default async function MiDiaPage() {
+export default async function MiDiaPage({ searchParams }: { searchParams: Promise<{ cal?: string; agendado?: string }> }) {
+  const sp = await searchParams;
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
-  const manager = canManageAll(user);
-  const now = today();
-  const week = addDays(now, 7);
-  const mineDeal = manager ? {} : { ownerId: user.id };
+  const m = await buildMiDia(user, i);
 
-  const [deals, tasks, receivables, deliveries, payments, credit, spos] = await Promise.all([
-    db.deal.findMany({
-      where: { ownerId: user.id, stage: { not: "LOST" }, resultAchievedAt: null },
-      include: { account: { select: { name: true } } },
-    }),
-    db.task.findMany({
-      where: { assigneeId: user.id, status: "OPEN", dueDate: { lte: now } },
-      include: { deal: { select: { id: true, code: true } }, account: { select: { id: true, name: true } } },
-      orderBy: { dueDate: "asc" },
-    }),
-    loadReceivables({ deal: mineDeal }),
-    db.delivery.findMany({
-      where: { invoice: null, deal: mineDeal },
-      include: { deal: { include: { account: true } } },
-    }),
-    loadSupplierPayments({ executedAt: null }),
-    manager ? loadCredit() : Promise.resolve([]),
-    db.supplierPO.findMany({
-      where: { receivedAt: null, eta: { gte: now, lt: week }, deal: mineDeal },
-      include: { supplier: { select: { name: true } }, deal: { select: { id: true, code: true } } },
-    }),
-  ]);
-
-  const act: Item[] = [];
-  const coming: Item[] = [];
-  const waiting: Item[] = [];
-
-  for (const r of receivables) {
-    if (r.state === "BROKEN" && r.promise) {
-      act.push({
-        key: `p-${r.id}`,
-        title: t(`${r.account.name}: no llegó el pago prometido`, `${r.account.name}: promised payment did not arrive`),
-        detail: t(
-          `Factura ${r.number} · ${i.money(r.cash.balance)} · ${r.promise.promisedBy} prometió pagar el ${i.dateShort(r.promise.promisedFor)}`,
-          `Invoice ${r.number} · ${i.money(r.cash.balance)} · ${r.promise.promisedBy} promised to pay on ${i.dateShort(r.promise.promisedFor)}`,
-        ),
-        sig: { text: t("Compromiso incumplido", "Commitment missed"), cls: "missed" },
-        href: `/administracion/cobrar?f=${r.id}`,
-        cta: t("Preparar contacto", "Prepare contact"),
-        when: 0,
-      });
-    } else if (r.promise && r.promise.promisedFor >= now && r.promise.promisedFor < week) {
-      coming.push({ key: `pc-${r.id}`, title: t(`${r.account.name} prometió pagar ${i.money(r.cash.balance)}`, `${r.account.name} promised to pay ${i.money(r.cash.balance)}`), detail: `${i.dateShort(r.promise.promisedFor)} · ${r.number}`, href: `/administracion/cobrar?f=${r.id}`, cta: t("Ver", "View"), when: r.promise.promisedFor.getTime() });
-    } else if (r.state === "UPCOMING" && r.dueAt < week) {
-      coming.push({ key: `d-${r.id}`, title: t(`Vence la factura ${r.number} de ${r.account.name}`, `Invoice ${r.number} for ${r.account.name} falls due`), detail: `${i.dateShort(r.dueAt)} · ${i.money(r.cash.balance)}`, href: `/administracion/cobrar?f=${r.id}`, cta: t("Ver", "View"), when: r.dueAt.getTime() });
-    }
-  }
-
-  for (const d of deals) {
-    const label = `${d.code ? d.code + " · " : ""}${d.title}`;
-    if (d.waitingFor) {
-      if (d.waitingUntil && d.waitingUntil < now) {
-        act.push({ key: `w-${d.id}`, title: t(`Revisar la espera: ${d.waitingFor}`, `Check the wait: ${d.waitingFor}`), detail: `${label} · ${d.account.name}`, sig: { text: t("La espera venció", "Wait expired"), cls: "attn" }, href: `/deals/${d.id}`, cta: t("Abrir Journey", "Open Journey"), when: d.waitingUntil.getTime() });
-      } else {
-        waiting.push({ key: `wc-${d.id}`, title: d.waitingFor, detail: `${label} · ${t("revisar el", "check on")} ${i.dateShort(d.waitingUntil)}`, href: `/deals/${d.id}`, cta: t("Ver", "View") });
-      }
-    } else if (d.nextMove) {
-      if (!d.nextMoveDate || d.nextMoveDate <= now) {
-        const late = d.nextMoveDate && d.nextMoveDate < now;
-        act.push({ key: `m-${d.id}`, title: d.nextMove, detail: `${label} · ${d.account.name}`, sig: late ? { text: t(`Era para el ${i.day(d.nextMoveDate)}`, `Was due ${i.day(d.nextMoveDate)}`), cls: "attn" } : { text: t("Hoy", "Today"), cls: "info" }, href: `/deals/${d.id}`, cta: t("Abrir Journey", "Open Journey"), when: d.nextMoveDate?.getTime() ?? 0 });
-      } else if (d.nextMoveDate < week) {
-        coming.push({ key: `mc-${d.id}`, title: d.nextMove, detail: `${i.dateShort(d.nextMoveDate)} · ${label}`, href: `/deals/${d.id}`, cta: t("Ver", "View"), when: d.nextMoveDate.getTime() });
-      }
-    } else if (!d.resultAchievedAt && d.stage !== "WON") {
-      // Accepted orders move through the derived chain (purchase, payment, delivery…), so they don't need a manual next move.
-      act.push({ key: `n-${d.id}`, title: t(`${label} no tiene siguiente movimiento`, `${label} has no next movement`), detail: t(`${d.account.name} · define qué sigue o una espera con control`, `${d.account.name} · set what's next or a controlled wait`), sig: { text: t("Necesita claridad", "Needs clarity"), cls: "attn" }, href: `/deals/${d.id}`, cta: t("Definir", "Set"), when: 1 });
-    }
-    if (d.promisedDate && d.promisedDate >= now && d.promisedDate < week) {
-      coming.push({ key: `pr-${d.id}`, title: t(`Promesa al cliente: ${d.promiseText ?? d.title}`, `Customer promise: ${d.promiseText ?? d.title}`), detail: `${i.dateShort(d.promisedDate)} · ${label}`, href: `/deals/${d.id}`, cta: t("Ver", "View"), when: d.promisedDate.getTime() });
-    }
-  }
-
-  for (const d of deliveries) {
-    if (invoiceBlockers(d, d.deal, d.deal.account).length === 0) {
-      act.push({ key: `inv-${d.id}`, title: t(`Lista para facturar: ${d.code}`, `Ready to invoice: ${d.code}`), detail: `${d.deal.account.name} · ${d.deal.code ?? d.deal.title}`, sig: { text: t("Lista", "Ready"), cls: "ok" }, href: `/operaciones/remisiones/${d.id}`, cta: t("Emitir factura", "Issue invoice"), when: 2 });
-    }
-  }
-
-  for (const p of payments) {
-    if (p.state === "VERIFY" && p.requestedById !== user.id) {
-      act.push({ key: `v-${p.id}`, title: t(`Verificar datos bancarios de ${p.supplierPo.supplier.name}`, `Verify ${p.supplierPo.supplier.name}'s bank data`), detail: `${p.currency} ${i.n2(p.amount)} · ${p.discrepancies.length} ${t("diferencias con el perfil verificado", "differences with the verified profile")}`, sig: { text: t("Requiere verificación", "Needs verification"), cls: "risk" }, href: `/administracion/pagos-proveedores/${p.id}`, cta: t("Verificar", "Verify"), when: p.dueBy?.getTime() ?? 3 });
-    }
-    if (manager && p.state === "APPROVE" && p.requestedById !== user.id && p.verifiedById !== user.id) {
-      act.push({ key: `a-${p.id}`, title: t(`Aprobar pago a ${p.supplierPo.supplier.name}`, `Approve payment to ${p.supplierPo.supplier.name}`), detail: `${p.currency} ${i.n2(p.amount)} · ${p.reason}`, sig: { text: t("Espera tu aprobación", "Awaiting your approval"), cls: "attn" }, href: `/administracion/pagos-proveedores/${p.id}`, cta: t("Revisar", "Review"), when: p.dueBy?.getTime() ?? 3 });
-    }
-  }
-
-  for (const a of credit) {
-    for (const d of a.blocking) {
-      act.push({ key: `c-${d.id}`, title: t(`${a.name} supera su cupo con ${d.code ?? d.title}`, `${a.name} exceeds its credit limit with ${d.code ?? d.title}`), detail: t(`Usado ${i.money(a.used)} de ${i.money(a.limit)}`, `Used ${i.money(a.used)} of ${i.money(a.limit)}`), sig: { text: t("Decisión de gerencia", "Management decision"), cls: "attn" }, href: `/administracion/cupos#${a.id}`, cta: t("Ver opciones", "See options"), when: 2 });
-    }
-  }
-
-  for (const tk of tasks) {
-    act.push({ key: `t-${tk.id}`, title: tk.title, detail: [tk.deal?.code, tk.account?.name].filter(Boolean).join(" · ") || t("Pendiente", "To-do"), sig: tk.dueDate && tk.dueDate < now ? { text: t(`Era para el ${i.day(tk.dueDate)}`, `Was due ${i.day(tk.dueDate)}`), cls: "attn" } : { text: t("Hoy", "Today"), cls: "info" }, href: tk.deal ? `/deals/${tk.deal.id}` : "/tasks", cta: t("Abrir", "Open"), when: tk.dueDate?.getTime() ?? 5 });
-  }
-
-  for (const s of spos) {
-    coming.push({ key: `s-${s.id}`, title: t(`Llega a bodega: ${s.supplier.name}`, `Arriving: ${s.supplier.name}`), detail: `ETA ${i.dateShort(s.eta)} · ${s.code} · ${s.deal.code ?? ""}`, href: `/deals/${s.deal.id}`, cta: t("Ver", "View"), when: s.eta!.getTime() });
-  }
-
-  act.sort((a, b) => (a.when ?? 0) - (b.when ?? 0));
-  coming.sort((a, b) => (a.when ?? 0) - (b.when ?? 0));
-
-  const List = ({ items, empty }: { items: Item[]; empty: [string, string] }) =>
-    items.length === 0 ? (
-      <p className="empty small"><b>{empty[0]}</b>{empty[1]}</p>
-    ) : (
-      <div className="items">
-        {items.map((it) => (
-          <div className="item" key={it.key}>
-            <div className="t">{it.title}</div>
-            <div className="a">{it.sig && <span className={`sig ${it.sig.cls}`}>{it.sig.text}</span>}<Link className="btn secondary sm" href={it.href}>{it.cta}</Link></div>
-            <div className="d">{it.detail}</div>
-          </div>
-        ))}
-      </div>
-    );
-
+  const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: "America/Bogota" }).format(new Date()));
+  const hello = hour < 12 ? t("Buenos días", "Good morning") : hour < 19 ? t("Buenas tardes", "Good afternoon") : t("Buenas noches", "Good evening");
   const first = user.name.split(" ")[0];
-  return (
-    <>
-      <div className="ph">
-        <div>
-          <div className="crumb">{t("Mi día", "My day")} · {i.dateShort(now)}</div>
-          <h1>{act.length ? t(`${first}, hay ${act.length} cosas donde tu movimiento cambia el resultado`, `${first}, ${act.length} things where your move changes the outcome`) : t(`${first}, todo se mueve con normalidad`, `${first}, everything is moving normally`)}</h1>
-          <p>{t("Lo que se mueve solo no aparece aquí. Solo lo que necesita tu criterio, tu autorización o tu relación con el cliente.", "What moves on its own isn't shown here. Only what needs your judgment, authority or customer relationship.")}</p>
-        </div>
-        <div className="grow" />
-        <Link className="btn secondary" href="/mi-plan">{t("Ver Mi Plan", "Open My Plan")}</Link>
-      </div>
+  const toneLabel = { risk: t("Resultado en riesgo", "Result at risk"), move: t("Necesita movimiento", "Needs a move"), clarity: t("Necesita claridad", "Needs clarity") };
 
-      <section className="sum">
-        <div><span className="k">{t("¿Necesito actuar?", "Do I need to act?")}</span><span className="v">{act.length}</span><span className="s">{t("movimientos tuyos", "moves for you")}</span></div>
-        <div><span className="k">{t("¿Qué viene?", "What's coming?")}</span><span className="v">{coming.length}</span><span className="s">{t("en los próximos 7 días", "in the next 7 days")}</span></div>
-        <div><span className="k">{t("Esperando con control", "Waiting with control")}</span><span className="v">{waiting.length}</span><span className="s">{t("SOLU te avisa en la fecha", "SOLU reminds you on the date")}</span></div>
+  const Card = ({ n }: { n: Need }) => (
+    <article className="att">
+      <div className="att-top">
+        <span className={`tsig ${n.tone}`}><ToneIcon tone={n.tone} />{toneLabel[n.tone]}</span>
+        <span className="due">{n.due.main}{n.due.sub && <small> · {n.due.sub}</small>}</span>
+      </div>
+      <div className="att-who"><b>{n.who.title}</b><span>{n.who.sub}</span></div>
+      <dl className="key">
+        <dt>{t("Por qué ahora", "Why now")}</dt><dd>{n.why.text}{n.why.src && <span className="src">{n.why.src}</span>}</dd>
+        <dt>{t("Qué cambió", "What changed")}</dt><dd>{n.changed.text}{n.changed.src && <span className="src">{n.changed.src}</span>}</dd>
+        <dt>{t("Impacto", "Impact")}</dt><dd>{n.impact.text}{n.impact.src && <span className="src">{n.impact.src}</span>}</dd>
+      </dl>
+      <div className="next">
+        <div className="next-text">
+          <div className="k">{t("Próximo movimiento", "Next move")}</div>
+          <p>{n.next}</p>
+          {n.schedule?.scheduledAt && (
+            <span className="cal-note">{t(`En tu Outlook: ${i.dateShort(n.schedule.scheduledAt)}`, `In your Outlook: ${i.dateShort(n.schedule.scheduledAt)}`)} · {new Intl.DateTimeFormat(i.es ? "es-CO" : "en-US", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Bogota" }).format(n.schedule.scheduledAt)}</span>
+          )}
+        </div>
+        <div className="actions">
+          <Link className="btn sm" href={n.primary.href}>{n.primary.label}</Link>
+          {n.schedule && !n.schedule.scheduledAt && user.outlookConnectedAt && (
+            <form action={scheduleMove.bind(null, n.schedule.dealId, n.schedule.title)}>
+              <button type="submit" className="secondary sm">{t("Agendar en Outlook", "Schedule in Outlook")}</button>
+            </form>
+          )}
+          <Link className="btn secondary sm" href={n.context}>{t("Ver contexto", "See context")}</Link>
+        </div>
+      </div>
+    </article>
+  );
+
+  // Minimal 21-day timeline for "Futuro".
+  const pos = (d: Date) => Math.min(100, Math.max(0, (daysBetween(m.now, d) / 21) * 100));
+  const firstWindow = m.future.find((f) => f.window);
+
+  return (
+    <div className="midia">
+      <section className="greet">
+        <div className="grow">
+          <h1>{hello}, {first}.</h1>
+          <p>
+            {m.needCount === 0 ? (
+              t("Nada requiere tu criterio hoy. ", "Nothing needs your judgment today. ")
+            ) : (
+              <>{t("Hay ", "There ")}<b>{m.needCount} {m.needCount === 1 ? t("situación", "situation") : t("situaciones", "situations")}</b>{t(" donde tu intervención puede cambiar un resultado hoy. ", m.needCount === 1 ? " where your move can change a result today. " : " where your move can change a result today. ")}</>
+            )}
+            <b>{m.controlledCount} {m.controlledCount === 1 ? "Journey" : "Journeys"}</b>
+            {m.controlledCount === 1 ? t(" está avanzando o esperando con control.", " is moving or waiting under control.") : t(" están avanzando o esperando con control.", " are moving or waiting under control.")}
+          </p>
+        </div>
+        <div className="agenda-line">
+          {m.agenda.connected ? (
+            m.agenda.error ? (
+              <Link href="/profile#outlook" className="warn">{t("Outlook no respondió · revisar conexión", "Outlook didn't respond · check connection")}</Link>
+            ) : (
+              <>
+                <span>{t("Outlook hoy", "Outlook today")}: <b>{m.agenda.todayCount}</b> {m.agenda.todayCount === 1 ? t("reunión", "meeting") : t("reuniones", "meetings")}</span>
+                {m.agenda.next && <span className="muted"> · {t("próxima", "next")} {m.agenda.next.time} {m.agenda.next.subject}</span>}
+              </>
+            )
+          ) : (
+            <Link href="/profile#outlook">{t("Conectar mi calendario de Outlook", "Connect my Outlook calendar")}</Link>
+          )}
+        </div>
       </section>
 
-      <div className="two">
-        <div className="card">
-          <div className="bhead"><h2>{t("Necesita tu movimiento", "Needs your move")}</h2></div>
-          <List items={act} empty={[t("Nada urgente", "Nothing urgent"), t("Buen momento para avanzar en lo importante de Mi Plan.", "Good time to move ahead on what matters in My Plan.")]} />
+      <OutlookNote code={sp.cal} t={t} />
+      {sp.agendado && <div className="note" style={{ marginBottom: 16 }}>{t(`Listo: quedó en tu calendario de Outlook a las ${sp.agendado}.`, `Done: it's in your Outlook calendar at ${sp.agendado}.`)}</div>}
+
+      <div className="cols">
+        {/* 50 % — NECESITA DE TI */}
+        <div className="col">
+          <section className="mblock" aria-labelledby="h-need">
+            <div className="bhead"><b id="h-need">{t("NECESITA DE TI", "NEEDS YOU")}</b><span>{t("tu criterio puede cambiar el resultado hoy", "your judgment can change the result today")}</span></div>
+            {m.needs.length === 0 ? (
+              <div className="att calm"><b>{t("Nada requiere tu criterio hoy", "Nothing needs your judgment today")}</b><span>{t("Buen momento para mover el futuro: lo que actúes antes sale más barato que reaccionar después.", "Good time to move the future: acting early costs less than reacting later.")}</span></div>
+            ) : (
+              m.needs.map((n) => <Card key={n.key} n={n} />)
+            )}
+            {m.moreNeeds.length > 0 && (
+              <details className="more">
+                <summary>{t(`${m.moreNeeds.length} situaciones más, de menor consecuencia`, `${m.moreNeeds.length} more situations, lower consequence`)}</summary>
+                <div className="more-list">{m.moreNeeds.map((n) => <Card key={n.key} n={n} />)}</div>
+              </details>
+            )}
+          </section>
         </div>
-        <div className="rail">
-          <div className="card">
-            <div className="bhead"><h2>{t("Qué viene · 7 días", "What's coming · 7 days")}</h2></div>
-            <List items={coming} empty={[t("Semana tranquila", "Quiet week"), t("No hay fechas comprometidas en los próximos 7 días.", "No committed dates in the next 7 days.")]} />
-          </div>
-          <div className="card">
-            <div className="bhead"><h2>{t("Esperando con control", "Waiting with control")}</h2></div>
-            <List items={waiting} empty={[t("Sin esperas", "No waits"), t("Nada está esperando a un tercero.", "Nothing is waiting on a third party.")]} />
-          </div>
+
+        <div className="col">
+          {/* 20 % — FUTURO */}
+          <section className="mblock" aria-labelledby="h-fut">
+            <div className="bhead"><b id="h-fut">{t("FUTURO QUE VALE LA PENA MOVER", "FUTURE WORTH MOVING")}</b><span>{t("actuar antes mejora el resultado", "acting early improves the result")}</span></div>
+            {m.future.length === 0 ? (
+              <p className="quiet-p">{t("No hay ventanas que se cierren en las próximas 3 semanas.", "No windows closing in the next 3 weeks.")}</p>
+            ) : (
+              <>
+                <div className="ftl" aria-hidden>
+                  <div className="axis" />
+                  {firstWindow && <div className="win" style={{ left: 0, width: `${pos(firstWindow.at)}%` }} />}
+                  <div className="now" />
+                  {m.future.map((f, k) => <div key={f.key} className="mk" style={{ left: `${pos(f.at)}%` }}>{k + 1}</div>)}
+                  <span className="tick" style={{ left: 0, transform: "none" }}>{t("Hoy", "Today")} {i.day(m.now)}</span>
+                  <span className="tick" style={{ left: "33.3%" }}>+7 d</span>
+                  <span className="tick" style={{ left: "66.7%" }}>+14 d</span>
+                  <span className="tick" style={{ left: "100%", transform: "translateX(-100%)" }}>+21 d</span>
+                </div>
+                <div className="fut">
+                  {m.future.map((f, k) => (
+                    <div className="fitem" key={f.key}>
+                      <span className="num">{k + 1}</span>
+                      <div>
+                        <b>{f.title}</b>
+                        <p>{f.text}</p>
+                        <div className="fmeta"><span className={`chip${f.window ? " win" : ""}`}>{f.chip}</span><Link className="flink" href={f.link.href}>{f.link.label}</Link></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
+
+          {/* 15 % — ESPERANDO CON CONTROL */}
+          <section className="mblock" aria-labelledby="h-wait">
+            <div className="bhead"><b id="h-wait">{t("ESPERANDO CON CONTROL", "WAITING UNDER CONTROL")}</b><span>{t("SOLU vigila; no necesitas hacer nada", "SOLU watches; nothing for you to do")}</span></div>
+            {m.waits.length > 0 ? (
+              <details className="waits">
+                <summary>
+                  <span className="ok-dot" aria-hidden />
+                  <span className="t">
+                    <b>{t(`${m.waits.length} ${m.waits.length === 1 ? "espera vigilada" : "esperas vigiladas"} · ninguna vencida`, `${m.waits.length} watched wait(s) · none overdue`)}</b>
+                    <span>{t(`Próxima revisión: ${i.dateShort(m.waits[0].until)}`, `Next check: ${i.dateShort(m.waits[0].until)}`)}</span>
+                  </span>
+                  <svg className="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
+                </summary>
+                <div className="wait">
+                  {m.waits.map((w) => (
+                    <Link className="wrow" key={w.key} href={w.href}>
+                      <span><b>{w.what}</b> · {w.from}</span>
+                      <span className="until">{i.dateShort(w.until)}</span>
+                      <span className="trig">{w.trigger}</span>
+                    </Link>
+                  ))}
+                </div>
+              </details>
+            ) : (
+              <p className="quiet-p">{t("Nada está esperando a un tercero.", "Nothing is waiting on a third party.")}</p>
+            )}
+            {m.normal > 0 && <div className="quiet"><span className="hollow" aria-hidden />{m.normal === 1 ? t("1 Journey avanza normal y no requiere nada.", "1 Journey is moving normally and needs nothing.") : t(`${m.normal} Journeys avanzan normal y no requieren nada.`, `${m.normal} Journeys are moving normally and need nothing.`)}</div>}
+          </section>
+
+          {/* 10 % — SEÑALES */}
+          {m.signals.length > 0 && (
+            <section className="mblock" aria-labelledby="h-sig">
+              <div className="bhead"><b id="h-sig">{t("SEÑALES", "SIGNALS")}</b><span>{t("pueden cambiar cómo negocias", "may change how you negotiate")}</span></div>
+              <div className="sigl">
+                {m.signals.map((s) => (
+                  <div className="srow" key={s.key}>
+                    <b>{s.inferred && <span className="infer"><Spark /> </span>}{s.href ? <Link href={s.href}>{s.title}</Link> : s.title}</b>
+                    <p>{s.text}</p>
+                    <span className="src">{s.src}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

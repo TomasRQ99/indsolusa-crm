@@ -416,6 +416,7 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
                   <label>{t("Fletes USD", "Freight USD")}<input name="freightCost" type="number" min="0" step="0.01" defaultValue={Number(deal.freightCost)} /></label>
                   <label>{t("Otros costos USD (aranceles, bancos)", "Other costs USD (duties, bank)")}<input name="otherCosts" type="number" min="0" step="0.01" defaultValue={Number(deal.otherCosts)} /></label>
                   <label>{t("Cierre esperado", "Expected close")}<input name="closeDate" type="date" defaultValue={dayInput(deal.closeDate)} /></label>
+                  <label>{t("Oferta vigente hasta", "Offer valid until")}<input name="offerValidUntil" type="date" defaultValue={dayInput(deal.offerValidUntil)} /></label>
                   <button type="submit">{t("Guardar", "Save")}</button>
                 </form>
               </details>
