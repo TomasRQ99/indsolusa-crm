@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { db } from "./db";
+import { refreshUnderstanding } from "./comm-store";
 import { addDays, nextCode, nextDocNumber, today } from "./domain";
 
 // Sample data so every SOLU screen can be seen working. Every record is marked
@@ -69,7 +70,7 @@ export async function loadDemo(adminId: string) {
         data: [
           { firstName: "Sandra", lastName: "Gómez", title: "Tesorería", email: "sandra.gomez@siderurgica.example", accountId: sider.id },
           { firstName: "Andrés", lastName: "Mejía", title: "Tesorería", email: "a.mejia@cementos.example", accountId: cementos.id },
-          { firstName: "Juan", lastName: "Pérez", title: "Mantenimiento", email: "juan.perez@lacteos.example", accountId: lacteos.id },
+          { firstName: "Jorge", lastName: "Pérez", title: "Mantenimiento", email: "jorge.perez@lacteos.example", accountId: lacteos.id },
           { firstName: "Laura", lastName: "Ríos", title: "Compras", email: "laura.rios@minera.example", accountId: minera.id },
         ],
       });
@@ -218,6 +219,16 @@ export async function loadDemo(adminId: string) {
         ],
       });
 
+      // 13. Communication Intelligence: Juan Pérez (ABC Foods) sends a WhatsApp with a nameplate photo.
+      const juan = await tx.contact.create({ data: { firstName: "Juan", lastName: "Pérez", title: "Jefe de Mantenimiento", email: "juan.perez@abcfoods.example", phone: "+57 310 555 0142", accountId: abc.id } });
+      const old = await tx.deal.create({ data: { code: "SJ-01377", title: "Variador mezcladora línea 2", amount: 4200, supplierCost: 3150, freightCost: 120, accountId: abc.id, contactId: juan.id, ownerId: adminId, stage: "WON", customerPo: "ABC-PO-6120", poAcceptedAt: d(-210), resultAchievedAt: d(-180), desiredResult: "Mezcladora de la línea 2 con control de velocidad" } });
+      await tx.dealItem.create({ data: { dealId: old.id, qty: 1, code: "6SL3210-1KE21-7UF1", description: "Variador Siemens SINAMICS G120C 7,5 kW", unitPrice: 4200 } });
+      const wa = await tx.commThread.create({ data: { channel: "WHATSAPP", partyName: "Juan Pérez", partyAddr: "+57 310 555 0142", accountId: abc.id, contactId: juan.id, lastAt: ago(0, 8), lastInAt: ago(0, 8) } });
+      await tx.commMessage.create({ data: { threadId: wa.id, direction: "IN", authorName: "Juan Pérez", body: "", sentAt: new Date(ago(0, 8).getTime() - 2 * 60e3), attachments: { create: [{ name: "placa-variador.svg", mime: "image/svg+xml", size: NAMEPLATE.length, data: Buffer.from(NAMEPLATE) }] } } });
+      await tx.commMessage.create({ data: { threadId: wa.id, direction: "IN", authorName: "Juan Pérez", body: "Buenos días, le mando foto de la placa. Necesito 2 variadores con urgencia, se nos paró la línea 2 de mezclado.", sentAt: ago(0, 8) } });
+      const mail = await tx.commThread.create({ data: { channel: "EMAIL", subject: "Fecha de instalación kit línea 3", partyName: "Ana Torres", partyAddr: "ana.torres@abcfoods.example", accountId: abc.id, contactId: ana.id, dealId: sj.id, lastAt: ago(1, 17), lastInAt: ago(1, 16), lastOutAt: ago(1, 17) } });
+      await tx.commMessage.create({ data: { threadId: mail.id, direction: "IN", authorName: "Ana Torres", body: "Hola, ¿sigue firme la instalación del kit? Necesito confirmarle a planta el turno.", sentAt: ago(1, 16) } });
+      await tx.commMessage.create({ data: { threadId: mail.id, direction: "OUT", authorName: "IndSolUSA", body: "Hola Ana, lo estamos confirmando hoy con DHL y te escribo antes de las 5 pm con la fecha firme.", sentAt: ago(1, 17) } });
       await tx.task.createMany({
         data: [
           { title: "Preparar visita técnica a Química Andina", assigneeId: adminId, accountId: quimica.id, dealId: q1.id, dueDate: d(3), estimateMinutes: 90 },
@@ -228,13 +239,18 @@ export async function loadDemo(adminId: string) {
     },
     { timeout: 60000 },
   );
+  // SOLU reads the sample conversations once they exist.
+  for (const th of await db.commThread.findMany({ where: { account: { isDemo: true } }, select: { id: true } })) await refreshUnderstanding(th.id);
 }
+
+const NAMEPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320"><rect width="520" height="320" fill="#8a9097"/><rect x="20" y="20" width="480" height="280" rx="10" fill="#d9dde1" stroke="#5c636a" stroke-width="3"/><circle cx="42" cy="42" r="7" fill="#9aa1a8"/><circle cx="478" cy="42" r="7" fill="#9aa1a8"/><circle cx="42" cy="278" r="7" fill="#9aa1a8"/><circle cx="478" cy="278" r="7" fill="#9aa1a8"/><text x="60" y="78" font-family="Arial" font-weight="700" font-size="30" fill="#0f9d9a">SIEMENS</text><text x="60" y="112" font-family="Arial" font-size="20" fill="#222">SINAMICS G120C</text><text x="60" y="150" font-family="Courier New" font-size="18" fill="#222">6SL3210-1KE21-7UF1</text><text x="60" y="184" font-family="Arial" font-size="16" fill="#222">IN: 3AC 380-480V 50/60Hz 18,5A</text><text x="60" y="210" font-family="Arial" font-size="16" fill="#222">OUT: 3AC 0-480V 16,5A 7,5kW</text><text x="60" y="236" font-family="Arial" font-size="14" fill="#444">S/N: XAJ2-7781-0042  IP20</text><text x="60" y="262" font-family="Arial" font-size="12" fill="#666">Made in Germany</text></svg>`;
 
 export async function removeDemo() {
   const demoUsers = await db.user.findMany({ where: { email: { endsWith: DEMO_DOMAIN } }, select: { id: true } });
   const ids = demoUsers.map((u) => u.id);
   await db.$transaction(
     async (tx) => {
+      await tx.contact.deleteMany({ where: { account: { isDemo: true } } });
       await tx.account.deleteMany({ where: { isDemo: true } });
       await tx.supplier.deleteMany({ where: { isDemo: true } });
       if (ids.length) {

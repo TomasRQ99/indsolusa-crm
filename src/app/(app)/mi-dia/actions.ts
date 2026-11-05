@@ -17,7 +17,7 @@ import { appBaseUrl, outlookErrorCode, placeTasksInOutlook } from "@/lib/outlook
 // The same quick actions are used inside the Journey Workspace: a hidden "back" field brings the person back there.
 const backBase = (fd?: FormData) => {
   const b = fd ? String(fd.get("back") ?? "") : "";
-  return /^\/deals\/[A-Za-z0-9_-]+(\?tab=[a-z]+)?$/.test(b) ? b : "/mi-dia";
+  return /^\/deals\/[A-Za-z0-9_-]+(\?tab=[a-z]+)?$/.test(b) || /^\/comunicacion(\?t=[A-Za-z0-9_-]+)?$/.test(b) ? b : "/mi-dia";
 };
 const withQs = (base: string, qs: string) => `${base}${base.includes("?") ? "&" : "?"}${qs}`;
 const back = (msg: string, extra = "", fd?: FormData) => redirect(withQs(backBase(fd), `ok=${encodeURIComponent(msg)}${extra}`));

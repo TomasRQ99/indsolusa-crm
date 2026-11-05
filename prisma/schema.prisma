@@ -78,6 +78,8 @@ model User {
   creditExceptions  Deal[]            @relation("CreditException")
   suppliersVerified Supplier[]
   journeyViews      JourneyView[]
+  commMessages      CommMessage[]
+  commDecisions     CommItem[]
 }
 
 model Account {
@@ -108,6 +110,7 @@ model Account {
   activities Activity[]
   invoices   Invoice[]
   payments   CustomerPayment[]
+  threads    CommThread[]
 
   @@index([ownerId])
   @@index([name])
@@ -128,6 +131,7 @@ model Contact {
   deals      Deal[]
   tasks      Task[]
   activities Activity[]
+  threads    CommThread[]
 
   @@index([accountId])
   @@index([lastName, firstName])
@@ -182,6 +186,7 @@ model Deal {
 
   tasks       Task[]
   views       JourneyView[]
+  threads     CommThread[]
   activities  Activity[]
   items       DealItem[]
   supplierPos SupplierPO[]
@@ -490,4 +495,93 @@ model CommissionEntry {
 
   @@unique([invoiceId, half])
   @@index([userId])
+}
+
+// ---------- Communication Intelligence ----------
+// Only conversations with known customers (or messages someone registers by hand).
+// SOLU separates what the customer said (FACT) from what it infers (INFERENCE); a person confirms.
+
+enum CommChannel {
+  WHATSAPP
+  EMAIL
+  CALL
+  NOTE
+}
+
+enum CommDirection {
+  IN
+  OUT
+}
+
+model CommThread {
+  id          String      @id @default(cuid())
+  channel     CommChannel
+  subject     String?
+  externalKey String?     @unique
+  partyName   String?
+  partyAddr   String?
+  accountId   String?
+  account     Account?    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  contactId   String?
+  contact     Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  dealId      String?
+  deal        Deal?       @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  lastAt      DateTime
+  lastInAt    DateTime?
+  lastOutAt   DateTime?
+  closedAt    DateTime?
+  createdAt   DateTime    @default(now())
+
+  messages CommMessage[]
+  items    CommItem[]
+
+  @@index([lastAt])
+  @@index([accountId])
+}
+
+model CommMessage {
+  id          String        @id @default(cuid())
+  threadId    String
+  thread      CommThread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  direction   CommDirection
+  authorName  String
+  body        String
+  sentAt      DateTime
+  externalId  String?       @unique
+  createdById String?
+  createdBy   User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime      @default(now())
+
+  attachments CommAttachment[]
+
+  @@index([threadId, sentAt])
+}
+
+model CommAttachment {
+  id        String      @id @default(cuid())
+  messageId String
+  message   CommMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  name      String
+  mime      String
+  size      Int
+  data      Bytes
+  createdAt DateTime    @default(now())
+}
+
+model CommItem {
+  id          String     @id @default(cuid())
+  threadId    String
+  thread      CommThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  field       String
+  value       String
+  basis       String
+  evidence    String
+  reasoning   String?
+  status      String     @default("PROPOSED")
+  decidedById String?
+  decidedBy   User?      @relation(fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedAt   DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([threadId])
 }

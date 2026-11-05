@@ -282,6 +282,37 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
     });
   }
 
+  // 6. Customer messages SOLU understood but nobody answered or confirmed yet (Communication Intelligence).
+  const threads = await db.commThread.findMany({
+    where: {
+      closedAt: null,
+      lastInAt: { gte: addDays(now, -7) },
+      ...(manager ? {} : { OR: [{ accountId: null }, { account: { ownerId: user.id } }] }),
+    },
+    include: { account: { select: { name: true } }, items: { select: { field: true, value: true, basis: true, status: true } }, messages: { where: { direction: "IN" }, orderBy: { sentAt: "desc" }, take: 1, select: { body: true, sentAt: true } } },
+  });
+  for (const th of threads) {
+    const unanswered = !!th.lastInAt && (!th.lastOutAt || th.lastOutAt < th.lastInAt);
+    const proposed = th.items.filter((x) => x.status === "PROPOSED" && x.basis === "INFERENCE").length;
+    if (!unanswered && !proposed) continue;
+    const urgent = th.items.some((x) => x.field === "urgency" && x.status !== "REJECTED");
+    const product = th.items.find((x) => x.field === "product")?.value;
+    const qty = th.items.find((x) => x.field === "qty")?.value;
+    const last = th.messages[0];
+    const channel = th.channel === "WHATSAPP" ? "WhatsApp" : th.channel === "EMAIL" ? t("correo", "email") : th.channel === "CALL" ? t("llamada", "call") : t("nota", "note");
+    needs.push({
+      key: `c-${th.id}`, tone: urgent ? "risk" : "clarity", rank: urgent ? 1 : 3, at: (th.lastInAt ?? th.lastAt).getTime(),
+      due: { main: unanswered ? t("sin responder", "unanswered") : t("por confirmar", "to confirm"), sub: rel(new Date(Date.UTC((th.lastInAt ?? th.lastAt).getUTCFullYear(), (th.lastInAt ?? th.lastAt).getUTCMonth(), (th.lastInAt ?? th.lastAt).getUTCDate()))) },
+      who: { title: strip(th.account?.name ?? th.partyName ?? t("Sin cliente", "No customer")), sub: [th.partyName, channel].filter(Boolean).join(" · ") },
+      why: { text: product ? t(`Pide ${qty ? `${qty} ` : ""}${product}${urgent ? " con urgencia" : ""}.`, `Asks for ${qty ? `${qty} ` : ""}${product}${urgent ? ", urgently" : ""}.`) : t("Escribió y nadie ha respondido.", "Wrote and nobody has answered."), src: t("Lo que el cliente dijo", "What the customer said") },
+      changed: { text: last ? `«${last.body.slice(0, 160)}${last.body.length > 160 ? "…" : ""}»` : "—", src: last ? `${channel} · ${i.dateShort(last.sentAt)}` : undefined },
+      impact: { text: proposed ? t(`SOLU dedujo ${proposed} dato(s) que conviene confirmar antes de cotizar, para no cotizar el equipo equivocado.`, `SOLU inferred ${proposed} item(s) worth confirming before quoting, so you don't quote the wrong equipment.`) : t("Responder pronto mantiene la confianza del cliente.", "Answering soon keeps the customer's trust.") },
+      next: t("Confirmar lo que entendió SOLU y responder al cliente.", "Confirm what SOLU understood and reply to the customer."),
+      primary: { label: t("Ver conversación", "See conversation"), href: `/comunicacion?t=${th.id}` },
+      context: `/comunicacion?t=${th.id}`,
+    });
+  }
+
   needs.sort((a, b) => a.rank - b.rank || a.at - b.at);
 
   // ---------- Futuro que vale la pena mover (≤ 21 days) ----------
