@@ -11,5 +11,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Static files (logo, icons) skip the auth gate: cheaper, and they can be cached.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|brand/|api/health|.*\\.(?:png|jpg|jpeg|svg|ico|webp|woff2)$).*)"],
 };

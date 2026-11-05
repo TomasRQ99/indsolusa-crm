@@ -55,24 +55,27 @@ export default async function JourneyPage({
   const sp = await searchParams;
   const tab: TabKey = (TAB_ORDER as string[]).includes(sp.tab ?? "") ? (sp.tab as TabKey) : "resumen";
 
-  const deal = await db.deal.findUnique({ where: { id }, include: journeyInclude });
+  // One parallel batch: the Journey, the last visit and what the open tab needs.
+  const [deal, view, suppliers, contacts, quotes] = await Promise.all([
+    db.deal.findUnique({ where: { id }, include: journeyInclude }),
+    db.journeyView.findUnique({ where: { userId_dealId: { userId: user.id, dealId: id } } }),
+    tab === "execute" ? db.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
+    tab === "file" ? db.contact.findMany({ where: { account: { deals: { some: { id } } } }, orderBy: { firstName: "asc" }, select: { id: true, firstName: true, lastName: true } }) : Promise.resolve([]),
+    tab === "quote" ? db.quote.findMany({ where: { dealId: id }, orderBy: [{ number: "desc" }, { rev: "desc" }], select: { id: true, number: true, rev: true, status: true, lines: { select: { qty: true, unitPrice: true } } } }) : Promise.resolve([]),
+  ]);
   if (!deal) notFound();
 
   // "What changed since my last visit": a new visit starts after 2 hours away.
-  const view = await db.journeyView.findUnique({ where: { userId_dealId: { userId: user.id, dealId: id } } });
+  // The visit is recorded without making the page wait for the write.
   const nowTs = new Date();
   let since: Date | null = view?.prevSeenAt ?? null;
-  if (!view) await db.journeyView.create({ data: { userId: user.id, dealId: id, seenAt: nowTs } });
-  else if (nowTs.getTime() - view.seenAt.getTime() > 2 * 3600e3) {
-    since = view.seenAt;
-    await db.journeyView.update({ where: { userId_dealId: { userId: user.id, dealId: id } }, data: { prevSeenAt: view.seenAt, seenAt: nowTs } });
-  } else await db.journeyView.update({ where: { userId_dealId: { userId: user.id, dealId: id } }, data: { seenAt: nowTs } });
-
-  const [suppliers, contacts, quotes] = await Promise.all([
-    tab === "execute" ? db.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
-    tab === "file" ? db.contact.findMany({ where: { accountId: deal.accountId }, orderBy: { firstName: "asc" }, select: { id: true, firstName: true, lastName: true } }) : Promise.resolve([]),
-    tab === "quote" ? db.quote.findMany({ where: { dealId: id }, orderBy: [{ number: "desc" }, { rev: "desc" }], select: { id: true, number: true, rev: true, status: true, lines: { select: { qty: true, unitPrice: true } } } }) : Promise.resolve([]),
-  ]);
+  const key = { userId_dealId: { userId: user.id, dealId: id } };
+  const record = !view
+    ? db.journeyView.create({ data: { userId: user.id, dealId: id, seenAt: nowTs } })
+    : nowTs.getTime() - view.seenAt.getTime() > 2 * 3600e3
+      ? ((since = view.seenAt), db.journeyView.update({ where: key, data: { prevSeenAt: view.seenAt, seenAt: nowTs } }))
+      : db.journeyView.update({ where: key, data: { seenAt: nowTs } });
+  record.catch(() => {});
 
   const J = buildJourney(deal, i, user.id, since);
   const editable = canEdit(user, deal.ownerId);

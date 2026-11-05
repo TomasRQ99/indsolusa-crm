@@ -47,7 +47,10 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
   const horizon = addDays(now, HORIZON);
   const mineDeal = manager ? {} : { ownerId: user.id };
 
-  const [deals, receivables, deliveries, payments, credit, scheduled, agenda] = await Promise.all([
+  const dayStart = new Date(now.getTime() + 5 * 3600e3); // 00:00 Bogotá
+  const twoDays = new Date(dayStart.getTime() + 2 * 864e5);
+  // Everything Mi Día reads goes in ONE parallel batch (each sequential step costs a round-trip to the DB).
+  const [deals, receivables, deliveries, payments, credit, scheduled, agenda, threads, recentWon, blocks] = await Promise.all([
     db.deal.findMany({
       where: { ownerId: user.id, stage: { not: "LOST" }, resultAchievedAt: null, closedAt: null },
       include: {
@@ -65,6 +68,21 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
     manager ? loadCredit() : Promise.resolve([]),
     db.task.findMany({ where: { assigneeId: user.id, status: "OPEN", scheduledAt: { not: null }, dealId: { not: null } }, select: { dealId: true, title: true, scheduledAt: true } }),
     opts.agenda === false ? Promise.resolve({ connected: false as const, events: [] as OutlookEvent[], error: null as string | null }) : agendaFor(user),
+    db.commThread.findMany({
+      where: {
+        closedAt: null,
+        lastInAt: { gte: addDays(now, -7) },
+        ...(manager ? {} : { OR: [{ accountId: null }, { account: { ownerId: user.id } }] }),
+      },
+      include: { account: { select: { name: true } }, items: { select: { field: true, value: true, basis: true, status: true } }, messages: { where: { direction: "IN" }, orderBy: { sentAt: "desc" }, take: 1, select: { body: true, sentAt: true } } },
+    }),
+    db.deal.findMany({ where: { ownerId: user.id, stage: "WON", poAcceptedAt: { gte: addDays(now, -90) } }, select: { accountId: true, account: { select: { name: true } } } }),
+    opts.agenda === false
+      ? Promise.resolve([])
+      : db.task.findMany({
+          where: { assigneeId: user.id, status: "OPEN", scheduledAt: { gte: dayStart, lt: twoDays } },
+          include: { deal: { select: { code: true } } },
+        }),
   ]);
 
   const loc = i.es ? "es-CO" : "en-US";
@@ -283,14 +301,6 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
   }
 
   // 6. Customer messages SOLU understood but nobody answered or confirmed yet (Communication Intelligence).
-  const threads = await db.commThread.findMany({
-    where: {
-      closedAt: null,
-      lastInAt: { gte: addDays(now, -7) },
-      ...(manager ? {} : { OR: [{ accountId: null }, { account: { ownerId: user.id } }] }),
-    },
-    include: { account: { select: { name: true } }, items: { select: { field: true, value: true, basis: true, status: true } }, messages: { where: { direction: "IN" }, orderBy: { sentAt: "desc" }, take: 1, select: { body: true, sentAt: true } } },
-  });
   for (const th of threads) {
     const unanswered = !!th.lastInAt && (!th.lastOutAt || th.lastOutAt < th.lastInAt);
     const proposed = th.items.filter((x) => x.status === "PROPOSED" && x.basis === "INFERENCE").length;
@@ -383,10 +393,11 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
     signals.push({ key: `od-${id}`, title: t(`${strip(x.name)} tiene ${x.n} ${x.n === 1 ? "factura vencida" : "facturas vencidas"} mientras negocias`, `${strip(x.name)} has ${x.n} overdue invoice(s) while you negotiate`), text: t(`${i.money(x.total)} sin pagar. Conviene acordar el pago antes de comprometer plazo o descuento nuevos.`, `${i.money(x.total)} unpaid. Agree payment before committing new terms or discounts.`), src: t("Cuentas por cobrar", "Receivables"), href: `/accounts/${id}` });
   }
   if (signals.length < 3) {
-    const won = await db.deal.groupBy({ by: ["accountId"], where: { ownerId: user.id, stage: "WON", poAcceptedAt: { gte: addDays(now, -90) } }, _count: true });
-    for (const g of won.filter((x) => x._count >= 3)) {
+    const byAcc = new Map<string, { accountId: string; _count: number; name: string }>();
+    for (const w of recentWon) { const g = byAcc.get(w.accountId) ?? { accountId: w.accountId, _count: 0, name: w.account.name }; g._count++; byAcc.set(w.accountId, g); }
+    for (const g of [...byAcc.values()].filter((x) => x._count >= 3)) {
       if (signals.length >= 3) break;
-      const acc = await db.account.findUnique({ where: { id: g.accountId }, select: { name: true } });
+      const acc = { name: g.name };
       signals.push({ key: `rec-${g.accountId}`, inferred: true, title: t(`Posible acuerdo de suministro con ${strip(acc?.name ?? "")}`, `Possible supply agreement with ${strip(acc?.name ?? "")}`), text: t(`${g._count} órdenes en 90 días: un acuerdo o stock en consignación evitaría la próxima urgencia.`, `${g._count} orders in 90 days: an agreement or consignment stock would avoid the next urgency.`), src: t(`Inferencia de SOLU · regla simple: ${g._count} órdenes en 90 días`, `SOLU inference · simple rule: ${g._count} orders in 90 days`), href: `/accounts/${g.accountId}` });
     }
   }
@@ -397,15 +408,6 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
   const nextMeeting = todayEvents.find((e) => !e.fromSolu);
 
   // ---------- Today's and tomorrow's calendar: Outlook meetings + SOLU blocks ----------
-  const dayStart = new Date(now.getTime() + 5 * 3600e3); // 00:00 Bogotá
-  const twoDays = new Date(dayStart.getTime() + 2 * 864e5);
-  const blocks =
-    opts.agenda === false
-      ? []
-      : await db.task.findMany({
-          where: { assigneeId: user.id, status: "OPEN", scheduledAt: { gte: dayStart, lt: twoDays } },
-          include: { deal: { select: { code: true } } },
-        });
   const linked = new Set(blocks.map((b) => b.outlookEventId).filter(Boolean));
   const items: AgendaItem[] = [
     ...blocks.map((b) => {

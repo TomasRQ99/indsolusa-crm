@@ -24,15 +24,10 @@ export default async function ComunicacionPage({ searchParams }: { searchParams:
   const i = makeI18n(user.lang);
   const { t } = i;
 
-  const rows = await loadThreads(user);
-  rows.sort((a, b) => b.rank - a.rank || +b.lastAt - +a.lastAt);
-  const needYou = rows.filter((r) => r.needsYou);
-  const controlled = rows.filter((r) => !r.needsYou);
-  const selectedId = sp.t && rows.some((r) => r.id === sp.t) ? sp.t : needYou[0]?.id ?? rows[0]?.id ?? null;
-
-  const th = selectedId
-    ? await db.commThread.findFirst({
-        where: { id: selectedId, ...threadScope(user) },
+  const loadThread = (tid: string) =>
+    Promise.all([
+      db.commThread.findFirst({
+        where: { id: tid, ...threadScope(user) },
         include: {
           account: { select: { id: true, name: true } },
           contact: true,
@@ -40,17 +35,25 @@ export default async function ComunicacionPage({ searchParams }: { searchParams:
           messages: { orderBy: { sentAt: "asc" }, include: { attachments: { select: { id: true, name: true, mime: true } } } },
           items: { include: { decidedBy: { select: { name: true } } }, orderBy: { createdAt: "asc" } },
         },
-      })
-    : null;
-  const [openDeals, contacts] = await Promise.all([
-    th?.accountId ? db.deal.findMany({ where: { accountId: th.accountId, stage: { not: "LOST" }, resultAchievedAt: null }, select: { id: true, code: true, title: true }, orderBy: { updatedAt: "desc" } }) : Promise.resolve([]),
+      }),
+      db.deal.findMany({ where: { account: { threads: { some: { id: tid } } }, stage: { not: "LOST" }, resultAchievedAt: null }, select: { id: true, code: true, title: true }, orderBy: { updatedAt: "desc" } }),
+    ]);
+  // When the thread is in the URL, it loads in the same parallel batch as the list.
+  const [rows, contacts, early] = await Promise.all([
+    loadThreads(user),
     db.contact.findMany({
       where: user.role === "ADMIN" || user.role === "MANAGER" ? {} : { account: { ownerId: user.id } },
       select: { id: true, firstName: true, lastName: true, account: { select: { name: true } } },
       orderBy: { firstName: "asc" },
       take: 300,
     }),
+    sp.t ? loadThread(sp.t) : Promise.resolve(null),
   ]);
+  rows.sort((a, b) => b.rank - a.rank || +b.lastAt - +a.lastAt);
+  const needYou = rows.filter((r) => r.needsYou);
+  const controlled = rows.filter((r) => !r.needsYou);
+  const selectedId = sp.t && rows.some((r) => r.id === sp.t) ? sp.t : needYou[0]?.id ?? rows[0]?.id ?? null;
+  const [th, openDeals] = selectedId ? (selectedId === sp.t && early ? early : await loadThread(selectedId)) : [null, []];
   const graph = mailConfig().provider === "graph";
 
   const fieldLabel: Record<string, string> = {

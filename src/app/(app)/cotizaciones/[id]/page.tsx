@@ -19,9 +19,13 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const { t } = i;
   const { id } = await params;
   const sp = await searchParams;
-  const q = await db.quote.findUnique({ where: { id }, include: quoteInclude });
+  const [q, policy, pos, dealInvoices] = await Promise.all([
+    db.quote.findUnique({ where: { id }, include: quoteInclude }),
+    policyFloor(),
+    db.customerPO.findMany({ where: { quoteId: id }, orderBy: { receivedAt: "desc" }, select: { id: true, number: true, receivedAt: true, rejectedAt: true, acceptance: { select: { id: true } } } }),
+    db.invoice.findMany({ where: { deal: { quotes: { some: { id } } } }, orderBy: { issuedAt: "asc" }, select: { id: true, number: true, amount: true, issuedAt: true } }),
+  ]);
   if (!q) notFound();
-  const policy = await policyFloor();
   const B = buildQuote(q, i, policy);
   const d = q.deal;
   const editable = canEdit(user, d.ownerId);
@@ -30,8 +34,6 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const latest = siblings[siblings.length - 1];
   const todayStr = dayInput(B.now);
   const contact = d.contact ? `${d.contact.firstName} ${d.contact.lastName}` : null;
-  const pos = await db.customerPO.findMany({ where: { quoteId: q.id }, orderBy: { receivedAt: "desc" }, select: { id: true, number: true, receivedAt: true, rejectedAt: true, acceptance: { select: { id: true } } } });
-  const dealInvoices = await db.invoice.findMany({ where: { dealId: d.id }, orderBy: { issuedAt: "asc" }, select: { id: true, number: true, amount: true, issuedAt: true } });
 
   const statusSig = {
     DRAFT: { c: "dash", x: t("Borrador interno", "Internal draft") },

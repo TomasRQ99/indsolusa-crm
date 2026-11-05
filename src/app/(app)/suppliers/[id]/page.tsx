@@ -14,7 +14,10 @@ export default async function Supplier360({ params }: { params: Promise<{ id: st
   const i = makeI18n(user.lang);
   const { t } = i;
   const { id } = await params;
-  const s = await db.supplier.findUnique({ where: { id }, include: supplierInclude });
+  const [s, customers] = await Promise.all([
+    db.supplier.findUnique({ where: { id }, include: supplierInclude }),
+    db.account.findMany({ where: { deals: { some: { supplierPos: { some: { supplierId: id } } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+  ]);
   if (!s) notFound();
   const now = today();
   const F = ({ f, src }: { f: Fresh; src?: string | null }) => <span className={`fresh${f.stale ? " stale" : ""}`}>{src ? `${src} · ` : ""}{f.label}{f.stale && f.at ? ` · ${t("confirmar", "re-confirm")}` : ""}</span>;
@@ -70,7 +73,6 @@ export default async function Supplier360({ params }: { params: Promise<{ id: st
 
   const observedTerms = [...new Set(s.pos.map((p) => p.terms).filter(Boolean))] as string[];
   const bankF = freshness(i, s.bankVerifiedAt, 365, now);
-  const customers = await db.account.findMany({ where: { deals: { some: { supplierPos: { some: { supplierId: s.id } } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } });
   const isNew = s.pos.length <= 1;
 
   return (

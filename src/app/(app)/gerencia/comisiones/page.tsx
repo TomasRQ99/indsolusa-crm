@@ -15,18 +15,21 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
   const manager = canManageAll(user);
   const sp = await searchParams;
   // Each person sees only their own commissions; management can choose.
-  const people = manager ? await db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : [];
   // Management lands on the first person who has commissions (usually not themselves).
-  const firstWithDeals = manager && !sp.u
-    ? (await db.deal.findFirst({ where: { stage: "WON", ownerId: { not: user.id } }, orderBy: { updatedAt: "desc" }, select: { ownerId: true } }))?.ownerId
-    : undefined;
+  const [people, firstDeal] = await Promise.all([
+    manager ? db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
+    manager && !sp.u ? db.deal.findFirst({ where: { stage: "WON", ownerId: { not: user.id } }, orderBy: { updatedAt: "desc" }, select: { ownerId: true } }) : Promise.resolve(null),
+  ]);
+  const firstWithDeals = firstDeal?.ownerId;
   const personId = manager ? sp.u ?? firstWithDeals ?? user.id : user.id;
   const person = manager ? people.find((p) => p.id === personId) ?? { id: user.id, name: user.name } : { id: user.id, name: user.name };
 
-  const { rows, policy, totals } = await computeCommissions({ userId: person.id });
+  const [{ rows, policy, totals }, unpaidApproved] = await Promise.all([
+    computeCommissions({ userId: person.id }),
+    db.commissionEntry.aggregate({ where: { userId: person.id, paidAt: null }, _sum: { amount: true }, _count: true }),
+  ]);
   const sel = rows.find((r) => r.key === sp.r) ?? rows.find((r) => !r.projected) ?? rows[0];
   const earned = rows.flatMap((r) => [r.saleHalf, r.collectionHalf]).filter((h) => h.state === "EARNED");
-  const unpaidApproved = await db.commissionEntry.aggregate({ where: { userId: person.id, paidAt: null }, _sum: { amount: true }, _count: true });
   const tiers = tiersOf(policy);
   const salePct = policy?.salePercent ?? 50;
 

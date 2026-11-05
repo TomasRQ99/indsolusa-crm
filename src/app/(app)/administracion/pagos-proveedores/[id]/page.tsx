@@ -22,7 +22,8 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
   const s = spo.supplier;
   const deal = spo.deal;
   const manager = canManageAll(user);
-  const spoFull = await db.supplierPO.findUniqueOrThrow({ where: { id: spo.id }, select: { version: true, releasedAt: true, amount: true, supplierId: true, id: true } });
+  // supplierPo already carries all its own fields (version, releasedAt, amount…): no extra query.
+  const spoFull = spo;
   const { dup, usd } = await treasuryChecks(p, spoFull, i);
   const auth = authorityFor(user, p, usd, i);
   const L = paymentStateLabel(i, p.state);

@@ -6,7 +6,8 @@ import { getLang } from "@/lib/i18n";
 
 const display = Archivo({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-display" });
 const sans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-sans" });
-const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-mono" });
+// Mono is secondary (dates, codes): not preloaded, so it never competes with the main fonts.
+const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-mono", preload: false });
 
 export const metadata: Metadata = {
   title: APP_NAME,

@@ -25,8 +25,13 @@ export const insightsInclude = {
 export type IDeal = Prisma.DealGetPayload<{ include: typeof insightsInclude }>;
 
 export async function loadInsightDeals(f: Filters) {
+  // Insights looks back at most 12 months (+6 for trends): older closed history isn't loaded.
+  const since = addDays(new Date(), -560);
   return db.deal.findMany({
-    where: { ...(f.owner ? { ownerId: f.owner } : {}), ...(f.sector ? { account: { industry: f.sector } } : {}) },
+    where: {
+      ...(f.owner ? { ownerId: f.owner } : {}), ...(f.sector ? { account: { industry: f.sector } } : {}),
+      OR: [{ closedAt: null, stage: { not: "LOST" } }, { closedAt: { gte: since } }, { resultConfirmedAt: { gte: since } }, { updatedAt: { gte: since } }],
+    },
     include: insightsInclude,
   });
 }

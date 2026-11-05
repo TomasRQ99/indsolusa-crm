@@ -71,8 +71,7 @@ const f = (v: number) => r2(v).toFixed(2);
 
 export async function computeCommissions(opts: { userId?: string } = {}) {
   const now = today();
-  const policies = await db.commissionPolicy.findMany();
-  const deals = await db.deal.findMany({
+  const [policies, deals] = await Promise.all([db.commissionPolicy.findMany(), db.deal.findMany({
     where: { stage: "WON", ...(opts.userId ? { ownerId: opts.userId } : {}) },
     include: {
       account: { select: { name: true, createdAt: true } },
@@ -87,7 +86,7 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
       },
     },
     orderBy: { updatedAt: "desc" },
-  });
+  })]);
 
   const rows: CommissionRow[] = [];
   for (const d of deals) {

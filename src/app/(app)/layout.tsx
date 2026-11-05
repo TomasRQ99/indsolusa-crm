@@ -12,20 +12,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const i = makeI18n(user.lang);
   const { t, es } = i;
   const manager = canManageAll(user);
-  const { counters, alerts } = await shellAttention(user, i);
+  // Not awaited: counters and alerts stream in after the page, so they never delay it.
+  const attention = shellAttention(user, i);
 
   const modules: ShellModule[] = MODULES.map((m) => {
     const tabs = m.tabs
       .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || user.role === "ADMIN"))
       .map((tab) => ({ href: tab.href, label: es ? tab.es : tab.en }));
-    return { key: m.key, label: es ? m.es : m.en, href: tabs[0]?.href ?? m.match[0], match: m.match, tabs, counter: counters[m.key] };
+    return { key: m.key, label: es ? m.es : m.en, href: tabs[0]?.href ?? m.match[0], match: m.match, tabs };
   });
 
   const initials = user.name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
   const role = user.role === "ADMIN" ? t("Administración del sistema", "System admin") : user.role === "MANAGER" ? t("Gerencia", "Management") : t("Comercial", "Sales");
 
   return (
-    <ShellClient lang={user.lang} user={{ name: user.name, role, initials }} modules={modules} alerts={alerts}>
+    <ShellClient lang={user.lang} user={{ name: user.name, role, initials }} modules={modules} attention={attention}>
       {children}
     </ShellClient>
   );

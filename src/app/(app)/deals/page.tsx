@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { canEdit } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
-import { esagra, today } from "@/lib/domain";
+import { addDays, esagra, today } from "@/lib/domain";
 import { STAGES, stageLabel } from "@/lib/labels";
 import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
 import { createDeal, moveDealStage } from "./actions";
@@ -15,13 +15,20 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
   const { mine } = await searchParams;
   const now = today();
 
-  const [deals, accounts] = await Promise.all([
+  // The board shows working Journeys: closed ones and losses older than 90 days stay in history
+  // (Customer 360, Insights), so this page doesn't grow forever.
+  const scope = mine ? { ownerId: user.id } : {};
+  const [deals, accounts, closedCount] = await Promise.all([
     db.deal.findMany({
-      where: mine ? { ownerId: user.id } : undefined,
+      where: { ...scope, closedAt: null, OR: [{ stage: { not: "LOST" } }, { updatedAt: { gte: addDays(now, -90) } }] },
       orderBy: { updatedAt: "desc" },
-      include: { account: { select: { id: true, name: true } }, owner: { select: { name: true } } },
+      select: {
+        id: true, code: true, title: true, stage: true, amount: true, supplierCost: true, freightCost: true, otherCosts: true, nextMove: true, nextMoveDate: true, waitingFor: true, ownerId: true,
+        account: { select: { id: true, name: true } }, owner: { select: { name: true } },
+      },
     }),
     db.account.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    db.deal.count({ where: { ...scope, closedAt: { not: null } } }),
   ]);
 
   const open = deals.filter((d) => !["WON", "LOST"].includes(d.stage));
@@ -44,7 +51,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
       <section className="sum">
         <div><span className="k">{t("En curso", "In progress")}</span><span className="v">{open.length}</span><span className="s">{i.money(open.reduce((s, d) => s + Number(d.amount), 0))}</span></div>
         <div><span className="k">{t("Sin siguiente movimiento", "No next movement")}</span><span className="v">{noMove.length}</span><span className="s">{t("conviene definir qué sigue", "worth deciding what's next")}</span></div>
-        <div><span className="k">{t("OC aceptadas", "POs accepted")}</span><span className="v">{deals.filter((d) => d.stage === "WON").length}</span></div>
+        <div><span className="k">{t("OC aceptadas", "POs accepted")}</span><span className="v">{deals.filter((d) => d.stage === "WON").length}</span><span className="s">{t(`${closedCount} Journeys cerrados en el historial`, `${closedCount} closed Journeys in history`)}</span></div>
       </section>
 
       <details className="card">

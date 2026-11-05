@@ -9,7 +9,7 @@ services:
     # Each deploy applies pending database migrations and makes sure the admin user exists.
     buildCommand: npm install && npx prisma migrate deploy && npx prisma db seed && npm run build
     startCommand: npm start
-    healthCheckPath: /login
+    healthCheckPath: /api/health # no database, no login: a cheap liveness check
     envVars:
       - key: NODE_VERSION
         value: "24"

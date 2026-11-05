@@ -25,13 +25,23 @@ export type ShellProps = {
   lang: "ES" | "EN";
   user: { name: string; role: string; initials: string };
   modules: ShellModule[];
-  alerts: Alert[];
+  // Streamed: the page renders without waiting for the counters and the bell.
+  attention: Promise<{ counters: Partial<Record<ModuleKey, Counter>>; alerts: Alert[] }>;
   children: React.ReactNode;
 };
 
 type Side = "" | "expanded" | "collapsed";
 
-export function ShellClient({ lang, user, modules, alerts, children }: ShellProps) {
+export function ShellClient({ lang, user, modules: baseModules, attention, children }: ShellProps) {
+  const [att, setAtt] = useState<{ counters: Partial<Record<ModuleKey, Counter>>; alerts: Alert[] }>({ counters: {}, alerts: [] });
+  useEffect(() => {
+    let live = true;
+    // A promise streamed from the server arrives as a bare thenable: wrap it before chaining.
+    Promise.resolve(attention).then((a) => { if (live) setAtt(a); }, () => {});
+    return () => { live = false; };
+  }, [attention]);
+  const alerts = att.alerts;
+  const modules = baseModules.map((m) => ({ ...m, counter: att.counters[m.key] }));
   const es = lang === "ES";
   const t = (a: string, b: string) => (es ? a : b);
   const path = usePathname() ?? "/";
