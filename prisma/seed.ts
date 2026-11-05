@@ -21,6 +21,24 @@ async function main() {
   });
   console.log(`Admin login: ${ADMIN_EMAIL} (change the password after first sign-in).`);
 
+  // Commission policy v1 (example values until the real policy is decided, D-06):
+  // 50 % earned at the sale (invoice issued) and 50 % at collection (payment reconciled).
+  if ((await db.commissionPolicy.count()) === 0) {
+    await db.commissionPolicy.create({
+      data: {
+        version: 1,
+        effectiveFrom: new Date("2026-01-01T00:00:00Z"),
+        tiers: [{ min: 0, rate: 0 }, { min: 12, rate: 8 }, { min: 18, rate: 10 }],
+        newClientBonus: 2,
+        salePercent: 50,
+        lossDays: 90,
+        approvedBy: "Gerencia (valores de ejemplo, pendiente D-06)",
+        notes: "50 % a la venta (factura emitida) y 50 % al recaudo (pago conciliado).",
+      },
+    });
+    console.log("Commission policy v1 created.");
+  }
+
   if (!DEMO) return;
   if ((await db.account.count()) > 0) {
     console.log("Accounts already exist; skipping demo data.");

@@ -1,93 +1,83 @@
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
-import { formatDate } from "@/lib/format";
+import { makeI18n } from "@/lib/i18n";
+import { demoLoaded } from "@/lib/demo";
 import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
 import { TestEmailButton } from "@/components/TestEmailButton";
 import { mailConfig } from "@/lib/mail";
-import { createUser, setUserRole, toggleUserActive } from "./actions";
+import { createUser, loadDemoData, removeDemoData, setUserRole, toggleUserActive } from "./actions";
 
 export default async function UsersPage() {
   const admin = await requireRole("ADMIN");
-  const users = await db.user.findMany({
-    orderBy: [{ active: "desc" }, { name: "asc" }],
-    select: { id: true, name: true, email: true, role: true, active: true, createdAt: true },
-  });
-
+  const i = makeI18n(admin.lang);
+  const { t } = i;
+  const [users, demo] = await Promise.all([
+    db.user.findMany({ orderBy: [{ active: "desc" }, { name: "asc" }], select: { id: true, name: true, email: true, role: true, active: true, createdAt: true } }),
+    demoLoaded(),
+  ]);
   const mail = mailConfig();
+  const roleOptions = (
+    <>
+      <option value="REP">{t("Comercial", "Rep")}</option>
+      <option value="MANAGER">{t("Gerencia", "Manager")}</option>
+      <option value="ADMIN">{t("Administración", "Admin")}</option>
+    </>
+  );
 
   return (
     <>
-      <h1>Users & roles</h1>
+      <div className="ph"><div><div className="crumb">{t("Equipo", "Team")}</div><h1>{t("Usuarios y datos", "Users & data")}</h1></div></div>
 
-      <div className="card">
-        <h2>Email delivery</h2>
-        {mail.configured ? (
-          <p className="small">
-            Sending as <strong>{mail.from}</strong> via {mail.description}.
-          </p>
-        ) : (
-          <p className="error">Not configured. Set the Microsoft Graph settings and MAIL_FROM in .env.</p>
-        )}
-        {mail.configured && <TestEmailButton />}
+      <div className="grid cols-2">
+        <div className="card">
+          <h2>{t("Datos de ejemplo", "Sample data")}</h2>
+          {demo ? (
+            <>
+              <p className="small" style={{ marginBottom: 10 }}>{t("Los datos de ejemplo están cargados. Todo lo marcado \"(ejemplo)\" se puede quitar con un clic sin tocar tus datos reales.", "Sample data is loaded. Everything marked \"(ejemplo)\" can be removed in one click without touching your real data.")}</p>
+              <form action={removeDemoData}><button className="danger" type="submit">{t("Quitar datos de ejemplo", "Remove sample data")}</button></form>
+            </>
+          ) : (
+            <>
+              <p className="small" style={{ marginBottom: 10 }}>{t("Carga clientes, Journeys, remisiones, facturas, pagos y comisiones de ejemplo para ver cada pantalla funcionando. Todo queda marcado \"(ejemplo)\".", "Load sample customers, Journeys, delivery notes, invoices, payments and commissions to see every screen working. Everything is marked \"(ejemplo)\".")}</p>
+              <form action={loadDemoData}><button type="submit">{t("Cargar datos de ejemplo", "Load sample data")}</button></form>
+            </>
+          )}
+        </div>
+        <div className="card">
+          <h2>{t("Envío de correo", "Email delivery")}</h2>
+          {mail.configured ? <p className="small">{t("Enviando como", "Sending as")} <b>{mail.from}</b> · {mail.description}.</p> : <p className="error">{t("No configurado.", "Not configured.")}</p>}
+          {mail.configured && <TestEmailButton />}
+        </div>
       </div>
 
       <div className="card">
-        <h2>Invite user</h2>
+        <h2>{t("Invitar usuario", "Invite user")}</h2>
         <form action={createUser} className="inline">
-          <label>Name<input name="name" required /></label>
+          <label>{t("Nombre", "Name")}<input name="name" required /></label>
           <label>Email<input name="email" type="email" required /></label>
-          <label>Temporary password<input name="password" type="password" minLength={10} required /></label>
-          <label>
-            Role
-            <select name="role" defaultValue="REP">
-              <option value="REP">Rep</option>
-              <option value="MANAGER">Manager</option>
-              <option value="ADMIN">Admin</option>
-            </select>
-          </label>
-          <button type="submit">Create user</button>
+          <label>{t("Contraseña temporal", "Temporary password")}<input name="password" type="password" minLength={10} required /></label>
+          <label>{t("Rol", "Role")}<select name="role" defaultValue="REP">{roleOptions}</select></label>
+          <button type="submit">{t("Crear usuario", "Create user")}</button>
         </form>
-        <p className="muted small">
-          Reps edit their own records. Managers edit everything. Admins also manage users.
-        </p>
+        <p className="src" style={{ marginTop: 6 }}>{t("Comercial edita lo suyo. Gerencia edita todo y aprueba pagos, cupos y comisiones. Administración además gestiona usuarios.", "Reps edit their own records. Managers edit everything and approve payments, credit and commissions. Admins also manage users.")}</p>
       </div>
 
-      <div className="card">
+      <div className="card flush">
         <table>
-          <thead>
-            <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th><th></th></tr>
-          </thead>
+          <thead><tr><th>{t("Nombre", "Name")}</th><th>Email</th><th>{t("Rol", "Role")}</th><th>{t("Estado", "Status")}</th><th>{t("Creado", "Created")}</th><th /></tr></thead>
           <tbody>
             {users.map((u) => {
               const self = u.id === admin.id;
               return (
                 <tr key={u.id} className={u.active ? undefined : "muted"}>
-                  <td>{u.name}{self && " (you)"}</td>
+                  <td><b>{u.name}</b>{self && t(" (tú)", " (you)")}</td>
                   <td>{u.email}</td>
-                  <td>
-                    {self ? (
-                      <span className="badge">{u.role}</span>
-                    ) : (
-                      <form action={setUserRole.bind(null, u.id)}>
-                        <AutoSubmitSelect name="role" defaultValue={u.role} aria-label={`Role for ${u.name}`}>
-                          <option value="REP">Rep</option>
-                          <option value="MANAGER">Manager</option>
-                          <option value="ADMIN">Admin</option>
-                        </AutoSubmitSelect>
-                      </form>
-                    )}
-                  </td>
-                  <td>{u.active ? "Active" : "Deactivated"}</td>
-                  <td>{formatDate(u.createdAt)}</td>
-                  <td>
-                    {!self && (
-                      <form action={toggleUserActive.bind(null, u.id)}>
-                        <button className={u.active ? "danger" : "secondary"} type="submit">
-                          {u.active ? "Deactivate" : "Reactivate"}
-                        </button>
-                      </form>
-                    )}
-                  </td>
+                  <td>{self ? <span className="badge">{u.role}</span> : (
+                    <form action={setUserRole.bind(null, u.id)}><AutoSubmitSelect name="role" defaultValue={u.role} aria-label={t(`Rol de ${u.name}`, `Role for ${u.name}`)}>{roleOptions}</AutoSubmitSelect></form>
+                  )}</td>
+                  <td>{u.active ? t("Activo", "Active") : t("Desactivado", "Deactivated")}</td>
+                  <td>{i.date(u.createdAt)}</td>
+                  <td>{!self && <form action={toggleUserActive.bind(null, u.id)}><button className={u.active ? "danger sm" : "secondary sm"} type="submit">{u.active ? t("Desactivar", "Deactivate") : t("Reactivar", "Reactivate")}</button></form>}</td>
                 </tr>
               );
             })}

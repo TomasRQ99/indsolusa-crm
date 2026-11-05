@@ -5,7 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { assertCanEdit, canManageAll } from "@/lib/permissions";
-import { optionalId, optionalText, parseForm, requiredText } from "@/lib/forms";
+import { optionalDate, optionalId, optionalText, parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
 
 const accountSchema = z.object({
@@ -44,4 +44,29 @@ export async function deleteAccount(id: string) {
   await db.account.delete({ where: { id } });
   refreshApp();
   redirect("/accounts");
+}
+
+/** Billing requirements: they decide what blocks invoicing a delivery. */
+export async function updateBilling(id: string, formData: FormData) {
+  const user = await requireUser();
+  const existing = await db.account.findUniqueOrThrow({ where: { id }, select: { ownerId: true } });
+  assertCanEdit(user, existing.ownerId);
+  const data = parseForm(
+    z.object({
+      taxId: optionalText,
+      paymentTermsDays: z.coerce.number().int().min(0).max(365),
+      portalValidUntil: optionalDate,
+    }),
+    formData,
+  );
+  await db.account.update({
+    where: { id },
+    data: {
+      ...data,
+      taxDataComplete: formData.get("taxDataComplete") === "on",
+      requiresReceptionCode: formData.get("requiresReceptionCode") === "on",
+      requiresPortal: formData.get("requiresPortal") === "on",
+    },
+  });
+  refreshApp();
 }

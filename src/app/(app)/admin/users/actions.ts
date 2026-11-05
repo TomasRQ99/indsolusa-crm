@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
+import { loadDemo, removeDemo } from "@/lib/demo";
 
 const role = z.enum(["ADMIN", "MANAGER", "REP"]);
 
@@ -39,5 +40,17 @@ export async function toggleUserActive(id: string) {
   if (id === admin.id) throw new Error("You cannot deactivate yourself.");
   const user = await db.user.findUniqueOrThrow({ where: { id }, select: { active: true } });
   await db.user.update({ where: { id }, data: { active: !user.active } });
+  refreshApp();
+}
+
+export async function loadDemoData() {
+  const admin = await requireRole("ADMIN");
+  await loadDemo(admin.id);
+  refreshApp();
+}
+
+export async function removeDemoData() {
+  await requireRole("ADMIN");
+  await removeDemo();
   refreshApp();
 }

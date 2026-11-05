@@ -1,11 +1,11 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import type { Role } from "@prisma/client";
+import type { Lang, Role } from "@prisma/client";
 import { db } from "./db";
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, signSessionToken, verifySessionToken } from "./session-token";
 
-export type SessionUser = { id: string; name: string; email: string; role: Role };
+export type SessionUser = { id: string; name: string; email: string; role: Role; lang: Lang; workdayMinutes: number };
 
 export async function createSession(userId: string) {
   const token = await signSessionToken(userId);
@@ -29,10 +29,17 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   if (!userId) return null;
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true, role: true, active: true },
+    select: { id: true, name: true, email: true, role: true, active: true, lang: true, workdayMinutes: true },
   });
   if (!user || !user.active) return null;
-  return { id: user.id, name: user.name, email: user.email, role: user.role };
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    lang: user.lang,
+    workdayMinutes: user.workdayMinutes,
+  };
 });
 
 export async function requireUser(): Promise<SessionUser> {
@@ -43,6 +50,6 @@ export async function requireUser(): Promise<SessionUser> {
 
 export async function requireRole(...roles: Role[]): Promise<SessionUser> {
   const user = await requireUser();
-  if (!roles.includes(user.role)) redirect("/dashboard");
+  if (!roles.includes(user.role)) redirect("/mi-dia");
   return user;
 }

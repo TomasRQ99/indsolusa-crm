@@ -14,6 +14,7 @@ const taskSchema = z.object({
   accountId: optionalId,
   contactId: optionalId,
   dealId: optionalId,
+  estimateMinutes: z.coerce.number().int().min(5).max(600).optional().or(z.literal("").transform(() => undefined)),
 });
 
 export async function createTask(formData: FormData) {

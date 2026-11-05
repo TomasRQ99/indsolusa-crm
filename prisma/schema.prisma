@@ -13,6 +13,11 @@ enum Role {
   REP
 }
 
+enum Lang {
+  ES
+  EN
+}
+
 enum DealStage {
   LEAD
   QUALIFIED
@@ -34,21 +39,42 @@ enum ActivityType {
   NOTE
 }
 
+enum CommissionHalf {
+  SALE
+  COLLECTION
+}
+
 // Users are deactivated, never deleted, so ownership history stays intact.
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  role         Role     @default(REP)
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String
+  passwordHash   String
+  role           Role     @default(REP)
+  active         Boolean  @default(true)
+  lang           Lang     @default(ES)
+  // Length of a normal working day, used by Mi Plan to size capacity.
+  workdayMinutes Int      @default(570)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   accounts   Account[]
   deals      Deal[]
   tasks      Task[]
   activities Activity[]
+
+  paymentsRequested SupplierPayment[] @relation("PaymentRequester")
+  paymentsVerified  SupplierPayment[] @relation("PaymentVerifier")
+  paymentsApproved  SupplierPayment[] @relation("PaymentApprover")
+  paymentsExecuted  SupplierPayment[] @relation("PaymentExecutor")
+  invoicesIssued    Invoice[]
+  promisesRecorded  PaymentPromise[]
+  cashRecorded      CustomerPayment[] @relation("CashRecorder")
+  cashReconciled    CustomerPayment[] @relation("CashReconciler")
+  commissionsEarned CommissionEntry[] @relation("CommissionOwner")
+  commissionsApproved CommissionEntry[] @relation("CommissionApprover")
+  creditExceptions  Deal[]            @relation("CreditException")
+  suppliersVerified Supplier[]
 }
 
 model Account {
@@ -63,10 +89,22 @@ model Account {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Commercial and billing terms
+  taxId                 String?
+  taxDataComplete       Boolean   @default(false)
+  creditLimit           Decimal?  @db.Decimal(14, 2)
+  paymentTermsDays      Int       @default(30)
+  requiresReceptionCode Boolean   @default(false)
+  requiresPortal        Boolean   @default(false)
+  portalValidUntil      DateTime?
+  isDemo                Boolean   @default(false)
+
   contacts   Contact[]
   deals      Deal[]
   tasks      Task[]
   activities Activity[]
+  invoices   Invoice[]
+  payments   CustomerPayment[]
 
   @@index([ownerId])
   @@index([name])
@@ -92,8 +130,11 @@ model Contact {
   @@index([lastName, firstName])
 }
 
+// A Deal is the commercial heart of a Journey (J-YYMM-####): need, customer PO,
+// purchase, delivery, invoice, cash and the customer's result.
 model Deal {
   id        String    @id @default(cuid())
+  code      String?   @unique
   title     String
   amount    Decimal   @default(0) @db.Decimal(14, 2)
   stage     DealStage @default(LEAD)
@@ -107,29 +148,67 @@ model Deal {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  tasks      Task[]
-  activities Activity[]
+  desiredResult    String?
+  customerPo       String?
+  poAcceptedAt     DateTime?
+  promisedDate     DateTime?
+  promiseText      String?
+  supplierCost     Decimal   @default(0) @db.Decimal(14, 2)
+  freightCost      Decimal   @default(0) @db.Decimal(14, 2)
+  otherCosts       Decimal   @default(0) @db.Decimal(14, 2)
+  nextMove         String?
+  nextMoveDate     DateTime?
+  waitingFor       String?
+  waitingUntil     DateTime?
+  resultAchievedAt DateTime?
+  creditExceptionById String?
+  creditExceptionBy   User?     @relation("CreditException", fields: [creditExceptionById], references: [id])
+  creditExceptionAt   DateTime?
+  creditExceptionNote String?
+
+  tasks       Task[]
+  activities  Activity[]
+  items       DealItem[]
+  supplierPos SupplierPO[]
+  deliveries  Delivery[]
+  invoices    Invoice[]
 
   @@index([stage])
   @@index([ownerId])
   @@index([accountId])
 }
 
+model DealItem {
+  id          String  @id @default(cuid())
+  dealId      String
+  deal        Deal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  qty         Int
+  code        String?
+  description String
+  unitPrice   Decimal @db.Decimal(14, 2)
+
+  deliveryLines DeliveryLine[]
+
+  @@index([dealId])
+}
+
 model Task {
-  id          String     @id @default(cuid())
-  title       String
-  dueDate     DateTime?
-  status      TaskStatus @default(OPEN)
-  completedAt DateTime?
-  assigneeId  String
-  assignee    User       @relation(fields: [assigneeId], references: [id])
-  accountId   String?
-  account     Account?   @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  contactId   String?
-  contact     Contact?   @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  dealId      String?
-  deal        Deal?      @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  createdAt   DateTime   @default(now())
+  id              String     @id @default(cuid())
+  title           String
+  dueDate         DateTime?
+  status          TaskStatus @default(OPEN)
+  completedAt     DateTime?
+  estimateMinutes Int?
+  plannedFor      DateTime?
+  assigneeId      String
+  assignee        User       @relation(fields: [assigneeId], references: [id])
+  accountId       String?
+  account         Account?   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  contactId       String?
+  contact         Contact?   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  dealId          String?
+  deal            Deal?      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  createdAt       DateTime   @default(now())
 
   @@index([assigneeId, status])
 }
@@ -151,4 +230,225 @@ model Activity {
 
   @@index([accountId, occurredAt])
   @@index([occurredAt])
+}
+
+// ---------- Suppliers and purchasing ----------
+
+model Supplier {
+  id            String    @id @default(cuid())
+  name          String
+  country       String?
+  currency      String    @default("USD")
+  email         String?
+  // Phone registered when the supplier was onboarded; used for independent verification.
+  phone         String?
+  // Verified bank profile. Only changed through an independent verification.
+  bankBeneficiary String?
+  bankName        String?
+  bankAccount     String?
+  bankSwift       String?
+  bankVerifiedAt  DateTime?
+  bankVerifiedById String?
+  bankVerifiedBy  User?     @relation(fields: [bankVerifiedById], references: [id])
+  isDemo        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  pos SupplierPO[]
+}
+
+model SupplierPO {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  dealId      String
+  deal        Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  supplierId  String
+  supplier    Supplier  @relation(fields: [supplierId], references: [id])
+  amount      Decimal   @db.Decimal(14, 2)
+  currency    String    @default("USD")
+  confirmedAt DateTime?
+  shippedAt   DateTime?
+  eta         DateTime?
+  receivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  payments SupplierPayment[]
+
+  @@index([dealId])
+}
+
+model SupplierPayment {
+  id            String     @id @default(cuid())
+  supplierPoId  String
+  supplierPo    SupplierPO @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
+  amount        Decimal    @db.Decimal(14, 2)
+  currency      String     @default("USD")
+  amountUsd     Decimal?   @db.Decimal(14, 2)
+  reason        String
+  dueBy         DateTime?
+  // Bank data as it appears on the supplier's proforma / invoice / instruction.
+  docBeneficiary String?
+  docBankName    String?
+  docAccount     String?
+  docSwift       String?
+  docSource      String?
+  requestedById String
+  requestedBy   User       @relation("PaymentRequester", fields: [requestedById], references: [id])
+  verifiedById  String?
+  verifiedBy    User?      @relation("PaymentVerifier", fields: [verifiedById], references: [id])
+  verifiedAt    DateTime?
+  verificationNote String?
+  approvedById  String?
+  approvedBy    User?      @relation("PaymentApprover", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  executedById  String?
+  executedBy    User?      @relation("PaymentExecutor", fields: [executedById], references: [id])
+  executedAt    DateTime?
+  executedRef   String?
+  createdAt     DateTime   @default(now())
+
+  @@index([supplierPoId])
+}
+
+// ---------- Delivery, invoicing and cash ----------
+
+model Delivery {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  dealId         String
+  deal           Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  deliveredAt    DateTime
+  place          String?
+  deliveredBy    String?
+  receivedByName String?
+  podReceived    Boolean   @default(false)
+  receptionCode  String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+
+  lines   DeliveryLine[]
+  invoice Invoice?
+
+  @@index([dealId])
+}
+
+model DeliveryLine {
+  id         String   @id @default(cuid())
+  deliveryId String
+  delivery   Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  dealItemId String
+  dealItem   DealItem @relation(fields: [dealItemId], references: [id], onDelete: Cascade)
+  qty        Int
+  serials    String?
+}
+
+// Quotes and invoices share one 9-digit sequence.
+model DocSequence {
+  id   String @id
+  next Int
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  number        String    @unique
+  dealId        String
+  deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  deliveryId    String?   @unique
+  delivery      Delivery? @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
+  accountId     String
+  account       Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  issuedAt      DateTime
+  dueAt         DateTime
+  amount        Decimal   @db.Decimal(14, 2)
+  // Esagra of this invoice at the moment it was issued (basis for the sale half of the commission).
+  esagraAtIssue Decimal   @db.Decimal(14, 2)
+  issuedById    String
+  issuedBy      User      @relation(fields: [issuedById], references: [id])
+  createdAt     DateTime  @default(now())
+
+  applications PaymentApplication[]
+  promises     PaymentPromise[]
+  commissions  CommissionEntry[]
+
+  @@index([accountId])
+  @@index([dueAt])
+}
+
+model CustomerPayment {
+  id             String    @id @default(cuid())
+  accountId      String
+  account        Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  amount         Decimal   @db.Decimal(14, 2)
+  receivedAt     DateTime
+  reference      String?
+  reconciledAt   DateTime?
+  reconciledById String?
+  reconciledBy   User?     @relation("CashReconciler", fields: [reconciledById], references: [id])
+  createdById    String
+  createdBy      User      @relation("CashRecorder", fields: [createdById], references: [id])
+  createdAt      DateTime  @default(now())
+
+  applications PaymentApplication[]
+
+  @@index([accountId])
+}
+
+model PaymentApplication {
+  id        String          @id @default(cuid())
+  paymentId String
+  payment   CustomerPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoiceId String
+  invoice   Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount    Decimal         @db.Decimal(14, 2)
+
+  @@index([invoiceId])
+}
+
+model PaymentPromise {
+  id           String   @id @default(cuid())
+  invoiceId    String
+  invoice      Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  promisedFor  DateTime
+  promisedBy   String
+  source       String
+  recordedById String
+  recordedBy   User     @relation(fields: [recordedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([invoiceId])
+}
+
+// ---------- Commissions ----------
+
+model CommissionPolicy {
+  id             String   @id @default(cuid())
+  version        Int      @unique
+  effectiveFrom  DateTime
+  // [{ "min": 0, "rate": 0 }, { "min": 12, "rate": 8 }, { "min": 18, "rate": 10 }]  (percent)
+  tiers          Json
+  newClientBonus Decimal  @default(2) @db.Decimal(5, 2)
+  salePercent    Int      @default(50)
+  lossDays       Int      @default(90)
+  approvedBy     String
+  notes          String?
+  createdAt      DateTime @default(now())
+}
+
+// Snapshot written when management approves a half; paid when payroll confirms it.
+model CommissionEntry {
+  id           String         @id @default(cuid())
+  invoiceId    String
+  invoice      Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  half         CommissionHalf
+  userId       String
+  user         User           @relation("CommissionOwner", fields: [userId], references: [id])
+  amount       Decimal        @db.Decimal(14, 2)
+  calculation  String
+  approvedById String
+  approvedBy   User           @relation("CommissionApprover", fields: [approvedById], references: [id])
+  approvedAt   DateTime       @default(now())
+  paidAt       DateTime?
+  payrollRef   String?
+
+  @@unique([invoiceId, half])
+  @@index([userId])
 }

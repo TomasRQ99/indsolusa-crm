@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { refreshApp } from "@/lib/revalidate";
 
 export type PasswordState = { ok?: string; error?: string };
 
@@ -29,4 +30,18 @@ export async function changePassword(_prev: PasswordState, formData: FormData): 
     data: { passwordHash: await bcrypt.hash(parsed.data.next, 12) },
   });
   return { ok: "Password updated." };
+}
+
+export async function setLanguage(formData: FormData) {
+  const user = await requireUser();
+  const lang = formData.get("lang") === "EN" ? "EN" : "ES";
+  await db.user.update({ where: { id: user.id }, data: { lang } });
+  refreshApp();
+}
+
+export async function setWorkday(formData: FormData) {
+  const user = await requireUser();
+  const hours = z.coerce.number().min(1).max(14).parse(formData.get("hours"));
+  await db.user.update({ where: { id: user.id }, data: { workdayMinutes: Math.round(hours * 60) } });
+  refreshApp();
 }

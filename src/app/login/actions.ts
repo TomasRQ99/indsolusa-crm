@@ -36,7 +36,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
   clearFailures(emailKey);
   await createSession(user.id);
-  redirect("/dashboard");
+  redirect("/mi-dia");
 }
 
 export async function logout() {
