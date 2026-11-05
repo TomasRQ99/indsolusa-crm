@@ -30,6 +30,7 @@ import {
 import { defineNext, doneAndNext, logHappened, newPromise, postpone, scheduleMove, scheduleMoveAt } from "../../mi-dia/actions";
 import { createSupplierPo, markSupplierPo } from "../../operaciones/actions";
 import { requestSupplierPayment } from "../../administracion/actions";
+import { createQuote } from "../../cotizaciones/actions";
 
 const TAB_ORDER: TabKey[] = ["resumen", "need", "source", "quote", "execute", "finance", "file", "result"];
 
@@ -64,9 +65,10 @@ export default async function JourneyPage({
     await db.journeyView.update({ where: { userId_dealId: { userId: user.id, dealId: id } }, data: { prevSeenAt: view.seenAt, seenAt: nowTs } });
   } else await db.journeyView.update({ where: { userId_dealId: { userId: user.id, dealId: id } }, data: { seenAt: nowTs } });
 
-  const [suppliers, contacts] = await Promise.all([
+  const [suppliers, contacts, quotes] = await Promise.all([
     tab === "execute" ? db.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
     tab === "file" ? db.contact.findMany({ where: { accountId: deal.accountId }, orderBy: { firstName: "asc" }, select: { id: true, firstName: true, lastName: true } }) : Promise.resolve([]),
+    tab === "quote" ? db.quote.findMany({ where: { dealId: id }, orderBy: [{ number: "desc" }, { rev: "desc" }], select: { id: true, number: true, rev: true, status: true, lines: { select: { qty: true, unitPrice: true } } } }) : Promise.resolve([]),
   ]);
 
   const J = buildJourney(deal, i, user.id, since);
@@ -588,8 +590,36 @@ export default async function JourneyPage({
     </>
   );
 
+  const QuoteDocs = () => (
+    <section className="jblock">
+      <div className="jbh"><b>{t("COTIZACIONES", "QUOTES")}</b><span className="grow" />
+        {editable && !quotes.some((x) => x.status === "DRAFT") && (
+          <form action={createQuote.bind(null, deal.id)}><button type="submit" className="btn sm">{quotes.length ? t("Nueva cotización", "New quote") : t("Preparar cotización", "Prepare quote")}</button></form>
+        )}
+      </div>
+      {quotes.length === 0 ? <p className="quiet-p">{t("Aún no hay cotización. Se prepara con solución, economía y promesa; los productos y costos del Journey se copian.", "No quote yet. It's prepared with solution, economics and promise; the Journey's products and costs are copied.")}</p> : (
+        <ul className="plain">
+          {quotes.map((x) => {
+            const total = x.lines.reduce((s, l) => s + l.qty * Number(l.unitPrice), 0);
+            const st = { DRAFT: ["dash", t("Borrador", "Draft")], PRESENTED: ["info", t("Presentada", "Presented")], SUPERSEDED: ["wait", t("Reemplazada", "Replaced")], ACCEPTED: ["ok", t("Aceptada", "Accepted")], DECLINED: ["wait", t("No aceptada", "Declined")] }[x.status];
+            return (
+              <li key={x.id} className="qa-row">
+                <Link href={`/cotizaciones/${x.id}`} className="val">Nº {x.number}{x.rev ? ` Rev. ${x.rev}` : ""}</Link>
+                <span className={`sig ${st[0]}`}>{st[1]}</span>
+                <span className="mono small">USD {i.n2(total)}</span>
+                <span className="grow" />
+                <a className="small" href={`/documentos/cotizacion/${x.id}`} target="_blank" rel="noopener">PDF</a>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+
   const Quote = () => (
     <>
+      <QuoteDocs />
       <section className="jblock">
         <div className="jbh"><b>{t("PRODUCTOS", "PRODUCTS")}</b><span className="grow" /><span className="src">{t("Entregado", "Delivered")} {J.delivered} / {J.ordered}</span></div>
         {deal.items.length === 0 ? <p className="quiet-p">{t("Sin productos todavía.", "No products yet.")}</p> : (
@@ -740,7 +770,7 @@ export default async function JourneyPage({
               const late = c.balance > 0.005 && c.inv.dueAt < J.now;
               return (
                 <div key={c.inv.id} className="po">
-                  <div className="po-h"><b>{c.inv.number}</b><span>USD {i.n2(c.amount)} · {t("vence", "due")} {i.day(c.inv.dueAt)}</span><span className="grow" /><span className={`sig ${c.balance <= 0.005 ? "ok" : late ? "risk" : "wait"}`}>{c.balance <= 0.005 ? t("Cobrada", "Collected") : t(`Saldo USD ${i.n(c.balance)}`, `Balance USD ${i.n(c.balance)}`)}</span></div>
+                  <div className="po-h"><b>{c.inv.number}</b><span>USD {i.n2(c.amount)} · {t("vence", "due")} {i.day(c.inv.dueAt)}</span>{deal.customerPo && <a className="small" href={`/documentos/factura/${c.inv.id}`} target="_blank" rel="noopener">PDF</a>}<span className="grow" /><span className={`sig ${c.balance <= 0.005 ? "ok" : late ? "risk" : "wait"}`}>{c.balance <= 0.005 ? t("Cobrada", "Collected") : t(`Saldo USD ${i.n(c.balance)}`, `Balance USD ${i.n(c.balance)}`)}</span></div>
                   {prom && <p className="src">{t(`${prom.promisedBy} prometió pagar el ${i.day(prom.promisedFor)} · ${prom.source}`, `${prom.promisedBy} promised to pay on ${i.day(prom.promisedFor)} · ${prom.source}`)}</p>}
                   {c.pendingReconcile > 0 && <p className="src">{t(`USD ${i.n(c.pendingReconcile)} recibidos sin conciliar`, `USD ${i.n(c.pendingReconcile)} received, not reconciled`)}</p>}
                   {editable && c.balance > 0.005 && (

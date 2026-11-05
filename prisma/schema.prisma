@@ -80,6 +80,7 @@ model User {
   journeyViews      JourneyView[]
   commMessages      CommMessage[]
   commDecisions     CommItem[]
+  quotesCreated     Quote[]
 }
 
 model Account {
@@ -103,6 +104,8 @@ model Account {
   requiresPortal        Boolean   @default(false)
   portalValidUntil      DateTime?
   isDemo                Boolean   @default(false)
+  // Default language of the documents sent to this customer (Quote, Invoice).
+  docLang               Lang      @default(EN)
 
   contacts   Contact[]
   deals      Deal[]
@@ -187,6 +190,7 @@ model Deal {
   tasks       Task[]
   views       JourneyView[]
   threads     CommThread[]
+  quotes      Quote[]
   activities  Activity[]
   items       DealItem[]
   supplierPos SupplierPO[]
@@ -412,6 +416,9 @@ model Invoice {
   applications PaymentApplication[]
   promises     PaymentPromise[]
   commissions  CommissionEntry[]
+  quoteId      String?
+  quote        Quote?    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  docLang      Lang      @default(EN)
 
   @@index([accountId])
   @@index([dueAt])
@@ -584,4 +591,105 @@ model CommItem {
   createdAt   DateTime   @default(now())
 
   @@index([threadId])
+}
+// ---------- Quotes ----------
+// A Quote is the solution that protects a customer result. Drafts are internal; presenting
+// freezes the version and protects its economics. Any later change is "Rev. N" with the same number.
+
+enum QuoteStatus {
+  DRAFT
+  PRESENTED
+  SUPERSEDED
+  ACCEPTED
+  DECLINED
+}
+
+model Quote {
+  id          String      @id @default(cuid())
+  dealId      String
+  deal        Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  number      String
+  rev         Int         @default(0)
+  status      QuoteStatus @default(DRAFT)
+  lang        Lang        @default(EN)
+  createdById String
+  createdBy   User        @relation(fields: [createdById], references: [id])
+  createdAt   DateTime    @default(now())
+  issuedAt    DateTime?
+  presentedAt DateTime?
+  decidedAt   DateTime?
+
+  // The solution
+  solution        String?
+  supplyPrimary   String?
+  supplyAlt       String?
+  promiseText     String?
+  promiseCondition String?
+  // Landed cost (current version), each component with its source
+  costCurrency    String   @default("USD")
+  fxRate          Decimal? @db.Decimal(14, 6)
+  fxSource        String?
+  supplierCost    Decimal  @default(0) @db.Decimal(14, 2)
+  supplierSrc     String?
+  freightCost     Decimal  @default(0) @db.Decimal(14, 2)
+  freightSrc      String?
+  otherCosts      Decimal  @default(0) @db.Decimal(14, 2)
+  otherSrc        String?
+  changeNote      String?
+  // Protected economics: fixed when presented, never changed afterwards
+  protSale        Decimal? @db.Decimal(14, 2)
+  protCost        Decimal? @db.Decimal(14, 2)
+  protEsagra      Decimal? @db.Decimal(14, 2)
+  protPolicy      Int?
+  // Terms printed on the document
+  billTo          String?
+  shipTo          String?
+  leadMinDays     Int?
+  leadMaxDays     Int?
+  incoterm        String?
+  paymentTerms    String?
+  validityDays    Int      @default(30)
+  condition       String   @default("New & original")
+  // Customer decision future
+  supplierValidUntil DateTime?
+  supplyConfirmed Boolean  @default(false)
+  decisionAt      DateTime?
+  decisionLabel   String?
+  decisionPath    String?
+  decisionEvidence String?
+  promiseDecideBy DateTime?
+
+  lines     QuoteLine[]
+  scenarios QuoteScenario[]
+  invoices  Invoice[]
+
+  @@unique([number, rev])
+  @@index([dealId])
+}
+
+model QuoteLine {
+  id          String  @id @default(cuid())
+  quoteId     String
+  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  position    Int     @default(0)
+  qty         Int
+  code        String?
+  description String
+  unitPrice   Decimal @db.Decimal(14, 2)
+}
+
+model QuoteScenario {
+  id           String  @id @default(cuid())
+  quoteId      String
+  quote        Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  position     Int     @default(0)
+  label        String
+  price        Decimal @db.Decimal(14, 2)
+  cost         Decimal @db.Decimal(14, 2)
+  leadMinDays  Int
+  leadMaxDays  Int
+  risk         String
+  promise      String
+  recommended  Boolean @default(false)
+  why          String?
 }

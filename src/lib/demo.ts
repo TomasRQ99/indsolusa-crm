@@ -229,6 +229,110 @@ export async function loadDemo(adminId: string) {
       const mail = await tx.commThread.create({ data: { channel: "EMAIL", subject: "Fecha de instalación kit línea 3", partyName: "Ana Torres", partyAddr: "ana.torres@abcfoods.example", accountId: abc.id, contactId: ana.id, dealId: sj.id, lastAt: ago(1, 17), lastInAt: ago(1, 16), lastOutAt: ago(1, 17) } });
       await tx.commMessage.create({ data: { threadId: mail.id, direction: "IN", authorName: "Ana Torres", body: "Hola, ¿sigue firme la instalación del kit? Necesito confirmarle a planta el turno.", sentAt: ago(1, 16) } });
       await tx.commMessage.create({ data: { threadId: mail.id, direction: "OUT", authorName: "IndSolUSA", body: "Hola Ana, lo estamos confirmando hoy con DHL y te escribo antes de las 5 pm con la fecha firme.", sentAt: ago(1, 17) } });
+
+      // 14. Quote v3: ABC Foods asks for 2 drives for mixing line 2. Original and Rev. 1 were presented;
+      // Rev. 2 is the internal draft (v3). Purchasing committee on Friday, supplier price valid until Monday.
+      const nextDow = (dow: number) => { const k = (dow - T.getUTCDay() + 7) % 7 || 7; return d(k); };
+      const friday = nextDow(5);
+      const monday = nextDow(1) > friday ? nextDow(1) : addDays(nextDow(1), 7);
+      const abcAddr = "ABC Foods\nPlanta Funza, Cundinamarca\nColombia";
+      const vfd = await deal({
+        title: "2 variadores línea 2 de mezclado", amount: 9400, supplierCost: 6300, freightCost: 220, otherCosts: 150,
+        accountId: abc.id, contactId: juan.id, ownerId: adminId, stage: "PROPOSAL",
+        desiredResult: "Que la línea 2 de mezclado vuelva a operar",
+        needSpecs: "2 × Variador Siemens SINAMICS G120C 7,5 kW (6SL3210-1KE21-7UF1), igual al instalado",
+        neededBy: d(7), impactIfNot: "La línea 2 parada detiene el 30 % de la producción de mezclas",
+        incoterm: "DAP Planta Funza", paymentTerms: "Net 30", quoteSentAt: d(-3), offerValidUntil: d(12), closeDate: friday,
+        promiseText: "Variadores en planta Funza 7 días después de la OC",
+        nextMove: "Presentar Rev. 2 antes del comité", nextMoveDate: T,
+      });
+      await tx.dealItem.create({ data: { dealId: vfd.id, qty: 2, code: "6SL3210-1KE21-7UF1", description: "Variador Siemens SINAMICS G120C 7,5 kW, 3AC 380-480 V", unitPrice: 4650 } });
+      const vfdNo = await nextDocNumber(tx);
+      const vfdBase = {
+        dealId: vfd.id, number: vfdNo, lang: "EN" as const, createdById: adminId, billTo: abcAddr, shipTo: abcAddr,
+        solution: "La línea 2 de mezclado vuelve a operar con 2 variadores idénticos al instalado: se cambian sin reprogramar la mezcladora.",
+        supplyPrimary: "Distribuidor Siemens Miami · 2 unidades en stock (6SL3210-1KE21-7UF1)",
+        supplyAlt: "Distribuidor Industrial A · G120C equivalente, 4 días más y requiere ajustar parámetros",
+        promiseText: "Variadores en planta Funza 7 días después de la OC",
+        promiseCondition: "Si la OC llega a más tardar el lunes, mientras se sostiene el precio y el stock de Siemens Miami",
+        supplierSrc: "Proforma SIE-4520 · Siemens Miami", freightSrc: "Cotización DHL", otherSrc: "Seguro y manejo en aduana (agente DHL)",
+        incoterm: "DAP Planta Funza", paymentTerms: "Net 30", validityDays: 15, leadMinDays: 5, leadMaxDays: 7,
+        decisionLabel: "Comité de compras", decisionAt: friday,
+        decisionPath: "Juan Pérez (Mantenimiento) pide · Ana Torres (Producción) recomienda · Compras emite la OC",
+        decisionEvidence: "WhatsApp de Juan Pérez: «el comité se reúne el viernes y Ana lo lleva»",
+        supplierValidUntil: monday, promiseDecideBy: monday,
+      };
+      const vfdLine = (unitPrice: number) => ({ create: [{ position: 0, qty: 2, code: "6SL3210-1KE21-7UF1", description: "Variador Siemens SINAMICS G120C 7,5 kW, 3AC 380-480 V", unitPrice }] });
+      await tx.quote.create({ data: { ...vfdBase, rev: 0, status: "SUPERSEDED", createdAt: d(-6), issuedAt: d(-6), presentedAt: d(-6), supplierCost: 6300, freightCost: 380, otherCosts: 150, protSale: 9800, protCost: 6830, protEsagra: 2970, protPolicy: 1, leadMinDays: 3, leadMaxDays: 4, lines: vfdLine(4900) } });
+      await tx.quote.create({ data: { ...vfdBase, rev: 1, status: "PRESENTED", createdAt: d(-3), issuedAt: d(-3), presentedAt: d(-3), supplierCost: 6300, freightCost: 220, otherCosts: 150, protSale: 9400, protCost: 6670, protEsagra: 2730, protPolicy: 1, changeNote: "Juan pidió bajar el precio: flete aéreo directo → consolidado (USD 160 menos, 2 días más)", lines: vfdLine(4700) } });
+      await tx.quote.create({
+        data: {
+          ...vfdBase, rev: 2, status: "DRAFT", createdAt: d(0), supplierCost: 6180, freightCost: 220, otherCosts: 150,
+          changeNote: "Siemens Miami bajó USD 60 por unidad (proforma SIE-4520 del 4 nov); se traslada al precio para el comité",
+          lines: vfdLine(4650),
+          scenarios: {
+            create: [
+              { position: 0, label: "Más rápido · aéreo directo", price: 9700, cost: 6710, leadMinDays: 3, leadMaxDays: 4, risk: "Bajo", promise: "En planta 4 días después de la OC" },
+              { position: 1, label: "Recomendado · consolidado", price: 9300, cost: 6550, leadMinDays: 5, leadMaxDays: 7, risk: "Bajo: stock confirmado por Siemens Miami", promise: "En planta 7 días después de la OC", recommended: true, why: "El comité decide el viernes, así que el aéreo no adelanta una OC que todavía no existe: consolidado llega en una fecha útil igual y cuesta USD 400 menos." },
+              { position: 2, label: "Más económico · equivalente", price: 8600, cost: 6270, leadMinDays: 9, leadMaxDays: 11, risk: "Medio: hay que ajustar parámetros en la mezcladora", promise: "En planta 11 días después de la OC" },
+            ],
+          },
+        },
+      });
+      await tx.activity.createMany({
+        data: [
+          { type: "EMAIL", subject: `Cotización ${vfdNo} presentada a Juan Pérez`, occurredAt: ago(6, 15), userId: adminId, accountId: abc.id, contactId: juan.id, dealId: vfd.id, phase: "quote", source: "Correo a Juan Pérez" },
+          { type: "NOTE", subject: "Juan pidió mejor precio; aceptaría 2 días más de entrega", occurredAt: ago(4, 10), userId: adminId, accountId: abc.id, contactId: juan.id, dealId: vfd.id, phase: "quote", source: "WhatsApp de Juan Pérez" },
+          { type: "EMAIL", subject: `Cotización ${vfdNo} Rev. 1 presentada`, occurredAt: ago(3, 11), userId: adminId, accountId: abc.id, contactId: juan.id, dealId: vfd.id, phase: "quote", source: "Correo a Juan Pérez" },
+        ],
+      });
+
+      // Química Andina: quote presented, the customer depends on its 2027 budget → Waiting with Control, no action today.
+      const repNo = await nextDocNumber(tx);
+      await tx.deal.update({ where: { id: rep.id }, data: { supplierCost: 36000, freightCost: 1500, otherCosts: 2500, quoteSentAt: d(-6), offerValidUntil: d(24), desiredResult: "Línea 2 de extrusión a 120 % de capacidad sin paradas" } });
+      await tx.quote.create({
+        data: {
+          dealId: rep.id, number: repNo, lang: "ES", createdById: adminId, status: "PRESENTED", createdAt: d(-6), issuedAt: d(-6), presentedAt: d(-6), validityDays: 30,
+          billTo: "Química Andina\nZona Industrial Mamonal, Cartagena", shipTo: "Química Andina\nZona Industrial Mamonal, Cartagena",
+          solution: "Línea 2 a 120 % de capacidad con variadores nuevos, PLC actualizado y puesta en marcha en una parada programada.",
+          supplyPrimary: "Distribuidor Siemens Miami (variadores y PLC) + integrador local para la puesta en marcha",
+          promiseText: "Puesta en marcha en la parada de enero", promiseCondition: "Si la OC llega antes del 15 de diciembre",
+          supplierCost: 36000, supplierSrc: "Proforma SIE-4490", freightCost: 1500, freightSrc: "Cotización DHL marítimo", otherCosts: 2500, otherSrc: "Integrador local (oferta INT-118)",
+          protSale: 50000, protCost: 40000, protEsagra: 10000, protPolicy: 1,
+          leadMinDays: 35, leadMaxDays: 45, incoterm: "DAP Cartagena", paymentTerms: "Net 30",
+          decisionLabel: "Aprobación del presupuesto 2027", decisionAt: d(12), decisionPath: "Carlos Duarte recomienda · Gerencia de planta aprueba el presupuesto · Compras emite la OC",
+          decisionEvidence: "Reunión con gerencia de planta: «depende del presupuesto 2027»", supplierValidUntil: d(25), promiseDecideBy: d(20), supplyConfirmed: true,
+          lines: { create: [{ position: 0, qty: 1, code: "REP-L2", description: "Repotenciación línea 2: variadores, PLC y puesta en marcha", unitPrice: 50000 }] },
+        },
+      });
+
+      // SJ-01842: the accepted quote behind the customer's PO.
+      await tx.quote.create({
+        data: {
+          dealId: sj.id, number: await nextDocNumber(tx), lang: "EN", createdById: adminId, status: "ACCEPTED", createdAt: d(-25), issuedAt: d(-24), presentedAt: d(-24), decidedAt: d(-12), validityDays: 14,
+          billTo: abcAddr, shipTo: abcAddr, solution: "Línea 3 envasando 1 kg al 100 % antes del lanzamiento, con cambio de formato en menos de un turno.",
+          supplyPrimary: "Distribuidor Siemens Miami (servos en stock, kit a pedido)", promiseText: "Kit instalado y probado en línea 3",
+          supplierCost: 20400, supplierSrc: "Proforma SIE-4471", freightCost: 900, freightSrc: "DHL Global Forwarding", otherCosts: 480, otherSrc: "Aduana y seguro",
+          protSale: 28600, protCost: 21780, protEsagra: 6820, protPolicy: 1, leadMinDays: 28, leadMaxDays: 35, incoterm: "DAP Funza", paymentTerms: "Net 30",
+          lines: { create: [
+            { position: 0, qty: 2, code: "1FK7063", description: "Servomotor Siemens 1FK7 con drive S210", unitPrice: 9800 },
+            { position: 1, qty: 1, code: "KF-L3-1KG", description: "Kit de cambio de formato 1 kg línea 3", unitPrice: 9000 },
+          ] },
+        },
+      });
+
+      // Lácteos: the invoiced pumps come from an accepted quote, so the invoice PDF cites its Quote Nº.
+      const lacQ = await tx.quote.create({
+        data: {
+          dealId: lac1.id, number: await nextDocNumber(tx), lang: "EN", createdById: paola.id, status: "ACCEPTED", createdAt: d(-46), issuedAt: d(-45), presentedAt: d(-45), decidedAt: d(-40),
+          billTo: "Lácteos del Valle\nPlanta Tuluá, Valle", shipTo: "Lácteos del Valle\nPlanta Tuluá, Valle", promiseText: "Bombas instaladas antes del cierre de mes",
+          supplierCost: 4600, supplierSrc: "Cotización Distribuidor Industrial A", freightCost: 230, otherCosts: 100,
+          protSale: 6240, protCost: 4930, protEsagra: 1310, protPolicy: 1, leadMinDays: 10, leadMaxDays: 14, incoterm: "DAP Tuluá", paymentTerms: "Net 30",
+          lines: { create: [{ position: 0, qty: 2, code: "CPX-50", description: "Bomba centrífuga sanitaria 5 HP", unitPrice: 3120 }] },
+        },
+      });
+      await tx.invoice.update({ where: { id: lacInv.id }, data: { quoteId: lacQ.id } });
+
       await tx.task.createMany({
         data: [
           { title: "Preparar visita técnica a Química Andina", assigneeId: adminId, accountId: quimica.id, dealId: q1.id, dueDate: d(3), estimateMinutes: 90 },

@@ -26,7 +26,13 @@ export const MODULES: NavModule[] = [
       { href: "/suppliers", es: "Proveedores", en: "Suppliers" },
     ],
   },
-  { key: "comercial", es: "COMERCIAL", en: "COMMERCIAL", match: ["/deals"], tabs: [{ href: "/deals", es: "Journeys", en: "Journeys" }] },
+  {
+    key: "comercial", es: "COMERCIAL", en: "COMMERCIAL", match: ["/deals", "/cotizaciones"],
+    tabs: [
+      { href: "/deals", es: "Journeys", en: "Journeys" },
+      { href: "/cotizaciones", es: "Futuro comercial", en: "Commercial future" },
+    ],
+  },
   {
     key: "operaciones", es: "OPERACIONES", en: "OPERATIONS", match: ["/operaciones"],
     tabs: [

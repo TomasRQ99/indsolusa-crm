@@ -43,6 +43,8 @@ export async function issueInvoice(deliveryId: string) {
   if (amount <= 0) throw new Error("Nada por facturar / Nothing to invoice.");
   const eg = esagra(d.deal);
   const issuedAt = today();
+  // The invoice is born from the accepted quote: it references its Nº and inherits its language.
+  const quote = await db.quote.findFirst({ where: { dealId: d.dealId, status: "ACCEPTED" }, orderBy: { decidedAt: "desc" }, select: { id: true, lang: true } });
 
   await db.$transaction(async (tx) => {
     const number = await nextDocNumber(tx);
@@ -57,6 +59,8 @@ export async function issueInvoice(deliveryId: string) {
         amount,
         esagraAtIssue: eg.pct == null ? 0 : Math.round(amount * eg.pct) / 100,
         issuedById: user.id,
+        quoteId: quote?.id ?? null,
+        docLang: quote?.lang ?? d.deal.account.docLang,
       },
     });
   });
