@@ -49,7 +49,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
 
   const [deals, receivables, deliveries, payments, credit, scheduled, agenda] = await Promise.all([
     db.deal.findMany({
-      where: { ownerId: user.id, stage: { not: "LOST" }, resultAchievedAt: null },
+      where: { ownerId: user.id, stage: { not: "LOST" }, resultAchievedAt: null, closedAt: null },
       include: {
         account: { include: { contacts: { select: { firstName: true, lastName: true, title: true, email: true } } } },
         contact: true,

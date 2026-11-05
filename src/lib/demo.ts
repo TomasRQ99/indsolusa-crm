@@ -221,6 +221,61 @@ export async function loadDemo(adminId: string) {
       await tx.invoice.update({ where: { id: qkitInv.id }, data: { syncState: "CONFIRMED", externalSystem: "QuickBooks", externalId: "QB-10455", syncAt: d(-38) } });
       await tx.customerPayment.create({ data: { accountId: quimica.id, amount: 4704, receivedAt: d(-7), reference: "QA PAGO 5521", createdById: adminId, reconciledAt: d(-6), reconciledById: diana.id, applications: { create: [{ invoiceId: qkitInv.id, amount: 4704 }] } } });
 
+      // 10c. Result & Closure variants. Delivery never counts as the result: each state rests on evidence.
+      const ds = (n: number) => d(n).toISOString().slice(0, 10);
+      const ev = (dealId: string, kind: string, stance: string, text: string, who: string, at: Date, source?: string) =>
+        tx.resultEvidence.create({ data: { dealId, kind, stance, text, who, at, source, recordedByName: paola.name } });
+      // Achieved: the customer's own words are the basis.
+      await ev(sid1.id, "VISIT", "SUPPORTS", "Arranque supervisado del reductor; vibración 2,1 mm/s, dentro de lo normal", "Paola Gómez (visita)", d(-48), "Visita a planta");
+      await ev(sid1.id, "CUSTOMER", "SUPPORTS", "Ya instalamos el reductor y quedó funcionando; el laminador lleva un mes sin paradas", "Ing. Ramiro Torres (Mantenimiento)", d(-30), "WhatsApp");
+      await tx.deal.update({ where: { id: sid1.id }, data: { resultState: "ACHIEVED", actualResult: "Laminador operando con el reductor nuevo, sin paradas desde la instalación", reliefNote: "Dejaron de perder unas 6 horas por semana en paradas del laminador", resultConfirmedAt: d(-30), resultConfirmedByName: paola.name, desiredResult: "Laminador sin paradas por falla del reductor" } });
+      // Partial: production restored, redundancy pending → Recovery open with an option chosen.
+      const sidCw = await deal({ title: "Bombas de agua de enfriamiento horno (principal + respaldo)", amount: 5800, supplierCost: 4300, freightCost: 180, accountId: sider.id, stage: "WON", customerPo: "SN-77502", poAcceptedAt: d(-20), desiredResult: "Horno enfriado con bomba principal y respaldo (redundancia N+1)", successMeasure: "Respaldo arranca solo si falla la principal" });
+      const sidCwItem = await tx.dealItem.create({ data: { dealId: sidCw.id, qty: 2, code: "CW-80", description: "Bomba de agua de enfriamiento 80 m³/h", unitPrice: 2900 } });
+      const sidCwDel = await delivery(sidCw.id, d(-9), [{ dealItemId: sidCwItem.id, qty: 2 }], { receptionCode: "EM-55870", receivedByName: "Almacén · J. Ruiz" });
+      await invoice(sidCw.id, sider.id, 5800, 1050, d(-8), 30, sidCwDel.id);
+      await ev(sidCw.id, "CUSTOMER", "PARTIAL", "La principal ya quedó andando y el horno volvió a producir, pero la de respaldo no la pudimos montar: no trae el acople", "Ing. Ramiro Torres (Mantenimiento)", d(-6), "Llamada");
+      await tx.deal.update({ where: { id: sidCw.id }, data: { resultState: "PARTIAL", actualResult: "Horno enfriando con la bomba principal: producción restaurada", resultPendingNote: "Bomba de respaldo sin instalar (falta el acople flexible): no hay redundancia N+1", reliefNote: "El horno volvió a producir después de 2 días parado", resultConfirmedAt: d(-6), resultConfirmedByName: paola.name, nextMove: "Recovery: enviar el acople por courier", nextMoveDate: d(2) } });
+      await tx.recovery.create({ data: { dealId: sidCw.id, openedAt: d(-6), openedByName: paola.name, whatChanged: "La bomba de respaldo llegó sin el acople flexible", impact: "El horno opera sin redundancia: si falla la principal, para la producción", options: [
+        { key: "o1", title: "Enviar el acople original por courier", detail: "El proveedor lo despacha hoy; llega en 2 días hábiles", eta: ds(2) },
+        { key: "o2", title: "Mecanizar un acople localmente", detail: "Taller en Barranquilla; más rápido pero sin garantía del fabricante", eta: ds(1) },
+        { key: "o3", title: "Prestar una bomba de respaldo mientras llega", detail: "De nuestro inventario de demostración", eta: ds(0) },
+      ], selectedKey: "o1", selectedAt: d(-5), selectedByName: paola.name, selectedNote: "Ramiro prefiere la pieza original", expectedBy: d(2) } });
+      // Not achieved: incompatible product → Recovery open, no option chosen yet.
+      const ing2 = await deal({ title: "Motor ventilador secador de bagazo", amount: 6900, supplierCost: 5200, freightCost: 210, accountId: ingenio.id, stage: "WON", customerPo: "ISR-4415-02", poAcceptedAt: d(-18), desiredResult: "Secador de bagazo funcionando a plena carga antes de la zafra", promiseText: "Motor en planta el 1 de noviembre", promisedDate: d(-4) });
+      const ing2Item = await tx.dealItem.create({ data: { dealId: ing2.id, qty: 1, code: "M-40HP", description: "Motor eléctrico 40 HP 4 polos", unitPrice: 6900 } });
+      await delivery(ing2.id, d(-4), [{ dealItemId: ing2Item.id, qty: 1 }], { receivedByName: "Almacén Ingenio" });
+      await ev(ing2.id, "TECHNICAL", "CONTRADICTS", "El motor llegó con brida IEC B5; la base del ventilador es NEMA 286T. No se puede montar.", "Técnico de montaje (Ingenio)", d(-3), "Visita de montaje");
+      await tx.deal.update({ where: { id: ing2.id }, data: { resultState: "NOT_ACHIEVED", actualResult: "El motor llegó pero no se puede montar: el secador sigue parado", resultConfirmedAt: d(-3), resultConfirmedByName: paola.name } });
+      await tx.recovery.create({ data: { dealId: ing2.id, openedAt: d(-3), openedByName: paola.name, whatChanged: "El motor es IEC B5 y la base del cliente es NEMA 286T (producto incompatible)", impact: "El secador de bagazo sigue parado; la zafra empieza el 23 y sin secador no hay combustible para calderas", options: [
+        { key: "o1", title: "Reemplazar por motor NEMA 286T", detail: "El proveedor tiene stock en Miami; 7 días a planta", eta: ds(9) },
+        { key: "o2", title: "Fabricar placa adaptadora IEC→NEMA", detail: "Taller local; el cliente debe aprobar el montaje", eta: ds(3) },
+        { key: "o3", title: "Devolver y emitir nota crédito", detail: "Asumimos el error de especificación", eta: null },
+      ] } });
+      // No longer relevant: the customer decommissioned the line.
+      const pap1 = await deal({ title: "Repuesto bomba línea 1 de pulpa", amount: 3200, supplierCost: 2400, accountId: papeles.id, ownerId: adminId, stage: "WON", customerPo: "PDS-OC-3290", poAcceptedAt: d(-15), desiredResult: "Línea 1 de pulpa con bomba de respaldo" });
+      await tx.dealItem.create({ data: { dealId: pap1.id, qty: 1, code: "IMP-P1", description: "Impulsor bomba de pulpa", unitPrice: 3200 } });
+      await ev(pap1.id, "CUSTOMER", "NEUTRAL", "Gerencia decidió desmontar la línea 1; ya no necesitamos el repuesto. Cancelen la OC.", "Marta León (Compras)", d(-2), "Correo");
+      await tx.deal.update({ where: { id: pap1.id }, data: { resultState: "NO_LONGER_RELEVANT", actualResult: "Ya no aplica: la línea 1 se desmonta y la OC se cancela", resultConfirmedAt: d(-2), resultConfirmedByName: "Administrador" } });
+      // Recovery successful: seals leaked, replaced, the customer confirmed.
+      const lac4 = await deal({ title: "Sellos mecánicos bomba CIP", amount: 2600, supplierCost: 1800, freightCost: 90, accountId: lacteos.id, stage: "WON", customerPo: "4500-1850", poAcceptedAt: d(-35), desiredResult: "Bomba de CIP sin fugas", successMeasure: "0 goteo en 2 semanas" });
+      const lac4Item = await tx.dealItem.create({ data: { dealId: lac4.id, qty: 4, code: "SM-CIP-40", description: "Sello mecánico 40 mm", unitPrice: 650 } });
+      const lac4Del = await delivery(lac4.id, d(-25), [{ dealItemId: lac4Item.id, qty: 4 }], { receivedByName: "Jorge Pérez" });
+      const lac4Inv = await invoice(lac4.id, lacteos.id, 2600, 610, d(-24), 30, lac4Del.id);
+      await tx.customerPayment.create({ data: { accountId: lacteos.id, amount: 2600, receivedAt: d(-3), reference: "TRF 88104", createdById: adminId, reconciledAt: d(-2), reconciledById: diana.id, applications: { create: [{ invoiceId: lac4Inv.id, amount: 2600 }] } } });
+      await ev(lac4.id, "CUSTOMER", "CONTRADICTS", "Los sellos empezaron a gotear a los 3 días: la soda cáustica del CIP los atacó", "Jorge Pérez (Mantenimiento)", d(-21), "WhatsApp");
+      await tx.recovery.create({ data: { dealId: lac4.id, openedAt: d(-21), openedByName: paola.name, whatChanged: "El elastómero EPDM no resiste la soda caliente del CIP", impact: "La bomba de CIP gotea; riesgo sanitario en la limpieza de la línea", options: [
+        { key: "o1", title: "Cambiar a sellos en FKM (Viton) sin costo", detail: "Resisten soda caliente; el proveedor los tiene en Bogotá", eta: ds(-12) },
+        { key: "o2", title: "Bajar la temperatura del CIP", detail: "Requiere aprobación de calidad del cliente", eta: null },
+        { key: "o3", title: "Devolver y emitir nota crédito", detail: "", eta: null },
+      ], selectedKey: "o1", selectedAt: d(-20), selectedByName: paola.name, expectedBy: d(-12), resolvedAt: d(-10), outcome: "RECOVERED", outcomeNote: "Sellos FKM instalados el 26 de oct, sin costo para el cliente" } });
+      await ev(lac4.id, "CUSTOMER", "SUPPORTS", "Con los sellos en Viton la bomba lleva 10 días sin una gota", "Jorge Pérez (Mantenimiento)", d(-10), "WhatsApp");
+      await tx.deal.update({ where: { id: lac4.id }, data: { resultState: "ACHIEVED", actualResult: "Bomba de CIP sin fugas con sellos FKM", reliefNote: "La limpieza CIP volvió a su ciclo normal sin goteo", resultConfirmedAt: d(-10), resultConfirmedByName: paola.name, resultAchievedAt: d(-10) } });
+      // Closed: achieved, collected, with one legitimate continuity trigger.
+      await ev(min0.id, "CUSTOMER", "SUPPORTS", "Las válvulas cierran bien; ya no tenemos fugas de lodo en la descarga", "Laura Ríos (Compras)", d(-70), "Llamada");
+      await tx.continuitySignal.create({ data: { dealId: min0.id, kind: "TRIGGER", what: "Cambiar las válvulas del espesador 2 en la parada anual", basis: "Laura dijo que en la parada de diciembre cambian las del espesador 2, mismo modelo", triggerOn: d(30), createdByName: paola.name, createdAt: d(-60) } });
+      await tx.deal.update({ where: { id: min0.id }, data: { resultState: "ACHIEVED", desiredResult: "Descarga de lodos sin fugas", actualResult: "Válvulas cerrando sin fugas en la descarga", reliefNote: "Dejaron de limpiar derrames cada turno", resultConfirmedAt: d(-70), resultConfirmedByName: paola.name, closedAt: d(-60), closedByName: paola.name, closureSummary: "Minera buscaba descarga de lodos sin fugas. Entregamos las válvulas, el cliente confirmó que cierran bien y todo quedó cobrado.", closureLearning: "Confirmar el material del asiento con el análisis del lodo antes de cotizar." } });
+
       // 11. Pipeline owned by the admin, so Mi Día and Mi Plan show real movements.
       const carlos = await tx.contact.create({ data: { firstName: "Carlos", lastName: "Duarte", title: "Jefe de Mantenimiento", email: "carlos.duarte@quimica.example", accountId: quimica.id } });
       const marta = await tx.contact.create({ data: { firstName: "Marta", lastName: "León", title: "Compras", email: "marta.leon@papeles.example", accountId: papeles.id } });
@@ -529,6 +584,8 @@ export async function loadDemo(adminId: string) {
           { title: "Actualizar lista de precios 2027", assigneeId: adminId, dueDate: d(20), estimateMinutes: 120 },
         ],
       });
+      // Older Journeys whose result was already confirmed.
+      await tx.deal.updateMany({ where: { resultAchievedAt: { not: null }, resultState: "PENDING", account: { isDemo: true } }, data: { resultState: "ACHIEVED" } });
     },
     { timeout: 60000 },
   );

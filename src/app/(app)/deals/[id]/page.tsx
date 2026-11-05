@@ -22,7 +22,6 @@ import {
   saveNeed,
   savePromise,
   saveQuote,
-  saveResult,
   saveSourcing,
   setCarrierEta,
   setNextMove,
@@ -921,17 +920,9 @@ export default async function JourneyPage({
     <>
       <DesiredResult />
       <section className="jblock">
-        <div className="jbh"><b>{t("¿EL CLIENTE LOGRÓ SU RESULTADO?", "DID THE CUSTOMER ACHIEVE THE RESULT?")}</b></div>
-        {editable ? (
-          <form action={saveResult.bind(null, deal.id)} className="stack jform">
-            <H />
-            <label>{t("Qué logró, en palabras del cliente", "What they achieved, in the customer's words")}<textarea name="resultNote" rows={3} defaultValue={deal.resultNote ?? ""} placeholder={t("Ej.: «la línea 2 lleva 30 días sin paradas»", "E.g.: “line 2 has run 30 days without stops”")} /></label>
-            <label>{t("Fuente", "Source")}<input name="source" placeholder={t("Ej.: visita a planta con Carlos", "E.g.: site visit with Carlos")} /></label>
-            <label className="chk"><input type="checkbox" name="achieved" value="1" defaultChecked={!!deal.resultAchievedAt} /> {t("El cliente confirmó que logró su resultado", "The customer confirmed they achieved the result")}</label>
-            <span className="src">{t("Entregar no es resolver: márcalo solo cuando el cliente lo confirme.", "Delivering is not solving: tick it only when the customer confirms.")}</span>
-            <button type="submit">{t("Guardar resultado", "Save result")}</button>
-          </form>
-        ) : <p>{deal.resultNote ?? "—"}</p>}
+        <div className="jbh"><b>{t("¿EL CLIENTE LOGRÓ SU RESULTADO?", "DID THE CUSTOMER ACHIEVE THE RESULT?")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/resultado`}>{t("Abrir resultado y cierre", "Open result & closure")}</Link></div>
+        <p className="small"><span className={`sig ${({ PENDING: "wait", PARTIAL: "attn", ACHIEVED: "ok", NOT_ACHIEVED: "risk", NO_LONGER_RELEVANT: "dash" })[deal.resultState]}`}>{({ PENDING: t("Pendiente", "Pending"), PARTIAL: t("Parcial", "Partial"), ACHIEVED: t("Logrado", "Achieved"), NOT_ACHIEVED: t("No logrado", "Not achieved"), NO_LONGER_RELEVANT: t("Ya no aplica", "No longer relevant") })[deal.resultState]}</span> {deal.actualResult ?? t("Resultado deseado contra resultado real, con evidencia del cliente, Recovery si no se logró, y cierre.", "Desired vs actual result, with customer evidence, Recovery if not achieved, and closure.")}</p>
+        {deal.recoveries.length > 0 && <p className="small risk-t">{t("Recovery abierta", "Recovery open")}: {deal.recoveries[0].whatChanged}</p>}
       </section>
       <PhaseLog phase="result" title={t("REGISTRO DEL RESULTADO", "RESULT RECORD")} empty={t("Registra lo que el cliente dice después de la entrega.", "Record what the customer says after delivery.")} />
     </>

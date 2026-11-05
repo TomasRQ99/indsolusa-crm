@@ -190,7 +190,22 @@ model Deal {
   paymentTerms        String?
   quoteSentAt         DateTime?
   resultNote          String?
+  // Result & Closure: desired result vs actual result, confirmed with evidence (delivery is not the result).
+  resultState           ResultState @default(PENDING)
+  actualResult          String?
+  reliefNote            String?
+  resultPendingNote     String?
+  resultConfirmedAt     DateTime?
+  resultConfirmedByName String?
+  closedAt              DateTime?
+  closedByName          String?
+  closureSummary        String?
+  closureLearning       String?
+  closureNoSignalReason String?
 
+  resultEvidence ResultEvidence[]
+  recoveries     Recovery[]
+  continuity     ContinuitySignal[]
   tasks       Task[]
   views       JourneyView[]
   threads     CommThread[]
@@ -207,6 +222,72 @@ model Deal {
   @@index([stage])
   @@index([ownerId])
   @@index([accountId])
+}
+
+enum ResultState {
+  PENDING
+  PARTIAL
+  ACHIEVED
+  NOT_ACHIEVED
+  NO_LONGER_RELEVANT
+}
+
+// What the customer said, a technical fact, a visit or a measurement. It supports, partly supports
+// or contradicts the desired result. Only evidence (never the delivery itself) confirms a result.
+model ResultEvidence {
+  id             String   @id @default(cuid())
+  dealId         String
+  deal           Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  kind           String
+  stance         String
+  text           String
+  who            String?
+  source         String?
+  at             DateTime
+  recordedByName String
+  createdAt      DateTime @default(now())
+
+  @@index([dealId])
+}
+
+// Opened when the product arrived but the result is at risk or wasn't achieved.
+model Recovery {
+  id             String    @id @default(cuid())
+  dealId         String
+  deal           Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  openedAt       DateTime  @default(now())
+  openedByName   String
+  whatChanged    String
+  impact         String
+  options        Json
+  selectedKey    String?
+  selectedAt     DateTime?
+  selectedByName String?
+  selectedNote   String?
+  expectedBy     DateTime?
+  resolvedAt     DateTime?
+  outcome        String?
+  outcomeNote    String?
+
+  @@index([dealId])
+}
+
+// A legitimate reason to come back (signal) or a concrete condition/date to act on (trigger).
+// Not an opportunity: it creates no Journey and no pipeline value.
+model ContinuitySignal {
+  id            String    @id @default(cuid())
+  dealId        String
+  deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  kind          String
+  what          String
+  basis         String
+  triggerOn     DateTime?
+  triggerEvent  String?
+  createdByName String
+  createdAt     DateTime  @default(now())
+  resolvedAt    DateTime?
+
+  @@index([dealId])
 }
 
 model DealItem {

@@ -31,6 +31,7 @@ export const journeyInclude = {
     },
     orderBy: { issuedAt: "asc" },
   },
+  recoveries: { where: { resolvedAt: null }, select: { id: true, whatChanged: true, openedAt: true } },
   tasks: { where: { status: "OPEN" }, include: { assignee: { select: { name: true } } }, orderBy: { dueDate: "asc" } },
   activities: { orderBy: { occurredAt: "desc" }, take: 80, include: { user: { select: { id: true, name: true } } } },
 } satisfies Prisma.DealInclude;
@@ -168,7 +169,7 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
   const waitExpired = !!deal.waitingFor && !!deal.waitingUntil && deal.waitingUntil < now;
   const moveDue = !!deal.nextMove && !!deal.nextMoveDate && deal.nextMoveDate <= now;
   let suggestion: { what: string; why: string; tab: TabKey } | null = null;
-  if (!lost && !deal.resultAchievedAt) {
+  if (!lost && !deal.resultAchievedAt && !deal.closedAt && deal.resultState !== "NO_LONGER_RELEVANT") {
     if (won) {
       const unconfirmed = deal.supplierPos.find((p) => !p.confirmedAt);
       const noEta = deal.supplierPos.find((p) => p.shippedAt && !p.receivedAt && !p.carrierEta && !shippedPoIds.has(p.id));
@@ -197,6 +198,9 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
   // ---------- Attention signal (derived, with its cause) ----------
   let signal: { tone: Tone; label: string; why: string };
   if (lost) signal = { tone: "wait", label: t("Perdido", "Lost"), why: t("Este Journey se cerró sin venta.", "This Journey closed without a sale.") };
+  else if (deal.closedAt) signal = { tone: "ok", label: t("Cerrado", "Closed"), why: deal.closureLearning ? t(`Aprendizaje: ${deal.closureLearning}`, `Learning: ${deal.closureLearning}`) : t("Journey cerrado.", "Journey closed.") };
+  else if (deal.recoveries.length) signal = { tone: "risk", label: t("Recovery abierta", "Recovery open"), why: deal.recoveries[0].whatChanged };
+  else if (deal.resultState === "NOT_ACHIEVED") signal = { tone: "risk", label: t("Resultado no logrado", "Result not achieved"), why: t("El producto llegó pero no resolvió.", "The product arrived but didn't solve it.") };
   else if (deal.resultAchievedAt && fullyCollected) signal = { tone: "ok", label: t("Resultado logrado", "Result achieved"), why: t("El cliente confirmó su resultado y todo está cobrado.", "The customer confirmed the result and everything is collected.") };
   else if (promisePast) signal = { tone: "risk", label: t("Promesa vencida", "Promise missed"), why: promiseState.text };
   else if (gapDays != null && gapDays > 0 && !expected.done) signal = { tone: "risk", label: t("Promesa en riesgo", "Promise at risk"), why: t(`SOLU espera ${i.day(expected.date)}; prometimos ${i.day(promise.date)}.`, `SOLU expects ${i.day(expected.date)}; we promised ${i.day(promise.date)}.`) };
@@ -334,7 +338,7 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
     execute: !!deal.customerPo || deal.supplierPos.length > 0 || deal.deliveries.length > 0,
     finance: deal.invoices.length > 0 || deal.supplierPos.some((p) => p.payments.length > 0),
     file: true,
-    result: !!deal.resultAchievedAt || fullyDelivered || !!deal.resultNote,
+    result: !!deal.resultAchievedAt || fullyDelivered || !!deal.resultNote || deal.resultState !== "PENDING" || deal.recoveries.length > 0,
   };
 
   // ---------- Timeline (Real / Expected / Promise) ----------
