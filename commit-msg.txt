@@ -1,8 +1,0 @@
-360 views: Customer, Product, Supplier
-
-Decision facts with freshness and provenance instead of KPIs or scores.
-- Supplier 360: actual RTS history (promised vs shipped), quoted vs purchased, products, active commitments, recovery/exception history, payment terms; no score
-- Product 360 (/productos): identity + aliases, actual purchases with price trend, sources, customers, compatibility evidence, observed packing, open needs; ProductFact model
-- Customer 360: past results, active Journeys, future signals, installed context, relationships, billing pattern
-- Create a Need from any 360 context; trends only with 3+ points; stale data flagged
-- Demo: historical Journeys for rich / new / stale variants
