@@ -29,3 +29,7 @@ services:
         value: sales@indsolusa.com
       - key: SEED_ADMIN_PASSWORD # only used the first time, to create the admin login
         sync: false
+      - key: ANTHROPIC_API_KEY # Claude API (photo search); without it the AI features stay off
+        sync: false
+      - key: AI_MONTHLY_CAP_USD # AI stops for the month once this much was spent
+        value: "20"

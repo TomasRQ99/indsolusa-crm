@@ -334,6 +334,21 @@ model ProductFact {
   @@index([code])
 }
 
+// Every paid AI call, with its cost, so the monthly cap (AI_MONTHLY_CAP_USD) can be enforced and shown.
+model AiUsage {
+  id           String   @id @default(cuid())
+  feature      String // PART_PHOTO, ...
+  model        String
+  inputTokens  Int
+  outputTokens Int
+  costUsd      Decimal  @db.Decimal(10, 5)
+  ok           Boolean  @default(true)
+  userName     String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 // ---------- Spare Parts Localization: the parts catalog ----------
 // One canonical record per part (schema.org Product-style fields). Quote, Journey and PO lines
 // keep their free-text codes; they are matched to a Part through its normalized code and aliases.

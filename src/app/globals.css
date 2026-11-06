@@ -1392,3 +1392,10 @@ a.loc-chip:hover { background: var(--brand-soft); color: var(--brand); }
 .loc-new { margin-top: 10px; }
 @media (max-width: 640px) { .loc-search input { font-size: 16px; } .loc-search button { padding: 0 14px; } }.loc-sec { margin-bottom: 14px; }
 .loc-sec .jbh { gap: 8px; flex-wrap: wrap; }
+.loc-photo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 14px; }
+.loc-photo .note { flex-basis: 100%; margin: 0; }
+.loc-photo-prev { max-height: 64px; border-radius: var(--radius); border: 1px solid var(--line); }
+.loc-read { background: var(--surface); border: 1px dashed var(--line-strong); border-radius: var(--radius); padding: 12px 14px; margin: 0 0 14px; }
+.loc-read .filedl { margin: 6px 0; }
+.loc-read p.src { margin: 4px 0 0; }.loc-read .filedl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; }
+.loc-read .filedl dt, .loc-read .filedl dd { margin: 0; }

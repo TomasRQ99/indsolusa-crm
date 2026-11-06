@@ -141,11 +141,24 @@ const NOT_DESCRIPTIVE = new Set(["urgente", "urgent", "hoy", "today", "parado", 
   "equivalente", "reemplazo", "sustituto", "alternativo", "alternativa", "compatible", "cruce", "cross", "replacement", "substitute", "equivalent", "interchange",
   "precio", "cotizar", "cotizacion", "cuanto", "cuesta", "price", "quote", "cost", "necesito", "busco", "need", "para", "con", "the", "for", "with", "una", "uno", "del", "las", "los"]);
 
+// Describing words (what kind, what it measures, what it's made of), Spanish ↔ English. Used only to widen a search.
+const ATTRIBUTES: string[][] = [
+  ["presion", "pressure"], ["temperatura", "temperature"], ["nivel", "level"], ["caudal", "flujo", "flow"], ["velocidad", "speed"],
+  ["sanitaria", "sanitario", "sanitary", "higienica", "hygienic"], ["centrifuga", "centrifugo", "centrifugal"], ["diafragma", "membrana", "diaphragm"],
+  ["dosificadora", "dosificacion", "dosing", "metering"], ["sumergible", "submersible"], ["vacio", "vacuum"], ["acero inoxidable", "inoxidable", "inox", "stainless"],
+  ["repuesto", "spare", "spare part"], ["kit", "kit"], ["mantenimiento", "maintenance"], ["impulsor", "impeller"], ["eje", "shaft"], ["carcasa", "housing"],
+  ["trifasico", "three phase", "3ph"], ["monofasico", "single phase"], ["agua", "water"], ["aceite", "oil"], ["aire", "air"], ["lodos", "sludge", "slurry"],
+  ["enfriamiento", "refrigeracion", "cooling"], ["alta", "high"], ["baja", "low"], ["digital", "digital"], ["analogico", "analog"], ["inalambrico", "wireless"],
+];
+
 export function expandWords(q: string): { word: string; alts: string[] }[] {
   const words = fold(q).split(/[^a-z0-9+/-]+/).filter((w) => w.length > 2 && !NOT_DESCRIPTIVE.has(w));
   return words.map((w) => {
-    const g = SYNONYMS.find((s) => s.words.some((x) => fold(x) === w || fold(x).split(" ").includes(w)));
-    return { word: w, alts: g ? [...new Set(g.words.map(fold))] : [w] };
+    // A word can belong to several groups ("pressure" → gauge, switch, transmitter): use them all.
+    const exact = SYNONYMS.filter((s) => s.words.some((x) => fold(x) === w));
+    const groups = exact.length ? exact : SYNONYMS.filter((s) => s.words.some((x) => fold(x).split(" ").includes(w)));
+    const attr = ATTRIBUTES.filter((xs) => xs.some((x) => x === w || x.split(" ").includes(w))).flat();
+    return { word: w, alts: [...new Set([w, ...groups.flatMap((g) => g.words.map(fold)), ...attr])] };
   });
 }
 

@@ -5,28 +5,59 @@ import { makeI18n } from "@/lib/i18n";
 import { canManageAll } from "@/lib/permissions";
 import { CATEGORIES } from "@/lib/part-lexicon";
 import { ensureCatalogFresh, partKey, searchParts, type PartHit } from "@/lib/parts";
+import { aiConfigured, aiSpentThisMonth, monthlyCap } from "@/lib/ai";
+import type { PhotoReading } from "@/lib/part-vision";
+import { PhotoSearch } from "@/components/PhotoSearch";
 import { whyText, LIFE } from "./labels";
 import { createPart, syncCatalog } from "./actions";
 
-const EXAMPLES = ["6SL3210-1KE21-7UF1", "rodamiento 6205", "bomba dosificadora Grundfos", "servomotr siemens", "VFD urgente"];
+const EXAMPLES = ["6SL3210-1KE21-7UF1", "rodamiento 6205", "Siemens", "bomba dosificadora Grundfos", "servomotr siemens", "VFD urgente"];
 
-export default async function LocalizarPage({ searchParams }: { searchParams: Promise<{ q?: string; ok?: string; err?: string; c?: string; a?: string }> }) {
+/** The photo reading travels in the URL (nothing is stored); accept only the expected shape. */
+function parseReading(raw?: string): PhotoReading | null {
+  if (!raw) return null;
+  try {
+    const r = JSON.parse(raw);
+    if (!r || !Array.isArray(r.partNumbers) || typeof r.partType !== "string") return null;
+    const s = (v: unknown, n = 120) => (typeof v === "string" && v.trim() ? v.trim().slice(0, n) : null);
+    return {
+      partNumbers: r.partNumbers.map((x: unknown) => s(x, 60)).filter(Boolean).slice(0, 5) as string[],
+      brand: s(r.brand, 60), model: s(r.model, 80), partType: s(r.partType, 80) ?? "", partTypeEn: s(r.partTypeEn, 80) ?? "",
+      category: s(r.category, 30), specs: Array.isArray(r.specs) ? (r.specs.map((x: unknown) => s(x, 40)).filter(Boolean).slice(0, 6) as string[]) : [],
+      source: ["NAMEPLATE", "MARKINGS", "APPEARANCE", "UNCLEAR"].includes(r.source) ? r.source : "UNCLEAR", note: s(r.note, 300) ?? "",
+    };
+  } catch { return null; }
+}
+
+export default async function LocalizarPage({ searchParams }: { searchParams: Promise<{ q?: string; ok?: string; err?: string; c?: string; a?: string; foto?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
   const sp = await searchParams;
   const q = (sp.q ?? "").trim().slice(0, 200);
+  const photo = parseReading(sp.foto);
   await ensureCatalogFresh();
-  const [res, total, recent] = await Promise.all([
+  const [res, total, recent, spent] = await Promise.all([
     q ? searchParts(q) : null,
     db.part.count({ where: { mergedIntoId: null } }),
     q ? [] : db.part.findMany({ where: { mergedIntoId: null }, orderBy: { updatedAt: "desc" }, take: 25, select: { id: true, mpn: true, brand: true, name: true, category: true, lifecycle: true, _count: { select: { aliases: true } } } }),
+    aiSpentThisMonth(),
   ]);
+  const cap = monthlyCap();
+  const aiState = !aiConfigured() ? "OFF" : spent.usd + 0.1 > cap ? "CAP" : "ON";
   const hits = res?.hits ?? [];
   const best = hits[0] && hits[0].score >= 60 ? hits[0] : null;
   const rest = best ? hits.slice(1) : hits;
   const codeLike = q && /\d/.test(q) && partKey(q).length >= 3 && !q.includes(" ");
   const manager = canManageAll(user);
+  const SRC: Record<PhotoReading["source"], string> = {
+    NAMEPLATE: t("leído de la placa", "read from the nameplate"),
+    MARKINGS: t("leído de las marcas de la pieza", "read from the part's markings"),
+    APPEARANCE: t("reconocido solo por su forma (sin texto legible)", "recognized by shape only (no legible text)"),
+    UNCLEAR: t("lectura dudosa", "uncertain reading"),
+  };
+  const newMpn = photo?.partNumbers[0] ?? (codeLike ? q : "");
+  const newName = photo ? [photo.partType, photo.model, ...photo.specs.slice(0, 2)].filter(Boolean).join(" ") : codeLike ? "" : q;
 
   const intentNote = res && {
     URGENT: t("Parece urgente: abre la parte para ver a quién se la compramos antes, cuándo y a qué costo, y responder hoy.", "Looks urgent: open the part to see whom we bought it from before, when and at what cost, and answer today."),
@@ -67,7 +98,21 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
         <input name="q" defaultValue={q} autoFocus placeholder={t("Ej.: 6205-2RS, rodamiento SKF, variador 7.5 kW…", "E.g.: 6205-2RS, SKF bearing, 7.5 kW drive…")} aria-label={t("Buscar repuesto", "Search part")} />
         <button type="submit">{t("Buscar", "Search")}</button>
       </form>
-      {!q && (
+      <PhotoSearch lang={user.lang === "EN" ? "EN" : "ES"} state={aiState} cap={cap} />
+      {photo && (
+        <section className="loc-read" aria-label={t("Lo que SOLU leyó en la foto", "What SOLU read in the photo")}>
+          <div className="jbh"><b>{t("LO QUE SOLU LEYÓ EN LA FOTO", "WHAT SOLU READ IN THE PHOTO")}</b><span className="grow" /><span className="loc-chip warn">{t("sin confirmar", "unconfirmed")}</span></div>
+          <dl className="filedl">
+            <dt>{t("Número(s)", "Number(s)")}</dt><dd className="mono">{photo.partNumbers.length ? photo.partNumbers.join(" · ") : <span className="src">{t("ninguno legible", "none legible")}</span>}</dd>
+            <dt>{t("Marca", "Brand")}</dt><dd>{photo.brand ?? "—"}{photo.model ? ` · ${photo.model}` : ""}</dd>
+            <dt>{t("Qué es", "What it is")}</dt><dd>{user.lang === "EN" ? photo.partTypeEn || photo.partType : photo.partType}</dd>
+            {photo.specs.length > 0 && <><dt>{t("Datos", "Ratings")}</dt><dd>{photo.specs.join(" · ")}</dd></>}
+          </dl>
+          <p className="src">{SRC[photo.source]}{photo.note ? ` · ${photo.note}` : ""}</p>
+          <p className="src">{t("Compara con la foto antes de cotizar: la IA puede confundir dígitos. Puedes corregir la búsqueda arriba.", "Compare with the photo before quoting: the AI can misread digits. You can correct the search above.")}</p>
+        </section>
+      )}
+      {!q && !photo && (
         <p className="loc-ex">{t("Prueba:", "Try:")} {EXAMPLES.map((e) => <Link key={e} href={`/localizar?q=${encodeURIComponent(e)}`} className="loc-chip">{e}</Link>)}</p>
       )}
 
@@ -95,10 +140,10 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
           <details className="qa" open={hits.length === 0}>
             <summary className="qa-btn">{t("Agregar una parte nueva al catálogo", "Add a new part to the catalog")}</summary>
             <form action={createPart} className="inline loc-new">
-              <label>{t("Número de parte", "Part number")}<input name="mpn" required defaultValue={codeLike ? q : ""} /></label>
-              <label>{t("Descripción", "Description")}<input name="name" required defaultValue={codeLike ? "" : q} /></label>
-              <label>{t("Marca", "Brand")}<input name="brand" defaultValue={res.brand ?? ""} /></label>
-              <label>{t("Línea", "Line")}<select name="category" defaultValue=""><option value="">{t("— que SOLU la deduzca —", "— let SOLU infer it —")}</option>{Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{t(v.es, v.en)}</option>)}</select></label>
+              <label>{t("Número de parte", "Part number")}<input name="mpn" required defaultValue={newMpn} /></label>
+              <label>{t("Descripción", "Description")}<input name="name" required defaultValue={newName} /></label>
+              <label>{t("Marca", "Brand")}<input name="brand" defaultValue={photo?.brand ?? res.brand ?? ""} /></label>
+              <label>{t("Línea", "Line")}<select name="category" defaultValue={photo?.category && CATEGORIES[photo.category] ? photo.category : ""}><option value="">{t("— que SOLU la deduzca —", "— let SOLU infer it —")}</option>{Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{t(v.es, v.en)}</option>)}</select></label>
               <button type="submit">{t("Agregar", "Add")}</button>
             </form>
           </details>
@@ -111,6 +156,7 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
             <b>{t("EL CATÁLOGO", "THE CATALOG")}</b><span className="grow" />
             <span className="src">{t(`${total} parte(s) · se actualiza solo con cada cotización y PO`, `${total} part(s) · updates itself with every quote and PO`)}</span>
             {manager && <form action={syncCatalog}><button className="link small" type="submit">{t("Actualizar ahora", "Update now")}</button></form>}
+            {manager && <span className="src" title={t("Búsquedas por foto este mes", "Photo searches this month")}>{t(`IA este mes: USD ${i.n2(spent.usd)} de ${cap} · ${spent.calls} uso(s)`, `AI this month: USD ${i.n2(spent.usd)} of ${cap} · ${spent.calls} use(s)`)}</span>}
           </div>
           <div className="card flush">
             <table>

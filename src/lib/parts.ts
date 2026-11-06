@@ -98,6 +98,17 @@ export async function searchParts(q: string, limit = 20): Promise<{ intent: Inte
     }
   }
 
+  // 3. The brand: "Siemens" alone lists Siemens parts; with other words it only adds weight (below).
+  if (brand && !groups.length && !found.size) {
+    const b = fold(brand);
+    const rows = await db.$queryRaw<{ id: string }[]>`
+      SELECT p.id FROM "Part" p
+       WHERE lower(unaccent(coalesce(p.brand, ''))) = ${b}
+          OR lower(unaccent(p.name || ' ' || coalesce(p."nameEn", ''))) ~ ('(^|[^a-z0-9])' || ${b.replace(/[^a-z0-9 ]/g, "")} || '([^a-z0-9]|$)')
+       LIMIT 200`;
+    for (const r of rows) add(r.id, 58, { t: "BRAND", brand });
+  }
+
   if (!found.size) return { intent, brand, hits: [] };
   const parts = await db.part.findMany({
     where: { id: { in: [...found.keys()] } },
@@ -110,7 +121,7 @@ export async function searchParts(q: string, limit = 20): Promise<{ intent: Inte
     const c = p.mergedInto ?? p;
     let score = f.score;
     const why = [...f.why];
-    if (brand && c.brand && fold(c.brand) === fold(brand)) { score += 12; why.push({ t: "BRAND", brand: c.brand }); }
+    if (brand && c.brand && fold(c.brand) === fold(brand)) { if (!why.some((w) => w.t === "BRAND")) { score += 12; why.push({ t: "BRAND", brand: c.brand }); } }
     else if (brand && c.brand) score -= 10;
     const prev = out.get(c.id);
     if (!prev || prev.score < score) out.set(c.id, { id: c.id, mpn: c.mpn, brand: c.brand, name: c.name, nameEn: c.nameEn, category: c.category, lifecycle: c.lifecycle, score: Math.min(100, score), why });
