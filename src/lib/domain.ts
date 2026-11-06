@@ -33,10 +33,10 @@ function yymm(d = new Date()) {
   return `${String(d.getUTCFullYear()).slice(2)}${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-type CodeTable = "deal" | "supplierPO" | "delivery" | "shipment";
+type CodeTable = "deal" | "supplierPO" | "delivery" | "shipment" | "rfq";
 
 /** J-2611-0147, SPO-2611-0321, REM-2611-0007. Sequence restarts each month. */
-export async function nextCode(prefix: "J" | "SPO" | "REM" | "SHP", table: CodeTable, tx: Prisma.TransactionClient = db) {
+export async function nextCode(prefix: "J" | "SPO" | "REM" | "SHP" | "RFQ", table: CodeTable, tx: Prisma.TransactionClient = db) {
   const start = `${prefix}-${yymm()}-`;
   const where = { code: { startsWith: start } };
   const last =
@@ -46,6 +46,8 @@ export async function nextCode(prefix: "J" | "SPO" | "REM" | "SHP", table: CodeT
         ? await tx.supplierPO.findFirst({ where, orderBy: { code: "desc" }, select: { code: true } })
         : table === "shipment"
           ? await tx.shipment.findFirst({ where, orderBy: { code: "desc" }, select: { code: true } })
+          : table === "rfq"
+            ? await tx.rfq.findFirst({ where, orderBy: { code: "desc" }, select: { code: true } })
           : await tx.delivery.findFirst({ where, orderBy: { code: "desc" }, select: { code: true } });
   const seq = last?.code ? Number(last.code.slice(start.length)) + 1 : 1;
   return `${start}${String(seq).padStart(4, "0")}`;

@@ -60,6 +60,11 @@ function bccList() {
 }
 
 export async function sendMail(opts: { to: Recipient; subject: string; text: string; senderName?: string }) {
+  // Test mode: MAIL_DRY_RUN=1 writes the email to the server log instead of sending it.
+  if (process.env.MAIL_DRY_RUN === "1") {
+    console.log(`[MAIL_DRY_RUN] to=${toAddress(opts.to).address} subject=${opts.subject}\n${opts.text}\n[/MAIL_DRY_RUN]`);
+    return;
+  }
   const c = mailConfig();
   if (!c.configured) {
     throw new MailError("Email is not configured. Set the Microsoft Graph (or SMTP) settings and MAIL_FROM in .env.");

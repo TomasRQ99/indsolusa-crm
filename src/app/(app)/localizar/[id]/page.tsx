@@ -12,6 +12,7 @@ import { partHistory, partKeys } from "@/lib/parts";
 import { Popovers } from "@/components/Popovers";
 import { ALIAS_KIND, CONDITION, LIFE } from "../labels";
 import { addAlias, addToQuote, mergeInto, partReminder, removeAlias, updatePart, useInJourney } from "../actions";
+import { addOffer, removeOffer } from "../ofertas/actions";
 
 type Sp = { ok?: string; err?: string; otro?: string; n?: string; deal?: string };
 
@@ -38,6 +39,12 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     db.quote.findMany({ where: { status: "DRAFT", deal: mine }, orderBy: { createdAt: "desc" }, take: 40, select: { id: true, number: true, rev: true, deal: { select: { code: true, account: { select: { name: true } } } } } }),
     db.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true }, take: 300 }),
   ]);
+  const offers = await db.supplierOffer.findMany({
+    where: { partId: p.id },
+    orderBy: [{ createdAt: "desc" }],
+    select: { id: true, codeAsQuoted: true, qty: true, unitPrice: true, currency: true, leadText: true, incoterm: true, validUntil: true, source: true, recordedByName: true, createdAt: true, supplier: { select: { id: true, name: true } }, doc: { select: { id: true, kind: true, reference: true } } },
+  });
+  const nowTs = new Date();
   const canEditCtx = !!ctxDeal && (manager || ctxDeal.ownerId === user.id);
   // Suggested price: the most recent price we quoted or put on a Journey for this part.
   const priced = [...h.quotes.map((x) => ({ at: x.quote!.createdAt, v: Number(x.unitPrice) })), ...h.items.map((x) => ({ at: new Date(0), v: Number(x.unitPrice) }))].filter((x) => x.v > 0).sort((a, b) => +b.at - +a.at);
@@ -58,6 +65,8 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     alias: t("Listo: ahora también la encuentras por ese número o nombre.", "Done: you'll now also find it by that number or name."),
     quitado: t("Número o nombre quitado.", "Number or name removed."),
     ya: t("Ese ya es su número de parte.", "That's already its part number."),
+    oferta: t("Oferta guardada.", "Offer saved."),
+    ofertaquitada: t("Oferta quitada.", "Offer removed."),
     rfq: t("Listo: el pendiente de pedir precio quedó en tu lista (Mi Día → Pendientes).", "Done: the ask-for-price to-do is on your list (My Day → To-dos)."),
     seguimiento: t("Listo: el recordatorio quedó en tu lista (Mi Día → Pendientes).", "Done: the reminder is on your list (My Day → To-dos)."),
     fusionado: t(`Fusionado: buscar ${sp.n ?? "el duplicado"} ahora trae esta parte.`, `Merged: searching ${sp.n ?? "the duplicate"} now brings up this part.`),
@@ -71,6 +80,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     dup: t("No encontré ese duplicado (o ya estaba fusionado).", "I couldn't find that duplicate (or it was already merged)."),
     permiso: t("No tienes permiso para eso (solo el dueño del Journey o gerencia).", "You don't have permission for that (only the Journey owner or management)."),
     cliente: t("Elige el cliente.", "Pick the customer."),
+    oferta: t("Para guardar la oferta necesito el proveedor y el precio.", "To save the offer I need the supplier and the price."),
     cotizacion: t("Esa cotización ya no está en borrador.", "That quote is no longer a draft."),
   };
 
@@ -171,6 +181,8 @@ export default async function PartPage({ params, searchParams }: { params: Promi
         </div></details>
 
         <details className="qa"><summary className="qa-btn">{t("Pedir precio a proveedor", "Ask a supplier for a price")}</summary><div className="qa-pop wide">
+          <p><Link className="btn" href={`/localizar/rfq/nueva?part=${p.id}${ctxDeal ? `&deal=${ctxDeal.id}` : ""}`}>{t("Enviar correo a uno o varios proveedores", "Email one or several suppliers")}</Link></p>
+          <p className="src">{t("Sale desde sales@, un correo por proveedor. O, si lo vas a pedir por teléfono o WhatsApp, crea solo un pendiente:", "Sent from sales@, one email per supplier. Or, if you'll ask by phone or WhatsApp, just create a to-do:")}</p>
           <form action={partReminder.bind(null, p.id)} className="qa-form">
             <input type="hidden" name="kind" value="PRICE" />
             {ctxDeal && <input type="hidden" name="dealId" value={ctxDeal.id} />}
@@ -183,8 +195,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
               <label>{t("Cantidad", "Qty")}<input name="qty" type="number" min="1" defaultValue={1} /></label>
               <label>{t("Para cuándo", "By when")}<input name="dueDate" type="date" /></label>
             </div>
-            <p className="src">{t("Crea un pendiente para ti (aparece en Mi Día). El correo automático a varios proveedores llega en la siguiente fase.", "Creates a to-do for you (shows in My Day). Automatic email to several suppliers comes in the next phase.")}</p>
-            <button type="submit">{t("Crear pendiente", "Create to-do")}</button>
+            <button type="submit" className="secondary">{t("Solo crear pendiente", "Just create a to-do")}</button>
           </form>
         </div></details>
 
@@ -203,6 +214,50 @@ export default async function PartPage({ params, searchParams }: { params: Promi
 
       <div className="jbody">
         <div className="jmain">
+          <section className="jblock">
+            <div className="jbh"><b>{t("OFERTAS DE PROVEEDORES", "SUPPLIER OFFERS")}</b><span className="grow" /><span className="src">{t("lo que nos cotizaron, con su respaldo", "what we were quoted, with its evidence")}</span></div>
+            {offers.length === 0 ? <p className="quiet-p">{t("Aún sin ofertas. Pide precio a proveedores o sube la cotización/proforma que te enviaron.", "No offers yet. Ask suppliers for a price or upload the quote/proforma they sent.")}</p> : (
+              <table>
+                <thead><tr><th>{t("Proveedor", "Supplier")}</th><th className="n">{t("Precio unit.", "Unit price")}</th><th>{t("Plazo", "Lead time")}</th><th>{t("Válida hasta", "Valid until")}</th><th>{t("Respaldo", "Evidence")}</th><th /></tr></thead>
+                <tbody>{offers.map((o) => {
+                  const exp = o.validUntil && o.validUntil < nowTs;
+                  return (
+                    <tr key={o.id} className={exp ? "loc-expired" : undefined}>
+                      <td><Link href={`/suppliers/${o.supplier.id}`}>{o.supplier.name}</Link>{o.codeAsQuoted !== p.mpn && <span className="src block mono">{t("como", "as")} {o.codeAsQuoted}</span>}</td>
+                      <td className="n mono">{o.currency} {i.n2(o.unitPrice)}{o.qty ? <span className="src block">{t(`por ${o.qty}`, `for ${o.qty}`)}</span> : null}</td>
+                      <td>{o.leadText ?? "—"}{o.incoterm ? <span className="src block">{o.incoterm}</span> : null}</td>
+                      <td>{o.validUntil ? i.day(o.validUntil) : <span className="src">{t("sin fecha", "no date")}</span>}{exp ? <span className="src block">{t("vencida · confirmar", "expired · re-confirm")}</span> : null}</td>
+                      <td className="small">{o.doc ? <Link href={`/localizar/ofertas/${o.doc.id}`}>{o.doc.kind === "PROFORMA" ? "Proforma" : t("Cotización", "Quote")} {o.doc.reference ?? ""}</Link> : o.source ?? "—"}<span className="src block">{o.recordedByName} · {i.day(o.createdAt)}</span></td>
+                      <td>{(manager || o.recordedByName === user.name) && <form action={removeOffer.bind(null, p.id, o.id)} data-confirm={t("¿Quitar esta oferta?", "Remove this offer?")}><button className="link small" type="submit">{t("Quitar", "Remove")}</button></form>}</td>
+                    </tr>
+                  );
+                })}</tbody>
+              </table>
+            )}
+            <div className="loc-offer-acts">
+              <Link className="link small" href={`/localizar/ofertas/nueva${pastSuppliers[0] ? `?supplier=${pastSuppliers[0].id}` : ""}`}>{t("Subir cotización o proforma del proveedor", "Upload the supplier's quote or proforma")}</Link>
+              <details className="qa"><summary className="qa-btn">{t("Registrar oferta a mano", "Record an offer by hand")}</summary><div className="qa-pop wide">
+                <form action={addOffer.bind(null, p.id)} className="qa-form">
+                  <label>{t("Proveedor", "Supplier")}<select name="supplierId" required defaultValue={pastSuppliers[0]?.id ?? ""}><option value="" disabled>{t("— elige —", "— choose —")}</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+                  <div className="qa-row">
+                    <label>{t("Precio unit.", "Unit price")}<input name="unitPrice" required inputMode="decimal" /></label>
+                    <label>{t("Moneda", "Currency")}<select name="currency" defaultValue="USD"><option>USD</option><option>EUR</option><option>COP</option><option>GBP</option></select></label>
+                  </div>
+                  <div className="qa-row">
+                    <label>{t("Cantidad", "Qty")}<input name="qty" type="number" min="1" /></label>
+                    <label>{t("Plazo", "Lead time")}<input name="leadText" placeholder={t("4-6 semanas", "4-6 weeks")} /></label>
+                  </div>
+                  <div className="qa-row">
+                    <label>{t("Válida hasta", "Valid until")}<input name="validUntil" type="date" /></label>
+                    <label>Incoterm<input name="incoterm" placeholder="FCA Miami" /></label>
+                  </div>
+                  <label>{t("Fuente", "Source")}<input name="source" placeholder={t("Ej.: llamada con Juan, WhatsApp", "E.g.: call with Juan, WhatsApp")} /></label>
+                  <button type="submit">{t("Guardar oferta", "Save offer")}</button>
+                </form>
+              </div></details>
+            </div>
+          </section>
+
           <section className="jblock">
             <div className="jbh"><b>{t("OTROS NÚMEROS Y NOMBRES", "OTHER NUMBERS & NAMES")}</b><span className="grow" /><span className="src">{t("cualquiera de estos encuentra esta parte", "any of these finds this part")}</span></div>
             {p.aliases.length === 0 ? <p className="quiet-p">{t("Todavía ninguno. Agrega el número del fabricante, equivalentes de otras marcas o el número anterior.", "None yet. Add the manufacturer number, other brands' equivalents or the old number.")}</p> : (
@@ -320,7 +375,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
             </div></details>
           )}
           {p.merged.length > 0 && <p className="src">{t("Duplicados ya fusionados aquí:", "Duplicates merged here:")} {p.merged.map((m) => m.mpn).join(", ")}</p>}
-          <p className="note ai">{t("Próximamente aquí: ofertas de proveedores, solicitud de cotización a varios proveedores y búsqueda en internet con fuentes.", "Coming here soon: supplier offers, multi-supplier RFQs and web search with sources.")}</p>
+          <p className="note ai">{t("Próximamente aquí: la tarjeta de evidencia de cada proveedor y búsqueda en internet con fuentes.", "Coming here soon: each supplier's evidence card and web search with sources.")}</p>
         </aside>
       </div>
       <Popovers />

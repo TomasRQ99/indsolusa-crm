@@ -231,6 +231,8 @@ export async function partKeys(id: string) {
 export type Evidence = {
   buys: number; lastCost: { cur: string; amount: number; at: Date; supplier: string; supplierId: string } | null;
   suppliers: number; quoted: number; lastPrice: { amount: number; at: Date } | null; customers: number;
+  /** Supplier offers still valid (or without a date); `offer` is the most recent one. */
+  offers: number; offer: { cur: string; amount: number; supplier: string; validUntil: Date | null; at: Date } | null;
 };
 
 /** For a list of search results: how often we bought / quoted each part, last real cost and from whom. Two queries in total. */
@@ -242,7 +244,7 @@ export async function evidenceFor(ids: string[]): Promise<Map<string, Evidence>>
   for (const p of parts) {
     const ks = [p.mpnKey, ...p.aliases.filter((a) => a.kind !== "NAME").map((a) => a.codeKey), ...p.merged.flatMap((m) => [m.mpnKey, ...m.aliases.filter((a) => a.kind !== "NAME").map((a) => a.codeKey)])];
     ks.forEach((k) => { if (!owner.has(k)) owner.set(k, p.id); });
-    out.set(p.id, { buys: 0, lastCost: null, suppliers: 0, quoted: 0, lastPrice: null, customers: 0 });
+    out.set(p.id, { buys: 0, lastCost: null, suppliers: 0, quoted: 0, lastPrice: null, customers: 0, offers: 0, offer: null });
   }
   const keys = [...owner.keys()];
   const norm = Prisma.sql`regexp_replace(upper(l.code), '[^A-Z0-9]', '', 'g')`;
@@ -274,6 +276,17 @@ export async function evidenceFor(ids: string[]): Promise<Map<string, Evidence>>
     if (Number(s.price) > 0 && (!e.lastPrice || s.at > e.lastPrice.at)) e.lastPrice = { amount: Number(s.price), at: s.at };
   }
   for (const [id, e] of out) { e.suppliers = sup.get(id)?.size ?? 0; e.customers = acc.get(id)?.size ?? 0; }
+  const offers = await db.supplierOffer.findMany({
+    where: { partId: { in: ids }, OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }] },
+    orderBy: { createdAt: "desc" },
+    select: { partId: true, unitPrice: true, currency: true, validUntil: true, createdAt: true, supplier: { select: { name: true } } },
+  });
+  for (const o of offers) {
+    const e = out.get(o.partId);
+    if (!e) continue;
+    e.offers++;
+    e.offer ??= { cur: o.currency, amount: Number(o.unitPrice), supplier: o.supplier.name, validUntil: o.validUntil, at: o.createdAt };
+  }
   return out;
 }
 
@@ -316,6 +329,7 @@ export async function mergeParts(dupId: string, canonicalId: string, byName: str
       have.add(a.codeKey);
     }
     await tx.partAlias.deleteMany({ where: { partId: dup.id } });
+    await tx.supplierOffer.updateMany({ where: { partId: dup.id }, data: { partId: can.id } });
     // Fill the canonical part's empty fields with what the duplicate knew.
     await tx.part.update({
       where: { id: can.id },

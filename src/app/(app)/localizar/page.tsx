@@ -91,6 +91,7 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
           </>
         ) : <span className="src">{t("Nunca la compramos", "Never purchased")}</span>}
         {e.quoted > 0 && <>{" · "}{t(`cotizada/vendida ${e.quoted} vez(es) a ${e.customers} cliente(s)`, `quoted/sold ${e.quoted} time(s) to ${e.customers} customer(s)`)}</>}
+        {e.offer && <><br /><b>{t(`Oferta vigente`, `Valid offer`)}</b>{": "}<span className="mono">{e.offer.cur} {i.n2(e.offer.amount)}</span> {t("de", "from")} {e.offer.supplier}{e.offer.validUntil ? t(` · válida hasta ${i.day(e.offer.validUntil)}`, ` · valid until ${i.day(e.offer.validUntil)}`) : ""}{e.offers > 1 ? t(` · ${e.offers} ofertas vigentes`, ` · ${e.offers} valid offers`) : ""}</>}
       </p>
     );
   };
@@ -120,8 +121,11 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
           <h1>{t("Localizar repuestos", "Find parts")}</h1>
           <p>{t("Escribe el número de parte, el nombre (en español o inglés) o la marca. SOLU entiende errores de escritura y te dice por qué cree que es esa parte.", "Type the part number, the name (Spanish or English) or the brand. SOLU tolerates typos and tells you why it thinks it's that part.")}</p>
         </div>
+        <span className="grow" />
+        <div><Link className="btn secondary" href="/localizar/ofertas/nueva">{t("Registrar cotización o proforma de proveedor", "Record a supplier quote or proforma")}</Link></div>
       </div>
-      {sp.ok === "sync" && <p className="note">{t(`Catálogo actualizado: ${sp.c ?? 0} parte(s) nueva(s) desde el historial y ${sp.a ?? 0} nombre(s) alterno(s) desde Productos.`, `Catalog updated: ${sp.c ?? 0} new part(s) from history and ${sp.a ?? 0} alternate name(s) from Products.`)}</p>}
+      {sp.ok === "docborrado" &&<p className="note">{t("Documento borrado junto con sus ofertas.", "Document deleted along with its offers.")}</p>}
+      {sp.ok === "sync" &&<p className="note">{t(`Catálogo actualizado: ${sp.c ?? 0} parte(s) nueva(s) desde el historial y ${sp.a ?? 0} nombre(s) alterno(s) desde Productos.`, `Catalog updated: ${sp.c ?? 0} new part(s) from history and ${sp.a ?? 0} alternate name(s) from Products.`)}</p>}
       {sp.err === "falta" && <p className="note attn">{t("Para agregar una parte necesito el número de parte y una descripción.", "To add a part I need the part number and a description.")}</p>}
       {sp.err === "permiso" && <p className="note attn">{t("Solo gerencia o administración puede hacer eso.", "Only management or admins can do that.")}</p>}
 

@@ -133,7 +133,7 @@ model AccountDocument {
   id           String   @id @default(cuid())
   accountId    String
   account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  kind         String   // RUT | CAMARA | OTHER
+  kind         String // RUT | CAMARA | OTHER
   name         String
   mime         String
   size         Int
@@ -184,34 +184,34 @@ model Deal {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  desiredResult       String?
-  customerPo          String?
-  poAcceptedAt        DateTime?
-  promisedDate        DateTime?
-  promiseText         String?
-  supplierCost        Decimal   @default(0) @db.Decimal(14, 2)
-  freightCost         Decimal   @default(0) @db.Decimal(14, 2)
-  otherCosts          Decimal   @default(0) @db.Decimal(14, 2)
-  nextMove            String?
-  nextMoveDate        DateTime?
-  waitingFor          String?
-  waitingUntil        DateTime?
-  resultAchievedAt    DateTime?
-  offerValidUntil     DateTime?
-  creditExceptionById String?
-  creditExceptionBy   User?     @relation("CreditException", fields: [creditExceptionById], references: [id])
-  creditExceptionAt   DateTime?
-  creditExceptionNote String?
+  desiredResult         String?
+  customerPo            String?
+  poAcceptedAt          DateTime?
+  promisedDate          DateTime?
+  promiseText           String?
+  supplierCost          Decimal     @default(0) @db.Decimal(14, 2)
+  freightCost           Decimal     @default(0) @db.Decimal(14, 2)
+  otherCosts            Decimal     @default(0) @db.Decimal(14, 2)
+  nextMove              String?
+  nextMoveDate          DateTime?
+  waitingFor            String?
+  waitingUntil          DateTime?
+  resultAchievedAt      DateTime?
+  offerValidUntil       DateTime?
+  creditExceptionById   String?
+  creditExceptionBy     User?       @relation("CreditException", fields: [creditExceptionById], references: [id])
+  creditExceptionAt     DateTime?
+  creditExceptionNote   String?
   // Journey Workspace: what is needed, how it is measured and what it costs not to solve it.
-  needSpecs           String?
-  neededBy            DateTime?
-  successMeasure      String?
-  impactIfNot         String?
-  sourcingNote        String?
-  incoterm            String?
-  paymentTerms        String?
-  quoteSentAt         DateTime?
-  resultNote          String?
+  needSpecs             String?
+  neededBy              DateTime?
+  successMeasure        String?
+  impactIfNot           String?
+  sourcingNote          String?
+  incoterm              String?
+  paymentTerms          String?
+  quoteSentAt           DateTime?
+  resultNote            String?
   // Result & Closure: desired result vs actual result, confirmed with evidence (delivery is not the result).
   resultState           ResultState @default(PENDING)
   actualResult          String?
@@ -230,20 +230,21 @@ model Deal {
   promiseRevisedAt      DateTime?
   promiseChangeCause    String?
 
-  resultEvidence ResultEvidence[]
-  recoveries     Recovery[]
-  continuity     ContinuitySignal[]
-  tasks       Task[]
-  views       JourneyView[]
-  threads     CommThread[]
-  quotes      Quote[]
-  customerPos CustomerPO[]
-  activities  Activity[]
-  items       DealItem[]
-  supplierPos SupplierPO[]
-  shipments   Shipment[]
-  deliveries  Delivery[]
-  invoices    Invoice[]
+  resultEvidence  ResultEvidence[]
+  recoveries      Recovery[]
+  continuity      ContinuitySignal[]
+  tasks           Task[]
+  views           JourneyView[]
+  threads         CommThread[]
+  quotes          Quote[]
+  customerPos     CustomerPO[]
+  activities      Activity[]
+  items           DealItem[]
+  supplierPos     SupplierPO[]
+  rfqs            Rfq[]
+  shipments       Shipment[]
+  deliveries      Delivery[]
+  invoices        Invoice[]
   billingRequests BillingRequest[]
 
   @@index([stage])
@@ -334,6 +335,101 @@ model ProductFact {
   @@index([code])
 }
 
+// ---------- Spare Parts Localization L3: supplier offers ----------
+// A supplier's official quote or proforma invoice (the file is kept as evidence). Its lines become SupplierOffers.
+// Bank details printed on a proforma are NEVER used: payments only use the supplier's verified bank profile.
+model SupplierDoc {
+  id             String          @id @default(cuid())
+  supplierId     String
+  supplier       Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  kind           String // QUOTE | PROFORMA
+  reference      String? // the supplier's own number
+  issuedAt       DateTime?
+  validUntil     DateTime?
+  currency       String?
+  incoterm       String?
+  leadText       String?
+  paymentTerms   String?
+  fileName       String
+  mime           String
+  size           Int
+  data           Bytes
+  text           String? // text read from the PDF (audit / re-reading)
+  extracted      Json? // what SOLU read (header + candidate lines), shown for review
+  bankWarning    String? // the document shows bank details that don't match the verified profile
+  rfqRecipientId String?         @unique
+  rfqRecipient   RfqRecipient?   @relation(fields: [rfqRecipientId], references: [id], onDelete: SetNull)
+  reviewedAt     DateTime?
+  createdByName  String
+  createdAt      DateTime        @default(now())
+  offers         SupplierOffer[]
+
+  @@index([supplierId])
+}
+
+// One price for one part from one supplier, with its conditions and where it came from.
+model SupplierOffer {
+  id             String       @id @default(cuid())
+  partId         String
+  part           Part         @relation(fields: [partId], references: [id], onDelete: Cascade)
+  supplierId     String
+  supplier       Supplier     @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  docId          String?
+  doc            SupplierDoc? @relation(fields: [docId], references: [id], onDelete: SetNull)
+  codeAsQuoted   String
+  description    String?
+  qty            Int?
+  unitPrice      Decimal      @db.Decimal(14, 4)
+  currency       String
+  leadDaysMin    Int?
+  leadDaysMax    Int?
+  leadText       String?
+  validUntil     DateTime?
+  incoterm       String?
+  condition      String? // NEW | REFURBISHED | USED
+  source         String?
+  recordedByName String
+  createdAt      DateTime     @default(now())
+
+  @@index([partId])
+  @@index([supplierId])
+}
+
+// A request for quotation sent from sales@ to several suppliers (one separate email each).
+model Rfq {
+  id            String         @id @default(cuid())
+  code          String         @unique
+  dealId        String?
+  deal          Deal?          @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  items         Json // [{partId, mpn, name, brand, qty}]
+  lang          String         @default("EN")
+  neededBy      DateTime?
+  notes         String?
+  subject       String
+  body          String
+  createdById   String
+  createdByName String
+  createdAt     DateTime       @default(now())
+  recipients    RfqRecipient[]
+}
+
+model RfqRecipient {
+  id         String       @id @default(cuid())
+  rfqId      String
+  rfq        Rfq          @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  supplierId String
+  supplier   Supplier     @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  email      String
+  status     String // SENT | FAILED | ANSWERED | DECLINED
+  sentAt     DateTime?
+  error      String?
+  answeredAt DateTime?
+  doc        SupplierDoc?
+
+  @@index([rfqId])
+  @@index([supplierId])
+}
+
 // Every paid AI call, with its cost, so the monthly cap (AI_MONTHLY_CAP_USD) can be enforced and shown.
 model AiUsage {
   id           String   @id @default(cuid())
@@ -353,9 +449,9 @@ model AiUsage {
 // One canonical record per part (schema.org Product-style fields). Quote, Journey and PO lines
 // keep their free-text codes; they are matched to a Part through its normalized code and aliases.
 model Part {
-  id               String      @id @default(cuid())
+  id               String   @id @default(cuid())
   mpn              String // canonical part number, as displayed
-  mpnKey           String      @unique // normalized: upper case, letters and digits only
+  mpnKey           String   @unique // normalized: upper case, letters and digits only
   brand            String?
   name             String // description (Spanish)
   nameEn           String?
@@ -364,17 +460,18 @@ model Part {
   condition        String? // NEW | REFURBISHED | USED
   lifecycle        String? // ACTIVE | DISCONTINUED | OBSOLETE
   specs            Json? // [{k, v}]
-  compatibleModels String[]    @default([])
+  compatibleModels String[] @default([])
   notes            String?
   // A duplicate merged into its canonical part keeps existing (so old links still resolve).
   mergedIntoId     String?
-  mergedInto       Part?       @relation("PartMerge", fields: [mergedIntoId], references: [id])
-  merged           Part[]      @relation("PartMerge")
+  mergedInto       Part?    @relation("PartMerge", fields: [mergedIntoId], references: [id])
+  merged           Part[]   @relation("PartMerge")
   createdByName    String?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   aliases PartAlias[]
+  offers  SupplierOffer[]
 
   @@index([brand])
   @@index([mergedIntoId])
@@ -510,7 +607,10 @@ model Supplier {
   advancePct       Int       @default(100)
   transitDays      Int?
 
-  pos SupplierPO[]
+  pos           SupplierPO[]
+  docs          SupplierDoc[]
+  offers        SupplierOffer[]
+  rfqRecipients RfqRecipient[]
 }
 
 model SupplierPO {
@@ -607,9 +707,9 @@ model Delivery {
   notes          String?
   createdAt      DateTime @default(now())
 
-  lines    DeliveryLine[]
-  shipment Shipment?
-  invoice  Invoice?
+  lines           DeliveryLine[]
+  shipment        Shipment?
+  invoice         Invoice?
   billingRequests BillingRequest[]
 
   @@index([dealId])
@@ -668,19 +768,19 @@ model Invoice {
   issuedBy      User      @relation(fields: [issuedById], references: [id])
   createdAt     DateTime  @default(now())
 
-  applications PaymentApplication[]
-  promises     PaymentPromise[]
-  commissions  CommissionEntry[]
-  quoteId      String?
-  quote        Quote?               @relation(fields: [quoteId], references: [id], onDelete: SetNull)
-  docLang      Lang                 @default(EN)
+  applications   PaymentApplication[]
+  promises       PaymentPromise[]
+  commissions    CommissionEntry[]
+  quoteId        String?
+  quote          Quote?               @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  docLang        Lang                 @default(EN)
   // Partial invoice (covers only part of the ordered quantities).
-  partial        Boolean        @default(false)
+  partial        Boolean              @default(false)
   // Controlled bridge to the accounting system: SOLU's invoice is the business object;
   // the accounting ID is recorded only when the accounting system confirms it.
   externalSystem String?
   externalId     String?
-  syncState      AccountingSync @default(NOT_SENT)
+  syncState      AccountingSync       @default(NOT_SENT)
   syncAt         DateTime?
   syncNote       String?
   // Why the customer paid less (withholding, deduction, bank fee). The balance stays open until resolved.
