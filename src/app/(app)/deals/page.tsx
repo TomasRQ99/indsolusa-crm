@@ -75,10 +75,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
         {STAGES.map((s) => {
           const column = deals.filter((d) => d.stage === s);
           const total = column.reduce((sum, d) => sum + Number(d.amount), 0);
-          return (
-            <section className="column" key={s}>
-              <h2><span>{stageLabel(i, s)} ({column.length})</span><span className="muted">{i.n(total)}</span></h2>
-              {column.map((d) => {
+          const card = (d: (typeof deals)[number]) => {
                 const eg = esagra(d);
                 const late = d.nextMoveDate && d.nextMoveDate < now;
                 return (
@@ -106,7 +103,18 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
                     )}
                   </article>
                 );
-              })}
+          };
+          const CAP = 8;
+          return (
+            <section className="column" key={s}>
+              <h2><span>{stageLabel(i, s)} ({column.length})</span><span className="muted">{i.n(total)}</span></h2>
+              {column.slice(0, CAP).map(card)}
+              {column.length > CAP && (
+                <details className="kb-more">
+                  <summary>{t(`Ver ${column.length - CAP} más`, `Show ${column.length - CAP} more`)}</summary>
+                  {column.slice(CAP).map(card)}
+                </details>
+              )}
             </section>
           );
         })}

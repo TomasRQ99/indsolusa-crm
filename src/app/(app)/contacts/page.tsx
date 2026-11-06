@@ -62,7 +62,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: Pro
                 <td>{c.phone ?? "—"}</td>
                 <td>
                   {(!c.account || canEdit(user, c.account.ownerId)) && (
-                    <form action={deleteContact.bind(null, c.id)}><button className="link small" type="submit">{t("Eliminar", "Delete")}</button></form>
+                    <form action={deleteContact.bind(null, c.id)} data-confirm={t(`¿Eliminar a ${c.firstName} ${c.lastName}? No se puede deshacer.`, `Delete ${c.firstName} ${c.lastName}? This can't be undone.`)}><button className="link small" type="submit">{t("Eliminar", "Delete")}</button></form>
                   )}
                 </td>
               </tr>

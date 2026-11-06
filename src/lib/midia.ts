@@ -197,7 +197,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
         due: { main: p.dueBy ? `${i.day(p.dueBy)}` : t("hoy", "today"), sub: p.dueBy ? rel(p.dueBy) : undefined },
         who: { title: `${supplier} ${t("(proveedor)", "(supplier)")}`, sub: `${p.supplierPo.code} · ${p.supplierPo.deal.code ?? ""}` },
         why: { text: t("Ya está verificado de forma independiente; solo falta tu aprobación para ejecutarlo.", "It's already independently verified; only your approval is missing.") },
-        changed: { text: t(`Verificado por ${p.verifiedBy?.name ?? "—"}${p.verifiedAt ? ` el ${i.dateShort(p.verifiedAt)}` : ""}.`, `Verified by ${p.verifiedBy?.name ?? "—"}${p.verifiedAt ? ` on ${i.dateShort(p.verifiedAt)}` : ""}.`), src: p.verificationNote ?? undefined },
+        changed: { text: p.verifiedBy ? t(`Verificado por ${p.verifiedBy.name}${p.verifiedAt ? ` el ${i.dateShort(p.verifiedAt)}` : ""}.`, `Verified by ${p.verifiedBy.name}${p.verifiedAt ? ` on ${i.dateShort(p.verifiedAt)}` : ""}.`) : t(`Verificado${p.verifiedAt ? ` el ${i.dateShort(p.verifiedAt)}` : ""}.`, `Verified${p.verifiedAt ? ` on ${i.dateShort(p.verifiedAt)}` : ""}.`), src: p.verificationNote ?? undefined },
         impact,
         next: t("Revisar el motivo y aprobar o rechazar.", "Review the reason and approve or reject."),
         primary: { label: t("Revisar pago", "Review payment"), href: `/administracion/pagos-proveedores/${p.id}` },

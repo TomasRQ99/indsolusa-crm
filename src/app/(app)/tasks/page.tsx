@@ -74,7 +74,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                       </form>
                     ) : <span className="val">{tk.estimateMinutes ?? 30}</span>}
                   </td>
-                  <td>{editable && <form action={deleteTask.bind(null, tk.id)}><button className="link small" type="submit">{t("Eliminar", "Delete")}</button></form>}</td>
+                  <td>{editable && <form action={deleteTask.bind(null, tk.id)} data-confirm={t("¿Eliminar esta tarea? No se puede deshacer.", "Delete this task? This can't be undone.")}><button className="link small" type="submit">{t("Eliminar", "Delete")}</button></form>}</td>
                 </tr>
               );
             })}

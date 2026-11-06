@@ -3,11 +3,13 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { createAccount } from "./actions";
+import { NewAccountForm } from "@/components/NewAccountForm";
 
-export default async function AccountsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+export default async function AccountsPage({ searchParams }: { searchParams: Promise<{ q?: string; err?: string }> }) {
   const user = await requireUser();
   const { t } = makeI18n(user.lang);
-  const { q = "" } = await searchParams;
+  const { q = "", err } = await searchParams;
+  const dup = err ? await db.account.findUnique({ where: { id: err }, select: { id: true, name: true } }) : null;
 
   const accounts = await db.account.findMany({
     where: q ? { name: { contains: q, mode: "insensitive" } } : undefined,
@@ -26,15 +28,15 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
           <button className="secondary" type="submit">{t("Buscar", "Search")}</button>
         </form>
       </div>
-      <details className="card">
+      {dup && (
+        <p className="note attn" role="alert">
+          {t("Ya existe un cliente con ese RUT/NIT: ", "A customer with that tax ID already exists: ")}
+          <Link href={`/accounts/${dup.id}`}><b>{dup.name}</b></Link>
+        </p>
+      )}
+      <details className="card" open={!!dup}>
         <summary>{t("Nuevo cliente", "New customer")}</summary>
-        <form action={createAccount} className="inline">
-          <label>{t("Nombre", "Name")}<input name="name" required /></label>
-          <label>{t("Industria", "Industry")}<input name="industry" /></label>
-          <label>{t("Sitio web", "Website")}<input name="website" type="url" placeholder="https://" /></label>
-          <label>{t("Teléfono", "Phone")}<input name="phone" /></label>
-          <button type="submit">{t("Crear", "Create")}</button>
-        </form>
+        <NewAccountForm action={createAccount} lang={user.lang === "EN" ? "EN" : "ES"} />
       </details>
       <div className="card flush">
         <table>

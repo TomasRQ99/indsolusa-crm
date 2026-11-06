@@ -14,6 +14,7 @@ export function ReportSignal({ es, screen }: { es: boolean; screen?: string }) {
     <details className="rsg-rep">
       <summary>{t("Reportar un defecto de SOLU", "Report a SOLU defect")}</summary>
       <form
+        data-no-pending
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);

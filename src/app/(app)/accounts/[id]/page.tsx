@@ -8,7 +8,7 @@ import { dayInput, today } from "@/lib/domain";
 import { stageLabel } from "@/lib/labels";
 import { basisOf, stateLabel } from "@/lib/result";
 import { billingPattern, customerInclude, freshness, installedContext, type Fresh } from "@/lib/x360";
-import { deleteAccount, updateAccount, updateBilling } from "../actions";
+import { addAccountDocuments, deleteAccount, deleteAccountDocument, updateAccount, updateBilling } from "../actions";
 import { createContact } from "../../contacts/actions";
 import { logActivity } from "../../activities/actions";
 import { createNeedFromContext } from "../../productos/actions";
@@ -27,7 +27,11 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
   const editable = canEdit(user, a.ownerId);
   const mail = mailConfig();
   const recipients = a.contacts.filter((c) => c.email).map((c) => ({ id: c.id, label: `${c.firstName} ${c.lastName} <${c.email}>` }));
-  const users = canManageAll(user) ? await db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : [];
+  const [users, docs] = await Promise.all([
+    canManageAll(user) ? db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
+    // The file bytes stay in the database: only the list is loaded here.
+    db.accountDocument.findMany({ where: { accountId: id }, orderBy: { createdAt: "desc" }, select: { id: true, kind: true, name: true, size: true, extracted: true, createdAt: true } }),
+  ]);
   const F = ({ f, src }: { f: Fresh; src?: string | null }) => <span className={`fresh${f.stale ? " stale" : ""}`}>{src ? `${src} · ` : ""}{f.label}{f.stale && f.at ? ` · ${t("confirmar", "re-confirm")}` : ""}</span>;
 
   // Past results: Journeys whose result is known (never "delivered = achieved").
@@ -227,6 +231,34 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
                   <button type="submit">{t("Agregar", "Add")}</button>
                 </form>
               </details>
+              <details open={docs.length > 0}><summary className="small">{t("Documentos", "Documents")} {docs.length > 0 && `(${docs.length})`}</summary>
+                {docs.length > 0 ? (
+                  <ul className="plain docs-list">
+                    {docs.map((d) => {
+                      const ex = (d.extracted ?? null) as { fields?: Record<string, string> } | null;
+                      const found = ex?.fields ? Object.entries(ex.fields) : [];
+                      return (
+                        <li key={d.id}>
+                          <a href={`/accounts/documento/${d.id}`} target="_blank" rel="noopener"><b>{d.kind === "RUT" ? "RUT" : d.kind === "CAMARA" ? t("Cámara de Comercio", "Chamber of Commerce") : d.name}</b></a>
+                          <span className="src"> · {d.kind !== "OTHER" ? `${d.name} · ` : ""}{i.day(d.createdAt)} · {Math.max(1, Math.round(d.size / 1024))} KB</span>
+                          {found.length > 0 && (
+                            <details className="docs-ex"><summary className="src">{t("Lo que SOLU leyó", "What SOLU read")}</summary>
+                              <dl>{found.map(([k, v]) => <div key={k}><dt>{docFieldLabel(t, k)}</dt><dd>{v}</dd></div>)}</dl>
+                            </details>
+                          )}
+                          <form action={deleteAccountDocument.bind(null, a.id, d.id)} data-confirm={t(`¿Quitar el documento ${d.name}?`, `Remove document ${d.name}?`)} style={{ display: "inline" }}>
+                            <button type="submit" className="link small">{t("Quitar", "Remove")}</button>
+                          </form>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : <p className="src">{t("Aún no hay RUT ni otros documentos.", "No RUT or other documents yet.")}</p>}
+                <form action={addAccountDocuments.bind(null, a.id)} className="stack">
+                  <label>{t("Agregar documentos (PDF o foto, hasta 5 MB)", "Add documents (PDF or photo, up to 5 MB)")}<input type="file" name="docs" multiple required accept="application/pdf,image/jpeg,image/png,image/webp" /></label>
+                  <button type="submit" className="secondary">{t("Subir", "Upload")}</button>
+                </form>
+              </details>
               <details><summary className="small">{t("Requisitos para facturar", "Invoicing requirements")}</summary>
                 <form action={updateBilling.bind(null, a.id)} className="stack">
                   <label>NIT / Tax ID<input name="taxId" defaultValue={a.taxId ?? ""} /></label>
@@ -264,6 +296,15 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
       <Popovers />
     </div>
   );
+}
+
+function docFieldLabel(t: (es: string, en: string) => string, k: string) {
+  const m: Record<string, [string, string]> = {
+    name: ["Razón social", "Legal name"], tradeName: ["Nombre comercial", "Trade name"], taxId: ["NIT", "Tax ID"],
+    address: ["Dirección", "Address"], city: ["Ciudad", "City"], department: ["Departamento", "State"],
+    phone: ["Teléfono", "Phone"], email: ["Correo", "Email"], ciiu: ["Actividad CIIU", "CIIU activity"],
+  };
+  return m[k] ? t(m[k][0], m[k][1]) : k;
 }
 
 function daysSince(d: Date, now: Date) {

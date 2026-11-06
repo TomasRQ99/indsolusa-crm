@@ -122,6 +122,13 @@ p { margin: 0; }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: -8px 0 24px; overflow-x: auto; scrollbar-width: none; }
 .tabs a { padding: 10px 12px; color: var(--ink-2); font-size: 13px; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
 .tabs a:hover { color: var(--ink); text-decoration: none; }
+@media (max-width: 899px) { .tabs { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); padding-right: 24px; } }
+/* Top progress bar: shown while a screen loads or a form is saving. */
+.topbar-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 1000; pointer-events: none; opacity: 0; transform-origin: left; transform: scaleX(0); background: var(--brand); transition: opacity .2s; }
+.topbar-progress.on { opacity: 1; animation: tbp 8s cubic-bezier(.1,.7,.2,1) forwards; }
+@keyframes tbp { 0% { transform: scaleX(0); } 10% { transform: scaleX(.35); } 100% { transform: scaleX(.92); } }
+@media (prefers-reduced-motion: reduce) { .topbar-progress.on { animation: none; transform: scaleX(1); opacity: .6; } }
+button[aria-busy="true"] { cursor: progress; opacity: .7; }
 .tabs a.on { color: var(--brand); border-bottom-color: var(--brand); font-weight: 600; }
 
 /* Overlays */
@@ -266,6 +273,24 @@ th { color: var(--ink-3); font: 600 11px/16px var(--font-sans), sans-serif; text
 tr:last-child td { border-bottom: 0; }
 th.n, td.n { text-align: right; }
 td b { color: var(--ink); font-weight: 600; }
+td a b, td a:visited b { color: var(--brand); }
+
+/* ---------- New customer form + customer documents ---------- */
+.nac { display: grid; gap: 14px; margin-top: 12px; }
+.nac-drop { display: grid; gap: 4px; padding: 14px; border: 1px dashed var(--line-strong); border-radius: var(--radius); background: var(--surface-sunken); }
+.nac-drop input[type=file] { margin-top: 6px; }
+.nac-reads { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.nac-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 14px; }
+.nac-grid label.wide { grid-column: span 2; }
+@media (max-width: 560px) { .nac-grid label.wide { grid-column: auto; } }
+.nac-l { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.nac-tag { display: inline-block; margin: 0; padding: 0 6px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 10.5px; font-weight: 600; line-height: 16px; vertical-align: 1px; }
+.docs-list { display: grid; gap: 8px; margin-bottom: 10px; }
+.docs-ex dl { display: grid; gap: 2px; margin: 4px 0 0; font-size: 12px; }
+.docs-ex dl div { display: flex; gap: 6px; }
+.docs-ex dt { color: var(--ink-3); min-width: 92px; }
+.docs-ex dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+tbody tr:hover td { background: var(--surface-sunken); }
 tr.grpr td { background: var(--surface-sunken); font-weight: 600; color: var(--ink); font-size: 12px; padding: 6px 10px; }
 tr.grpr td span { font-weight: 400; color: var(--ink-3); }
 tr.sel td { background: var(--brand-soft); }
@@ -351,6 +376,9 @@ details[open] > summary { margin-bottom: 10px; }
 /* Pipeline */
 .kanban { display: grid; grid-template-columns: repeat(6, minmax(190px, 1fr)); gap: 10px; overflow-x: auto; }
 .kanban .column { background: var(--surface-sunken); border-radius: var(--radius); padding: 8px; min-height: 300px; }
+.kb-more > summary { list-style: none; cursor: pointer; margin: 4px 0; padding: 8px; border-radius: var(--radius); text-align: center; font-size: 12px; font-weight: 600; color: var(--brand); background: var(--surface); border: 1px dashed var(--line-strong); }
+.kb-more > summary::-webkit-details-marker { display: none; }
+.kb-more[open] > summary { margin-bottom: 8px; }
 .kanban .column h2 { font-size: 12px; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-2); }
 .deal { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; margin-bottom: 8px; font-size: 13px; display: flex; flex-direction: column; gap: 3px; }
 .deal select { font-size: 12px; padding: 2px; }

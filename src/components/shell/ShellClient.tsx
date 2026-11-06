@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { PendingFeedback } from "./PendingFeedback";
 import type { ModuleKey } from "@/lib/nav";
 import type { Alert, Counter } from "@/lib/attention";
 import { setLanguage } from "@/app/(app)/profile/actions";
@@ -25,26 +26,32 @@ export type ShellProps = {
   lang: "ES" | "EN";
   user: { name: string; role: string; initials: string };
   modules: ShellModule[];
-  // Streamed: the page renders without waiting for the counters and the bell.
-  attention: Promise<{ counters: Partial<Record<ModuleKey, Counter>>; alerts: Alert[] }>;
   children: React.ReactNode;
 };
 
 type Side = "" | "expanded" | "collapsed";
 
-export function ShellClient({ lang, user, modules: baseModules, attention, children }: ShellProps) {
+export function ShellClient({ lang, user, modules: baseModules, children }: ShellProps) {
   const [att, setAtt] = useState<{ counters: Partial<Record<ModuleKey, Counter>>; alerts: Alert[] }>({ counters: {}, alerts: [] });
+  const path = usePathname() ?? "/";
+  // Counters and bell load after the page is visible. They refresh whenever the server
+  // sends new content (every navigation and every save re-renders the layout, which hands
+  // the shell new children), so they never hold anything up.
   useEffect(() => {
     let live = true;
-    // A promise streamed from the server arrives as a bare thenable: wrap it before chaining.
-    Promise.resolve(attention).then((a) => { if (live) setAtt(a); }, () => {});
-    return () => { live = false; };
-  }, [attention]);
+    const ctl = new AbortController();
+    const id = setTimeout(() => {
+      fetch("/shell-attention", { signal: ctl.signal, cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((a) => { if (live && a) setAtt(a); })
+        .catch(() => {});
+    }, 50);
+    return () => { live = false; clearTimeout(id); ctl.abort(); };
+  }, [children]);
   const alerts = att.alerts;
   const modules = baseModules.map((m) => ({ ...m, counter: att.counters[m.key] }));
   const es = lang === "ES";
   const t = (a: string, b: string) => (es ? a : b);
-  const path = usePathname() ?? "/";
 
   const current = modules.find((m) => m.match.some((p) => path === p || path.startsWith(p + "/")));
   const activeTab = current?.tabs
@@ -143,6 +150,9 @@ export function ShellClient({ lang, user, modules: baseModules, attention, child
 
   return (
     <div className="app" data-side={side || undefined}>
+      <Suspense fallback={null}>
+        <PendingFeedback lang={lang} />
+      </Suspense>
       <header className="hdr">
         <button type="button" className="ibtn menu-btn" onClick={() => setDrawer(true)} aria-label={t("Abrir menú", "Open menu")}>
           <IconMenu />
@@ -313,7 +323,7 @@ function AskPanel({ es, where, inputRef, onClose }: { es: boolean; where: string
         <button type="button" className="ibtn" onClick={onClose} aria-label={t("Cerrar", "Close")}><IconClose /></button>
       </div>
       {where && <p className="ask-where">{t("Estás en", "You are in")}: <b>{where}</b></p>}
-      <form onSubmit={submit} className="ask-form">
+      <form onSubmit={submit} className="ask-form" data-no-pending>
         <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Ej.: ¿qué pasa con la OC 4500-221?", "E.g.: what's going on with PO 4500-221?")} aria-label={t("Tu pregunta", "Your question")} />
         <button type="submit" disabled={busy}>{busy ? "…" : t("Preguntar", "Ask")}</button>
       </form>

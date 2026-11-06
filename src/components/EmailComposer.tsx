@@ -23,6 +23,7 @@ export function EmailComposer({ recipients, from, es }: { recipients: Recipient[
     <form
       ref={formRef}
       className="stack"
+      data-no-pending
       onSubmit={(e) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);

@@ -93,7 +93,7 @@ export default async function UnshippedPage() {
       }
       const transit = d.supplierPos.find((p) => p.shippedAt && !p.receivedAt);
       if (!cause && transit) {
-        cause = { key: "transit", label: t("Proveedor en tránsito", "Supplier in transit"), cls: "wait", detail: t(`${transit.supplier.name} despachó el ${i.day(transit.shippedAt)}; ETA ${i.day(transit.eta)}.`, `${transit.supplier.name} shipped on ${i.day(transit.shippedAt)}; ETA ${i.day(transit.eta)}.`), missing: [t("Que llegue a bodega", "Arrival at warehouse")], href: `/deals/${d.id}`, cta: "", who: "SOLU", urgent: !!(transit.eta && transit.eta < now) };
+        cause = { key: "transit", label: t("Proveedor en tránsito", "Supplier in transit"), cls: "wait", detail: transit.eta ? t(`${transit.supplier.name} despachó el ${i.day(transit.shippedAt)}; llega aprox. el ${i.day(transit.eta)}.`, `${transit.supplier.name} shipped on ${i.day(transit.shippedAt)}; arrives around ${i.day(transit.eta)}.`) : t(`${transit.supplier.name} despachó el ${i.day(transit.shippedAt)}; aún sin fecha de llegada del transportista.`, `${transit.supplier.name} shipped on ${i.day(transit.shippedAt)}; no arrival date from the carrier yet.`), missing: [t("Que llegue a bodega", "Arrival at warehouse")], href: `/deals/${d.id}`, cta: "", who: t("SOLU vigila", "SOLU is watching"), urgent: !!(transit.eta && transit.eta < now) };
       }
       if (!cause && d.waitingFor) {
         cause = { key: "wait", label: t("Esperando con control", "Waiting with control"), cls: "wait", detail: d.waitingFor, missing: [t(`Revisar el ${i.day(d.waitingUntil)}`, `Check on ${i.day(d.waitingUntil)}`)], href: `/deals/${d.id}`, cta: "", who: d.owner.name, urgent: !!(d.waitingUntil && d.waitingUntil < now) };

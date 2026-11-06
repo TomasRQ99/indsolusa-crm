@@ -121,9 +121,28 @@ model Account {
   invoices   Invoice[]
   payments   CustomerPayment[]
   threads    CommThread[]
+  documents  AccountDocument[]
 
   @@index([ownerId])
   @@index([name])
+}
+
+// Company documents of a customer (RUT, Cámara de Comercio certificate, others).
+// `extracted` keeps what SOLU read from the file, so a person can see where a field came from.
+model AccountDocument {
+  id           String   @id @default(cuid())
+  accountId    String
+  account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  kind         String   // RUT | CAMARA | OTHER
+  name         String
+  mime         String
+  size         Int
+  data         Bytes
+  extracted    Json?
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  @@index([accountId])
 }
 
 model Contact {

@@ -2,7 +2,6 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { canManageAll } from "@/lib/permissions";
 import { MODULES } from "@/lib/nav";
-import { shellAttention } from "@/lib/attention";
 import { ShellClient, type ShellModule } from "@/components/shell/ShellClient";
 
 // SOLU global shell: exactly 8 modules (MI DÍA … GERENCIA/INSIGHTS), universal search and
@@ -12,8 +11,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const i = makeI18n(user.lang);
   const { t, es } = i;
   const manager = canManageAll(user);
-  // Not awaited: counters and alerts stream in after the page, so they never delay it.
-  const attention = shellAttention(user, i);
+  // Counters and alerts are fetched by the shell itself (/shell-attention) after the page is
+  // on screen. A promise streamed in the layout made the router wait seconds after each save.
 
   const modules: ShellModule[] = MODULES.map((m) => {
     const tabs = m.tabs
@@ -26,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const role = user.role === "ADMIN" ? t("Administración del sistema", "System admin") : user.role === "MANAGER" ? t("Gerencia", "Management") : t("Comercial", "Sales");
 
   return (
-    <ShellClient lang={user.lang} user={{ name: user.name, role, initials }} modules={modules} attention={attention}>
+    <ShellClient lang={user.lang} user={{ name: user.name, role, initials }} modules={modules}>
       {children}
     </ShellClient>
   );
