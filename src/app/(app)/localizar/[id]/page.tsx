@@ -15,6 +15,8 @@ import { addAlias, addToQuote, mergeInto, partReminder, removeAlias, updatePart,
 import { addOffer, removeOffer } from "../ofertas/actions";
 import { readPage, removeWebSource, searchSources } from "../fuentes/actions";
 import { digikeyConfigured, mouserConfigured } from "@/lib/web-sources";
+import { partConfirmations, supplierEvidence } from "@/lib/supplier-evidence";
+import { SupplierEvidenceLine } from "@/components/SupplierEvidenceLine";
 type Sp = { ok?: string; err?: string; otro?: string; n?: string; deal?: string; m?: string; p?: string; st?: string };
 
 export default async function PartPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Sp> }) {
@@ -50,6 +52,10 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     db.supplier.count({ where: { website: { not: null } } }),
   ]);
   const apis = { mouser: mouserConfigured(), digikey: digikeyConfigured() };
+  const [sev, conf] = await Promise.all([
+    supplierEvidence(offers.map((o) => o.supplier.id), { partKeys: keys }),
+    partConfirmations(p.id, h.buys.length),
+  ]);
   const nowTs = new Date();
   const canEditCtx = !!ctxDeal && (manager || ctxDeal.ownerId === user.id);
   // Suggested price: the most recent price we quoted or put on a Journey for this part.
@@ -145,9 +151,14 @@ export default async function PartPage({ params, searchParams }: { params: Promi
           <span className="src">{customers.slice(0, 4).map((c, n) => <span key={c.id}>{n ? ", " : ""}<Link href={`/accounts/${c.id}`}>{c.name}</Link></span>)}{customers.length > 4 ? ` +${customers.length - 4}` : ""}{!customers.length && t("aún sin Journeys", "no Journeys yet")}</span>
         </div>
         <div className="x3-f">
-          <span className="k">{t("SE BUSCA TAMBIÉN COMO", "ALSO SEARCHED AS")}</span>
-          <b>{t(`${p.aliases.length} número(s)/nombre(s)`, `${p.aliases.length} number(s)/name(s)`)}</b>
-          <span className="src">{p.aliases.slice(0, 3).map((a) => a.code).join(" · ") || t("solo su número", "only its number")}</span>
+          <span className="k">{t("FUENTES QUE LA CONFIRMAN", "SOURCES CONFIRMING IT")}</span>
+          <b>{conf.total ? t(`${conf.total} fuente(s) independiente(s)`, `${conf.total} independent source(s)`) : t("Ninguna todavía", "None yet")}</b>
+          <span className="src">{[
+            conf.buys ? t(`compras reales (${conf.buys})`, `actual purchases (${conf.buys})`) : null,
+            conf.offerSuppliers ? t(`${conf.offerSuppliers} proveedor(es) la cotizaron`, `${conf.offerSuppliers} supplier(s) quoted it`) : null,
+            conf.webHosts.length ? t(`en internet: ${conf.webHosts.join(", ")}`, `online: ${conf.webHosts.join(", ")}`) : null,
+          ].filter(Boolean).join(" · ") || t("pide precio o busca en fuentes oficiales", "ask for a price or search official sources")}</span>
+          {conf.total === 1 && <span className="fresh stale">{t("una sola fuente · confirmar", "single source · confirm")}</span>}
         </div>
       </section>
 
@@ -249,7 +260,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
                   const exp = o.validUntil && o.validUntil < nowTs;
                   return (
                     <tr key={o.id} className={exp ? "loc-expired" : undefined}>
-                      <td><Link href={`/suppliers/${o.supplier.id}`}>{o.supplier.name}</Link>{o.codeAsQuoted !== p.mpn && <span className="src block mono">{t("como", "as")} {o.codeAsQuoted}</span>}</td>
+                      <td><Link href={`/suppliers/${o.supplier.id}`}>{o.supplier.name}</Link>{o.codeAsQuoted !== p.mpn && <span className="src block mono">{t("como", "as")} {o.codeAsQuoted}</span>}<SupplierEvidenceLine ev={sev.get(o.supplier.id)} t={t} /></td>
                       <td className="n mono">{o.currency} {i.n2(o.unitPrice)}{o.qty ? <span className="src block">{t(`por ${o.qty}`, `for ${o.qty}`)}</span> : null}</td>
                       <td>{o.leadText ?? "—"}{o.incoterm ? <span className="src block">{o.incoterm}</span> : null}</td>
                       <td>{o.validUntil ? i.day(o.validUntil) : <span className="src">{t("sin fecha", "no date")}</span>}{exp ? <span className="src block">{t("vencida · confirmar", "expired · re-confirm")}</span> : null}</td>
@@ -441,7 +452,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
             </div></details>
           )}
           {p.merged.length > 0 && <p className="src">{t("Duplicados ya fusionados aquí:", "Duplicates merged here:")} {p.merged.map((m) => m.mpn).join(", ")}</p>}
-          <p className="note ai">{t("Próximamente aquí: la tarjeta de evidencia de cada proveedor.", "Coming here soon: each supplier's evidence card.")}</p>
+          <p className="note ai">{t("Sin puntajes: junto a cada proveedor ves lo que prometió y lo que pasó, con cuántos casos lo respaldan.", "No scores: next to each supplier you see what they promised and what happened, with how many cases back it.")}</p>
         </aside>
       </div>
       <Popovers />

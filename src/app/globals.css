@@ -1431,6 +1431,11 @@ a.loc-chip:hover { background: var(--brand-soft); color: var(--brand); }
 .loc-offer-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 0; }
 .loc-offer-acts form { margin: 0; }
 @media (max-width: 640px) { .loc-docgrid { grid-template-columns: 1fr 1fr; } .loc-sups { grid-template-columns: 1fr; } }
+/* L6: supplier evidence line (facts, no score) */
+.sev { display: block; font-size: 12px; line-height: 16px; color: var(--ink-3); margin-top: 2px; }
+.sev .sev-warn { color: var(--attn); }
+.sev .sev-ok { color: var(--ok); }
+.loc-sup .sev { margin-top: 4px; }
 /* L5: web sources */
 .loc-web td:first-child { overflow-wrap: anywhere; min-width: 200px; }
 .loc-web td:first-child a { word-break: break-word; }

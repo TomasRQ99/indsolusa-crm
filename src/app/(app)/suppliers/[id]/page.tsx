@@ -8,6 +8,7 @@ import { freshness, normCode, rtsHistory, supplierInclude, type Fresh } from "@/
 import { DeltaBars } from "@/components/Trend";
 import { Popovers } from "@/components/Popovers";
 import { createNeedFromContext } from "../../productos/actions";
+import { replyLabel, supplierEvidence } from "@/lib/supplier-evidence";
 
 export default async function Supplier360({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -20,6 +21,13 @@ export default async function Supplier360({ params }: { params: Promise<{ id: st
   ]);
   if (!s) notFound();
   const now = today();
+  // Quote requests, documents and offers (L3) for this supplier.
+  const [ev, rfqs, docs] = await Promise.all([
+    supplierEvidence([s.id]).then((m) => m.get(s.id)!),
+    db.rfqRecipient.findMany({ where: { supplierId: s.id }, orderBy: { rfq: { createdAt: "desc" } }, take: 12, select: { id: true, status: true, sentAt: true, answeredAt: true, rfq: { select: { id: true, code: true, items: true, createdAt: true } } } }),
+    db.supplierDoc.findMany({ where: { supplierId: s.id }, orderBy: { createdAt: "desc" }, take: 12, select: { id: true, kind: true, reference: true, fileName: true, createdAt: true, validUntil: true, bankWarning: true, _count: { select: { offers: true } } } }),
+  ]);
+  const CAUSE: Record<string, string> = { SPEC: t("especificación", "specification"), SUPPLIER: t("proveedor", "supplier"), LOGISTICS: t("logística", "logistics"), CUSTOMER: t("cliente", "customer"), COST: t("costo", "cost"), OTHER: t("otra", "other") };
   const F = ({ f, src }: { f: Fresh; src?: string | null }) => <span className={`fresh${f.stale ? " stale" : ""}`}>{src ? `${src} · ` : ""}{f.label}{f.stale && f.at ? ` · ${t("confirmar", "re-confirm")}` : ""}</span>;
 
   // RTS: promised ship-by vs actual
@@ -63,7 +71,7 @@ export default async function Supplier360({ params }: { params: Promise<{ id: st
   for (const p of s.pos) {
     for (const r of p.deal.recoveries) {
       if (seenRec.has(r.id)) continue; seenRec.add(r.id);
-      hist.push({ at: r.openedAt, title: `Recovery · ${r.whatChanged}`, detail: `${p.deal.code} · ${r.outcome === "RECOVERED" ? t("recuperado", "recovered") : r.outcome ? t("cerrada sin recuperar", "closed, not recovered") : t("abierta", "open")}`, tone: r.outcome === "RECOVERED" ? "ok" : r.outcome ? "dash" : "risk", href: `/deals/${p.deal.id}/resultado` });
+      hist.push({ at: r.openedAt, title: `Recovery · ${r.whatChanged}`, detail: `${p.deal.code}${r.cause ? ` · ${t("causa", "cause")}: ${CAUSE[r.cause] ?? r.cause}` : ""} · ${r.outcome === "RECOVERED" ? t("recuperado", "recovered") : r.outcome ? t("cerrada sin recuperar", "closed, not recovered") : t("abierta", "open")}`, tone: r.cause && r.cause !== "SUPPLIER" ? "dash" : r.outcome === "RECOVERED" ? "ok" : r.outcome ? "dash" : "risk", href: `/deals/${p.deal.id}/resultado` });
     }
     for (const sh of p.shipments) for (const e of sh.events) hist.push({ at: e.at, title: e.text, detail: `${sh.code} · ${sh.carrierName}${e.location ? ` · ${e.location}` : ""}`, tone: "attn", href: `/logistica/${sh.id}` });
     for (const pay of p.payments) for (const x of pay.executions) if (x.state === "UNCERTAIN" || x.state === "FAILED") hist.push({ at: x.sentAt, title: x.state === "FAILED" ? t("Pago fallido", "Payment failed") : t("Pago con ejecución incierta", "Payment with uncertain execution"), detail: `${p.code} · ${pay.currency} ${i.n2(pay.amount)}${x.note ? ` · ${x.note}` : ""}`, tone: "risk", href: `/administracion/pagos-proveedores/${pay.id}` });
@@ -173,7 +181,41 @@ export default async function Supplier360({ params }: { params: Promise<{ id: st
           </section>
 
           <section className="jblock">
-            <div className="jbh"><b>{t("HISTORIA DE RECOVERY Y EXCEPCIONES", "RECOVERY & EXCEPTION HISTORY")}</b></div>
+            <div className="jbh"><b>{t("SOLICITUDES DE COTIZACIÓN Y DOCUMENTOS", "QUOTE REQUESTS & DOCUMENTS")}</b><span className="grow" /><span className="src">{ev.rfq.asked ? t(`respondió ${ev.rfq.answered + ev.rfq.declined} de ${ev.rfq.asked}${replyLabel(ev.rfq.medianReplyHours, t) ? ` · suele tardar ${replyLabel(ev.rfq.medianReplyHours, t)}` : ""}`, `answered ${ev.rfq.answered + ev.rfq.declined} of ${ev.rfq.asked}${replyLabel(ev.rfq.medianReplyHours, t) ? ` · usually ${replyLabel(ev.rfq.medianReplyHours, t)}` : ""}`) : t("aún no le pedimos cotización desde SOLU", "we haven't asked for a quote from SOLU yet")} · {t(`${ev.offers.valid} oferta(s) vigente(s)`, `${ev.offers.valid} valid offer(s)`)}</span></div>
+            {rfqs.length > 0 && (
+              <table className="x3-t">
+                <thead><tr><th>{t("Solicitud", "Request")}</th><th>{t("Qué pedimos", "What we asked")}</th><th>{t("Enviada", "Sent")}</th><th>{t("Respuesta", "Answer")}</th></tr></thead>
+                <tbody>{rfqs.map((r) => {
+                  const items = (r.rfq.items as { mpn: string; qty: number }[]) ?? [];
+                  const hrs = r.answeredAt && r.sentAt ? (r.answeredAt.getTime() - r.sentAt.getTime()) / 3_600_000 : null;
+                  return (
+                    <tr key={r.id}>
+                      <td><Link className="val mono" href={`/localizar/rfq/${r.rfq.id}`}>{r.rfq.code}</Link></td>
+                      <td className="small mono">{items.slice(0, 3).map((x) => `${x.qty} × ${x.mpn}`).join(" · ")}{items.length > 3 ? ` +${items.length - 3}` : ""}</td>
+                      <td className="mono">{i.day(r.sentAt ?? r.rfq.createdAt)}</td>
+                      <td>{r.status === "ANSWERED" ? <span className="sig ok">{t("respondió", "answered")}{hrs != null ? ` · ${replyLabel(hrs, t)}` : ""}</span> : r.status === "DECLINED" ? <span className="sig dash">{t("no cotizó", "declined")}</span> : r.status === "FAILED" ? <span className="sig risk">{t("no se pudo enviar", "couldn't send")}</span> : <span className="sig attn">{t("esperando", "waiting")}</span>}</td>
+                    </tr>
+                  );
+                })}</tbody>
+              </table>
+            )}
+            {docs.length === 0 ? <p className="quiet-p">{t("Ninguna cotización ni proforma registrada.", "No quote or proforma recorded.")} <Link href={`/localizar/ofertas/nueva?supplier=${s.id}`}>{t("Registrar una", "Record one")}</Link></p> : (
+              <table className="x3-t" style={{ marginTop: rfqs.length ? 12 : 0 }}>
+                <thead><tr><th>{t("Documento", "Document")}</th><th className="n">{t("Ofertas", "Offers")}</th><th>{t("Recibido", "Received")}</th><th>{t("Válida hasta", "Valid until")}</th></tr></thead>
+                <tbody>{docs.map((d) => (
+                  <tr key={d.id}>
+                    <td><Link className="val" href={`/localizar/ofertas/${d.id}`}>{d.kind === "PROFORMA" ? "Proforma" : t("Cotización", "Quote")} {d.reference ?? d.fileName}</Link>{d.bankWarning === "DIFFERENT" && <span className="sig risk block-sig">{t("datos bancarios distintos al perfil", "bank data differs from profile")}</span>}</td>
+                    <td className="n mono">{d._count.offers}</td>
+                    <td className="mono">{i.day(d.createdAt)}</td>
+                    <td className="mono">{d.validUntil ? <>{i.day(d.validUntil)}{d.validUntil < now ? <span className="src block">{t("vencida", "expired")}</span> : null}</> : "—"}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            )}
+          </section>
+
+          <section className="jblock">
+            <div className="jbh"><b>{t("HISTORIA DE RECOVERY Y EXCEPCIONES", "RECOVERY & EXCEPTION HISTORY")}</b><span className="grow" /><span className="src">{ev.recoveries.supplierCaused ? t(`${ev.recoveries.supplierCaused} Recovery con causa marcada “proveedor”`, `${ev.recoveries.supplierCaused} Recovery with cause marked “supplier”`) : t("ningún Recovery con causa “proveedor”", "no Recovery with cause “supplier”")}</span></div>
             {hist.length === 0 ? <p className="quiet-p">{t("Ninguna registrada.", "None recorded.")}</p> : (
               <ul className="x3-h">{hist.map((h, n) => (
                 <li key={n} className={h.tone}><span className="mono">{i.day(h.at)}</span><span>{h.href ? <Link href={h.href}><b>{h.title}</b></Link> : <b>{h.title}</b>}<span className="src block">{h.detail}</span></span></li>

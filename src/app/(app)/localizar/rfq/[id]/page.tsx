@@ -5,6 +5,9 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import type { RfqItem } from "@/lib/rfq";
 import { resendRecipient, setRecipientStatus } from "../../ofertas/actions";
+import { partKey } from "@/lib/parts";
+import { supplierEvidence } from "@/lib/supplier-evidence";
+import { SupplierEvidenceLine } from "@/components/SupplierEvidenceLine";
 
 export default async function RfqPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string }> }) {
   const user = await requireUser();
@@ -21,9 +24,10 @@ export default async function RfqPage({ params, searchParams }: { params: Promis
   const offers = await db.supplierOffer.findMany({
     where: { partId: { in: items.map((x) => x.partId) }, supplierId: { in: rfq.recipients.map((r) => r.supplierId) }, createdAt: { gte: rfq.createdAt } },
     orderBy: { unitPrice: "asc" },
-    select: { id: true, partId: true, unitPrice: true, currency: true, qty: true, leadText: true, leadDaysMin: true, leadDaysMax: true, validUntil: true, incoterm: true, docId: true, supplier: { select: { name: true } } },
+    select: { id: true, partId: true, supplierId: true, unitPrice: true, currency: true, qty: true, leadText: true, leadDaysMin: true, leadDaysMax: true, validUntil: true, incoterm: true, docId: true, supplier: { select: { name: true } } },
   });
   const now = new Date();
+  const sev = await supplierEvidence(rfq.recipients.map((r) => r.supplierId), { partKeys: items.map((x) => partKey(x.mpn)) });
   const label: Record<string, string> = { SENT: t("enviada · esperando", "sent · waiting"), FAILED: t("no se pudo enviar", "couldn't send"), ANSWERED: t("respondió", "answered"), DECLINED: t("no cotiza", "won't quote") };
   const answered = rfq.recipients.filter((r) => r.status === "ANSWERED").length;
 
@@ -73,7 +77,7 @@ export default async function RfqPage({ params, searchParams }: { params: Promis
                   <thead><tr><th>{t("Proveedor", "Supplier")}</th><th className="n">{t("Precio unit.", "Unit price")}</th><th>{t("Plazo", "Lead time")}</th><th>{t("Válida hasta", "Valid until")}</th><th>Incoterm</th></tr></thead>
                   <tbody>{os.map((o) => (
                     <tr key={o.id}>
-                      <td>{o.supplier.name}{o.docId && <> · <Link className="small" href={`/localizar/ofertas/${o.docId}`}>{t("documento", "document")}</Link></>}</td>
+                      <td>{o.supplier.name}{o.docId && <> · <Link className="small" href={`/localizar/ofertas/${o.docId}`}>{t("documento", "document")}</Link></>}<SupplierEvidenceLine ev={sev.get(o.supplierId)} t={t} /></td>
                       <td className="n mono">{o.currency} {i.n2(o.unitPrice)}{o.qty && o.qty !== it.qty ? <span className="src block">{t(`cotizó ${o.qty}`, `quoted ${o.qty}`)}</span> : null}</td>
                       <td>{o.leadText ?? (o.leadDaysMin != null ? `${o.leadDaysMin}–${o.leadDaysMax} d` : "—")}</td>
                       <td className={o.validUntil && o.validUntil < now ? "loc-expired" : undefined}>{o.validUntil ? i.day(o.validUntil) : "—"}{o.validUntil && o.validUntil < now ? ` · ${t("vencida", "expired")}` : ""}</td>

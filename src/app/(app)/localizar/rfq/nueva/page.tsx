@@ -7,6 +7,8 @@ import { evidenceFor, partKey } from "@/lib/parts";
 import { rfqEmail } from "@/lib/rfq";
 import { fold } from "@/lib/part-lexicon";
 import { createRfq } from "../../ofertas/actions";
+import { supplierEvidence } from "@/lib/supplier-evidence";
+import { SupplierEvidenceLine } from "@/components/SupplierEvidenceLine";
 
 export default async function NewRfq({ searchParams }: { searchParams: Promise<{ part?: string | string[]; deal?: string; err?: string }> }) {
   const user = await requireUser();
@@ -32,6 +34,9 @@ export default async function NewRfq({ searchParams }: { searchParams: Promise<{
   const brands = [...new Set(parts.map((p) => p.brand).filter(Boolean))].map((b) => fold(b!));
   const rank = (s: { id: string; name: string }) => (sold.has(s.id) ? 0 : brands.some((b) => fold(s.name).includes(b)) ? 1 : 2);
   const sorted = [...suppliers].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+  // Facts next to each supplier (only the first 60 shown with evidence to keep the page light).
+  const keysForParts = parts.map((p) => partKey(p.mpn));
+  const sev = await supplierEvidence(sorted.slice(0, 60).map((s) => s.id), { partKeys: keysForParts });
   const cfg = mailConfig();
   const preview = parts.length ? rfqEmail({ code: "RFQ-…", lang: "EN", supplierName: t("[proveedor]", "[supplier]"), items: parts.map((p) => ({ partId: p.id, mpn: p.mpn, name: p.name, nameEn: p.nameEn, brand: p.brand, qty: qtyFor(p) })), neededBy: null, notes: null, senderName: user.name, from: cfg.from ?? "sales@indsolusa.com" }) : null;
   const errs: Record<string, string> = {
@@ -80,7 +85,8 @@ export default async function NewRfq({ searchParams }: { searchParams: Promise<{
                   <label key={s.id} className={`loc-sup${s.email ? "" : " off"}`}>
                     <input type="checkbox" name="supplierId" value={s.id} disabled={!s.email} defaultChecked={r === 0 && !!s.email} />
                     <span><b>{s.name}</b>{r === 0 && <span className="loc-chip">{t("ya nos la vendió/cotizó", "sold/quoted before")}</span>}{r === 1 && <span className="loc-chip">{t("misma marca", "same brand")}</span>}
-                      <span className="src block">{s.email ?? <>{t("sin correo · ", "no email · ")}<Link href="/suppliers">{t("agregar", "add")}</Link></>}{s.country ? ` · ${s.country}` : ""}</span></span>
+                      <span className="src block">{s.email ?? <>{t("sin correo · ", "no email · ")}<Link href="/suppliers">{t("agregar", "add")}</Link></>}{s.country ? ` · ${s.country}` : ""}</span>
+                      <SupplierEvidenceLine ev={sev.get(s.id)} t={t} link={false} /></span>
                   </label>
                 );
               })}
