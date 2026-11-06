@@ -33,3 +33,9 @@ services:
         sync: false
       - key: AI_MONTHLY_CAP_USD # AI stops for the month once this much was spent
         value: "20"
+      - key: MOUSER_API_KEY # Mouser Search API (free, mouser.com/api-hub); optional
+        sync: false
+      - key: DIGIKEY_CLIENT_ID # Digi-Key Product Information v4 (free app at developer.digikey.com); optional
+        sync: false
+      - key: DIGIKEY_CLIENT_SECRET
+        sync: false

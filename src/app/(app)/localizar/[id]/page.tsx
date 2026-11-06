@@ -13,8 +13,9 @@ import { Popovers } from "@/components/Popovers";
 import { ALIAS_KIND, CONDITION, LIFE } from "../labels";
 import { addAlias, addToQuote, mergeInto, partReminder, removeAlias, updatePart, useInJourney } from "../actions";
 import { addOffer, removeOffer } from "../ofertas/actions";
-
-type Sp = { ok?: string; err?: string; otro?: string; n?: string; deal?: string };
+import { readPage, removeWebSource, searchSources } from "../fuentes/actions";
+import { digikeyConfigured, mouserConfigured } from "@/lib/web-sources";
+type Sp = { ok?: string; err?: string; otro?: string; n?: string; deal?: string; m?: string; p?: string; st?: string };
 
 export default async function PartPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Sp> }) {
   const user = await requireUser();
@@ -44,6 +45,11 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     orderBy: [{ createdAt: "desc" }],
     select: { id: true, codeAsQuoted: true, qty: true, unitPrice: true, currency: true, leadText: true, incoterm: true, validUntil: true, source: true, recordedByName: true, createdAt: true, supplier: { select: { id: true, name: true } }, doc: { select: { id: true, kind: true, reference: true } } },
   });
+  const [web, sitesWithWeb] = await Promise.all([
+    db.webSource.findMany({ where: { partId: p.id }, orderBy: [{ matched: "desc" }, { fetchedAt: "desc" }], take: 30 }),
+    db.supplier.count({ where: { website: { not: null } } }),
+  ]);
+  const apis = { mouser: mouserConfigured(), digikey: digikeyConfigured() };
   const nowTs = new Date();
   const canEditCtx = !!ctxDeal && (manager || ctxDeal.ownerId === user.id);
   // Suggested price: the most recent price we quoted or put on a Journey for this part.
@@ -69,6 +75,9 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     ofertaquitada: t("Oferta quitada.", "Offer removed."),
     rfq: t("Listo: el pendiente de pedir precio quedó en tu lista (Mi Día → Pendientes).", "Done: the ask-for-price to-do is on your list (My Day → To-dos)."),
     seguimiento: t("Listo: el recordatorio quedó en tu lista (Mi Día → Pendientes).", "Done: the reminder is on your list (My Day → To-dos)."),
+    web: t("Página leída: muestra este número de parte. Quedó en Fuentes en internet.", "Page read: it shows this part number. It's now under Web sources."),
+    webnomatch: t("Página leída, pero no muestra este número de parte exacto. Revísala antes de confiar en ella.", "Page read, but it doesn't show this exact part number. Check it before relying on it."),
+    fuentes: t(`Búsqueda terminada: ${sp.n ?? 0} resultado(s), ${sp.m ?? 0} con este número de parte exacto.`, `Search done: ${sp.n ?? 0} result(s), ${sp.m ?? 0} with this exact part number.`),
     fusionado: t(`Fusionado: buscar ${sp.n ?? "el duplicado"} ahora trae esta parte.`, `Merged: searching ${sp.n ?? "the duplicate"} now brings up this part.`),
   };
   const errs: Record<string, string> = {
@@ -82,7 +91,24 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     cliente: t("Elige el cliente.", "Pick the customer."),
     oferta: t("Para guardar la oferta necesito el proveedor y el precio.", "To save the offer I need the supplier and the price."),
     cotizacion: t("Esa cotización ya no está en borrador.", "That quote is no longer a draft."),
+    web_SCHEME: t("Pega una dirección web completa, como https://www.proveedor.com/producto.", "Paste a full web address, like https://www.supplier.com/product."),
+    web_PRIVATE: t("Esa dirección no es una página pública de internet.", "That address isn't a public internet page."),
+    web_BLOCKED: t("Ese sitio no permite lectura automática (o lo consultamos por su sistema oficial). Ábrelo tú y registra la oferta a mano.", "That site doesn't allow automated reading (or we use its official system). Open it yourself and record the offer by hand."),
+    web_ROBOTS: t("Las reglas de ese sitio (robots.txt) no permiten que SOLU lea esa página. Ábrela tú y registra la oferta a mano.", "That site's rules (robots.txt) don't let SOLU read that page. Open it yourself and record the offer by hand."),
+    web_HTTP: t(`El sitio respondió con un error${sp.st ? ` (${sp.st})` : ""}: la página no existe o no está disponible.`, `The site answered with an error${sp.st ? ` (${sp.st})` : ""}: the page doesn't exist or isn't available.`),
+    web_TIMEOUT: t("El sitio tardó demasiado en responder. Intenta más tarde.", "The site took too long to answer. Try later."),
+    web_NETWORK: t("No pude conectar con ese sitio.", "I couldn't connect to that site."),
+    web_SIZE: t("La página es demasiado grande para leerla.", "The page is too large to read."),
+    web_TYPE: t("Esa dirección no es una página web (quizá es un PDF: súbelo como cotización).", "That address isn't a web page (maybe it's a PDF: upload it as a quote)."),
+    web_REDIRECTS: t("La página redirige demasiadas veces.", "The page redirects too many times."),
   };
+  const problemText: Record<string, string> = {
+    mouser_AUTH: t("Mouser rechazó la clave", "Mouser rejected the key"), mouser_LIMIT: t("Mouser: límite diario alcanzado", "Mouser: daily limit reached"), mouser_DOWN: t("Mouser no respondió", "Mouser didn't answer"),
+    digikey_AUTH: t("Digi-Key rechazó las credenciales", "Digi-Key rejected the credentials"), digikey_LIMIT: t("Digi-Key: límite alcanzado", "Digi-Key: limit reached"), digikey_DOWN: t("Digi-Key no respondió", "Digi-Key didn't answer"),
+    tiempo: t("se acabó el tiempo antes de revisar todos los sitios", "time ran out before checking every site"),
+  };
+  const KIND: Record<string, string> = { MOUSER: "Mouser (API oficial)", DIGIKEY: "Digi-Key (API oficial)", SITEMAP: t("Sitio del proveedor", "Supplier site"), PAGE: t("Página web", "Web page") };
+  const AVAIL: Record<string, string> = { IN_STOCK: t("en existencia", "in stock"), LIMITED: t("pocas unidades", "limited"), OUT_OF_STOCK: t("agotado", "out of stock"), BACKORDER: t("bajo pedido", "backorder"), PREORDER: t("preventa", "pre-order"), DISCONTINUED: t("descontinuado", "discontinued"), MADE_TO_ORDER: t("fabricación a pedido", "made to order") };
 
   return (
     <div className="jw x3">
@@ -97,7 +123,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
         <p className="jh-sub">{[p.brand, p.category ? L(CATEGORIES, p.category) : null, p.lifecycle && p.lifecycle !== "ACTIVE" ? L(LIFE, p.lifecycle) : null, p.createdByName ? t(`agregada por ${p.createdByName}`, `added by ${p.createdByName}`) : null].filter(Boolean).join(" · ")}</p>
       </header>
 
-      {sp.ok && notes[sp.ok] && <p className="note">{notes[sp.ok]}</p>}
+      {sp.ok && notes[sp.ok] && <p className="note">{notes[sp.ok]}{sp.ok === "fuentes" && sp.p ? ` ${t("Ojo", "Note")}: ${sp.p.split(",").map((x) => problemText[x] ?? x).join("; ")}.` : ""}</p>}
       {sp.err && errs[sp.err] && <p className="note attn">{errs[sp.err]}{other && <> <Link href={`/localizar/${other.id}`}><b className="mono">{other.mpn}</b> · {other.name}</Link></>}</p>}
       {p.lifecycle && p.lifecycle !== "ACTIVE" && <p className="note attn">{t("El fabricante ya no la produce normalmente. Antes de cotizar, confirma existencias o un reemplazo (agrégalo abajo como número anterior/equivalente).", "The manufacturer no longer makes it normally. Before quoting, confirm stock or a replacement (add it below as superseded/equivalent).")}</p>}
 
@@ -258,6 +284,46 @@ export default async function PartPage({ params, searchParams }: { params: Promi
             </div>
           </section>
 
+          <section className="jblock" id="fuentes">
+            <div className="jbh"><b>{t("FUENTES EN INTERNET", "WEB SOURCES")}</b><span className="grow" /><span className="src">{t("referencia pública con fecha · no es una oferta confirmada", "dated public reference · not a confirmed offer")}</span></div>
+            {web.length === 0 ? <p className="quiet-p">{t("Aún nada. Busca en las fuentes oficiales o pega la página del producto de un proveedor o fabricante.", "Nothing yet. Search the official sources or paste a supplier's or manufacturer's product page.")}</p> : (
+              <table className="loc-web">
+                <thead><tr><th>{t("Fuente", "Source")}</th><th className="n">{t("Precio", "Price")}</th><th>{t("Disponibilidad", "Availability")}</th><th>{t("Leído", "Read")}</th><th /></tr></thead>
+                <tbody>{web.map((w) => {
+                  const breaks = Array.isArray(w.priceBreaks) ? (w.priceBreaks as { qty: number; price: number }[]) : [];
+                  const old = nowTs.getTime() - w.fetchedAt.getTime() > 7 * 86_400_000;
+                  return (
+                    <tr key={w.id}>
+                      <td>
+                        <span className="loc-chip">{KIND[w.kind] ?? w.kind}</span> <a href={w.url} target="_blank" rel="noopener noreferrer nofollow">{w.title ?? w.host}</a>
+                        <span className="src block">{w.host}{w.mpnSeen ? <> · <span className="mono">{w.mpnSeen}</span></> : null}{w.brand ? ` · ${w.brand}` : ""}</span>
+                        {w.matched ? <span className="src block ok-text">✓ {t("muestra este número de parte", "shows this part number")}</span> : <span className="src block warn-text">{t("no muestra el número exacto: revisar", "doesn't show the exact number: check")}</span>}
+                        {w.datasheetUrl && <a className="small" href={w.datasheetUrl} target="_blank" rel="noopener noreferrer nofollow">{t("Ficha técnica (PDF)", "Datasheet (PDF)")}</a>}
+                      </td>
+                      <td className="n mono">{w.price != null ? `${w.currency ?? ""} ${i.n2(w.price)}` : "—"}{breaks.length > 1 && <span className="src block">{breaks.slice(0, 4).map((b) => `${b.qty}+: ${i.n2(b.price)}`).join(" · ")}</span>}</td>
+                      <td>{w.stock != null ? t(`${w.stock} en existencia`, `${w.stock} in stock`) : w.availability ? (AVAIL[w.availability] ?? w.availability) : "—"}{w.leadText && <span className="src block">{t("plazo", "lead")} {w.leadText}</span>}{w.lifecycle && w.lifecycle !== "ACTIVE" && <span className="loc-chip warn">{L(LIFE, w.lifecycle)}</span>}</td>
+                      <td className="mono small">{i.day(w.fetchedAt)}{old && <span className="src block">{t("antiguo · volver a buscar", "old · search again")}</span>}</td>
+                      <td><form action={removeWebSource.bind(null, p.id, w.id)}><button className="link small" type="submit">{t("Quitar", "Remove")}</button></form></td>
+                    </tr>
+                  );
+                })}</tbody>
+              </table>
+            )}
+            <div className="loc-offer-acts">
+              <form action={searchSources.bind(null, p.id)}><button type="submit" className="secondary sm">{t("Buscar en fuentes oficiales", "Search official sources")}</button></form>
+              <details className="qa"><summary className="qa-btn">{t("Leer una página web", "Read a web page")}</summary><div className="qa-pop wide">
+                <form action={readPage.bind(null, p.id)} className="qa-form">
+                  <label>{t("Dirección de la página del producto", "Product page address")}<input name="url" required inputMode="url" placeholder="https://www.proveedor.com/producto/…" /></label>
+                  <p className="src">{t("SOLU solo la lee si las reglas del sitio lo permiten (robots.txt). Busca el número de parte, precio, existencias y ficha técnica.", "SOLU only reads it if the site's rules allow it (robots.txt). It looks for the part number, price, stock and datasheet.")}</p>
+                  <button type="submit">{t("Leer página", "Read page")}</button>
+                </form>
+              </div></details>
+            </div>
+            <p className="src loc-srcstate">
+              {t("Fuentes oficiales:", "Official sources:")} Mouser {apis.mouser ? <b>{t("activo", "on")}</b> : t("sin clave", "no key")} · Digi-Key {apis.digikey ? <b>{t("activo", "on")}</b> : t("sin clave", "no key")} · {t(`${sitesWithWeb} proveedor(es) con sitio web`, `${sitesWithWeb} supplier(s) with a website`)} (<Link href="/suppliers">{t("agregar", "add")}</Link>). {t("La búsqueda puede tardar hasta un minuto.", "The search can take up to a minute.")}
+            </p>
+          </section>
+
           <section className="jblock">
             <div className="jbh"><b>{t("OTROS NÚMEROS Y NOMBRES", "OTHER NUMBERS & NAMES")}</b><span className="grow" /><span className="src">{t("cualquiera de estos encuentra esta parte", "any of these finds this part")}</span></div>
             {p.aliases.length === 0 ? <p className="quiet-p">{t("Todavía ninguno. Agrega el número del fabricante, equivalentes de otras marcas o el número anterior.", "None yet. Add the manufacturer number, other brands' equivalents or the old number.")}</p> : (
@@ -375,7 +441,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
             </div></details>
           )}
           {p.merged.length > 0 && <p className="src">{t("Duplicados ya fusionados aquí:", "Duplicates merged here:")} {p.merged.map((m) => m.mpn).join(", ")}</p>}
-          <p className="note ai">{t("Próximamente aquí: la tarjeta de evidencia de cada proveedor y búsqueda en internet con fuentes.", "Coming here soon: each supplier's evidence card and web search with sources.")}</p>
+          <p className="note ai">{t("Próximamente aquí: la tarjeta de evidencia de cada proveedor.", "Coming here soon: each supplier's evidence card.")}</p>
         </aside>
       </div>
       <Popovers />

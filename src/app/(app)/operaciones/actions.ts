@@ -105,6 +105,8 @@ const supplierSchema = z.object({
   currency,
   email: optionalText,
   phone: optionalText,
+  // Public website (for finding part pages via its sitemap). "acme.com" becomes "https://acme.com".
+  website: optionalText.transform((v) => (v && !/^https?:\/\//i.test(v) ? `https://${v}` : v)),
 });
 
 export async function createSupplier(formData: FormData) {

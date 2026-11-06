@@ -34,6 +34,7 @@ export default async function SuppliersPage() {
             <label style={{ flex: 1 }}>{t("Correo", "Email")}<input name="email" type="email" /></label>
             <label style={{ flex: 1 }}>{t("Teléfono registrado (para verificar pagos)", "Registered phone (for payment verification)")}<input name="phone" /></label>
           </div>
+          <label>{t("Sitio web (opcional: SOLU busca ahí las páginas de producto, respetando las reglas del sitio)", "Website (optional: SOLU looks for product pages there, following the site's rules)")}<input name="website" placeholder="www.proveedor.com" /></label>
           <span className="src">{t("Datos bancarios iniciales (quedan sin verificar hasta el primer pago):", "Initial bank data (stays unverified until the first payment):")}</span>
           <div className="row">
             <label style={{ flex: 1 }}>{t("Beneficiario", "Beneficiary")}<input name="bankBeneficiary" /></label>
@@ -53,7 +54,7 @@ export default async function SuppliersPage() {
             {suppliers.map((s) => (
               <tr key={s.id} id={s.id}>
                 <td><Link href={`/suppliers/${s.id}`}><b>{s.name}</b></Link><span className="src">{s.country ?? ""} · {s.currency}</span></td>
-                <td className="small">{s.email ?? "—"}<span className="src">{s.phone ?? ""}</span></td>
+                <td className="small">{s.email ?? "—"}<span className="src">{s.phone ?? ""}</span>{s.website && <span className="src block">{s.website.replace(/^https?:\/\//, "")}</span>}</td>
                 <td>
                   {s.bankVerifiedAt ? (
                     <><span className="sig ok">✓ {t("Verificado", "Verified")} {i.day(s.bankVerifiedAt)}</span><span className="src">{s.bankName} · {s.bankAccount ? `…${s.bankAccount.slice(-4)}` : ""} · {s.bankVerifiedBy?.name}</span></>
@@ -71,6 +72,7 @@ export default async function SuppliersPage() {
                       <label>{t("Moneda", "Currency")}<input name="currency" defaultValue={s.currency} /></label>
                       <label>{t("Correo", "Email")}<input name="email" defaultValue={s.email ?? ""} /></label>
                       <label>{t("Teléfono registrado", "Registered phone")}<input name="phone" defaultValue={s.phone ?? ""} /></label>
+                      <label>{t("Sitio web", "Website")}<input name="website" defaultValue={s.website ?? ""} placeholder="www.proveedor.com" /></label>
                       <button type="submit" className="secondary">{t("Guardar", "Save")}</button>
                     </form>
                   </details>

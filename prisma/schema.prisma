@@ -395,6 +395,44 @@ model SupplierOffer {
   @@index([supplierId])
 }
 
+// A public web page or distributor API result found for a part (L5). Evidence only: never a price
+// we committed to. Kept with the date it was read, so stale data shows as stale.
+model WebSource {
+  id           String    @id @default(cuid())
+  partId       String
+  part         Part      @relation(fields: [partId], references: [id], onDelete: Cascade)
+  kind         String // PAGE | MOUSER | DIGIKEY | SITEMAP
+  url          String
+  host         String
+  title        String?
+  mpnSeen      String?
+  brand        String?
+  matched      Boolean   @default(false) // the page/API shows this exact part number
+  price        Decimal?  @db.Decimal(14, 4)
+  currency     String?
+  priceBreaks  Json? // [{qty, price}]
+  stock        Int?
+  availability String?
+  leadText     String?
+  lifecycle    String?
+  datasheetUrl String?
+  fetchedAt    DateTime  @default(now())
+  savedByName  String?
+  createdAt    DateTime  @default(now())
+
+  @@unique([partId, url])
+  @@index([partId])
+}
+
+// Cache of polite fetches: robots.txt, sitemaps and pages (so we never hammer a site).
+model WebCache {
+  url         String   @id
+  status      Int
+  contentType String?
+  body        String?
+  fetchedAt   DateTime @default(now())
+}
+
 // A request for quotation sent from sales@ to several suppliers (one separate email each).
 model Rfq {
   id            String         @id @default(cuid())
@@ -470,8 +508,9 @@ model Part {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  aliases PartAlias[]
-  offers  SupplierOffer[]
+  aliases    PartAlias[]
+  offers     SupplierOffer[]
+  webSources WebSource[]
 
   @@index([brand])
   @@index([mergedIntoId])
@@ -606,6 +645,8 @@ model Supplier {
   paymentTerms     String?
   advancePct       Int       @default(100)
   transitDays      Int?
+  // Public website, used to look for part pages via its sitemap (robots.txt is always obeyed).
+  website          String?
 
   pos           SupplierPO[]
   docs          SupplierDoc[]

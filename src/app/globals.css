@@ -1431,3 +1431,10 @@ a.loc-chip:hover { background: var(--brand-soft); color: var(--brand); }
 .loc-offer-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 0; }
 .loc-offer-acts form { margin: 0; }
 @media (max-width: 640px) { .loc-docgrid { grid-template-columns: 1fr 1fr; } .loc-sups { grid-template-columns: 1fr; } }
+/* L5: web sources */
+.loc-web td:first-child { overflow-wrap: anywhere; min-width: 200px; }
+.loc-web td:first-child a { word-break: break-word; }
+.src.ok-text { color: var(--ok); }
+.src.warn-text { color: var(--attn); }
+.loc-srcstate { margin: 8px 0 0; }
+#fuentes { overflow-x: auto; }
