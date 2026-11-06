@@ -1,4 +1,5 @@
 import type { SessionUser } from "./auth";
+import { calendarEvent, calendarTaskInclude } from "./calendar-event";
 import type { I18n } from "./i18n";
 import { db } from "./db";
 import { canManageAll } from "./permissions";
@@ -31,7 +32,7 @@ export type Need = {
   journey?: { dealId: string; mode: "move" | "wait" | "none"; waitingFor?: string | null };
   promise?: { invoiceId: string; promisedBy: string };
 };
-export type AgendaItem = { key: string; start: Date; end: Date; title: string; kind: "solu" | "outlook"; taskId?: string; dealId?: string | null; webLink?: string; minutes: number };
+export type AgendaItem = { key: string; start: Date; end: Date; title: string; kind: "solu" | "outlook"; taskId?: string; dealId?: string | null; webLink?: string; minutes: number; purpose?: string; flags?: string[] };
 export type FutureItem = { key: string; title: string; text: string; at: Date; chip: string; window: boolean; link: { label: string; href: string } };
 export type WaitItem = { key: string; what: string; from: string; until: Date; trigger: string; href: string };
 export type Signal = { key: string; title: string; text: string; src: string; inferred?: boolean; href?: string };
@@ -81,7 +82,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
       ? Promise.resolve([])
       : db.task.findMany({
           where: { assigneeId: user.id, status: "OPEN", scheduledAt: { gte: dayStart, lt: twoDays } },
-          include: { deal: { select: { code: true } } },
+          include: calendarTaskInclude,
         }),
   ]);
 
@@ -412,7 +413,8 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
   const items: AgendaItem[] = [
     ...blocks.map((b) => {
       const minutes = b.estimateMinutes ?? 30;
-      return { key: `t-${b.id}`, kind: "solu" as const, taskId: b.id, dealId: b.dealId, title: `${b.deal?.code ? `${b.deal.code} · ` : ""}${b.title}`, start: b.scheduledAt!, end: new Date(b.scheduledAt!.getTime() + minutes * 60000), minutes };
+      const ce = calendarEvent(b, t, "");
+      return { key: `t-${b.id}`, kind: "solu" as const, taskId: b.id, dealId: b.dealId, title: ce.title, purpose: b.title, flags: ce.flags, start: b.scheduledAt!, end: new Date(b.scheduledAt!.getTime() + minutes * 60000), minutes };
     }),
     ...agenda.events
       .filter((e) => !e.isAllDay && !linked.has(e.id) && e.start >= dayStart && e.start < twoDays)

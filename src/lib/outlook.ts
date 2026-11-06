@@ -105,9 +105,9 @@ export const agendaFor = cache(async (user: { email: string; outlookConnectedAt:
   }
 });
 
-export async function createEvent(mailbox: string, ev: { subject: string; start: Date; minutes: number; body: string; link?: string; transactionId: string }) {
+export async function createEvent(mailbox: string, ev: { subject: string; start: Date; minutes: number; body: string; html?: string; link?: string; transactionId: string }) {
   const end = new Date(ev.start.getTime() + ev.minutes * 60000);
-  const html = `<p>${escapeHtml(ev.body)}</p>${ev.link ? `<p><a href="${ev.link}">Abrir en SOLU</a></p>` : ""}`;
+  const html = ev.html ?? `<p>${escapeHtml(ev.body)}</p>${ev.link ? `<p><a href="${ev.link}">Abrir en SOLU</a></p>` : ""}`;
   const data = (await graph(`/users/${encodeURIComponent(mailbox)}/events`, {
     method: "POST",
     body: JSON.stringify({
@@ -125,13 +125,15 @@ export async function createEvent(mailbox: string, ev: { subject: string; start:
   return { id: data.id, start: ev.start, end };
 }
 
-export async function moveEvent(mailbox: string, id: string, start: Date, minutes: number) {
+/** Moves an event; when `content` is given, also refreshes its title and body (C1 standard format). */
+export async function moveEvent(mailbox: string, id: string, start: Date, minutes: number, content?: { subject: string; html: string }) {
   const end = new Date(start.getTime() + minutes * 60000);
   await graph(`/users/${encodeURIComponent(mailbox)}/events/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: JSON.stringify({
       start: { dateTime: start.toISOString().slice(0, 19), timeZone: "UTC" },
       end: { dateTime: end.toISOString().slice(0, 19), timeZone: "UTC" },
+      ...(content ? { subject: content.subject, body: { contentType: "HTML", content: content.html } } : {}),
     }),
   });
   return { start, end };

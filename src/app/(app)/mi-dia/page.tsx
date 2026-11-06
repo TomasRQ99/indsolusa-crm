@@ -173,7 +173,8 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
       <span className="ag-time">{time(a.start)}<small>–{time(a.end)}</small></span>
       <span className="ag-title">
         {a.dealId ? <Link href={`/deals/${a.dealId}`}>{a.title}</Link> : a.title}
-        <small>{a.kind === "solu" ? t("Bloque SOLU", "SOLU block") : "Outlook"}</small>
+        <small>{a.kind === "solu" ? <>{t("Bloque SOLU", "SOLU block")}{a.purpose && a.purpose !== a.title ? ` · ${a.purpose}` : ""}</> : "Outlook"}</small>
+        {a.flags?.map((f) => <small key={f} className="ag-flag">⚠ {f}</small>)}
       </span>
       <span className="ag-act">
         {a.kind === "solu" && a.taskId ? (

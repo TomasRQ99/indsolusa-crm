@@ -8,7 +8,7 @@ import { assertCanEdit } from "@/lib/permissions";
 import { addDays, today } from "@/lib/domain";
 import { refreshApp } from "@/lib/revalidate";
 import { bogotaInput, createEvent, deleteEvent, hhmm, moveEvent } from "@/lib/outlook";
-import { appBaseUrl, outlookErrorCode, placeTasksInOutlook } from "@/lib/outlook-sync";
+import { outlookErrorCode, placeTasksInOutlook, taskEventContent } from "@/lib/outlook-sync";
 
 // Everything a negotiator needs to act from Mi Día without leaving it:
 // done → what's next, postpone, schedule (first free slot or a chosen time), wait,
@@ -82,13 +82,14 @@ export async function reserveTime(formData: FormData) {
   let extra = "";
   if (user.outlookConnectedAt) {
     try {
-      const base = await appBaseUrl();
+      const content = await taskEventContent(user, task.id);
       const ev = await createEvent(user.email, {
-        subject: `SOLU · ${dealCode ? `${dealCode} · ` : ""}${f.title}`,
+        subject: content.subject,
         start,
         minutes: f.minutes,
         body: "Bloque reservado desde Mi Día.",
-        link: dealId ? `${base}/deals/${dealId}` : `${base}/mi-dia`,
+        html: content.html,
+        link: content.link,
         transactionId: `solu-task-${task.id}`,
       });
       await db.task.update({ where: { id: task.id }, data: { outlookEventId: ev.id } });
@@ -204,7 +205,7 @@ export async function moveBlock(taskId: string, formData: FormData) {
   let extra = "";
   if (task.outlookEventId && user.outlookConnectedAt) {
     try {
-      await moveEvent(user.email, task.outlookEventId, start, minutes);
+      await moveEvent(user.email, task.outlookEventId, start, minutes, await taskEventContent(user, task.id));
     } catch (e) {
       extra = `&cal=${outlookErrorCode(e)}`;
     }

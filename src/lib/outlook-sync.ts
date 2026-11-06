@@ -3,6 +3,16 @@ import type { SessionUser } from "./auth";
 import { db } from "./db";
 import { addDays, today } from "./domain";
 import { bogotaTime, createEvent, findFreeSlot, listEvents, OutlookError } from "./outlook";
+import { calendarEvent, calendarTaskInclude, eventHtml } from "./calendar-event";
+import { makeI18n } from "./i18n";
+
+/** Standard title + HTML body (C1) for one of the person's tasks. */
+export async function taskEventContent(user: SessionUser, taskId: string) {
+  const tk = await db.task.findFirstOrThrow({ where: { id: taskId, assigneeId: user.id }, include: calendarTaskInclude });
+  const { t } = makeI18n(user.lang);
+  const ev = calendarEvent(tk, t, await appBaseUrl());
+  return { subject: ev.title, html: eventHtml(ev, t), link: ev.link };
+}
 
 export async function appBaseUrl() {
   const h = await headers();
@@ -21,11 +31,12 @@ export async function placeTasksInOutlook(user: SessionUser, taskIds: string[]) 
   if (!user.outlookConnectedAt) throw new OutlookError("NOT_CONFIGURED", "Outlook is not connected for this person.");
   const tasks = await db.task.findMany({
     where: { id: { in: taskIds }, assigneeId: user.id, status: "OPEN", outlookEventId: null },
-    include: { deal: { select: { id: true, code: true } } },
+    include: calendarTaskInclude,
     orderBy: [{ plannedFor: "asc" }, { dueDate: "asc" }],
   });
   if (!tasks.length) return [];
   const base = await appBaseUrl();
+  const { t } = makeI18n(user.lang);
   const start = today();
   const events = await listEvents(user.email, bogotaTime(start, 0), bogotaTime(addDays(start, 14), 0));
   const reserved: { start: Date; end: Date }[] = [];
@@ -40,12 +51,14 @@ export async function placeTasksInOutlook(user: SessionUser, taskIds: string[]) 
       if (!slot) day = addDays(day, 1);
     }
     if (!slot) continue;
+    const content = calendarEvent(tk, t, base);
     const ev = await createEvent(user.email, {
-      subject: `SOLU · ${tk.deal?.code ? `${tk.deal.code} · ` : ""}${tk.title}`,
+      subject: content.title,
       start: slot,
       minutes,
       body: "Bloque reservado desde SOLU.",
-      link: tk.deal ? `${base}/deals/${tk.deal.id}` : `${base}/mi-plan`,
+      html: eventHtml(content, t),
+      link: content.link,
       transactionId: `solu-task-${tk.id}`,
     });
     reserved.push({ start: ev.start, end: ev.end });
