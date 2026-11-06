@@ -1399,3 +1399,9 @@ a.loc-chip:hover { background: var(--brand-soft); color: var(--brand); }
 .loc-read .filedl { margin: 6px 0; }
 .loc-read p.src { margin: 4px 0 0; }.loc-read .filedl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; }
 .loc-read .filedl dt, .loc-read .filedl dd { margin: 0; }
+.loc-ev { margin: 6px 0 2px; font-size: 13px; color: var(--ink-2); }
+.loc-ev .mono { color: var(--ink); }
+.loc-ctx { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; background: var(--brand-soft); color: var(--brand-strong); border-radius: var(--radius); padding: 8px 12px; margin: 0 0 12px; font-size: 14px; }
+.loc-ctx form { margin: 0; }
+.loc-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.loc-actions .qa-btn.primary { background: var(--brand); color: #fff; border-color: var(--brand); }.loc-sec .jbh > .src { margin-left: 8px; }

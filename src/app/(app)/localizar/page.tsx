@@ -4,7 +4,9 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { canManageAll } from "@/lib/permissions";
 import { CATEGORIES } from "@/lib/part-lexicon";
-import { ensureCatalogFresh, partKey, searchParts, type PartHit } from "@/lib/parts";
+import { ensureCatalogFresh, evidenceFor, partKey, searchParts, type PartHit } from "@/lib/parts";
+import { today } from "@/lib/domain";
+import { freshness } from "@/lib/x360";
 import { aiConfigured, aiSpentThisMonth, monthlyCap } from "@/lib/ai";
 import type { PhotoReading } from "@/lib/part-vision";
 import { PhotoSearch } from "@/components/PhotoSearch";
@@ -29,7 +31,7 @@ function parseReading(raw?: string): PhotoReading | null {
   } catch { return null; }
 }
 
-export default async function LocalizarPage({ searchParams }: { searchParams: Promise<{ q?: string; ok?: string; err?: string; c?: string; a?: string; foto?: string }> }) {
+export default async function LocalizarPage({ searchParams }: { searchParams: Promise<{ q?: string; ok?: string; err?: string; c?: string; a?: string; foto?: string; deal?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
@@ -43,9 +45,16 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
     q ? [] : db.part.findMany({ where: { mergedIntoId: null }, orderBy: { updatedAt: "desc" }, take: 25, select: { id: true, mpn: true, brand: true, name: true, category: true, lifecycle: true, _count: { select: { aliases: true } } } }),
     aiSpentThisMonth(),
   ]);
+  const [ev, ctxDeal] = await Promise.all([
+    evidenceFor((res?.hits ?? []).map((h) => h.id)),
+    sp.deal ? db.deal.findUnique({ where: { id: sp.deal }, select: { id: true, code: true, title: true, account: { select: { name: true } } } }) : null,
+  ]);
+  const dq = ctxDeal ? `?deal=${ctxDeal.id}` : "";
+  const now = today();
   const cap = monthlyCap();
   const aiState = !aiConfigured() ? "OFF" : spent.usd + 0.1 > cap ? "CAP" : "ON";
-  const hits = res?.hits ?? [];
+  // Equal match: the part we actually bought (we know a source and a real cost) goes first, then the one we quoted more.
+  const hits = [...(res?.hits ?? [])].sort((a, b) => b.score - a.score || (ev.get(b.id)?.buys ?? 0) - (ev.get(a.id)?.buys ?? 0) || (ev.get(b.id)?.quoted ?? 0) - (ev.get(a.id)?.quoted ?? 0));
   const best = hits[0] && hits[0].score >= 60 ? hits[0] : null;
   const rest = best ? hits.slice(1) : hits;
   const codeLike = q && /\d/.test(q) && partKey(q).length >= 3 && !q.includes(" ");
@@ -66,10 +75,30 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
     FIND: null,
   }[res.intent];
 
+  // What we already know about each result: real purchases (cost, supplier, how old) and how often we quoted it.
+  const Evid = ({ id }: { id: string }) => {
+    const e = ev.get(id);
+    if (!e) return null;
+    const f = e.lastCost ? freshness(i, e.lastCost.at, 180, now) : null;
+    return (
+      <p className="loc-ev">
+        {e.lastCost ? (
+          <>
+            <b>{t(`Comprada ${e.buys} vez(es)`, `Bought ${e.buys} time(s)`)}</b>
+            {" · "}{t("último costo", "last cost")} <span className="mono">{e.lastCost.cur} {i.n2(e.lastCost.amount)}</span> {t("a", "from")} <Link href={`/suppliers/${e.lastCost.supplierId}`}>{e.lastCost.supplier}</Link>
+            {e.suppliers > 1 ? t(` (+${e.suppliers - 1} proveedor(es) más)`, ` (+${e.suppliers - 1} more supplier(s))`) : ""}
+            {" "}<span className={`fresh${f!.stale ? " stale" : ""}`}>{f!.label}{f!.stale ? ` · ${t("confirmar precio", "re-confirm price")}` : ""}</span>
+          </>
+        ) : <span className="src">{t("Nunca la compramos", "Never purchased")}</span>}
+        {e.quoted > 0 && <>{" · "}{t(`cotizada/vendida ${e.quoted} vez(es) a ${e.customers} cliente(s)`, `quoted/sold ${e.quoted} time(s) to ${e.customers} customer(s)`)}</>}
+      </p>
+    );
+  };
+
   const Hit = ({ h, big }: { h: PartHit; big?: boolean }) => (
     <div className={`loc-hit${big ? " best" : ""}`}>
       <div className="loc-hit-top">
-        <Link href={`/localizar/${h.id}`} className="val mono">{h.mpn}</Link>
+        <Link href={`/localizar/${h.id}${dq}`} className="val mono">{h.mpn}</Link>
         {h.brand && <span className="loc-chip">{h.brand}</span>}
         {h.category && <span className="src">{t(CATEGORIES[h.category]?.es ?? h.category, CATEGORIES[h.category]?.en ?? h.category)}</span>}
         {h.lifecycle && h.lifecycle !== "ACTIVE" && <span className="loc-chip warn">{t(LIFE[h.lifecycle].es, LIFE[h.lifecycle].en)}</span>}
@@ -78,6 +107,8 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
       </div>
       <div className="loc-name">{user.lang === "EN" && h.nameEn ? h.nameEn : h.name}</div>
       <ul className="loc-why">{h.why.map((w, n) => <li key={n}>{whyText(w, t)}</li>)}</ul>
+      <Evid id={h.id} />
+      {ctxDeal && <Link className="link small" href={`/localizar/${h.id}${dq}`}>{t(`Usar en ${ctxDeal.code ?? "el Journey"} →`, `Use on ${ctxDeal.code ?? "the Journey"} →`)}</Link>}
     </div>
   );
 
@@ -94,7 +125,15 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
       {sp.err === "falta" && <p className="note attn">{t("Para agregar una parte necesito el número de parte y una descripción.", "To add a part I need the part number and a description.")}</p>}
       {sp.err === "permiso" && <p className="note attn">{t("Solo gerencia o administración puede hacer eso.", "Only management or admins can do that.")}</p>}
 
+      {ctxDeal && (
+        <div className="loc-ctx">
+          <span>{t(`Buscando para el Journey ${ctxDeal.code ?? ""} · ${ctxDeal.title} (${ctxDeal.account.name})`, `Sourcing for Journey ${ctxDeal.code ?? ""} · ${ctxDeal.title} (${ctxDeal.account.name})`)}</span>
+          <span className="grow" />
+          <Link className="link small" href={`/deals/${ctxDeal.id}?tab=source`}>{t("Volver al Journey", "Back to Journey")}</Link>
+        </div>
+      )}
       <form className="loc-search" role="search">
+        {ctxDeal && <input type="hidden" name="deal" value={ctxDeal.id} />}
         <input name="q" defaultValue={q} autoFocus placeholder={t("Ej.: 6205-2RS, rodamiento SKF, variador 7.5 kW…", "E.g.: 6205-2RS, SKF bearing, 7.5 kW drive…")} aria-label={t("Buscar repuesto", "Search part")} />
         <button type="submit">{t("Buscar", "Search")}</button>
       </form>

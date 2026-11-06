@@ -1,21 +1,28 @@
 import { db } from "./db";
+import { partKey } from "./parts";
 
 // Universal search: customer (name or NIT), Journey (code, title, customer PO), invoice,
 // supplier PO, delivery note and supplier. Shared by /buscar and "Pregúntale a SOLU".
 
-export type Hit = { kind: "journey" | "customer" | "invoice" | "spo" | "delivery" | "supplier"; id: string; label: string; sub: string; href: string };
+export type Hit = { kind: "journey" | "customer" | "invoice" | "spo" | "delivery" | "supplier" | "part"; id: string; label: string; sub: string; href: string };
 
 export async function universalSearch(q: string): Promise<Hit[]> {
   q = q.trim();
   if (!q) return [];
   const like = { contains: q, mode: "insensitive" as const };
-  const [accounts, deals, invoices, spos, deliveries, suppliers] = await Promise.all([
+  const key = partKey(q);
+  const [accounts, deals, invoices, spos, deliveries, suppliers, parts] = await Promise.all([
     db.account.findMany({ where: { OR: [{ name: like }, { taxId: like }] }, take: 10, select: { id: true, name: true, taxId: true } }),
     db.deal.findMany({ where: { OR: [{ code: like }, { title: like }, { customerPo: like }] }, take: 15, include: { account: { select: { name: true } } } }),
     db.invoice.findMany({ where: { number: like }, take: 10, include: { account: { select: { name: true } } } }),
     db.supplierPO.findMany({ where: { code: like }, take: 10, include: { supplier: { select: { name: true } }, deal: { select: { id: true, code: true } } } }),
     db.delivery.findMany({ where: { OR: [{ code: like }, { receptionCode: like }] }, take: 10, include: { deal: { select: { code: true, account: { select: { name: true } } } } } }),
     db.supplier.findMany({ where: { name: like }, take: 10, select: { id: true, name: true, country: true } }),
+    // Parts: by number (any spelling, or an alias) or by name.
+    db.part.findMany({
+      where: { mergedIntoId: null, OR: [{ name: like }, { nameEn: like }, ...(key.length >= 3 ? [{ mpnKey: { startsWith: key } }, { aliases: { some: { codeKey: { startsWith: key } } } }] : [])] },
+      take: 8, select: { id: true, mpn: true, name: true, brand: true },
+    }),
   ]);
   return [
     ...deals.map((d) => ({ kind: "journey" as const, id: d.id, label: `${d.code ?? ""} · ${d.title}`, sub: `${d.account.name}${d.customerPo ? ` · OC ${d.customerPo}` : ""}`, href: `/deals/${d.id}` })),
@@ -24,5 +31,6 @@ export async function universalSearch(q: string): Promise<Hit[]> {
     ...spos.map((s) => ({ kind: "spo" as const, id: s.id, label: s.code, sub: `${s.supplier.name} · ${s.deal.code ?? ""}`, href: `/deals/${s.deal.id}` })),
     ...deliveries.map((r) => ({ kind: "delivery" as const, id: r.id, label: r.code, sub: `${r.deal.account.name} · ${r.deal.code ?? ""}`, href: `/operaciones/remisiones/${r.id}` })),
     ...suppliers.map((s) => ({ kind: "supplier" as const, id: s.id, label: s.name, sub: s.country ?? "", href: `/suppliers#${s.id}` })),
+    ...parts.map((p) => ({ kind: "part" as const, id: p.id, label: p.mpn, sub: [p.brand, p.name].filter(Boolean).join(" · "), href: `/localizar/${p.id}` })),
   ];
 }

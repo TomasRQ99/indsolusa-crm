@@ -11,9 +11,9 @@ import { CATEGORIES } from "@/lib/part-lexicon";
 import { partHistory, partKeys } from "@/lib/parts";
 import { Popovers } from "@/components/Popovers";
 import { ALIAS_KIND, CONDITION, LIFE } from "../labels";
-import { addAlias, mergeInto, removeAlias, updatePart } from "../actions";
+import { addAlias, addToQuote, mergeInto, partReminder, removeAlias, updatePart, useInJourney } from "../actions";
 
-type Sp = { ok?: string; err?: string; otro?: string; n?: string };
+type Sp = { ok?: string; err?: string; otro?: string; n?: string; deal?: string };
 
 export default async function PartPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Sp> }) {
   const user = await requireUser();
@@ -27,17 +27,27 @@ export default async function PartPage({ params, searchParams }: { params: Promi
   if (p.mergedIntoId) redirect(`/localizar/${p.mergedIntoId}`);
   const manager = canManageAll(user);
   const keys = await partKeys(p.id);
-  const [h, other, legacy] = await Promise.all([
+  const mine = manager ? {} : { ownerId: user.id };
+  const [h, other, legacy, ctxDeal, accounts, openDeals, draftQuotes, suppliers] = await Promise.all([
     partHistory(keys),
     sp.otro ? db.part.findUnique({ where: { id: sp.otro }, select: { id: true, mpn: true, name: true } }) : null,
     db.productFact.count({ where: { code: { in: [p.mpn.trim().toUpperCase()] } } }),
+    sp.deal ? db.deal.findUnique({ where: { id: sp.deal }, select: { id: true, code: true, title: true, ownerId: true, account: { select: { id: true, name: true } } } }) : null,
+    db.account.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true }, take: 500 }),
+    db.deal.findMany({ where: { ...mine, stage: { notIn: ["WON", "LOST"] } }, orderBy: { updatedAt: "desc" }, take: 60, select: { id: true, code: true, title: true, account: { select: { name: true } } } }),
+    db.quote.findMany({ where: { status: "DRAFT", deal: mine }, orderBy: { createdAt: "desc" }, take: 40, select: { id: true, number: true, rev: true, deal: { select: { code: true, account: { select: { name: true } } } } } }),
+    db.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true }, take: 300 }),
   ]);
+  const canEditCtx = !!ctxDeal && (manager || ctxDeal.ownerId === user.id);
+  // Suggested price: the most recent price we quoted or put on a Journey for this part.
+  const priced = [...h.quotes.map((x) => ({ at: x.quote!.createdAt, v: Number(x.unitPrice) })), ...h.items.map((x) => ({ at: new Date(0), v: Number(x.unitPrice) }))].filter((x) => x.v > 0).sort((a, b) => +b.at - +a.at);
+  const suggested = priced[0]?.v ?? null;
 
   const buys = h.buys.map((b) => ({ ...b, at: b.po!.releasedAt ?? b.po!.createdAt })).sort((a, b) => +b.at - +a.at);
   const last = buys[0];
   const lastF = freshness(i, last?.at ?? null, 180, now);
-  const suppliers = [...new Map(buys.map((b) => [b.po!.supplier.id, b.po!.supplier])).values()];
-  const customers = [...new Map(h.items.map((x) => [x.deal!.account.id, x.deal!.account])).values()];
+  const pastSuppliers = [...new Map(buys.map((b) => [b.po!.supplier.id, b.po!.supplier])).values()];
+  const customers = [...new Map([...h.items.map((x) => x.deal!.account), ...h.quotes.map((x) => x.quote!.deal.account)].map((a) => [a.id, a])).values()];
   const has360 = h.items.length + h.buys.length + h.quotes.length + legacy > 0;
   const specs = Array.isArray(p.specs) ? (p.specs as { k: string; v: string }[]) : [];
   const L = (m: Record<string, { es: string; en: string }>, k: string | null) => (k && m[k] ? t(m[k].es, m[k].en) : "—");
@@ -48,6 +58,8 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     alias: t("Listo: ahora también la encuentras por ese número o nombre.", "Done: you'll now also find it by that number or name."),
     quitado: t("Número o nombre quitado.", "Number or name removed."),
     ya: t("Ese ya es su número de parte.", "That's already its part number."),
+    rfq: t("Listo: el pendiente de pedir precio quedó en tu lista (Mi Día → Pendientes).", "Done: the ask-for-price to-do is on your list (My Day → To-dos)."),
+    seguimiento: t("Listo: el recordatorio quedó en tu lista (Mi Día → Pendientes).", "Done: the reminder is on your list (My Day → To-dos)."),
     fusionado: t(`Fusionado: buscar ${sp.n ?? "el duplicado"} ahora trae esta parte.`, `Merged: searching ${sp.n ?? "the duplicate"} now brings up this part.`),
   };
   const errs: Record<string, string> = {
@@ -57,7 +69,9 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     enotro: t("Ese número ya está registrado en otra parte. Si son la misma, fusiónalas.", "That number is already on another part. If they're the same, merge them."),
     alias: t("Escribe el número o nombre.", "Type the number or name."),
     dup: t("No encontré ese duplicado (o ya estaba fusionado).", "I couldn't find that duplicate (or it was already merged)."),
-    permiso: t("Solo gerencia o administración puede hacer eso.", "Only management or admins can do that."),
+    permiso: t("No tienes permiso para eso (solo el dueño del Journey o gerencia).", "You don't have permission for that (only the Journey owner or management)."),
+    cliente: t("Elige el cliente.", "Pick the customer."),
+    cotizacion: t("Esa cotización ya no está en borrador.", "That quote is no longer a draft."),
   };
 
   return (
@@ -86,8 +100,8 @@ export default async function PartPage({ params, searchParams }: { params: Promi
         </div>
         <div className="x3-f">
           <span className="k">{t("SE LA COMPRAMOS A", "WE BOUGHT IT FROM")}</span>
-          <b>{suppliers.length ? t(`${suppliers.length} proveedor(es)`, `${suppliers.length} supplier(s)`) : "—"}</b>
-          <span className="src">{suppliers.map((s, n) => <span key={s.id}>{n ? ", " : ""}<Link href={`/suppliers/${s.id}`}>{s.name}</Link></span>)}{!suppliers.length && t("sin compras registradas", "no recorded purchases")}</span>
+          <b>{pastSuppliers.length ? t(`${pastSuppliers.length} proveedor(es)`, `${pastSuppliers.length} supplier(s)`) : "—"}</b>
+          <span className="src">{pastSuppliers.map((s, n) => <span key={s.id}>{n ? ", " : ""}<Link href={`/suppliers/${s.id}`}>{s.name}</Link></span>)}{!pastSuppliers.length && t("sin compras registradas", "no recorded purchases")}</span>
         </div>
         <div className="x3-f">
           <span className="k">{t("CLIENTES QUE LA USAN", "CUSTOMERS USING IT")}</span>
@@ -99,6 +113,92 @@ export default async function PartPage({ params, searchParams }: { params: Promi
           <b>{t(`${p.aliases.length} número(s)/nombre(s)`, `${p.aliases.length} number(s)/name(s)`)}</b>
           <span className="src">{p.aliases.slice(0, 3).map((a) => a.code).join(" · ") || t("solo su número", "only its number")}</span>
         </div>
+      </section>
+
+      {ctxDeal && (
+        <div className="loc-ctx">
+          <span>{t(`Buscando para el Journey ${ctxDeal.code ?? ""} · ${ctxDeal.title} (${ctxDeal.account.name})`, `Sourcing for Journey ${ctxDeal.code ?? ""} · ${ctxDeal.title} (${ctxDeal.account.name})`)}</span>
+          <span className="grow" />
+          {canEditCtx && (
+            <form action={useInJourney.bind(null, p.id)}>
+              <input type="hidden" name="dealId" value={ctxDeal.id} />
+              <input type="hidden" name="qty" value="1" />
+              <input type="hidden" name="unitPrice" value={suggested ?? 0} />
+              <button type="submit">{t(`Agregar a ${ctxDeal.code ?? "este Journey"}`, `Add to ${ctxDeal.code ?? "this Journey"}`)}</button>
+            </form>
+          )}
+          <Link className="link small" href={`/deals/${ctxDeal.id}?tab=source`}>{t("Volver al Journey", "Back to Journey")}</Link>
+        </div>
+      )}
+
+      <section className="loc-actions" aria-label={t("Qué hacer con esta parte", "What to do with this part")}>
+        <details className="qa"><summary className="qa-btn primary">{t("Nueva necesidad (Journey)", "New need (Journey)")}</summary><div className="qa-pop wide">
+          <form action={useInJourney.bind(null, p.id)} className="qa-form">
+            <label>{t("Cliente", "Customer")}<select name="accountId" required defaultValue={ctxDeal?.account.id ?? ""}><option value="" disabled>{t("— elige —", "— choose —")}</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
+            <div className="qa-row">
+              <label>{t("Cantidad", "Qty")}<input name="qty" type="number" min="1" defaultValue={1} /></label>
+              <label>{t("Precio unit. (opcional)", "Unit price (optional)")}<input name="unitPrice" type="number" min="0" step="0.01" defaultValue={suggested ?? ""} /></label>
+            </div>
+            {suggested != null && <p className="src">{t(`Precio sugerido: el último que cotizamos (${i.n2(suggested)})`, `Suggested price: the last one we quoted (${i.n2(suggested)})`)}</p>}
+            <button type="submit">{t("Crear Journey y abrir", "Create Journey and open")}</button>
+          </form>
+        </div></details>
+
+        <details className="qa"><summary className="qa-btn">{t("Agregar a un Journey", "Add to a Journey")}</summary><div className="qa-pop wide">
+          {openDeals.length === 0 ? <p className="src">{t("No tienes Journeys abiertos.", "You have no open Journeys.")}</p> : (
+            <form action={useInJourney.bind(null, p.id)} className="qa-form">
+              <label>Journey<select name="dealId" required defaultValue={ctxDeal?.id ?? ""}><option value="" disabled>{t("— elige —", "— choose —")}</option>{openDeals.map((d) => <option key={d.id} value={d.id}>{d.code ?? ""} · {d.account.name} · {d.title.slice(0, 50)}</option>)}</select></label>
+              <div className="qa-row">
+                <label>{t("Cantidad", "Qty")}<input name="qty" type="number" min="1" defaultValue={1} /></label>
+                <label>{t("Precio unit.", "Unit price")}<input name="unitPrice" type="number" min="0" step="0.01" defaultValue={suggested ?? ""} /></label>
+              </div>
+              <button type="submit">{t("Agregar", "Add")}</button>
+            </form>
+          )}
+        </div></details>
+
+        <details className="qa"><summary className="qa-btn">{t("Agregar a una cotización", "Add to a quote")}</summary><div className="qa-pop wide">
+          {draftQuotes.length === 0 ? <p className="src">{t("No hay cotizaciones en borrador que puedas editar. Créala desde su Journey (pestaña Cotización).", "There are no draft quotes you can edit. Create one from its Journey (Quote tab).")}</p> : (
+            <form action={addToQuote.bind(null, p.id)} className="qa-form">
+              <label>{t("Cotización en borrador", "Draft quote")}<select name="quoteId" required>{draftQuotes.map((q) => <option key={q.id} value={q.id}>{q.number}{q.rev ? ` R${q.rev}` : ""} · {q.deal.account.name} · {q.deal.code ?? ""}</option>)}</select></label>
+              <div className="qa-row">
+                <label>{t("Cantidad", "Qty")}<input name="qty" type="number" min="1" defaultValue={1} /></label>
+                <label>{t("Precio unit.", "Unit price")}<input name="unitPrice" type="number" min="0" step="0.01" defaultValue={suggested ?? ""} /></label>
+              </div>
+              <button type="submit">{t("Agregar línea y abrir", "Add line and open")}</button>
+            </form>
+          )}
+        </div></details>
+
+        <details className="qa"><summary className="qa-btn">{t("Pedir precio a proveedor", "Ask a supplier for a price")}</summary><div className="qa-pop wide">
+          <form action={partReminder.bind(null, p.id)} className="qa-form">
+            <input type="hidden" name="kind" value="PRICE" />
+            {ctxDeal && <input type="hidden" name="dealId" value={ctxDeal.id} />}
+            <label>{t("Proveedor", "Supplier")}<select name="supplierId" defaultValue={pastSuppliers[0]?.id ?? ""}>
+              <option value="">{t("— por definir —", "— to be decided —")}</option>
+              {pastSuppliers.length > 0 && <optgroup label={t("Ya nos la vendieron", "Sold it to us before")}>{pastSuppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</optgroup>}
+              <optgroup label={t("Otros proveedores", "Other suppliers")}>{suppliers.filter((s) => !pastSuppliers.some((x) => x.id === s.id)).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</optgroup>
+            </select></label>
+            <div className="qa-row">
+              <label>{t("Cantidad", "Qty")}<input name="qty" type="number" min="1" defaultValue={1} /></label>
+              <label>{t("Para cuándo", "By when")}<input name="dueDate" type="date" /></label>
+            </div>
+            <p className="src">{t("Crea un pendiente para ti (aparece en Mi Día). El correo automático a varios proveedores llega en la siguiente fase.", "Creates a to-do for you (shows in My Day). Automatic email to several suppliers comes in the next phase.")}</p>
+            <button type="submit">{t("Crear pendiente", "Create to-do")}</button>
+          </form>
+        </div></details>
+
+        <details className="qa"><summary className="qa-btn">{t("Recordar seguimiento", "Follow-up reminder")}</summary><div className="qa-pop wide">
+          <form action={partReminder.bind(null, p.id)} className="qa-form">
+            <input type="hidden" name="kind" value="FOLLOW" />
+            {ctxDeal ? <input type="hidden" name="dealId" value={ctxDeal.id} /> : (
+              <label>{t("Cliente (opcional)", "Customer (optional)")}<select name="accountId" defaultValue=""><option value="">—</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
+            )}
+            <label>{t("Cuándo", "When")}<input name="dueDate" type="date" /></label>
+            <p className="src">{t("Si no eliges fecha: en 2 días hábiles.", "If you don't pick a date: in 2 working days.")}</p>
+            <button type="submit">{t("Crear recordatorio", "Create reminder")}</button>
+          </form>
+        </div></details>
       </section>
 
       <div className="jbody">

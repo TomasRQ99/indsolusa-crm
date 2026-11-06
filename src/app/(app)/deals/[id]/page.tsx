@@ -596,6 +596,21 @@ export default async function JourneyPage({
           <ul className="plain">{deal.supplierPos.map((p) => <li key={p.id}><b>{p.supplier.name}</b> · {p.code} · {p.currency} {i.n2(p.amount)}</li>)}</ul>
         </section>
       )}
+      <section className="jblock">
+        <div className="jbh"><b>{t("BUSCAR FUENTE", "FIND A SOURCE")}</b><span className="grow" /><span className="src">{t("qué compramos antes, a quién y a qué costo", "what we bought before, from whom and at what cost")}</span></div>
+        {deal.items.some((it) => it.code) && (
+          <ul className="plain">
+            {deal.items.filter((it) => it.code).map((it) => (
+              <li key={it.id}><Link className="val mono" href={`/localizar?q=${encodeURIComponent(it.code!)}&deal=${deal.id}`}>{it.code}</Link> · {it.description} <Link className="link small" href={`/localizar?q=${encodeURIComponent(it.code!)}&deal=${deal.id}`}>{t("Buscar fuente", "Find source")}</Link></li>
+            ))}
+          </ul>
+        )}
+        <form action="/localizar" className="inline" style={{ marginTop: 8 }}>
+          <input type="hidden" name="deal" value={deal.id} />
+          <input name="q" required placeholder={t("Número de parte, nombre o marca", "Part number, name or brand")} />
+          <button className="secondary" type="submit">{t("Buscar en Localizar repuestos", "Search in Find parts")}</button>
+        </form>
+      </section>
       <PhaseLog phase="source" title={t("REGISTRO DE BÚSQUEDA", "SOURCING RECORD")} empty={t("Registra cotizaciones de proveedores, plazos que te dieron y por qué eliges uno.", "Record supplier quotes, lead times they gave, and why you choose one.")} />
     </>
   );

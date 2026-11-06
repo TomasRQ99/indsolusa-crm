@@ -20,6 +20,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     { kind: "spo", title: "Supplier PO", mono: true },
     { kind: "delivery", title: t("Remisiones", "Delivery notes"), mono: true },
     { kind: "supplier", title: t("Proveedores", "Suppliers") },
+    { kind: "part", title: t("Repuestos", "Parts"), mono: true },
   ];
 
   return (
@@ -50,6 +51,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             );
           })}
           {hits.length === 0 && <div className="card empty"><b>{t("Sin resultados", "No results")}</b></div>}
+          <div className="card">
+            <p className="src">{t("¿Buscas un repuesto por descripción, con errores de escritura o en inglés?", "Looking for a part by description, with typos or in English?")} <Link href={`/localizar?q=${encodeURIComponent(q)}`}>{t(`Buscar “${q}” en Localizar repuestos`, `Search “${q}” in Find parts`)}</Link></p>
+          </div>
         </div>
       )}
     </>

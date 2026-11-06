@@ -3,8 +3,9 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canManageAll } from "@/lib/permissions";
+import { canEdit, canManageAll } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
+import { nextCode, today } from "@/lib/domain";
 import { CATEGORIES, brandIn, categoryIn } from "@/lib/part-lexicon";
 import { mergeParts, partKey, syncCatalogFromHistory } from "@/lib/parts";
 
@@ -113,6 +114,85 @@ export async function mergeInto(canonicalId: string, fd: FormData) {
   await mergeParts(dup!.id, canonicalId, user.name);
   refreshApp();
   redirect(`/localizar/${canonicalId}?ok=fusionado&n=${encodeURIComponent(dup!.mpn)}`);
+}
+
+// ---------- One-click actions from a part ----------
+
+const qtyOf = (fd: FormData) => Math.min(1_000_000, Math.max(1, Math.round(Number(String(fd.get("qty") ?? "1").replace(",", ".")) || 1)));
+const priceOf = (fd: FormData) => {
+  const v = Number(String(fd.get("unitPrice") ?? "").replace(",", "."));
+  return Number.isFinite(v) && v >= 0 && v < 1e12 ? v : 0;
+};
+const dayOf = (s: FormDataEntryValue | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(`${String(s)}T00:00:00Z`) : null);
+/** Two working days from today (the usual time to get a supplier's answer). */
+function inWorkingDays(n: number) {
+  const d = today();
+  while (n > 0) { d.setUTCDate(d.getUTCDate() + 1); if (d.getUTCDay() !== 0 && d.getUTCDay() !== 6) n--; }
+  return d;
+}
+const partLabel = (p: { mpn: string; name: string; brand: string | null }) => `${p.mpn} · ${p.name}${p.brand && !p.name.toLowerCase().includes(p.brand.toLowerCase()) ? ` (${p.brand})` : ""}`;
+
+/** Puts the part on a Journey: a new one for a customer (starts at LEAD) or an existing one. */
+export async function useInJourney(partId: string, fd: FormData) {
+  const user = await requireUser();
+  const p = await db.part.findUniqueOrThrow({ where: { id: partId } });
+  const qty = qtyOf(fd), unitPrice = priceOf(fd);
+  const dealRef = txt(fd, "dealId", 40);
+  const accountId = txt(fd, "accountId", 40);
+  const item = { qty, code: p.mpn, description: p.name.slice(0, 300), unitPrice };
+  let dealId: string;
+  if (dealRef) {
+    const deal = await db.deal.findUniqueOrThrow({ where: { id: dealRef }, select: { id: true, ownerId: true, accountId: true } });
+    if (!canEdit(user, deal.ownerId)) redirect(`/localizar/${partId}?err=permiso`);
+    await db.dealItem.create({ data: { ...item, dealId: deal.id } });
+    await db.activity.create({ data: { type: "NOTE", subject: `Agregado desde Localizar: ${qty} × ${partLabel(p)}`.slice(0, 200), userId: user.id, accountId: deal.accountId, dealId: deal.id, phase: "source", source: "Localizar repuestos" } });
+    dealId = deal.id;
+  } else {
+    if (!accountId) redirect(`/localizar/${partId}?err=cliente`);
+    const account = await db.account.findUniqueOrThrow({ where: { id: accountId! }, select: { id: true } });
+    const deal = await db.$transaction(async (tx) => {
+      const code = await nextCode("J", "deal", tx);
+      return tx.deal.create({ data: { code, title: `${p.name} (${p.mpn})`.slice(0, 200), accountId: account.id, ownerId: user.id, stage: "LEAD", amount: qty * unitPrice, needSpecs: `${qty} × ${partLabel(p)}`.slice(0, 1000), items: { create: item } } });
+    });
+    await db.activity.create({ data: { type: "NOTE", subject: `Necesidad creada desde Localizar repuestos: ${partLabel(p)}`.slice(0, 200), userId: user.id, accountId: account.id, dealId: deal.id, phase: "need", source: "Localizar repuestos" } });
+    dealId = deal.id;
+  }
+  refreshApp();
+  redirect(`/deals/${dealId}?tab=source`);
+}
+
+/** Adds the part as a line to a quote that is still a draft. */
+export async function addToQuote(partId: string, fd: FormData) {
+  const user = await requireUser();
+  const p = await db.part.findUniqueOrThrow({ where: { id: partId } });
+  const quoteId = txt(fd, "quoteId", 40);
+  const q = quoteId ? await db.quote.findUnique({ where: { id: quoteId }, select: { id: true, status: true, deal: { select: { ownerId: true } } } }) : null;
+  if (!q || q.status !== "DRAFT") redirect(`/localizar/${partId}?err=cotizacion`);
+  if (!canEdit(user, q!.deal.ownerId)) redirect(`/localizar/${partId}?err=permiso`);
+  await db.quoteLine.create({ data: { quoteId: q!.id, qty: qtyOf(fd), code: p.mpn, description: p.name.slice(0, 300), unitPrice: priceOf(fd), position: await db.quoteLine.count({ where: { quoteId: q!.id } }) } });
+  refreshApp();
+  redirect(`/cotizaciones/${q!.id}?ok=linea`);
+}
+
+/** A reminder in "Pendientes" (and Mi Día): ask a supplier for a price, or follow up with a customer. */
+export async function partReminder(partId: string, fd: FormData) {
+  const user = await requireUser();
+  const p = await db.part.findUniqueOrThrow({ where: { id: partId } });
+  const kind = fd.get("kind") === "FOLLOW" ? "FOLLOW" : "PRICE";
+  const dealId = txt(fd, "dealId", 40);
+  const deal = dealId ? await db.deal.findUnique({ where: { id: dealId }, select: { id: true, accountId: true } }) : null;
+  const supplierId = txt(fd, "supplierId", 40);
+  const supplier = supplierId ? await db.supplier.findUnique({ where: { id: supplierId }, select: { name: true } }) : null;
+  const accountId = deal?.accountId ?? txt(fd, "accountId", 40);
+  const account = accountId ? await db.account.findUnique({ where: { id: accountId }, select: { id: true, name: true } }) : null;
+  const qty = qtyOf(fd);
+  const title = kind === "PRICE"
+    ? `Pedir precio y plazo: ${qty} × ${partLabel(p)}${supplier ? ` a ${supplier.name}` : ""}`
+    : `Seguimiento${account ? ` con ${account.name}` : ""}: ${partLabel(p)}`;
+  await db.task.create({ data: { title: title.slice(0, 200), dueDate: dayOf(fd.get("dueDate")) ?? inWorkingDays(kind === "PRICE" ? 1 : 2), assigneeId: user.id, dealId: deal?.id ?? null, accountId: account?.id ?? null } });
+  if (deal) await db.activity.create({ data: { type: "NOTE", subject: title.slice(0, 200), userId: user.id, accountId: deal.accountId, dealId: deal.id, phase: kind === "PRICE" ? "source" : "need", source: "Localizar repuestos" } });
+  refreshApp();
+  redirect(`/localizar/${partId}?ok=${kind === "PRICE" ? "rfq" : "seguimiento"}${deal ? `&deal=${deal.id}` : ""}`);
 }
 
 /** Brings new quote / Journey / PO codes into the catalog now (it also happens on its own every 10 minutes). */

@@ -228,6 +228,55 @@ export async function partKeys(id: string) {
   return [...new Set([p.mpnKey, ...codeKinds(p.aliases), ...p.merged.flatMap((m) => [m.mpnKey, ...codeKinds(m.aliases)])])];
 }
 
+export type Evidence = {
+  buys: number; lastCost: { cur: string; amount: number; at: Date; supplier: string; supplierId: string } | null;
+  suppliers: number; quoted: number; lastPrice: { amount: number; at: Date } | null; customers: number;
+};
+
+/** For a list of search results: how often we bought / quoted each part, last real cost and from whom. Two queries in total. */
+export async function evidenceFor(ids: string[]): Promise<Map<string, Evidence>> {
+  const out = new Map<string, Evidence>();
+  if (!ids.length) return out;
+  const parts = await db.part.findMany({ where: { id: { in: ids } }, select: { id: true, mpnKey: true, aliases: { select: { codeKey: true, kind: true } }, merged: { select: { mpnKey: true, aliases: { select: { codeKey: true, kind: true } } } } } });
+  const owner = new Map<string, string>();
+  for (const p of parts) {
+    const ks = [p.mpnKey, ...p.aliases.filter((a) => a.kind !== "NAME").map((a) => a.codeKey), ...p.merged.flatMap((m) => [m.mpnKey, ...m.aliases.filter((a) => a.kind !== "NAME").map((a) => a.codeKey)])];
+    ks.forEach((k) => { if (!owner.has(k)) owner.set(k, p.id); });
+    out.set(p.id, { buys: 0, lastCost: null, suppliers: 0, quoted: 0, lastPrice: null, customers: 0 });
+  }
+  const keys = [...owner.keys()];
+  const norm = Prisma.sql`regexp_replace(upper(l.code), '[^A-Z0-9]', '', 'g')`;
+  const [buys, sells] = await Promise.all([
+    db.$queryRaw<{ k: string; cost: string; cur: string; at: Date; sid: string; sname: string }[]>`
+      SELECT ${norm} AS k, l."unitCost"::text AS cost, s.currency AS cur, coalesce(s."releasedAt", s."createdAt") AS at, sp.id AS sid, sp.name AS sname
+        FROM "SupplierPOLine" l JOIN "SupplierPO" s ON s.id = l."supplierPoId" JOIN "Supplier" sp ON sp.id = s."supplierId"
+       WHERE l.code IS NOT NULL AND ${norm} = ANY(${keys}::text[])`,
+    db.$queryRaw<{ k: string; price: string; at: Date; acc: string }[]>`
+      SELECT ${norm} AS k, l."unitPrice"::text AS price, q."createdAt" AS at, d."accountId" AS acc
+        FROM "QuoteLine" l JOIN "Quote" q ON q.id = l."quoteId" JOIN "Deal" d ON d.id = q."dealId"
+       WHERE l.code IS NOT NULL AND ${norm} = ANY(${keys}::text[])
+      UNION ALL
+      SELECT ${norm} AS k, l."unitPrice"::text AS price, d."createdAt" AS at, d."accountId" AS acc
+        FROM "DealItem" l JOIN "Deal" d ON d.id = l."dealId"
+       WHERE l.code IS NOT NULL AND ${norm} = ANY(${keys}::text[])`,
+  ]);
+  const sup = new Map<string, Set<string>>(), acc = new Map<string, Set<string>>();
+  for (const b of buys) {
+    const id = owner.get(b.k)!; const e = out.get(id)!;
+    e.buys++;
+    (sup.get(id) ?? sup.set(id, new Set()).get(id)!).add(b.sid);
+    if (!e.lastCost || b.at > e.lastCost.at) e.lastCost = { cur: b.cur, amount: Number(b.cost), at: b.at, supplier: b.sname, supplierId: b.sid };
+  }
+  for (const s of sells) {
+    const id = owner.get(s.k)!; const e = out.get(id)!;
+    e.quoted++;
+    (acc.get(id) ?? acc.set(id, new Set()).get(id)!).add(s.acc);
+    if (Number(s.price) > 0 && (!e.lastPrice || s.at > e.lastPrice.at)) e.lastPrice = { amount: Number(s.price), at: s.at };
+  }
+  for (const [id, e] of out) { e.suppliers = sup.get(id)?.size ?? 0; e.customers = acc.get(id)?.size ?? 0; }
+  return out;
+}
+
 /** Where the part appears in the company's history (quotes, Journeys, supplier and customer POs). */
 export async function partHistory(keys: string[]) {
   const norm = Prisma.sql`regexp_replace(upper(code), '[^A-Z0-9]', '', 'g')`;
@@ -238,7 +287,7 @@ export async function partHistory(keys: string[]) {
     db.$queryRaw<{ id: string; poId: string; code: string; qty: number }[]>`SELECT id, "poId", code, qty FROM "CustomerPOLine" WHERE code IS NOT NULL AND ${norm} = ANY(${keys}::text[])`,
   ]);
   const [quoteRecs, dealRecs, spoRecs] = await Promise.all([
-    db.quote.findMany({ where: { id: { in: quotes.map((x) => x.quoteId) } }, select: { id: true, number: true, rev: true, status: true, createdAt: true, deal: { select: { id: true, code: true, account: { select: { name: true } } } } } }),
+    db.quote.findMany({ where: { id: { in: quotes.map((x) => x.quoteId) } }, select: { id: true, number: true, rev: true, status: true, createdAt: true, deal: { select: { id: true, code: true, account: { select: { id: true, name: true } } } } } }),
     db.deal.findMany({ where: { id: { in: items.map((x) => x.dealId) } }, select: { id: true, code: true, title: true, stage: true, account: { select: { id: true, name: true } } } }),
     db.supplierPO.findMany({ where: { id: { in: buys.map((x) => x.supplierPoId) } }, select: { id: true, code: true, currency: true, createdAt: true, releasedAt: true, confirmedAt: true, receivedAt: true, supplier: { select: { id: true, name: true } } } }),
   ]);
