@@ -334,6 +334,56 @@ model ProductFact {
   @@index([code])
 }
 
+// ---------- Spare Parts Localization: the parts catalog ----------
+// One canonical record per part (schema.org Product-style fields). Quote, Journey and PO lines
+// keep their free-text codes; they are matched to a Part through its normalized code and aliases.
+model Part {
+  id               String      @id @default(cuid())
+  mpn              String // canonical part number, as displayed
+  mpnKey           String      @unique // normalized: upper case, letters and digits only
+  brand            String?
+  name             String // description (Spanish)
+  nameEn           String?
+  category         String? // product line: MECANICA, ELECTRONICA, ELECTRICA, NEUMATICA, HIDRAULICA, METROLOGIA, AUTOMATIZACION, LUBRICACION, INSTRUMENTAL
+  gtin             String?
+  condition        String? // NEW | REFURBISHED | USED
+  lifecycle        String? // ACTIVE | DISCONTINUED | OBSOLETE
+  specs            Json? // [{k, v}]
+  compatibleModels String[]    @default([])
+  notes            String?
+  // A duplicate merged into its canonical part keeps existing (so old links still resolve).
+  mergedIntoId     String?
+  mergedInto       Part?       @relation("PartMerge", fields: [mergedIntoId], references: [id])
+  merged           Part[]      @relation("PartMerge")
+  createdByName    String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  aliases PartAlias[]
+
+  @@index([brand])
+  @@index([mergedIntoId])
+  @@index([mpnKey(ops: raw("gin_trgm_ops"))], type: Gin, map: "Part_mpnKey_trgm")
+}
+
+// Every other number or name the same part is known by, with where it came from.
+model PartAlias {
+  id            String   @id @default(cuid())
+  partId        String
+  part          Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  code          String
+  codeKey       String
+  kind          String // OEM | AFTERMARKET | CROSSREF | SUPERSEDED | VARIANT | MERGED | NAME
+  brand         String?
+  source        String?
+  createdByName String?
+  createdAt     DateTime @default(now())
+
+  @@unique([partId, codeKey])
+  @@index([codeKey])
+  @@index([codeKey(ops: raw("gin_trgm_ops"))], type: Gin, map: "PartAlias_codeKey_trgm")
+}
+
 // Product health of SOLU itself (never of people): a person reports that SOLU made them
 // re-enter something it already knew, warned without need, or failed to warn.
 model ProductSignal {

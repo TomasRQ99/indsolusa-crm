@@ -1370,3 +1370,25 @@ a:hover .ich-lb { fill: var(--brand); text-decoration: underline; }
 @media (max-width: 900px) { .rcmp { grid-template-columns: 1fr; } .rc-vs { display: none; } .rc.got { border-left: 0; border-top: 4px solid var(--line-strong); } .rc.got.ok { border-top-color: var(--ok); } .rc.got.attn { border-top-color: var(--attn); } .rc.got.risk { border-top-color: var(--risk); } .rrec-opts { grid-template-columns: 1fr; } .rrec-dl { grid-template-columns: 1fr; } .rtl li { grid-template-columns: 72px 12px minmax(0, 1fr); } }
 @media (max-width: 1100px) { .ftruths.four { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 700px) { .ftruths.four { grid-template-columns: 1fr; } .bil-alloc input { width: 72px; } }
+
+/* ---------- Localizar repuestos ---------- */
+.loc-search { display: flex; gap: 8px; margin: 4px 0 10px; }
+.loc-search input { flex: 1; min-width: 0; font-size: 17px; padding: 12px 14px; }
+.loc-search button { padding: 0 20px; }
+.loc-ex { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--ink-3); font-size: 13px; margin: 0 0 18px; }
+.loc-chip { display: inline-block; font-size: 12px; line-height: 16px; padding: 2px 8px; border-radius: 3px; background: var(--surface-sunken); color: var(--ink-2); white-space: nowrap; text-decoration: none; }
+a.loc-chip:hover { background: var(--brand-soft); color: var(--brand); }
+.loc-chip.warn { background: var(--attn-soft); color: var(--attn); font-weight: 600; }
+.loc-list { display: grid; gap: 8px; }
+.loc-hit { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+.loc-hit.best { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand) inset; }
+.loc-hit-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.loc-hit-top .val { font-size: 15px; }
+.loc-hit.best .loc-hit-top .val { font-size: 18px; }
+.loc-score { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.loc-name { margin: 4px 0 6px; color: var(--ink); }
+.loc-why { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 13px; }
+.loc-why li { margin: 1px 0; }
+.loc-new { margin-top: 10px; }
+@media (max-width: 640px) { .loc-search input { font-size: 16px; } .loc-search button { padding: 0 14px; } }.loc-sec { margin-bottom: 14px; }
+.loc-sec .jbh { gap: 8px; flex-wrap: wrap; }
