@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireRole, requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
-import { describeMailError, mailConfig, sendMail } from "@/lib/mail";
+import { describeMailError, isMailUncertain, mailConfig, sendMail } from "@/lib/mail";
 import { APP_NAME } from "@/lib/brand";
 import { refreshApp } from "@/lib/revalidate";
 
@@ -37,7 +37,11 @@ export async function sendEmail(_prev: EmailState, formData: FormData): Promise<
       senderName: user.name,
     });
   } catch (e) {
-    return { error: describeMailError(e) };
+    if (!isMailUncertain(e)) return { error: describeMailError(e) };
+    // No answer from Microsoft: it may have gone out. Log it as unconfirmed and don't invite a resend.
+    await db.activity.create({ data: { type: "EMAIL", subject: `${subject} (envío sin confirmar)`.slice(0, 200), body, userId: user.id, contactId: contact.id, accountId: contact.accountId, uncertain: true } });
+    refreshApp();
+    return { error: t("Microsoft no confirmó el envío: puede que sí haya salido. Antes de reenviarlo, revisa la carpeta Enviados de sales@ en Outlook para no duplicarlo.", "Microsoft didn't confirm the send: it may have gone out. Before resending, check sales@'s Sent Items in Outlook so it isn't duplicated.") };
   }
 
   await db.activity.create({

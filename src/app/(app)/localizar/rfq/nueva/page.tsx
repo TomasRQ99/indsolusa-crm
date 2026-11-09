@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -61,6 +62,7 @@ export default async function NewRfq({ searchParams }: { searchParams: Promise<{
         <div className="card"><p>{t("Primero busca la parte en ", "First find the part in ")}<Link href="/localizar">{t("Localizar repuestos", "Find parts")}</Link>{t(" y usa “Pedir precio a proveedor”.", " and use “Ask a supplier for a price”.")}</p></div>
       ) : (
         <form action={createRfq} className="stack">
+          <input type="hidden" name="idem" value={randomUUID()} />
           {deal && <input type="hidden" name="dealId" value={deal.id} />}
           <section className="jblock loc-sec">
             <div className="jbh"><b>{t("QUÉ PEDIMOS", "WHAT WE ASK FOR")}</b></div>

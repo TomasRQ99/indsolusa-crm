@@ -175,7 +175,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
       text: t(`${p.currency} ${i.n2(p.amount)} al proveedor.${promise ? ` Sin pago no despacha, y le prometiste a ${strip(p.supplierPo.deal.account.name)}: «${p.supplierPo.deal.promiseText ?? p.supplierPo.deal.title}» para el ${i.dateShort(promise)}.` : ""}`, `${p.currency} ${i.n2(p.amount)} to the supplier.${promise ? ` No payment, no shipment, and you promised ${strip(p.supplierPo.deal.account.name)} "${p.supplierPo.deal.promiseText ?? p.supplierPo.deal.title}" by ${i.dateShort(promise)}.` : ""}`),
       src: p.reason,
     };
-    if (p.state === "VERIFY" && p.requestedById !== user.id) {
+    if (p.state === "VERIFY" && p.requestedById !== user.id && canManageAll(user)) { // Treasury verifies (least privilege)
       needs.push({
         key: `v-${p.id}`, tone: "risk", rank: 1, at: p.dueBy?.getTime() ?? now.getTime(),
         due: { main: p.dueBy ? `${i.day(p.dueBy)}` : t("hoy", "today"), sub: p.dueBy ? rel(p.dueBy) : undefined },

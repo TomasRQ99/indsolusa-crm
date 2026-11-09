@@ -4,7 +4,7 @@
 // address/domain. Stored per email: when the reply came, from which address, its subject and a short
 // preview. Results are reported per template and per supplier — never per person.
 import { db } from "./db";
-import { forgetGraphToken, graphAccessToken, mailConfig } from "./mail";
+import { describeMailError, forgetGraphToken, graphAccessToken, isMailUncertain, mailConfig, sendMail } from "./mail";
 
 export type OutboundInput = {
   template: string; refKind: "RFQR" | "OFFER" | "SPO" | "QUOTE" | "INVOICE"; refId: string; refCode: string | null;
@@ -21,6 +21,32 @@ export async function recordOutbound(o: OutboundInput) {
   }
 }
 
+export type SendStatus = "SENT" | "UNCERTAIN" | "FAILED" | "DUPLICATE";
+/** Records the email, sends it once, and keeps the outcome (constitution: idempotency + reconcile
+ *  uncertain external processes before retrying). The same idemKey never sends twice. */
+export async function sendTracked(o: OutboundInput & { idemKey?: string | null; text: string; html?: string; senderName?: string; toName?: string | null }):
+  Promise<{ status: SendStatus; id: string | null; error?: string; prior?: string }> {
+  let row: { id: string };
+  try {
+    row = await db.outboundMail.create({ data: { template: o.template, refKind: o.refKind, refId: o.refId, refCode: o.refCode?.slice(0, 60) ?? null, partyKind: o.partyKind, supplierId: o.supplierId ?? null, accountId: o.accountId ?? null, dealId: o.dealId ?? null, toAddr: o.toAddr.toLowerCase().trim(), subject: o.subject.slice(0, 250), status: "SENDING", idemKey: o.idemKey ?? null } });
+  } catch (e) {
+    if ((e as { code?: string }).code === "P2002" && o.idemKey) {
+      const prior = await db.outboundMail.findUnique({ where: { idemKey: o.idemKey }, select: { id: true, status: true } });
+      return { status: "DUPLICATE", id: prior?.id ?? null, prior: prior?.status };
+    }
+    throw e;
+  }
+  try {
+    await sendMail({ to: o.toName ? { address: o.toAddr, name: o.toName } : o.toAddr, subject: o.subject, text: o.text, html: o.html, senderName: o.senderName });
+    await db.outboundMail.update({ where: { id: row.id }, data: { status: "SENT", sentAt: new Date() } });
+    return { status: "SENT", id: row.id };
+  } catch (e) {
+    const msg = describeMailError(e).slice(0, 300);
+    const status = isMailUncertain(e) ? "UNCERTAIN" : "FAILED";
+    await db.outboundMail.update({ where: { id: row.id }, data: { status, error: msg } });
+    return { status, id: row.id, error: msg };
+  }
+}
 // ---------- Graph access (test overrides only outside production) ----------
 const test = () => process.env.NODE_ENV !== "production";
 const base = () => (test() && process.env.GRAPH_API_BASE) || "https://graph.microsoft.com";
@@ -74,7 +100,8 @@ type SyncResult = { found: number; auto: number; bounced: number; open: number; 
 
 /** Looks for replies to the emails SOLU sent in the last 45 days. Throttled to every 10 minutes unless forced. */
 export async function syncReplies(opts: { force?: boolean } = {}): Promise<SyncResult> {
-  if (!opts.force && last && Date.now() - last.at.getTime() < 10 * 60e3) return { found: 0, auto: 0, bounced: 0, open: last.open, throttled: true };
+  const unsure = await db.outboundMail.count({ where: { status: { in: ["UNCERTAIN", "SENDING"] } } }).catch(() => 0);
+  if (!opts.force && last && Date.now() - last.at.getTime() < (unsure ? 2 : 10) * 60e3) return { found: 0, auto: 0, bounced: 0, open: last.open, throttled: true };
   running ??= run().finally(() => { running = null; });
   return running;
 }
@@ -86,8 +113,28 @@ async function run(): Promise<SyncResult> {
     const from = c.from ?? "sales@test.invalid";
     const tk = await token().catch((e) => { throw new ReplySyncError("OTHER", (e as Error).message); });
     if (!tk) throw new ReplySyncError("NOT_CONFIGURED");
-    const open = await db.outboundMail.findMany({ where: { repliedAt: null, bouncedAt: null, sentAt: { gte: new Date(Date.now() - 45 * 864e5) } }, orderBy: { sentAt: "asc" } });
+    const open = await db.outboundMail.findMany({ where: { status: "SENT", repliedAt: null, bouncedAt: null, sentAt: { gte: new Date(Date.now() - 45 * 864e5) } }, orderBy: { sentAt: "asc" } });
     const box = `/v1.0/users/${encodeURIComponent(from)}/mailFolders`;
+    // Uncertain sends (no answer from Microsoft, or the server stopped mid-send): look for them in
+    // Sent Items. Found → it went out. Not found 15 min later → it didn't, so a retry is safe.
+    const unsure = await db.outboundMail.findMany({ where: { OR: [{ status: "UNCERTAIN" }, { status: "SENDING", sentAt: { lt: new Date(Date.now() - 2 * 60e3) } }], sentAt: { gte: new Date(Date.now() - 7 * 864e5) } } });
+    if (unsure.length) {
+      const from0 = new Date(Math.min(...unsure.map((u) => u.sentAt.getTime())) - 10 * 60e3).toISOString();
+      const sentU = await graphList(`${box}/sentitems/messages?$top=100&$orderby=sentDateTime desc&$filter=sentDateTime ge ${from0}&$select=id,conversationId,subject,sentDateTime,toRecipients`, tk);
+      for (const u of unsure) {
+        const hit = sentU.find((x) => normSubject(x.subject) === normSubject(u.subject)
+          && (x.toRecipients ?? []).some((r) => r.emailAddress?.address?.toLowerCase().trim() === u.toAddr)
+          && Math.abs(new Date(x.sentDateTime ?? 0).getTime() - u.sentAt.getTime()) < 15 * 60e3);
+        if (hit) {
+          await db.outboundMail.update({ where: { id: u.id }, data: { status: "SENT", conversationId: hit.conversationId ?? null, sentAt: new Date(hit.sentDateTime ?? u.sentAt), error: null } });
+          if (u.refKind === "RFQR") await db.rfqRecipient.updateMany({ where: { id: u.refId, status: { in: ["UNCERTAIN", "SENDING"] } }, data: { status: "SENT", sentAt: new Date(hit.sentDateTime ?? u.sentAt), error: null } });
+        } else if (Date.now() - u.sentAt.getTime() > 15 * 60e3) {
+          const note = "Revisado en Enviados: no salió. Se puede reintentar.";
+          await db.outboundMail.update({ where: { id: u.id }, data: { status: "FAILED", error: note } });
+          if (u.refKind === "RFQR") await db.rfqRecipient.updateMany({ where: { id: u.refId, status: { in: ["UNCERTAIN", "SENDING"] } }, data: { status: "FAILED", error: note } });
+        }
+      }
+    }
     // Nothing pending: still make one tiny read so the permission (Mail.Read) is verified.
     if (!open.length) { await graphList(`${box}/inbox/messages?$top=1&$select=id`, tk, 1); last = { at: new Date(), ok: true, found: 0, open: 0 }; return { found: 0, auto: 0, bounced: 0, open: 0 }; }
     const since = new Date(open[0].sentAt.getTime() - 10 * 60e3).toISOString();
@@ -175,7 +222,7 @@ function agg(ms: { sentAt: Date; repliedAt: Date | null; autoReplyAt: Date | nul
 }
 
 export async function replyReport(days = 90) {
-  const ms = await db.outboundMail.findMany({ where: { sentAt: { gte: new Date(Date.now() - days * 864e5) } }, orderBy: { sentAt: "desc" }, include: { supplier: { select: { id: true, name: true } }, account: { select: { id: true, name: true } } } });
+  const ms = await db.outboundMail.findMany({ where: { status: "SENT", sentAt: { gte: new Date(Date.now() - days * 864e5) } }, orderBy: { sentAt: "desc" }, include: { supplier: { select: { id: true, name: true } }, account: { select: { id: true, name: true } } } });
   const templates = [...new Set(ms.map((m) => m.template))].map((tpl) => ({ tpl, ...agg(ms.filter((m) => m.template === tpl)) }));
   const supIds = [...new Set(ms.filter((m) => m.supplierId).map((m) => m.supplierId!))];
   const suppliers = supIds.map((id) => { const g = ms.filter((m) => m.supplierId === id); return { id, name: g[0].supplier?.name ?? "—", ...agg(g) }; })
@@ -183,5 +230,6 @@ export async function replyReport(days = 90) {
   // Waiting more than 2 days, oldest first; one line per email (a record, not a person).
   const waiting = ms.filter((m) => !m.repliedAt && !m.bouncedAt && Date.now() - m.sentAt.getTime() > 48 * 3_600_000).reverse().slice(0, 40);
   const recent = ms.filter((m) => m.repliedAt || m.bouncedAt).sort((a, b) => ((b.repliedAt ?? b.bouncedAt)!.getTime() - (a.repliedAt ?? a.bouncedAt)!.getTime())).slice(0, 20);
-  return { total: agg(ms), templates, suppliers, waiting, recent, days };
+  const unconfirmed = await db.outboundMail.findMany({ where: { status: { in: ["UNCERTAIN", "SENDING"] } }, orderBy: { sentAt: "desc" }, take: 20, include: { supplier: { select: { id: true, name: true } }, account: { select: { id: true, name: true } } } });
+  return { total: agg(ms), templates, suppliers, waiting, recent, days, unconfirmed };
 }

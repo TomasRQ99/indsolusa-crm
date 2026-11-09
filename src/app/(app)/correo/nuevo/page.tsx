@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
@@ -47,6 +48,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
         <input type="hidden" name="tpl" value={tpl} />
         <input type="hidden" name="id" value={sp.id} />
         <input type="hidden" name="lang" value={c.lang} />
+        <input type="hidden" name="idem" value={randomUUID()} />
         <section className="jblock loc-sec">
           <div className="jbh"><b>{t("PARA", "TO")}</b><span className="grow" />
             <span className="src">{c.lang === "ES" ? "Español" : "English"} · <Link href={langHref}>{other === "ES" ? t("Cambiar a español", "Switch to Spanish") : t("Cambiar a inglés", "Switch to English")}</Link></span>

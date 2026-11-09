@@ -30,7 +30,7 @@ export default async function RfqPage({ params, searchParams }: { params: Promis
   });
   const now = new Date();
   const sev = await supplierEvidence(rfq.recipients.map((r) => r.supplierId), { partKeys: items.map((x) => partKey(x.mpn)) });
-  const label: Record<string, string> = { SENT: t("enviada · esperando", "sent · waiting"), FAILED: t("no se pudo enviar", "couldn't send"), ANSWERED: t("respondió", "answered"), DECLINED: t("no cotiza", "won't quote") };
+  const label: Record<string, string> = { SENT: t("enviada · esperando", "sent · waiting"), FAILED: t("no se pudo enviar", "couldn't send"), ANSWERED: t("respondió", "answered"), DECLINED: t("no cotiza", "won't quote"), UNCERTAIN: t("sin confirmar · SOLU revisa Enviados", "unconfirmed · SOLU checks Sent Items"), SENDING: t("enviando…", "sending…") };
   const answered = rfq.recipients.filter((r) => r.status === "ANSWERED" || (r.repliedAt && r.status !== "DECLINED")).length;
 
   return (
@@ -55,7 +55,7 @@ export default async function RfqPage({ params, searchParams }: { params: Promis
           <tbody>{rfq.recipients.map((r) => (
             <tr key={r.id}>
               <td><Link href={`/suppliers/${r.supplier.id}`}>{r.supplier.name}</Link><span className="src block">{r.email}</span></td>
-              <td><span className={`loc-chip${r.status === "FAILED" ? " warn" : ""}`}>{label[r.status] ?? r.status}</span>{r.sentAt && <span className="src block">{i.day(r.sentAt)}</span>}{r.error && <span className="src block">{r.error}</span>}{r.repliedAt && r.status === "SENT" && <span className="rp-chip">{t(`respondió por correo · ${i.day(r.repliedAt)}`, `replied by email · ${i.day(r.repliedAt)}`)}</span>}</td>
+              <td><span className={`loc-chip${r.status === "FAILED" || r.status === "UNCERTAIN" ? " warn" : ""}`}>{label[r.status] ?? r.status}</span>{r.sentAt && <span className="src block">{i.day(r.sentAt)}</span>}{r.error && <span className="src block">{r.error}</span>}{r.repliedAt && r.status === "SENT" && <span className="rp-chip">{t(`respondió por correo · ${i.day(r.repliedAt)}`, `replied by email · ${i.day(r.repliedAt)}`)}</span>}</td>
               <td>{r.doc ? <Link href={`/localizar/ofertas/${r.doc.id}`}>{r.doc.reference ?? r.doc.fileName}</Link> : "—"}</td>
               <td className="loc-rowacts">
                 {r.status !== "ANSWERED" && <Link className="link small" href={`/localizar/ofertas/nueva?rfqr=${r.id}`}>{t("Registrar respuesta", "Record answer")}</Link>}

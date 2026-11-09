@@ -436,6 +436,8 @@ model WebCache {
 
 // A request for quotation sent from sales@ to several suppliers (one separate email each).
 model Rfq {
+  /// One key per RFQ form: a double click never creates two RFQs.
+  idemKey    String?  @unique
   id            String         @id @default(cuid())
   code          String         @unique
   dealId        String?
@@ -1400,6 +1402,11 @@ model OutboundMail {
   toAddr         String
   subject        String
   sentAt         DateTime  @default(now())
+  /// E-safety: SENDING → SENT | FAILED | UNCERTAIN (network cut mid-send: reconciled against Sent Items before any retry).
+  status         String    @default("SENT")
+  /// One key per compose screen / RFQ form: a double click or a resubmit never sends twice.
+  idemKey        String?   @unique
+  error          String?
   conversationId String?
   repliedAt      DateTime?
   replyFrom      String?
@@ -1413,4 +1420,5 @@ model OutboundMail {
   @@index([template])
   @@index([refKind, refId])
   @@index([sentAt])
+  @@index([status])
 }

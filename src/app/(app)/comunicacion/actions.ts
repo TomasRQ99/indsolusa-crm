@@ -9,7 +9,7 @@ import { nextCode, today } from "@/lib/domain";
 import { refreshUnderstanding } from "@/lib/comm-store";
 import { syncCustomerEmails, CommMailError } from "@/lib/comm-mail";
 import { syncReplies } from "@/lib/mail-replies";
-import { sendMail } from "@/lib/mail";
+import { sendMail, isMailUncertain } from "@/lib/mail";
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -179,15 +179,17 @@ export async function sendReply(threadId: string, fd: FormData) {
     try {
       await sendMail({ to: to!, subject: th.subject ? (th.subject.startsWith("Re:") ? th.subject : `Re: ${th.subject}`) : "Industry Solutions", text: body });
       ok = "enviado";
-    } catch {
-      go(threadId, "err=correo");
+    } catch (e) {
+      // Uncertain: it may have gone out — keep the message (marked) and say so; never invite a blind resend.
+      if (!isMailUncertain(e)) go(threadId, "err=correo");
+      ok = "incierto";
     }
   }
   const now = new Date();
   await db.commMessage.create({ data: { threadId, direction: "OUT", authorName: user.name, body, sentAt: now, createdById: user.id } });
   await db.commThread.update({ where: { id: threadId }, data: { lastAt: now, lastOutAt: now } });
   if (th.dealId) {
-    await db.activity.create({ data: { type: th.channel === "EMAIL" ? "EMAIL" : "NOTE", subject: `Respuesta al cliente: ${body.split("\n")[0].slice(0, 150)}`, userId: user.id, accountId: th.accountId, contactId: th.contactId, dealId: th.dealId } });
+    await db.activity.create({ data: { type: th.channel === "EMAIL" ? "EMAIL" : "NOTE", subject: `Respuesta al cliente: ${body.split("\n")[0].slice(0, 150)}${ok === "incierto" ? " (envío sin confirmar)" : ""}`, userId: user.id, accountId: th.accountId, contactId: th.contactId, dealId: th.dealId, uncertain: ok === "incierto" } });
   }
   go(threadId, `ok=${ok}`);
 }

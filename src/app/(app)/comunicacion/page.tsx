@@ -82,6 +82,7 @@ export default async function ComunicacionPage({ searchParams }: { searchParams:
     rejected: t("Descartado.", "Discarded."),
     journey: t("Listo: la necesidad quedó en el Journey con su fuente.", "Done: the need is on the Journey with its source."),
     enviado: t("Respuesta enviada desde el correo de la empresa.", "Reply sent from the company mailbox."),
+    incierto: t("Microsoft no confirmó el envío: puede que sí haya salido. Antes de reenviarla, revisa la carpeta Enviados de sales@ en Outlook para no duplicarla.", "Microsoft didn't confirm the send: it may have gone out. Before resending, check sales@'s Sent Items in Outlook so it isn't duplicated."),
     respuesta: t("Respuesta registrada.", "Reply recorded."),
     vinculado: t("Conversación vinculada al contacto.", "Conversation linked to the contact."),
     cerrado: t("Listo. Sale de «Necesita de ti».", "Done. It leaves “Needs you”."),

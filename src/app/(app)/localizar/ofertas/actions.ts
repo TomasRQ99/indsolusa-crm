@@ -12,7 +12,8 @@ import { partKey } from "@/lib/parts";
 import { MAX_SUPPLIER_DOC_BYTES, bankCheck, parseLead, parseMoney, readSupplierDoc } from "@/lib/supplier-doc";
 import { isUsCountry, rfqEmail, type RfqItem } from "@/lib/rfq";
 import { spanishCountry } from "@/lib/company";
-import { recordOutbound } from "@/lib/mail-replies";
+import { sendTracked } from "@/lib/mail-replies";
+import { randomUUID } from "node:crypto";
 
 const txt = (fd: FormData, k: string, max = 300) => {
   const v = String(fd.get(k) ?? "").trim().slice(0, max);
@@ -191,21 +192,30 @@ export async function createRfq(fd: FormData) {
   const notes = txt(fd, "notes", 800);
   const from = cfg.from ?? "sales@indsolusa.com";
   const preview = rfqEmail({ code: "RFQ", lang: langPref === "ES" ? "ES" : "EN", supplierName: "—", items, neededBy, notes, senderName: user.name, from });
+  // One key per RFQ form: a double click or resubmit opens the RFQ already created instead of sending again.
+  const key = String(fd.get("idem") ?? "").trim();
+  const idemKey = /^[A-Za-z0-9-]{16,64}$/.test(key) ? `rfq:${key}` : null;
+  if (idemKey) {
+    const prior = await db.rfq.findUnique({ where: { idemKey }, select: { id: true } });
+    if (prior) redirect(`/localizar/rfq/${prior.id}?ok=enviada`);
+  }
   const rfq = await db.$transaction(async (tx) => {
     const code = await nextCode("RFQ", "rfq", tx);
-    return tx.rfq.create({ data: { code, dealId: deal?.id ?? null, items, lang: langPref === "ES" ? "ES" : langPref === "EN" ? "EN" : "AUTO", neededBy, notes, subject: preview.subject, body: preview.text, createdById: user.id, createdByName: user.name } });
+    return tx.rfq.create({ data: { code, idemKey, dealId: deal?.id ?? null, items, lang: langPref === "ES" ? "ES" : langPref === "EN" ? "EN" : "AUTO", neededBy, notes, subject: preview.subject, body: preview.text, createdById: user.id, createdByName: user.name } });
+  }).catch(async (e) => {
+    if ((e as { code?: string }).code === "P2002" && idemKey) { const prior = await db.rfq.findUnique({ where: { idemKey }, select: { id: true } }); if (prior) redirect(`/localizar/rfq/${prior.id}?ok=enviada`); }
+    throw e;
   });
   // One separate email per supplier (they never see each other). Language: chosen, or by country (Colombia → Spanish).
   for (const s of withEmail) {
     const lang = langPref === "ES" || langPref === "EN" ? langPref : spanishCountry(s.country) ? "ES" : "EN";
     const mail = rfqEmail({ code: rfq.code, lang, supplierName: s.name, items, neededBy, notes, senderName: user.name, from });
-    let status = "SENT", error: string | null = null;
-    try { await sendMail({ to: { address: s.email!, name: s.name }, subject: mail.subject, text: mail.text, html: mail.html, senderName: user.name }); }
-    catch (e) { status = "FAILED"; error = describeMailError(e).slice(0, 300); }
-    const rr = await db.rfqRecipient.create({ data: { rfqId: rfq.id, supplierId: s.id, email: s.email!, status, sentAt: status === "SENT" ? new Date() : null, error } });
-    if (status === "SENT") await recordOutbound({ template: "RFQ", refKind: "RFQR", refId: rr.id, refCode: rfq.code, partyKind: "SUPPLIER", supplierId: s.id, dealId: deal?.id ?? null, toAddr: s.email!, subject: mail.subject });
+    const rr = await db.rfqRecipient.create({ data: { rfqId: rfq.id, supplierId: s.id, email: s.email!, status: "SENDING" } });
+    const r = await sendTracked({ template: "RFQ", refKind: "RFQR", refId: rr.id, refCode: rfq.code, partyKind: "SUPPLIER", supplierId: s.id, dealId: deal?.id ?? null, toAddr: s.email!, toName: s.name, subject: mail.subject, text: mail.text, html: mail.html, senderName: user.name, idemKey: `rfqr:${rr.id}` });
+    // UNCERTAIN = no answer from Microsoft: SOLU checks Sent Items before anyone may retry.
+    await db.rfqRecipient.update({ where: { id: rr.id }, data: { status: r.status === "SENT" ? "SENT" : r.status === "UNCERTAIN" ? "UNCERTAIN" : "FAILED", sentAt: r.status === "FAILED" ? null : new Date(), error: r.error ?? null } });
   }
-  const sent = await db.rfqRecipient.count({ where: { rfqId: rfq.id, status: "SENT" } });
+  const sent = await db.rfqRecipient.count({ where: { rfqId: rfq.id, status: { in: ["SENT", "UNCERTAIN"] } } });
   if (sent) {
     await db.task.create({ data: { title: `Revisar respuestas de ${rfq.code} (${items.map((i) => i.mpn).join(", ")})`.slice(0, 200), dueDate: inWorkingDays(2), assigneeId: user.id, dealId: deal?.id ?? null, accountId: deal?.accountId ?? null } });
     if (deal) await db.activity.create({ data: { type: "EMAIL", subject: `${rfq.code} enviada a ${sent} proveedor(es): ${items.map((i) => `${i.qty} × ${i.mpn}`).join(", ")}`.slice(0, 200), userId: user.id, accountId: deal.accountId, dealId: deal.id, phase: "source", source: "Localizar repuestos" } });
@@ -228,13 +238,12 @@ export async function resendRecipient(recipientId: string) {
   const email = r.supplier.email ?? r.email;
   const lang = r.rfq.lang === "ES" || r.rfq.lang === "EN" ? r.rfq.lang : spanishCountry(r.supplier.country) ? "ES" : "EN";
   const mail = rfqEmail({ code: r.rfq.code, lang, supplierName: r.supplier.name, items: r.rfq.items as RfqItem[], neededBy: r.rfq.neededBy, notes: r.rfq.notes, senderName: user.name, from: mailConfig().from ?? "sales@indsolusa.com" });
-  try {
-    await sendMail({ to: { address: email, name: r.supplier.name }, subject: mail.subject, text: mail.text, html: mail.html, senderName: user.name });
-    await db.rfqRecipient.update({ where: { id: r.id }, data: { status: "SENT", sentAt: new Date(), error: null, email } });
-    await recordOutbound({ template: "RFQ", refKind: "RFQR", refId: r.id, refCode: r.rfq.code, partyKind: "SUPPLIER", supplierId: r.supplierId, dealId: r.rfq.dealId, toAddr: email, subject: mail.subject });
-  } catch (e) {
-    await db.rfqRecipient.update({ where: { id: r.id }, data: { status: "FAILED", error: describeMailError(e).slice(0, 300) } });
-  }
+  // Retry only what is known NOT to have gone out (FAILED). Claiming FAILED → SENDING in one step means
+  // two clicks (or two people) can't both send. UNCERTAIN is never retried: SOLU checks Sent Items first.
+  const claimed = await db.rfqRecipient.updateMany({ where: { id: r.id, status: "FAILED" }, data: { status: "SENDING", error: null } });
+  if (!claimed.count) redirect(`/localizar/rfq/${r.rfqId}`);
+  const res = await sendTracked({ template: "RFQ", refKind: "RFQR", refId: r.id, refCode: r.rfq.code, partyKind: "SUPPLIER", supplierId: r.supplierId, dealId: r.rfq.dealId, toAddr: email, toName: r.supplier.name, subject: mail.subject, text: mail.text, html: mail.html, senderName: user.name, idemKey: `rfqr:${r.id}:${randomUUID()}` });
+  await db.rfqRecipient.update({ where: { id: r.id }, data: { status: res.status === "SENT" ? "SENT" : res.status === "UNCERTAIN" ? "UNCERTAIN" : "FAILED", sentAt: res.status === "FAILED" ? r.sentAt : new Date(), error: res.error ?? null, email } });
   refreshApp();
   redirect(`/localizar/rfq/${r.rfqId}`);
 }

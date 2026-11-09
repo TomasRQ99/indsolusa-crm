@@ -10,6 +10,10 @@ import { COMPANY_NAME } from "./brand";
 type Recipient = Mail.Address | string;
 
 class MailError extends Error {}
+/** The request may have reached the mail server but no answer came back (network cut, timeout,
+ *  server error). The email MAY have been sent: never retry blindly — reconcile with Sent Items. */
+export class MailUncertainError extends Error {}
+export const isMailUncertain = (e: unknown) => e instanceof MailUncertainError;
 
 // Values pasted into hosting dashboards often pick up stray spaces or the quote marks
 // copied from a .env line; strip those so they don't break sign-in.
@@ -62,6 +66,11 @@ function bccList() {
 /** `html` is optional: when given, Outlook shows it (the plain `text` stays as the fallback). */
 export async function sendMail(opts: { to: Recipient; subject: string; text: string; html?: string; senderName?: string }) {
   // Test mode: MAIL_DRY_RUN=1 writes the email to the server log instead of sending it.
+  // Test mode for the uncertain path: logs, then behaves as if the connection was cut mid-send.
+  if (process.env.MAIL_DRY_RUN === "uncertain") {
+    console.log(`[MAIL_DRY_RUN uncertain] to=${toAddress(opts.to).address} subject=${opts.subject}`);
+    throw new MailUncertainError("Test: no answer while sending.");
+  }
   if (process.env.MAIL_DRY_RUN === "1") {
     console.log(`[MAIL_DRY_RUN] to=${toAddress(opts.to).address} subject=${opts.subject}\n${opts.text}\n[/MAIL_DRY_RUN]`);
     return;
@@ -129,7 +138,12 @@ async function sendViaGraph(
   opts: { to: Recipient; subject: string; text: string; html?: string },
 ) {
   const token = await graphToken(g);
-  const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(from)}/sendMail`, {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 30_000);
+  let res: Response;
+  try {
+    res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(from)}/sendMail`, {
+    signal: ctl.signal,
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -142,7 +156,14 @@ async function sendViaGraph(
       saveToSentItems: true, // the email appears in the mailbox's Sent Items
     }),
   });
+  } catch {
+    // No answer (timeout / connection cut after the request left): it may or may not have been sent.
+    throw new MailUncertainError("No answer from Microsoft while sending: it may have gone out. SOLU checks Sent Items before any retry.");
+  } finally {
+    clearTimeout(timer);
+  }
   if (res.status === 202) return;
+  if (res.status >= 500) throw new MailUncertainError(`Microsoft answered ${res.status} while sending: it may have gone out. SOLU checks Sent Items before any retry.`);
 
   if (res.status === 401) cachedToken = null;
   const data = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string } };
@@ -175,7 +196,7 @@ async function sendViaSmtp(
     auth: { user: s.user, pass: s.pass },
   });
   const bcc = bccList();
-  await transporter.sendMail({
+  try { await transporter.sendMail({
     // The From address must be the authenticated mailbox; only the display name varies.
     from: { name: opts.senderName ? `${opts.senderName} | ${COMPANY_NAME}` : `${COMPANY_NAME} Sales`, address: from },
     to: opts.to,
@@ -183,7 +204,11 @@ async function sendViaSmtp(
     subject: opts.subject,
     text: opts.text,
     html: opts.html,
-  });
+  }); } catch (e) {
+    const err = e as { code?: string; command?: string; responseCode?: number };
+    if (err.command === "DATA" || (!err.responseCode && err.command !== "CONN" && /ETIMEDOUT|ECONNRESET|ESOCKET/.test(err.code ?? ""))) throw new MailUncertainError("The mail server stopped answering while sending: it may have gone out.");
+    throw e;
+  }
 }
 
 export function describeMailError(e: unknown) {

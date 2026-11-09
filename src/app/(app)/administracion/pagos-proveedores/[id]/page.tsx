@@ -32,7 +32,10 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
   const changed = !!s.bankVerifiedAt && p.discrepancies.length > 0;
   const openExec = p.executions.find((e) => e.state === "SENT" || e.state === "UNCERTAIN");
   const confirmed = p.executions.find((e) => e.state === "CONFIRMED");
-  const canVerify = p.state === "VERIFY" && p.requestedById !== user.id;
+  // Least privilege: full account numbers and the verification call are for Treasury (Management/Admin);
+  // everyone else sees the last 4 digits. The requester can never verify their own request.
+  const canVerify = p.state === "VERIFY" && p.requestedById !== user.id && manager;
+  const shown = (key: string, v: string | null) => (v == null ? "—" : manager || key !== "account" ? v : `•••• ${v.replace(/[^A-Za-z0-9]/g, "").slice(-4)}`);
   const fields = [
     { key: "beneficiary", label: t("Beneficiario", "Beneficiary"), profile: s.bankBeneficiary, doc: p.docBeneficiary },
     { key: "bankName", label: t("Banco", "Bank"), profile: s.bankName, doc: p.docBankName },
@@ -46,7 +49,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
     aprobado: t("Aprobado. Todavía no está pagado: falta enviarlo desde el banco.", "Approved. It's not paid yet: it still has to be sent from the bank."),
     enviado: t("Envío registrado. No cuenta como pagado hasta que el banco o el proveedor lo confirme.", "Sending recorded. It doesn't count as paid until the bank or supplier confirms it."),
     pagado: t("Pago confirmado con evidencia.", "Payment confirmed with evidence."),
-    incierto: t("Marcado como incierto. No reintentes hasta conciliarlo.", "Marked uncertain. Don't retry until it's reconciled."),
+    incierto: t("Marcado como incierto. Conviene no reintentar hasta conciliarlo.", "Marked uncertain. Best not to retry until it's reconciled."),
     fallido: t("Registrado: el dinero no salió. Puedes registrar un nuevo envío.", "Recorded: the money didn't leave. You can record a new sending."),
   };
   const errMsg: Record<string, string> = {
@@ -123,8 +126,9 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
               <div className="jbh"><b>BANK PROFILE</b><span className="grow" />{!s.bankVerifiedAt ? <span className="sig attn">{t("Sin verificar", "Not verified")}</span> : p.discrepancies.length && !p.verifiedAt ? <span className="sig risk">{t("Difiere", "Differs")}</span> : <span className="sig ok">✓ {t("Verificado", "Verified")}</span>}</div>
               <table className="tre-bank">
                 <thead><tr><th /><th>{t("Perfil verificado", "Verified profile")}</th><th>{t("Instrucción", "Instruction")}</th></tr></thead>
-                <tbody>{fields.map((f) => <tr key={f.key} className={differs.has(f.key as never) ? "diff" : ""}><td>{f.label}</td><td className="mono">{s.bankVerifiedAt ? f.profile ?? "—" : "—"}</td><td className="mono">{f.doc ?? "—"}</td></tr>)}</tbody>
+                <tbody>{fields.map((f) => <tr key={f.key} className={differs.has(f.key as never) ? "diff" : ""}><td>{f.label}</td><td className="mono">{s.bankVerifiedAt ? shown(f.key, f.profile) : "—"}</td><td className="mono">{shown(f.key, f.doc)}</td></tr>)}</tbody>
               </table>
+              {!manager && <p className="src">{t("Por seguridad, el número de cuenta completo solo lo ve Tesorería.", "For security, only Treasury sees the full account number.")}</p>}
               <p className="src">{s.bankVerifiedAt ? t(`Verificado el ${i.date(s.bankVerifiedAt)}. Solo cambia por verificación independiente.`, `Verified on ${i.date(s.bankVerifiedAt)}. Only changes through independent verification.`) : t("Se verificará con este primer pago.", "Will be verified with this first payment.")}</p>
             </section>
             <section className={`jblock ${dup.hard ? "bad" : dup.hits.length ? "warn" : "good"}`}>
@@ -169,7 +173,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
                 <label className="chk"><input type="checkbox" name="updateProfile" defaultChecked /> {t("Actualizar el perfil verificado", "Update the verified profile")}</label>
                 <button type="submit" className="wide">{t("Registrar verificación", "Record verification")}</button>
               </form>
-            ) : <p className="small">{t(`Debe verificarlo alguien distinto de ${p.requestedBy.name}.`, `Someone other than ${p.requestedBy.name} must verify it.`)}</p>)}
+            ) : <p className="small">{!manager ? t(`Lo verifica Tesorería (Gerencia o Administración), nunca quien lo solicitó (${p.requestedBy.name}).`, `Treasury (Management or Admin) verifies it, never the requester (${p.requestedBy.name}).`) : t(`Debe verificarlo alguien distinto de ${p.requestedBy.name}.`, `Someone other than ${p.requestedBy.name} must verify it.`)}</p>)}
             {p.state === "APPROVE" && (
               <form action={approveSupplierPayment.bind(null, p.id)} className="qa-form">
                 {dup.hits.length > 0 && !dup.hard && <label className="chk"><input type="checkbox" name="dupChecked" value="1" /> {t("Revisé los posibles duplicados: no lo son", "I reviewed the possible duplicates: they aren't")}</label>}

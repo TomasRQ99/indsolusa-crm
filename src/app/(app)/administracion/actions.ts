@@ -205,7 +205,7 @@ async function loadPayment(id: string) {
  * supplier (never one from the document) and confirms the bank data.
  */
 export async function verifySupplierPayment(id: string, formData: FormData) {
-  const user = await requireUser();
+  const user = await requireManager(); // Treasury only (least privilege); never the requester
   const { p, state } = await loadPayment(id);
   if (state !== "VERIFY") throw new Error("Este pago no requiere verificación / This payment needs no verification.");
   if (p.requestedById === user.id) throw new Error("Quien solicita el pago no puede verificarlo / The requester cannot verify.");

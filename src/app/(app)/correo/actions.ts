@@ -4,9 +4,9 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { refreshApp } from "@/lib/revalidate";
-import { describeMailError, mailConfig, sendMail } from "@/lib/mail";
+import { mailConfig } from "@/lib/mail";
 import { composeFrom } from "@/lib/email-compose";
-import { recordOutbound, syncReplies } from "@/lib/mail-replies";
+import { sendTracked, syncReplies } from "@/lib/mail-replies";
 import { domainReport, linkIssues, stripTracking } from "@/lib/mail-health";
 import { TEMPLATES, textToHtml, type MailLang, type TemplateKey } from "@/lib/email-templates";
 
@@ -43,17 +43,20 @@ export async function sendComposed(fd: FormData) {
   // Unedited text keeps the formatted version (tables); edited text is sent as the person wrote it.
   const html = body === c.mail.text.trim() ? c.mail.html : textToHtml(body);
 
-  try {
-    await sendMail({ to: { address: to, name: c.toName }, subject, text: body, html, senderName: user.name });
-  } catch (e) {
-    redirect(qs(`err=envio&msg=${encodeURIComponent(describeMailError(e).slice(0, 200))}`));
-  }
-  await recordOutbound({ template: tpl, refKind: c.ref.kind, refId: c.ref.id, refCode: c.ref.code, partyKind: c.ref.party, supplierId: c.ref.supplierId, accountId: c.ref.party === "CUSTOMER" ? c.accountId : null, dealId: c.dealId, toAddr: to, subject });
+  // One key per compose screen: a double click or a browser resubmit never sends twice.
+  const key = String(fd.get("idem") ?? "").trim();
+  const idemKey = /^[A-Za-z0-9-]{16,64}$/.test(key) ? `compose:${key}` : null;
+  const r = await sendTracked({ template: tpl, refKind: c.ref.kind, refId: c.ref.id, refCode: c.ref.code, partyKind: c.ref.party, supplierId: c.ref.supplierId, accountId: c.ref.party === "CUSTOMER" ? c.accountId : null, dealId: c.dealId, toAddr: to, toName: c.toName, subject, text: body, html, senderName: user.name, idemKey });
+  const done = `${c.back}${c.back.includes("?") ? "&" : "?"}ok=correo`;
+  if (r.status === "DUPLICATE") redirect(r.prior === "SENT" ? done : "/correo/respuestas?ok=incierto");
+  if (r.status === "FAILED") redirect(qs(`err=envio&msg=${encodeURIComponent((r.error ?? "").slice(0, 200))}`));
   if (c.dealId || c.accountId) {
-    await db.activity.create({ data: { type: "EMAIL", subject: `${TEMPLATES[tpl].es}: ${subject}`.slice(0, 200), body: body.slice(0, 4000), userId: user.id, accountId: c.accountId, dealId: c.dealId, phase: PHASE[tpl], source: "Plantillas de correo" } });
+    const unsure = r.status === "UNCERTAIN";
+    await db.activity.create({ data: { type: "EMAIL", subject: `${TEMPLATES[tpl].es}: ${subject}${unsure ? " (envío sin confirmar)" : ""}`.slice(0, 200), body: body.slice(0, 4000), userId: user.id, accountId: c.accountId, dealId: c.dealId, phase: PHASE[tpl], source: "Plantillas de correo", uncertain: unsure } });
   }
   refreshApp();
-  redirect(`${c.back}${c.back.includes("?") ? "&" : "?"}ok=correo`);
+  // Uncertain: say so plainly and don't invite a resend; SOLU checks Sent Items in the next minutes.
+  redirect(r.status === "UNCERTAIN" ? "/correo/respuestas?ok=incierto" : done);
 }
 
 /** "Check the mailbox now" on the replies page. Errors are shown by the page from the last check. */

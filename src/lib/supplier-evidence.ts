@@ -9,7 +9,7 @@ export type SupplierEvidence = {
   /** Ready-to-ship: promised ship-by vs actual, on POs that were released/confirmed. */
   rts: { measured: number; onTime: number; medianDelta: number | null; openLate: number; last: Date | null };
   /** Quote requests (RFQ) sent from sales@ to this supplier. */
-  rfq: { asked: number; answered: number; declined: number; waiting: number; failed: number; medianReplyHours: number | null; last: Date | null };
+  rfq: { asked: number; answered: number; declined: number; waiting: number; failed: number; medianReplyHours: number | null; /** how many replies the median is based on (wording: "usually" only from 3) */ replyCount: number; last: Date | null };
   /** Quotes / proformas received and offers still valid. */
   docs: { count: number; last: Date | null; bankDifferent: number };
   offers: { valid: number; total: number };
@@ -78,7 +78,7 @@ export async function supplierEvidence(ids: string[], opts: { partKeys?: string[
       rfq: {
         asked: rs.length, answered: rs.filter((r) => r.status === "ANSWERED" || (r.repliedAt && r.status !== "DECLINED")).length, declined: rs.filter((r) => r.status === "DECLINED").length,
         waiting: rs.filter((r) => r.status === "SENT" && !r.repliedAt).length, failed: rs.filter((r) => r.status === "FAILED").length,
-        medianReplyHours: median(replies), last: lastDate(rs.map((r) => r.sentAt ?? r.rfq.createdAt)),
+        medianReplyHours: median(replies), replyCount: replies.length, last: lastDate(rs.map((r) => r.sentAt ?? r.rfq.createdAt)),
       },
       docs: { count: ds.length, last: lastDate(ds.map((d) => d.createdAt)), bankDifferent: ds.filter((d) => d.bankWarning === "DIFFERENT").length },
       offers: { valid: os.filter((o) => !o.validUntil || o.validUntil >= now).length, total: os.length },
