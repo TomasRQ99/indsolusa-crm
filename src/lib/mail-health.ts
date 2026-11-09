@@ -186,7 +186,7 @@ export function templateReview(sender: string, from: string) {
     if (!m.text.trim()) notes.push({ level: "fail", es: "No tiene versión de texto simple.", en: "No plain-text version." });
     const longest = Math.max(...m.subjects.map((s) => s.length));
     if (longest > 78) notes.push({ level: "info", es: `Un asunto tiene ${longest} caracteres: en el celular se corta cerca de 40–60.`, en: `A subject has ${longest} characters: phones cut around 40–60.` });
-    if (m.subjects.some((s) => /\bURGENTE?\b/.test(s))) notes.push({ level: "info", es: "Un asunto usa URGENT/URGENTE en mayúsculas. Es parte de la plantilla de la empresa; con SPF, DKIM y DMARC en verde no suele afectar.", en: "A subject uses URGENT in capitals. It's part of the company template; with SPF, DKIM and DMARC green it usually doesn't matter." });
+    if (m.subjects.some((s) => /\bURGENTE?\b/.test(s))) notes.push({ level: "info", es: "Un asunto usa URGENT/URGENTE en mayúsculas. SOLU solo lo usa cuando el Journey es urgente; con SPF, DKIM y DMARC en verde no suele afectar.", en: "A subject uses URGENT in capitals. SOLU only uses it when the Journey is urgent; with SPF, DKIM and DMARC green it usually doesn't matter." });
     if (m.subjects.some((s) => /!{1,}|\$\$|free|gratis/i.test(s))) notes.push({ level: "warn", es: "El asunto tiene signos de exclamación o palabras típicas de spam.", en: "The subject has exclamation marks or typical spam words." });
     return { key: k, name: TEMPLATES[k], kb, links, plain: !!m.text.trim(), notes, level: (notes.some((n) => n.level === "fail") ? "fail" : notes.some((n) => n.level === "warn") ? "warn" : "ok") as Level };
   });

@@ -1410,6 +1410,8 @@ a.loc-chip:hover { background: var(--brand-soft); color: var(--brand); }
 .loc-docgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px 14px; margin: 8px 0 12px; }
 .loc-docgrid label { display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); min-width: 0; }
 .loc-docgrid input, .loc-docgrid select { width: 100%; min-width: 0; }
+.loc-check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; margin: 0 0 10px; cursor: pointer; }
+.loc-check input { margin-top: 3px; flex: none; }
 .loc-lines { width: 100%; overflow-x: auto; display: block; }
 .loc-lines table { min-width: 720px; }
 .loc-lines input { width: 100%; min-width: 0; }

@@ -7,6 +7,7 @@ import { mailConfig } from "@/lib/mail";
 import { evidenceFor, partKey } from "@/lib/parts";
 import { rfqEmail } from "@/lib/rfq";
 import { fold } from "@/lib/part-lexicon";
+import { journeyUrgency } from "@/lib/urgency";
 import { createRfq } from "../../ofertas/actions";
 import { supplierEvidence } from "@/lib/supplier-evidence";
 import { SupplierEvidenceLine } from "@/components/SupplierEvidenceLine";
@@ -39,7 +40,9 @@ export default async function NewRfq({ searchParams }: { searchParams: Promise<{
   const keysForParts = parts.map((p) => partKey(p.mpn));
   const sev = await supplierEvidence(sorted.slice(0, 60).map((s) => s.id), { partKeys: keysForParts });
   const cfg = mailConfig();
-  const preview = parts.length ? rfqEmail({ code: "RFQ-…", lang: "EN", supplierName: t("[proveedor]", "[supplier]"), items: parts.map((p) => ({ partId: p.id, mpn: p.mpn, name: p.name, nameEn: p.nameEn, brand: p.brand, qty: qtyFor(p) })), neededBy: null, notes: null, senderName: user.name, from: cfg.from ?? "sales@indsolusa.com" }) : null;
+  // SOLU suggests "urgent" only from facts of the Journey; the person can change it.
+  const urg = await journeyUrgency(deal?.id);
+  const preview = parts.length ? rfqEmail({ code: "RFQ-…", lang: "EN", supplierName: t("[proveedor]", "[supplier]"), items: parts.map((p) => ({ partId: p.id, mpn: p.mpn, name: p.name, nameEn: p.nameEn, brand: p.brand, qty: qtyFor(p) })), neededBy: null, notes: null, urgent: !!urg, senderName: user.name, from: cfg.from ?? "sales@indsolusa.com" }) : null;
   const errs: Record<string, string> = {
     partes: t("Elige al menos una parte.", "Pick at least one part."),
     proveedores: t("Elige al menos un proveedor.", "Pick at least one supplier."),
@@ -101,11 +104,12 @@ export default async function NewRfq({ searchParams }: { searchParams: Promise<{
               <label>{t("Respuesta antes de", "Answer by")}<input type="date" name="neededBy" /></label>
               <label>{t("Idioma del correo", "Email language")}<select name="lang" defaultValue="AUTO"><option value="AUTO">{t("Según el país del proveedor", "By supplier's country")}</option><option value="EN">English</option><option value="ES">Español</option></select></label>
             </div>
+            <label className="loc-check"><input type="checkbox" name="urgent" value="1" defaultChecked={!!urg} /> <span>{t("Decir que es URGENTE en el correo", "Say it is URGENT in the email")}<span className="src block">{urg ? t(`SOLU lo sugiere porque ${urg.es}.`, `SOLU suggests it because ${urg.en}.`) : t("Solo si el cliente realmente lo necesita con urgencia: así los proveedores nos siguen creyendo cuando sí lo es.", "Only if the customer really needs it urgently: that way suppliers keep believing us when it is.")}</span></span></label>
             <label>{t("Nota para el proveedor (opcional)", "Note for the supplier (optional)")}<textarea name="notes" rows={2} placeholder={t("Ej.: necesitamos certificado de origen", "E.g.: we need a certificate of origin")} /></label>
           </section>
 
           {preview && (
-            <details className="loc-preview"><summary>{t("Ver cómo se verá el correo (inglés)", "Preview the email (English)")}</summary>
+            <details className="loc-preview"><summary>{t(`Ver cómo se verá el correo (inglés${urg ? ", urgente" : ""})`, `Preview the email (English${urg ? ", urgent" : ""})`)}</summary>
               <p className="mono small"><b>{preview.subject}</b></p>
               <div className="mail-preview" dangerouslySetInnerHTML={{ __html: preview.html }} />
             </details>

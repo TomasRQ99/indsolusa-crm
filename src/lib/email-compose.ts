@@ -8,6 +8,7 @@ import { canEdit } from "./permissions";
 import { quoteNo } from "./quote";
 import type { SessionUser } from "./auth";
 import type { RfqItem } from "./rfq";
+import { journeyUrgency } from "./urgency";
 import { deliveryMail, followUpMail, negotiateMail, offerMail, paymentMail, type Mail, type MailLang, type TemplateKey } from "./email-templates";
 
 export type ComposeCtx = { tpl: TemplateKey; id: string; lang?: MailLang | null };
@@ -28,12 +29,12 @@ export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: stri
   const replyBy = workingDaysAhead(2);
 
   if (ctx.tpl === "FOLLOWUP") {
-    const r = await db.rfqRecipient.findUnique({ where: { id: ctx.id }, include: { supplier: { select: { name: true, email: true, country: true } }, rfq: { select: { id: true, code: true, items: true, lang: true, dealId: true, deal: { select: { accountId: true } } } } } });
+    const r = await db.rfqRecipient.findUnique({ where: { id: ctx.id }, include: { supplier: { select: { name: true, email: true, country: true } }, rfq: { select: { id: true, code: true, items: true, lang: true, urgent: true, dealId: true, deal: { select: { accountId: true } } } } } });
     if (!r) return null;
     const lang = pickLang(ctx.lang, r.rfq.lang === "ES" || r.rfq.lang === "EN" ? r.rfq.lang : spanishCountry(r.supplier.country) ? "ES" : "EN");
     const items = (r.rfq.items as RfqItem[]).map((it) => ({ qty: it.qty, code: it.mpn, brand: it.brand, description: (lang === "EN" ? it.nameEn ?? it.name : it.name).slice(0, 160) }));
     return {
-      mail: followUpMail({ lang, code: r.rfq.code, items, sentAt: r.sentAt, replyBy, sender, from }), lang,
+      mail: followUpMail({ lang, code: r.rfq.code, items, sentAt: r.sentAt, replyBy, sender, from, urgent: r.rfq.urgent }), lang,
       to: r.supplier.email ?? r.email, toName: r.supplier.name, about: `${r.rfq.code} · ${r.supplier.name}`,
       dealId: r.rfq.dealId, accountId: r.rfq.deal?.accountId ?? null, back: `/localizar/rfq/${r.rfq.id}`, ref: { kind: "RFQR", id: r.id, code: r.rfq.code, party: "SUPPLIER", supplierId: r.supplierId },
       warn: r.status === "ANSWERED" ? (ui ? "This supplier already answered." : "Este proveedor ya respondió.") : null, canSend: true,
@@ -58,7 +59,7 @@ export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: stri
     const lang = pickLang(ctx.lang, spanishCountry(p.supplier.country) ? "ES" : "EN");
     const items = p.lines.map((l) => ({ qty: l.qty, code: l.code ?? "", description: l.description.slice(0, 160) }));
     return {
-      mail: deliveryMail({ lang, poCode: p.code, proformaRef: p.proformaRef, items: items.length ? items : [{ qty: 1, code: p.code, description: "—" }], promised: p.shipBy ?? p.eta, issue: null, replyBy, sender, from }), lang,
+      mail: deliveryMail({ lang, poCode: p.code, proformaRef: p.proformaRef, items: items.length ? items : [{ qty: 1, code: p.code, description: "—" }], promised: p.shipBy ?? p.eta, issue: null, replyBy, sender, from, urgent: !!(await journeyUrgency(p.deal.id)) }), lang,
       to: p.supplier.email, toName: p.supplier.name, about: `${p.code} · ${p.supplier.name}`,
       dealId: p.deal.id, accountId: p.deal.accountId, back: `/compras/${p.id}`, ref: { kind: "SPO", id: p.id, code: p.code, party: "SUPPLIER", supplierId: p.supplierId },
       warn: p.shippedAt ? (ui ? "This order is already marked as shipped." : "Esta orden ya está marcada como despachada.") : null, canSend: true,

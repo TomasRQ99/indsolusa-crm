@@ -189,9 +189,10 @@ export async function createRfq(fd: FormData) {
   if (!withEmail.length) redirect(`${back}&err=sincorreo`);
   const langPref = fd.get("lang");
   const neededBy = dayOf(fd.get("neededBy"));
+  const urgent = fd.get("urgent") === "1";
   const notes = txt(fd, "notes", 800);
   const from = cfg.from ?? "sales@indsolusa.com";
-  const preview = rfqEmail({ code: "RFQ", lang: langPref === "ES" ? "ES" : "EN", supplierName: "—", items, neededBy, notes, senderName: user.name, from });
+  const preview = rfqEmail({ code: "RFQ", lang: langPref === "ES" ? "ES" : "EN", supplierName: "—", items, neededBy, notes, urgent, senderName: user.name, from });
   // One key per RFQ form: a double click or resubmit opens the RFQ already created instead of sending again.
   const key = String(fd.get("idem") ?? "").trim();
   const idemKey = /^[A-Za-z0-9-]{16,64}$/.test(key) ? `rfq:${key}` : null;
@@ -201,7 +202,7 @@ export async function createRfq(fd: FormData) {
   }
   const rfq = await db.$transaction(async (tx) => {
     const code = await nextCode("RFQ", "rfq", tx);
-    return tx.rfq.create({ data: { code, idemKey, dealId: deal?.id ?? null, items, lang: langPref === "ES" ? "ES" : langPref === "EN" ? "EN" : "AUTO", neededBy, notes, subject: preview.subject, body: preview.text, createdById: user.id, createdByName: user.name } });
+    return tx.rfq.create({ data: { code, idemKey, dealId: deal?.id ?? null, items, lang: langPref === "ES" ? "ES" : langPref === "EN" ? "EN" : "AUTO", neededBy, urgent, notes, subject: preview.subject, body: preview.text, createdById: user.id, createdByName: user.name } });
   }).catch(async (e) => {
     if ((e as { code?: string }).code === "P2002" && idemKey) { const prior = await db.rfq.findUnique({ where: { idemKey }, select: { id: true } }); if (prior) redirect(`/localizar/rfq/${prior.id}?ok=enviada`); }
     throw e;
@@ -209,7 +210,7 @@ export async function createRfq(fd: FormData) {
   // One separate email per supplier (they never see each other). Language: chosen, or by country (Colombia → Spanish).
   for (const s of withEmail) {
     const lang = langPref === "ES" || langPref === "EN" ? langPref : spanishCountry(s.country) ? "ES" : "EN";
-    const mail = rfqEmail({ code: rfq.code, lang, supplierName: s.name, items, neededBy, notes, senderName: user.name, from });
+    const mail = rfqEmail({ code: rfq.code, lang, supplierName: s.name, items, neededBy, notes, urgent, senderName: user.name, from });
     const rr = await db.rfqRecipient.create({ data: { rfqId: rfq.id, supplierId: s.id, email: s.email!, status: "SENDING" } });
     const r = await sendTracked({ template: "RFQ", refKind: "RFQR", refId: rr.id, refCode: rfq.code, partyKind: "SUPPLIER", supplierId: s.id, dealId: deal?.id ?? null, toAddr: s.email!, toName: s.name, subject: mail.subject, text: mail.text, html: mail.html, senderName: user.name, idemKey: `rfqr:${rr.id}` });
     // UNCERTAIN = no answer from Microsoft: SOLU checks Sent Items before anyone may retry.
@@ -237,7 +238,7 @@ export async function resendRecipient(recipientId: string) {
   const r = await db.rfqRecipient.findUniqueOrThrow({ where: { id: recipientId }, include: { rfq: true, supplier: { select: { name: true, email: true, country: true } } } });
   const email = r.supplier.email ?? r.email;
   const lang = r.rfq.lang === "ES" || r.rfq.lang === "EN" ? r.rfq.lang : spanishCountry(r.supplier.country) ? "ES" : "EN";
-  const mail = rfqEmail({ code: r.rfq.code, lang, supplierName: r.supplier.name, items: r.rfq.items as RfqItem[], neededBy: r.rfq.neededBy, notes: r.rfq.notes, senderName: user.name, from: mailConfig().from ?? "sales@indsolusa.com" });
+  const mail = rfqEmail({ code: r.rfq.code, lang, supplierName: r.supplier.name, items: r.rfq.items as RfqItem[], neededBy: r.rfq.neededBy, notes: r.rfq.notes, urgent: r.rfq.urgent, senderName: user.name, from: mailConfig().from ?? "sales@indsolusa.com" });
   // Retry only what is known NOT to have gone out (FAILED). Claiming FAILED → SENDING in one step means
   // two clicks (or two people) can't both send. UNCERTAIN is never retried: SOLU checks Sent Items first.
   const claimed = await db.rfqRecipient.updateMany({ where: { id: r.id, status: "FAILED" }, data: { status: "SENDING", error: null } });

@@ -445,6 +445,8 @@ model Rfq {
   items         Json // [{partId, mpn, name, brand, qty}]
   lang          String         @default("EN")
   neededBy      DateTime?
+  /// Only when the Journey is really urgent does the email say URGENT (no artificial pressure).
+  urgent        Boolean        @default(false)
   notes         String?
   subject       String
   body          String

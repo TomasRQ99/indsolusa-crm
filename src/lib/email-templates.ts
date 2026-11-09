@@ -74,12 +74,12 @@ const c0 = (items: ItemRow[]) => items[0].code || items[0].description.slice(0, 
 const first = (items: ItemRow[]) => (items[0].code ? `${items[0].code}${items[0].brand ? ` (${items[0].brand})` : ""}` : items[0].description.slice(0, 50));
 
 // ---------- 1. Request for quotation (company template) ----------
-export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; neededBy: Date | null; notes: string | null; sender: string; from: string }): Mail {
+export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; neededBy: Date | null; notes: string | null; sender: string; from: string; urgent?: boolean }): Mail {
   const en = o.lang === "EN";
   const blocks: Block[] = en ? [
     { p: "Dear Sirs," },
     { p: `${COMPANY.legalName} is a company with offices in Miami and New York. We serve all 50 U.S. states and Puerto Rico. Our mission is to help our customers with their urgent requests and to ensure all spare parts are delivered in a timely manner.` },
-    { p: "We have just received an URGENT request from a special customer for the following product(s):" },
+    { p: o.urgent ? "We have just received an URGENT request from a special customer for the following product(s):" : "We have just received a request from a customer for the following product(s):" },
     { items: o.items },
     { p: "Please send us pictures, a diagram or the technical data sheet of the quoted items, so we can double-check with our customer and avoid any mistakes." },
     { p: "To secure the purchase order from our customer, please confirm your:" },
@@ -95,7 +95,7 @@ export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; nee
   ] : [
     { p: "Estimados señores:" },
     { p: `${COMPANY.legalName} es una empresa con oficinas en Miami y Nueva York. Atendemos los 50 estados de EE. UU. y Puerto Rico. Nuestra misión es ayudar a nuestros clientes con sus solicitudes urgentes y asegurar que todos los repuestos se entreguen a tiempo.` },
-    { p: "En este momento recibimos una solicitud URGENTE de un cliente especial para el/los siguiente(s) producto(s):" },
+    { p: o.urgent ? "En este momento recibimos una solicitud URGENTE de un cliente especial para el/los siguiente(s) producto(s):" : "En este momento recibimos una solicitud de un cliente para el/los siguiente(s) producto(s):" },
     { items: o.items },
     { p: "Por favor envíennos fotos, un diagrama o la ficha técnica de los ítems cotizados, para confirmarlos con nuestro cliente y evitar errores." },
     { p: "Para obtener la orden de compra de nuestro cliente, por favor confirmen:" },
@@ -111,17 +111,17 @@ export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; nee
   ];
   const q = o.items[0].qty;
   const subjects = en
-    ? [`URGENT RFQ ${o.code} – ${q} x ${first(o.items)}${more(o.items)}`, `Request for quotation – ${first(o.items)}${more(o.items)} – ${o.code}`, `Price and availability: ${c0(o.items)}${more(o.items)} – ${COMPANY.shortName}`]
-    : [`URGENTE: solicitud de cotización ${o.code} – ${q} x ${first(o.items)}${more(o.items)}`, `Solicitud de cotización – ${first(o.items)}${more(o.items)} – ${o.code}`, `Precio y disponibilidad: ${c0(o.items)}${more(o.items)} – ${COMPANY.shortName}`];
+    ? [`${o.urgent ? "URGENT RFQ" : "Quote request"} ${o.code} – ${q} x ${first(o.items)}${more(o.items)}`, `Request for quotation – ${first(o.items)}${more(o.items)} – ${o.code}`, `Price and availability: ${c0(o.items)}${more(o.items)} – ${COMPANY.shortName}`]
+    : [`${o.urgent ? "URGENTE: s" : "S"}olicitud de cotización ${o.code} – ${q} x ${first(o.items)}${more(o.items)}`, `Solicitud de cotización – ${first(o.items)}${more(o.items)} – ${o.code}`, `Precio y disponibilidad: ${c0(o.items)}${more(o.items)} – ${COMPANY.shortName}`];
   return { subjects, ...sigFix(render(blocks, o.lang)) };
 }
 
 // ---------- 2. Supplier follow-up ----------
-export function followUpMail(o: { lang: MailLang; code: string; items: ItemRow[]; sentAt: Date | null; replyBy: Date; sender: string; from: string }): Mail {
+export function followUpMail(o: { lang: MailLang; code: string; items: ItemRow[]; sentAt: Date | null; replyBy: Date; sender: string; from: string; urgent?: boolean }): Mail {
   const en = o.lang === "EN";
   const blocks: Block[] = en ? [
     { p: "Dear Sirs," },
-    { p: `We are following up on our request ${o.code}${o.sentAt ? ` of ${longDay(o.sentAt, "EN")}` : ""}. Our customer's request is still URGENT and we would like to include your offer:` },
+    { p: `We are following up on our request ${o.code}${o.sentAt ? ` of ${longDay(o.sentAt, "EN")}` : ""}. ${o.urgent ? "Our customer's request is still URGENT and we would like to include your offer:" : "We would still like to include your offer for our customer:"}` },
     { items: o.items },
     { p: "Please confirm your best resale price, availability (lead time after payment), payment options and approximate weight and box dimensions." },
     { p: `Could you send your quote or proforma invoice by ${longDay(o.replyBy, "EN")}? If you cannot supply these items, a short reply also helps us.`, strong: true },
@@ -129,7 +129,7 @@ export function followUpMail(o: { lang: MailLang; code: string; items: ItemRow[]
     ...signature("EN", o.sender, o.from),
   ] : [
     { p: "Estimados señores:" },
-    { p: `Hacemos seguimiento a nuestra solicitud ${o.code}${o.sentAt ? ` del ${longDay(o.sentAt, "ES")}` : ""}. La solicitud de nuestro cliente sigue siendo URGENTE y queremos incluir su oferta:` },
+    { p: `Hacemos seguimiento a nuestra solicitud ${o.code}${o.sentAt ? ` del ${longDay(o.sentAt, "ES")}` : ""}. ${o.urgent ? "La solicitud de nuestro cliente sigue siendo URGENTE y queremos incluir su oferta:" : "Aún queremos incluir su oferta para nuestro cliente:"}` },
     { items: o.items },
     { p: "Por favor confirmen su mejor precio de reventa, disponibilidad (plazo después del pago), formas de pago y peso y dimensiones aproximadas de la caja." },
     { p: `¿Podrían enviarnos su cotización o factura proforma a más tardar el ${longDay(o.replyBy, "ES")}? Si no pueden suministrar estos ítems, una respuesta corta también nos ayuda.`, strong: true },
@@ -137,8 +137,8 @@ export function followUpMail(o: { lang: MailLang; code: string; items: ItemRow[]
     ...signature("ES", o.sender, o.from),
   ];
   const subjects = en
-    ? [`Follow-up: ${o.code} – ${first(o.items)}${more(o.items)}`, `Re: URGENT RFQ ${o.code} – still waiting for your quote`, `${c0(o.items)}: can you quote by ${longDay(o.replyBy, "EN")}?`]
-    : [`Seguimiento: ${o.code} – ${first(o.items)}${more(o.items)}`, `Re: solicitud URGENTE ${o.code} – esperamos su cotización`, `${c0(o.items)}: ¿pueden cotizar antes del ${longDay(o.replyBy, "ES")}?`];
+    ? [`Follow-up: ${o.code} – ${first(o.items)}${more(o.items)}`, `Re: ${o.urgent ? "URGENT RFQ" : "quote request"} ${o.code} – still waiting for your quote`, `${c0(o.items)}: can you quote by ${longDay(o.replyBy, "EN")}?`]
+    : [`Seguimiento: ${o.code} – ${first(o.items)}${more(o.items)}`, `Re: solicitud${o.urgent ? " URGENTE" : ""} ${o.code} – esperamos su cotización`, `${c0(o.items)}: ¿pueden cotizar antes del ${longDay(o.replyBy, "ES")}?`];
   return { subjects, ...sigFix(render(blocks, o.lang)) };
 }
 
@@ -172,7 +172,7 @@ export function negotiateMail(o: { lang: MailLang; theirRef: string | null; item
 }
 
 // ---------- 4. Delivery issue (supplier order) ----------
-export function deliveryMail(o: { lang: MailLang; poCode: string; proformaRef: string | null; items: ItemRow[]; promised: Date | null; issue: string | null; replyBy: Date; sender: string; from: string }): Mail {
+export function deliveryMail(o: { lang: MailLang; poCode: string; proformaRef: string | null; items: ItemRow[]; promised: Date | null; issue: string | null; replyBy: Date; sender: string; from: string; urgent?: boolean }): Mail {
   const en = o.lang === "EN";
   const late = o.promised && o.promised < new Date();
   const blocks: Block[] = en ? [
@@ -199,8 +199,8 @@ export function deliveryMail(o: { lang: MailLang; poCode: string; proformaRef: s
     ...signature("ES", o.sender, o.from),
   ];
   const subjects = en
-    ? [`${o.poCode} – shipping status and tracking, please`, `URGENT: ${o.poCode} – confirm ship date – ${first(o.items)}`, `PO ${o.poCode}: when will it ship?`]
-    : [`${o.poCode} – estado del despacho y guía, por favor`, `URGENTE: ${o.poCode} – confirmar fecha de despacho – ${first(o.items)}`, `OC ${o.poCode}: ¿cuándo se despacha?`];
+    ? [`${o.poCode} – shipping status and tracking, please`, `${o.urgent ? "URGENT: " : ""}${o.poCode} – confirm ship date – ${first(o.items)}`, `PO ${o.poCode}: when will it ship?`]
+    : [`${o.poCode} – estado del despacho y guía, por favor`, `${o.urgent ? "URGENTE: " : ""}${o.poCode} – confirmar fecha de despacho – ${first(o.items)}`, `OC ${o.poCode}: ¿cuándo se despacha?`];
   return { subjects, ...sigFix(render(blocks, o.lang)) };
 }
 
