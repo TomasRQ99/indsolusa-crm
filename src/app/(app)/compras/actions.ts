@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { assertCanEdit } from "@/lib/permissions";
+import { assertCanEditOps } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { addDays, nextCode, today } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
@@ -24,7 +24,7 @@ const back = (id: string, qs: string): never => {
 async function loadSpo(id: string) {
   const user = await requireUser();
   const spo = await db.supplierPO.findUniqueOrThrow({ where: { id }, include: spoInclude });
-  assertCanEdit(user, spo.deal.ownerId);
+  assertCanEditOps(user, spo.deal.ownerId);
   return { user, spo };
 }
 
@@ -32,7 +32,7 @@ async function loadSpo(id: string) {
 export async function prepareSpo(dealId: string) {
   const user = await requireUser();
   const deal = await db.deal.findUniqueOrThrow({ where: { id: dealId }, include: spoInclude.deal.include });
-  assertCanEdit(user, deal.ownerId);
+  assertCanEditOps(user, deal.ownerId);
   const suppliers = await db.supplier.findMany();
   const supplier = matchSupplier(purchaseRequirement(deal).supply, suppliers);
   if (!supplier) redirect(`/deals/${dealId}?tab=execute&ok=sin-proveedor`);
@@ -125,7 +125,7 @@ export async function requestPayment(requirementId: string, fd: FormData) {
   const user = await requireUser();
   const r = await db.paymentRequirement.findUniqueOrThrow({ where: { id: requirementId }, include: { supplierPo: { include: { supplier: true, deal: { include: { account: true } } } }, payments: true } });
   const spo = r.supplierPo;
-  assertCanEdit(user, spo.deal.ownerId);
+  assertCanEditOps(user, spo.deal.ownerId);
   if (!spo.releasedAt) back(spo.id, "err=no-liberada");
   if (r.payments.length) redirect(`/administracion/pagos-proveedores/${r.payments[r.payments.length - 1].id}`);
   const s = spo.supplier;

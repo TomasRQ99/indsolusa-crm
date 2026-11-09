@@ -24,7 +24,7 @@ export const MODULES: NavModule[] = [
     tabs: [
       { href: "/mercado", es: "Explorar", en: "Explore" },
       { href: "/mercado/economia", es: "Economía", en: "Economy" },
-      { href: "/mercado/fuentes", es: "Fuentes", en: "Sources", roles: ["ADMIN", "MANAGER", "MARKETING"] },
+      { href: "/mercado/fuentes", es: "Fuentes", en: "Sources", roles: ["GERENCIA", "DIRECTOR_COMERCIAL", "MARKETING"] },
       { href: "/accounts", es: "Clientes", en: "Customers" },
       { href: "/contacts", es: "Contactos", en: "Contacts" },
       { href: "/suppliers", es: "Proveedores", en: "Suppliers" },

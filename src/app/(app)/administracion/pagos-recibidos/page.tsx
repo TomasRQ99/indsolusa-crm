@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canManageAll } from "@/lib/permissions";
+import { canFinance } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { dayInput, invoiceCash, today } from "@/lib/domain";
 import { applyPayment, reconcilePayment, recordCustomerPayment } from "../actions";
@@ -10,7 +10,7 @@ export default async function PaymentsReceivedPage({ searchParams }: { searchPar
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
-  const manager = canManageAll(user);
+  const manager = canFinance(user);
   const { account: accountId } = await searchParams;
 
   const [accounts, payments, account] = await Promise.all([

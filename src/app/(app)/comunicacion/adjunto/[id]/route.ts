@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { canManageAll } from "@/lib/permissions";
 
 // Serves a photo attached to a customer message, only to people who may see that conversation.
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -11,7 +12,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
   if (!att) return new Response("Not found", { status: 404 });
   const owner = att.message.thread.account?.ownerId;
-  const manager = user.role === "ADMIN" || user.role === "MANAGER";
+  const manager = canManageAll(user);
   if (owner && !manager && owner !== user.id) return new Response("Forbidden", { status: 403 });
   return new Response(new Uint8Array(att.data), {
     headers: {

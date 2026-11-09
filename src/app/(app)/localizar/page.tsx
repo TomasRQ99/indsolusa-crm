@@ -127,7 +127,7 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
       {sp.ok === "docborrado" &&<p className="note">{t("Documento borrado junto con sus ofertas.", "Document deleted along with its offers.")}</p>}
       {sp.ok === "sync" &&<p className="note">{t(`Catálogo actualizado: ${sp.c ?? 0} parte(s) nueva(s) desde el historial y ${sp.a ?? 0} nombre(s) alterno(s) desde Productos.`, `Catalog updated: ${sp.c ?? 0} new part(s) from history and ${sp.a ?? 0} alternate name(s) from Products.`)}</p>}
       {sp.err === "falta" && <p className="note attn">{t("Para agregar una parte necesito el número de parte y una descripción.", "To add a part I need the part number and a description.")}</p>}
-      {sp.err === "permiso" && <p className="note attn">{t("Solo gerencia o administración puede hacer eso.", "Only management or admins can do that.")}</p>}
+      {sp.err === "permiso" && <p className="note attn">{t("Solo Gerencia o el Director Comercial pueden hacer eso.", "Only Management or the Commercial Director can do that.")}</p>}
 
       {ctxDeal && (
         <div className="loc-ctx">

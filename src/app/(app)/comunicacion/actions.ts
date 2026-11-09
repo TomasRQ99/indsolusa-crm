@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser, type SessionUser } from "@/lib/auth";
+import { canManageAll } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { nextCode, today } from "@/lib/domain";
 import { refreshUnderstanding } from "@/lib/comm-store";
@@ -21,7 +22,7 @@ const go = (threadId: string | null, qs: string): never => {
 
 async function ownThread(user: SessionUser, threadId: string) {
   const th = await db.commThread.findUniqueOrThrow({ where: { id: threadId }, include: { account: { select: { ownerId: true } }, contact: true, deal: true } });
-  const manager = user.role === "ADMIN" || user.role === "MANAGER";
+  const manager = canManageAll(user);
   if (th.account && !manager && th.account.ownerId !== user.id) throw new Error("No tienes acceso a esta conversación / No access to this conversation");
   return th;
 }

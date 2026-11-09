@@ -23,7 +23,7 @@ export const EXC_ERR = (t: T): Record<string, string> => ({
   "exc-beneficio": t("Escribe qué esperamos ganar a cambio.", "Write what we expect to gain in return."),
   "exc-alcance": t("Indica si es solo esta vez, por un periodo o recurrente.", "Say whether it's one time, for a period, or recurring."),
   "exc-vaga": t("«No quiero perder el negocio» sola no alcanza: di por qué este negocio vale la pena con menos Eságara.", "“I don't want to lose the deal” alone isn't enough: say why this deal is worth it with less Eságara."),
-  "exc-autoridad": t("Esta decisión la toma Gerencia o Admin, y nunca quien la pidió.", "Management or Admin makes this decision, never the person who asked."),
+  "exc-autoridad": t("Esta decisión la toma el Director Comercial o Gerencia, y nunca quien la pidió.", "The Commercial Director or Management makes this decision, never the person who asked."),
   "exc-decidida": t("Esta solicitud ya no está esperando esa acción.", "This request is no longer waiting for that action."),
   "exc-accion": t("Elige aprobar, devolver con pregunta o rechazar.", "Choose approve, return with a question, or reject."),
   "exc-comentario": t("Para devolver o rechazar, escribe por qué. Así quien pidió sabe qué hacer.", "To return or reject, write why. That way the requester knows what to do."),
@@ -33,11 +33,11 @@ export const EXC_ERR = (t: T): Record<string, string> => ({
   "pol-valor": t("Revisa los valores de la política (números dentro de rango).", "Check the policy values (numbers within range)."),
 });
 export const EXC_OK = (t: T): Record<string, string> => ({
-  "exc-pedida": t("Solicitud enviada a Gerencia con la economía de esta versión. Te avisamos cuando decidan.", "Request sent to Management with this version's economics. You'll be told when they decide."),
+  "exc-pedida": t("Solicitud enviada para decisión con la economía de esta versión. Te avisamos cuando decidan.", "Request sent for decision with this version's economics. You'll be told when they decide."),
   "exc-approved": t("Excepción aprobada. La cotización ya puede presentarse con esta Eságara.", "Exception approved. The quote can now be presented with this Eságara."),
   "exc-returned": t("Devuelta con tu pregunta. Quien pidió la ve en su cotización.", "Returned with your question. The requester sees it on their quote."),
   "exc-rejected": t("Rechazada con tu comentario. La cotización sigue sin poder presentarse por debajo del umbral.", "Rejected with your comment. The quote still can't be presented below the threshold."),
-  "exc-respondida": t("Respuesta enviada. La solicitud volvió a Gerencia con la economía actual.", "Answer sent. The request went back to Management with the current economics."),
+  "exc-respondida": t("Respuesta enviada. La solicitud volvió a quien decide con la economía actual.", "Answer sent. The request went back to the approver with the current economics."),
   "pol-guardada": t("Política guardada como nueva versión. Las decisiones pasadas conservan la versión que usaron.", "Policy saved as a new version. Past decisions keep the version they used."),
   "pol-igual": t("Sin cambios: la política ya tenía esos valores.", "No changes: the policy already had those values."),
 });
@@ -110,7 +110,7 @@ export function ExceptionCard({ quoteId, i, user, editable, draft, gate, thresho
 
       {canAsk && (
         <details className="exc-ask" open={!e}>
-          <summary className="qa-btn">{e ? t("Pedir una nueva excepción", "Request a new exception") : t("Pedir excepción a Gerencia", "Ask Management for an exception")}</summary>
+          <summary className="qa-btn">{e ? t("Pedir una nueva excepción", "Request a new exception") : t("Pedir excepción al Director Comercial", "Ask the Commercial Director for an exception")}</summary>
           <form action={requestException.bind(null, quoteId)} className="qa-form">
             <label>{t("Razón empresarial", "Business reason")}
               <select name="reasonCode" required defaultValue="">
@@ -127,8 +127,8 @@ export function ExceptionCard({ quoteId, i, user, editable, draft, gate, thresho
               <select name="scope" required defaultValue="ONE_TIME">{Object.entries(SCOPES).map(([k, s]) => <option key={k} value={k}>{t(s.es, s.en)}</option>)}</select>
             </label>
             <label>{t("Alternativas que consideraste (opcional)", "Alternatives you considered (optional)")}<input name="alternatives" maxLength={600} placeholder={t("Otro proveedor, otro plazo, menos cantidad…", "Another supplier, another lead time, less quantity…")} /></label>
-            <button type="submit">{t("Enviar a Gerencia", "Send to Management")}</button>
-            <span className="src">{t("Gerencia ve esta misma economía, el crédito y el comportamiento de pago del cliente. Tú no puedes aprobar tu propia solicitud.", "Management sees these same economics, the customer's credit and payment behavior. You can't approve your own request.")}</span>
+            <button type="submit">{t("Enviar para decisión", "Send for decision")}</button>
+            <span className="src">{t("Quien decide ve esta misma economía, el crédito y el comportamiento de pago del cliente. Tú no puedes aprobar tu propia solicitud.", "The approver sees these same economics, the customer's credit and payment behavior. You can't approve your own request.")}</span>
           </form>
         </details>
       )}

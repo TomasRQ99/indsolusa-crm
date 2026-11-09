@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { canManageAll } from "@/lib/permissions";
 
 // Serves a customer document (RUT, Cámara de Comercio…) to the customer's owner and to managers.
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -7,7 +8,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const doc = await db.accountDocument.findUnique({ where: { id }, include: { account: { select: { ownerId: true } } } });
   if (!doc) return new Response("Not found", { status: 404 });
-  const manager = user.role === "ADMIN" || user.role === "MANAGER";
+  const manager = canManageAll(user);
   if (!manager && doc.account.ownerId !== user.id) return new Response("Forbidden", { status: 403 });
   return new Response(new Uint8Array(doc.data), {
     headers: {

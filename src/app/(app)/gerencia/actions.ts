@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canManageAll } from "@/lib/permissions";
+import { canManageAll, isGerencia } from "@/lib/permissions";
 import { parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
 import { computeCommissions } from "@/lib/commission";
@@ -38,7 +38,7 @@ export async function approveEarned(userId: string) {
 
 export async function markCommissionsPaid(userId: string, formData: FormData) {
   const user = await requireUser();
-  if (user.role !== "ADMIN") throw new Error("Solo Administración / Admin only.");
+  if (!isGerencia(user) && user.role !== "FINANZAS") throw new Error("Solo Gerencia o Finanzas / Management or Finance only.");
   const { payrollRef } = parseForm(z.object({ payrollRef: requiredText }), formData);
   await db.commissionEntry.updateMany({ where: { userId, paidAt: null }, data: { paidAt: today(), payrollRef } });
   refreshApp();
@@ -47,7 +47,7 @@ export async function markCommissionsPaid(userId: string, formData: FormData) {
 export async function requestCommissionReview(formData: FormData) {
   const user = await requireUser();
   const { note } = parseForm(z.object({ note: requiredText }), formData);
-  const managers = await db.user.findMany({ where: { active: true, role: { in: ["ADMIN", "MANAGER"] }, id: { not: user.id } }, select: { id: true } });
+  const managers = await db.user.findMany({ where: { active: true, role: { in: ["GERENCIA", "DIRECTOR_COMERCIAL"] }, id: { not: user.id } }, select: { id: true } });
   const assignee = managers[0]?.id ?? user.id;
   await db.task.create({
     data: { title: `Revisar cálculo de comisión de ${user.name}: ${note}`.slice(0, 200), assigneeId: assignee, dueDate: today() },
@@ -72,7 +72,7 @@ const tierLine =/^\s*(\d+(?:[.,]\d+)?)\s*[:=→>-]+\s*(\d+(?:[.,]\d+)?)\s*$/;
 /** New policy version. Old versions stay untouched; each Deal uses the version in force on its PO date. */
 export async function createPolicyVersion(formData: FormData) {
   const user = await requireUser();
-  if (user.role !== "ADMIN") throw new Error("Solo Administración / Admin only.");
+  if (!isGerencia(user)) throw new Error("Solo Gerencia / Management only.");
   const data = parseForm(
     z.object({
       effectiveFrom: z.string().min(1).transform((v) => new Date(v)),

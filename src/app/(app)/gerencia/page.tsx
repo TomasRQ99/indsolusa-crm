@@ -18,7 +18,7 @@ const VIEWS = ["mes", "forward", "causas", "recovery"] as const;
 type View = (typeof VIEWS)[number];
 
 export default async function InsightsPage({ searchParams }: { searchParams: Promise<SP> }) {
-  const user = await requireRole("ADMIN", "MANAGER");
+  const user = await requireRole("GERENCIA", "DIRECTOR_COMERCIAL");
   const i = makeI18n(user.lang);
   const { t } = i;
   const sp = await searchParams;

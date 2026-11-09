@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { canManageAll } from "@/lib/permissions";
+import { canFinance } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { loadSupplierPayments } from "@/lib/queries";
 import { paymentStateLabel } from "@/lib/labels";
@@ -21,7 +21,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
   const spo = p.supplierPo;
   const s = spo.supplier;
   const deal = spo.deal;
-  const manager = canManageAll(user);
+  const manager = canFinance(user); // Treasury: Gerencia, Director Comercial or Finanzas
   // supplierPo already carries all its own fields (version, releasedAt, amount…): no extra query.
   const spoFull = spo;
   const { dup, usd } = await treasuryChecks(p, spoFull, i);
@@ -173,7 +173,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
                 <label className="chk"><input type="checkbox" name="updateProfile" defaultChecked /> {t("Actualizar el perfil verificado", "Update the verified profile")}</label>
                 <button type="submit" className="wide">{t("Registrar verificación", "Record verification")}</button>
               </form>
-            ) : <p className="small">{!manager ? t(`Lo verifica Tesorería (Gerencia o Administración), nunca quien lo solicitó (${p.requestedBy.name}).`, `Treasury (Management or Admin) verifies it, never the requester (${p.requestedBy.name}).`) : t(`Debe verificarlo alguien distinto de ${p.requestedBy.name}.`, `Someone other than ${p.requestedBy.name} must verify it.`)}</p>)}
+            ) : <p className="small">{!manager ? t(`Lo verifica Tesorería (Gerencia, Director Comercial o Finanzas), nunca quien lo solicitó (${p.requestedBy.name}).`, `Treasury (Management, Commercial Director or Finance) verifies it, never the requester (${p.requestedBy.name}).`) : t(`Debe verificarlo alguien distinto de ${p.requestedBy.name}.`, `Someone other than ${p.requestedBy.name} must verify it.`)}</p>)}
             {p.state === "APPROVE" && (
               <form action={approveSupplierPayment.bind(null, p.id)} className="qa-form">
                 {dup.hits.length > 0 && !dup.hard && <label className="chk"><input type="checkbox" name="dupChecked" value="1" /> {t("Revisé los posibles duplicados: no lo son", "I reviewed the possible duplicates: they aren't")}</label>}
@@ -189,7 +189,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
                 <label className="chk"><input type="radio" name="confirmed" value="no" defaultChecked /> {t("Enviado, aún sin confirmar", "Sent, not confirmed yet")}</label>
                 <button type="submit" className="wide">{t("Registrar ejecución", "Record execution")}</button>
               </form>
-            ) : <p className="small">{t("Lo ejecuta Tesorería (Gerencia o Administración).", "Treasury executes it (Management or Admin).")}</p>)}
+            ) : <p className="small">{t("Lo ejecuta Tesorería (Gerencia, Director Comercial o Finanzas).", "Treasury executes it (Management, Commercial Director or Finance).")}</p>)}
             {(p.state === "SENT" || p.state === "UNCERTAIN") && openExec && (
               <div className="qa-form">
                 <p className="small">{p.state === "SENT" ? t("Enviado, no pagado. Concilia con el extracto o la confirmación del proveedor.", "Sent, not paid. Reconcile with the statement or the supplier's confirmation.") : t("Concilia antes de cualquier reintento.", "Reconcile before any retry.")}</p>

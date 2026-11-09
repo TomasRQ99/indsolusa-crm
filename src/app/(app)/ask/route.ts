@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { canManageAll, isGerencia } from "@/lib/permissions";
 import { universalSearch } from "@/lib/search";
 import { MODULES } from "@/lib/nav";
 
@@ -19,11 +20,11 @@ export async function GET(req: Request) {
     .filter((w) => w.length > 2);
   const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const es = user.lang === "ES";
-  const manager = user.role === "ADMIN" || user.role === "MANAGER";
+  const manager = canManageAll(user);
 
   const screens = MODULES.flatMap((m) =>
     m.tabs
-      .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || user.role === "ADMIN") && (!tab.roles || tab.roles.includes(user.role)))
+      .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || isGerencia(user)) && (!tab.roles || tab.roles.includes(user.role)))
       .filter((tab) => words.some((w) => norm(`${tab.es} ${tab.en} ${m.es} ${m.en}`).includes(w)))
       .map((tab) => ({ href: tab.href, label: `${es ? m.es : m.en} · ${es ? tab.es : tab.en}` })),
   ).slice(0, 5);

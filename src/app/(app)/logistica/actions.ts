@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import type { Prisma, ShipmentMode } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { assertCanEdit } from "@/lib/permissions";
+import { assertCanEditOps } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { addDays, nextCode, today } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
@@ -25,7 +25,7 @@ const MODES: ShipmentMode[] = ["AIR", "COURIER", "OCEAN", "GROUND"];
 async function load(id: string) {
   const user = await requireUser();
   const s = await db.shipment.findUniqueOrThrow({ where: { id }, include: shipInclude });
-  assertCanEdit(user, s.deal.ownerId);
+  assertCanEditOps(user, s.deal.ownerId);
   return { user, s };
 }
 const fact = (userId: string, s: { dealId: string; deal: { accountId: string } }, subject: string, source: string | null) =>
@@ -35,7 +35,7 @@ const fact = (userId: string, s: { dealId: string; deal: { accountId: string } }
 export async function recordShipment(dealId: string, fd: FormData) {
   const user = await requireUser();
   const deal = await db.deal.findUniqueOrThrow({ where: { id: dealId }, include: { items: { include: { deliveryLines: { select: { qty: true } } } }, supplierPos: { include: { supplier: true } }, account: true } });
-  assertCanEdit(user, deal.ownerId);
+  assertCanEditOps(user, deal.ownerId);
   const carrierName = txt(fd, "carrierName", 120);
   if (!carrierName) redirect(`/deals/${dealId}?tab=execute&ok=envio-sin-dato`);
   const spo = deal.supplierPos.find((p) => p.id === txt(fd, "supplierPoId", 40)) ?? deal.supplierPos.find((p) => !p.receivedAt) ?? null;

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canEdit } from "@/lib/permissions";
+import { canEditOps } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { dayInput } from "@/lib/domain";
 import { buildShipment, shipInclude } from "@/lib/logistics";
@@ -54,7 +54,7 @@ export default async function ShipmentPage({ params, searchParams }: { params: P
   if (!s) notFound();
   const B = buildShipment(s, i);
   const d = s.deal;
-  const editable = canEdit(user, d.ownerId);
+  const editable = canEditOps(user, d.ownerId);
   const dm = (x: Date | null | undefined) => (x ? i.dateShort(x) : "—");
   const open = s.receipt !== "CONFIRMED";
 

@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
-import { canManageAll } from "@/lib/permissions";
+import { canManageAll, isGerencia, ROLE_LABEL } from "@/lib/permissions";
 import { MODULES } from "@/lib/nav";
 import { ShellClient, type ShellModule } from "@/components/shell/ShellClient";
 
@@ -16,13 +16,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const modules: ShellModule[] = MODULES.map((m) => {
     const tabs = m.tabs
-      .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || user.role === "ADMIN") && (!tab.roles || tab.roles.includes(user.role)))
+      .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || isGerencia(user)) && (!tab.roles || tab.roles.includes(user.role)))
       .map((tab) => ({ href: tab.href, label: es ? tab.es : tab.en }));
     return { key: m.key, label: es ? m.es : m.en, href: tabs[0]?.href ?? m.match[0], match: m.match, tabs };
   });
 
   const initials = user.name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-  const role = user.role === "ADMIN" ? t("Administración del sistema", "System admin") : user.role === "MANAGER" ? t("Gerencia", "Management") : t("Comercial", "Sales");
+  const role = t(ROLE_LABEL[user.role].es, ROLE_LABEL[user.role].en);
 
   return (
     <ShellClient lang={user.lang} user={{ name: user.name, role, initials }} modules={modules}>

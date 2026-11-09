@@ -1,4 +1,5 @@
 // Comercial C2 · Eságara Protection Gate — database side: policy in force, exceptions, approver context.
+import type { Role } from "@prisma/client";
 import { db } from "./db";
 import { addDays } from "./domain";
 import { DEFAULT_COM_POLICY, effectiveFloor, exceptionCovers, gateOf, type ApprovedException, type ComPolicy } from "./esagara-rules";
@@ -6,8 +7,8 @@ import { costOf, saleOf } from "./quote";
 import { paymentBehavior } from "./pay-behavior";
 
 export const COM_POLICY_KEY = "comPolicy";
-/** Who can decide an exception (user decision 2026-11-09): MANAGER or ADMIN, never the person who asked. */
-export const APPROVER_ROLES = ["MANAGER", "ADMIN"];
+/** Who can decide an exception (user decision 2026-11-09): Director Comercial or Gerencia, never the person who asked. */
+export const APPROVER_ROLES: string[] = ["DIRECTOR_COMERCIAL", "GERENCIA"] satisfies Role[];
 export const canApprove = (u: { id: string; role: string }, e: { requestedById: string }) => APPROVER_ROLES.includes(u.role) && u.id !== e.requestedById;
 
 export async function getComPolicy(): Promise<{ value: ComPolicy; version: number; by: string | null; at: Date | null }> {

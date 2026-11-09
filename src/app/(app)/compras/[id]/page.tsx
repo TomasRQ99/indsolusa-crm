@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canEdit } from "@/lib/permissions";
+import { canEditOps } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { dayInput } from "@/lib/domain";
 import { paymentStateLabel } from "@/lib/labels";
@@ -22,7 +22,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
   const B = buildSpo(spo, i);
   const d = spo.deal;
   const s = spo.supplier;
-  const editable = canEdit(user, d.ownerId);
+  const editable = canEditOps(user, d.ownerId);
   const cur = spo.currency;
   const m = (v: number | string | { toString(): string }) => `${cur} ${i.n2(v)}`;
   const acct = d.account.name.replace(/ \(ejemplo\)$/, "");

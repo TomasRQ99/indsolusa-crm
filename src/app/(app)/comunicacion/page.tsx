@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { canManageAll } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { loadThreads, threadScope } from "@/lib/comm-store";
 import { draftReply, missingInfo } from "@/lib/comm";
@@ -42,7 +43,7 @@ export default async function ComunicacionPage({ searchParams }: { searchParams:
   const [rows, contacts, early] = await Promise.all([
     loadThreads(user),
     db.contact.findMany({
-      where: user.role === "ADMIN" || user.role === "MANAGER" ? {} : { account: { ownerId: user.id } },
+      where: canManageAll(user) ? {} : { account: { ownerId: user.id } },
       select: { id: true, firstName: true, lastName: true, account: { select: { name: true } } },
       orderBy: { firstName: "asc" },
       take: 300,

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canManageAll } from "@/lib/permissions";
+import { canManageAll, isGerencia } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { computeCommissions, tiersOf, type CommissionRow, type Half } from "@/lib/commission";
 import { halfLabel } from "@/lib/labels";
@@ -13,16 +13,19 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
   const i = makeI18n(user.lang);
   const { t } = i;
   const manager = canManageAll(user);
+  // Finanzas pays commissions (user decision 2026-11-09), so it sees every person; approving stays with management.
+  const payer = isGerencia(user) || user.role === "FINANZAS";
+  const seesAll = manager || payer;
   const sp = await searchParams;
   // Each person sees only their own commissions; management can choose.
   // Management lands on the first person who has commissions (usually not themselves).
   const [people, firstDeal] = await Promise.all([
-    manager ? db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
-    manager && !sp.u ? db.deal.findFirst({ where: { stage: "WON", ownerId: { not: user.id } }, orderBy: { updatedAt: "desc" }, select: { ownerId: true } }) : Promise.resolve(null),
+    seesAll ? db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
+    seesAll && !sp.u ? db.deal.findFirst({ where: { stage: "WON", ownerId: { not: user.id } }, orderBy: { updatedAt: "desc" }, select: { ownerId: true } }) : Promise.resolve(null),
   ]);
   const firstWithDeals = firstDeal?.ownerId;
-  const personId = manager ? sp.u ?? firstWithDeals ?? user.id : user.id;
-  const person = manager ? people.find((p) => p.id === personId) ?? { id: user.id, name: user.name } : { id: user.id, name: user.name };
+  const personId = seesAll ? sp.u ?? firstWithDeals ?? user.id : user.id;
+  const person = seesAll ? people.find((p) => p.id === personId) ?? { id: user.id, name: user.name } : { id: user.id, name: user.name };
 
   const [{ rows, policy, totals }, unpaidApproved] = await Promise.all([
     computeCommissions({ userId: person.id }),
@@ -62,7 +65,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
           <p>{t(`Cada comisión se gana en dos mitades: ${salePct} % al emitir la factura y ${100 - salePct} % al conciliar el recaudo. Cada una con su cálculo.`, `Each commission is earned in two halves: ${salePct} % when the invoice is issued and ${100 - salePct} % when collection is reconciled. Each with its calculation.`)}</p>
         </div>
         <div className="grow" />
-        {manager && (
+        {seesAll && (
           <form className="inline">
             <select name="u" defaultValue={person.id} aria-label={t("Persona", "Person")}>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
             <button className="secondary sm" type="submit">{t("Ver", "View")}</button>
@@ -117,7 +120,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
             {manager && person.id !== user.id && earned.length > 0 && (
               <form action={approveEarned.bind(null, person.id)}><button className="wide" type="submit">{t(`Aprobar las ${earned.length} mitades · USD ${i.n2(totals.earned.hi)}`, `Approve the ${earned.length} halves · USD ${i.n2(totals.earned.hi)}`)}</button></form>
             )}
-            {user.role === "ADMIN" && unpaidApproved._count > 0 && (
+            {payer && unpaidApproved._count > 0 && (
               <form action={markCommissionsPaid.bind(null, person.id)} className="inline" style={{ marginTop: 10 }}>
                 <input name="payrollRef" required placeholder={t("Comprobante de nómina", "Payroll reference")} style={{ flex: 1 }} />
                 <button className="secondary sm" type="submit">{t(`Marcar pagadas (${i.n2(unpaidApproved._sum.amount)})`, `Mark paid (${i.n2(unpaidApproved._sum.amount)})`)}</button>
@@ -164,7 +167,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
         </aside>
       </div>
 
-      {user.role === "ADMIN" && (
+      {isGerencia(user) && (
         <details className="card" style={{ marginTop: 16 }}>
           <summary>{t("Nueva versión de la política", "New policy version")}</summary>
           <form action={createPolicyVersion} className="stack" style={{ maxWidth: 560 }}>

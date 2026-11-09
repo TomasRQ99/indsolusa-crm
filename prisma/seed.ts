@@ -15,7 +15,7 @@ async function main() {
     create: {
       email: ADMIN_EMAIL,
       name: "IndSolUSA Sales",
-      role: "ADMIN",
+      role: "GERENCIA",
       passwordHash: await bcrypt.hash(ADMIN_PASSWORD, 12),
     },
   });
@@ -49,12 +49,12 @@ async function main() {
   const manager = await db.user.upsert({
     where: { email: "demo.manager@example.com" },
     update: {},
-    create: { email: "demo.manager@example.com", name: "Demo Manager", role: "MANAGER", passwordHash: demoHash },
+    create: { email: "demo.manager@example.com", name: "Demo Manager", role: "DIRECTOR_COMERCIAL", passwordHash: demoHash },
   });
   const rep = await db.user.upsert({
     where: { email: "demo.rep@example.com" },
     update: {},
-    create: { email: "demo.rep@example.com", name: "Demo Rep", role: "REP", passwordHash: demoHash },
+    create: { email: "demo.rep@example.com", name: "Demo Rep", role: "NEGOCIADOR_COMERCIAL", passwordHash: demoHash },
   });
 
   const acme = await db.account.create({

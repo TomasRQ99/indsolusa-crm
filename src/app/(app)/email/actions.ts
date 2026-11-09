@@ -52,7 +52,7 @@ export async function sendEmail(_prev: EmailState, formData: FormData): Promise<
 }
 
 export async function sendTestEmail(_prev: EmailState, _formData: FormData): Promise<EmailState> {
-  const admin = await requireRole("ADMIN");
+  const admin = await requireRole("GERENCIA");
   const { t } = makeI18n(admin.lang);
   const { from } = mailConfig();
   try {

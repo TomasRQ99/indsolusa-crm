@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canEdit, canManageAll } from "@/lib/permissions";
+import { canEditMoney, canFinance } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { addDays, invoiceCash, today } from "@/lib/domain";
 import { getPayRules } from "@/lib/pay-behavior";
@@ -18,8 +18,8 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
   const sp = await searchParams;
   const deal = await db.deal.findUnique({ where: { id }, include: billingInclude });
   if (!deal) notFound();
-  const editable = canEdit(user, deal.ownerId);
-  const manager = canManageAll(user);
+  const editable = canEditMoney(user, deal.ownerId);
+  const manager = canFinance(user);
   const now = today();
   const a = deal.account;
 
@@ -86,7 +86,7 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
     "otro-cliente": t("Esa factura es de otro cliente.", "That invoice belongs to another customer."),
     tope: t(`La factura ${sp.n ?? ""} no tiene tanto saldo abierto.`, `Invoice ${sp.n ?? ""} doesn't have that much open balance.`),
     nada: t("Escribe un monto o una decisión sobre el sobrante.", "Enter an amount or a decision on the leftover."),
-    gerencia: t("Solo Gerencia o Administración concilia.", "Only management or admin reconciles."),
+    gerencia: t("Concilian Gerencia, Director Comercial o Finanzas.", "Management, Commercial Director or Finance reconcile."),
     "sin-asignar": t("Primero asigna el dinero a sus facturas.", "Allocate the cash to its invoices first."),
     "residuo-pendiente": t("Queda dinero sin asignar: decide qué hacer con el sobrante antes de conciliar.", "Some cash is unallocated: decide what to do with the leftover before reconciling."),
   };

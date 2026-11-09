@@ -4,7 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { assertCanEdit } from "@/lib/permissions";
+import { assertCanEditOps } from "@/lib/permissions";
 import { optionalDate, optionalText, parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
 import { nextCode, today } from "@/lib/domain";
@@ -15,7 +15,7 @@ const currency = z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, "3-letter c
 async function dealOwnerCheck(dealId: string) {
   const user = await requireUser();
   const deal = await db.deal.findUniqueOrThrow({ where: { id: dealId }, select: { ownerId: true } });
-  assertCanEdit(user, deal.ownerId);
+  assertCanEditOps(user, deal.ownerId);
   return user;
 }
 

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { assertCanEdit, canManageAll } from "@/lib/permissions";
+import { assertCanEditMoney, canFinance } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { addDays, esagra, invoiceCash, nextDocNumber, today } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
@@ -25,7 +25,7 @@ const isKey = (k: string): k is ReqKey => (REQ_KEYS as string[]).includes(k);
 async function loadDeal(dealId: string) {
   const user = await requireUser();
   const deal = await db.deal.findUniqueOrThrow({ where: { id: dealId }, include: billingInclude });
-  assertCanEdit(user, deal.ownerId);
+  assertCanEditMoney(user, deal.ownerId);
   return { user, deal, i: makeI18n(user.lang) };
 }
 const fact = (userId: string, deal: { id: string; accountId: string }, subject: string, source: string | null = null) =>
@@ -129,7 +129,7 @@ export async function issueFromReadiness(dealId: string, deliveryId: string) {
 export async function accountingBridge(invoiceId: string, mode: string, fd: FormData) {
   const user = await requireUser();
   const inv = await db.invoice.findUniqueOrThrow({ where: { id: invoiceId }, include: { deal: { select: { id: true, ownerId: true, accountId: true } } } });
-  assertCanEdit(user, inv.deal.ownerId);
+  assertCanEditMoney(user, inv.deal.ownerId);
   const i = makeI18n(user.lang);
   const system = txt(fd, "externalSystem", 60) ?? inv.externalSystem;
   const note = txt(fd, "note", 300);
@@ -153,7 +153,7 @@ export async function accountingBridge(invoiceId: string, mode: string, fd: Form
 export async function recordPayPromise(invoiceId: string, fd: FormData) {
   const user = await requireUser();
   const inv = await db.invoice.findUniqueOrThrow({ where: { id: invoiceId }, include: { deal: { select: { ownerId: true } } } });
-  assertCanEdit(user, inv.deal.ownerId);
+  assertCanEditMoney(user, inv.deal.ownerId);
   const promisedFor = dayOf(fd.get("promisedFor"));
   const promisedBy = txt(fd, "promisedBy", 120);
   const source = txt(fd, "source", 300);
@@ -194,7 +194,7 @@ export async function allocateCash(dealId: string, paymentId: string, fd: FormDa
 /** Treasury confirms the bank movement matches its allocation. Only now does the cash count as collected. */
 export async function reconcileCash(dealId: string, paymentId: string) {
   const user = await requireUser();
-  if (!canManageAll(user)) back(dealId, "err=gerencia");
+  if (!canFinance(user)) back(dealId, "err=gerencia");
   const p = await db.customerPayment.findUniqueOrThrow({ where: { id: paymentId }, include: { applications: true } });
   if (!p.applications.length) back(dealId, "err=sin-asignar");
   const rest = subMoney(p.amount, sumMoney(p.applications.map((a) => a.amount)));
@@ -208,7 +208,7 @@ export async function reconcileCash(dealId: string, paymentId: string) {
 export async function markShortPay(invoiceId: string, fd: FormData) {
   const user = await requireUser();
   const inv = await db.invoice.findUniqueOrThrow({ where: { id: invoiceId }, include: { deal: { select: { ownerId: true } } } });
-  assertCanEdit(user, inv.deal.ownerId);
+  assertCanEditMoney(user, inv.deal.ownerId);
   const note = txt(fd, "note", 300);
   if (!note) back(inv.dealId, "err=dato", `#inv-${invoiceId}`);
   await db.invoice.update({ where: { id: invoiceId }, data: { shortPayNote: note } });

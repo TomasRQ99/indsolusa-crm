@@ -2,7 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
-import { canEdit } from "@/lib/permissions";
+import { canEditMoney } from "@/lib/permissions";
 import { invoiceBlockers } from "@/lib/domain";
 import { blockerLabel } from "@/lib/labels";
 import { issueInvoice } from "../../administracion/actions";
@@ -44,7 +44,7 @@ export default async function DeliveredNotInvoicedPage() {
         )}
       </td>
       <td className="n">
-        {r.blockers.length === 0 && canEdit(user, r.d.deal.ownerId) ? (
+        {r.blockers.length === 0 && canEditMoney(user, r.d.deal.ownerId) ? (
           <form action={issueInvoice.bind(null, r.d.id)}><button className="sm" type="submit">{t("Emitir factura", "Issue invoice")}</button></form>
         ) : (
           <Link className="btn secondary sm" href={`/deals/${r.d.deal.id}/facturacion`}>{t("Ver requisitos", "See requirements")}</Link>

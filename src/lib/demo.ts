@@ -44,12 +44,12 @@ export async function loadDemo(adminId: string) {
       const paola = await tx.user.upsert({
         where: { email: `paola${DEMO_DOMAIN}` },
         update: {},
-        create: { email: `paola${DEMO_DOMAIN}`, name: `Paola Gómez${TAG}`, role: "REP", passwordHash: unusable },
+        create: { email: `paola${DEMO_DOMAIN}`, name: `Paola Gómez${TAG}`, role: "NEGOCIADOR_COMERCIAL", passwordHash: unusable },
       });
       const diana = await tx.user.upsert({
         where: { email: `diana${DEMO_DOMAIN}` },
         update: {},
-        create: { email: `diana${DEMO_DOMAIN}`, name: `Diana Ruiz${TAG}`, role: "MANAGER", passwordHash: unusable },
+        create: { email: `diana${DEMO_DOMAIN}`, name: `Diana Ruiz${TAG}`, role: "DIRECTOR_COMERCIAL", passwordHash: unusable },
       });
 
       const account = (name: string, extra: Partial<Prisma.AccountUncheckedCreateInput> = {}) =>

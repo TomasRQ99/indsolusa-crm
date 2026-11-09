@@ -106,7 +106,7 @@ export default async function EsagaraPage({ searchParams }: { searchParams: Prom
                   <History h={e.history} i={i} />
                 </div>
                 {moved && <p className="qv-alert">{t(`La cotización cambió desde la solicitud: hoy ${money(now.sale)} · ${i.pct2(now.pct)}. Devuélvela para que se actualice; se aprueba exactamente lo que verá el cliente.`, `The quote changed since the request: today ${money(now.sale)} · ${i.pct2(now.pct)}. Return it so it gets refreshed; you approve exactly what the customer will see.`)}</p>}
-                {mineReq ? <p className="src">{t("La pediste tú: la decide otra persona de Gerencia o Admin.", "You requested it: another Management or Admin person decides it.")}</p> : (
+                {mineReq ? <p className="src">{t("La pediste tú: la decide el Director Comercial o Gerencia (otra persona).", "You requested it: the Commercial Director or Management (someone else) decides it.")}</p> : (
                   <form action={decideException.bind(null, e.id)} className="qa-form exc-decide">
                     <label>{t("Comentario (obligatorio para devolver o rechazar)", "Comment (required to return or reject)")}<textarea name="comments" rows={2} maxLength={800} /></label>
                     <div className="qa-row">
@@ -165,7 +165,7 @@ export default async function EsagaraPage({ searchParams }: { searchParams: Prom
             <span className="src block">{t("Las cotizaciones y excepciones ya decididas conservan la versión con la que se decidieron.", "Quotes and exceptions already decided keep the version they were decided with.")}</span>
           </form>
         ) : (
-          <p className="small">{t(`Umbral ${i.pct2(pol.value.minEsagaraPct)}. Lo cambia Gerencia o Admin.`, `Threshold ${i.pct2(pol.value.minEsagaraPct)}. Management or Admin changes it.`)}</p>
+          <p className="small">{t(`Umbral ${i.pct2(pol.value.minEsagaraPct)}. Lo cambia el Director Comercial o Gerencia.`, `Threshold ${i.pct2(pol.value.minEsagaraPct)}. The Commercial Director or Management changes it.`)}</p>
         )}
         {versions.length > 1 && (
           <ul className="mk-ul small">{versions.map((v) => { const x = v.value as { minEsagaraPct?: number }; return <li key={v.id}>v{v.version} · {i.pct2(x.minEsagaraPct ?? null)} · {v.updatedByName ?? "—"} · {i.day(v.createdAt)}</li>; })}</ul>

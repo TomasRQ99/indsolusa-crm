@@ -20,7 +20,8 @@ export const LAST_MILE_DAYS = 1;
 export const AUTHORITY = {
   version: 1,
   note: "Límites de ejemplo, pendientes de definir por Gerencia",
-  approve: { MANAGER: 25000, ADMIN: Infinity } as Partial<Record<Role, number>>,
+  // Finanzas approves up to the same limit as Director Comercial (user decision 2026-11-09).
+  approve: { DIRECTOR_COMERCIAL: 25000, FINANZAS: 25000, GERENCIA: Infinity } as Partial<Record<Role, number>>,
 };
 
 export const spoInclude = {
@@ -189,7 +190,8 @@ export function authorityFor(user: { id: string; role: Role }, p: { requestedByI
   else if (usd > limit) reasons.push(t(`Supera tu límite (USD ${i.n(limit)})`, `Exceeds your limit (USD ${i.n(limit)})`));
   if (p.requestedById === user.id) reasons.push(t("Tú solicitaste este pago", "You requested this payment"));
   if (p.verifiedById === user.id) reasons.push(t("Tú verificaste el banco", "You verified the bank"));
-  const rule = t(`Aprueba Gerencia hasta USD ${i.n(AUTHORITY.approve.MANAGER)}; Administración sin límite. Siempre una persona distinta de quien solicitó y de quien verificó. Política v${AUTHORITY.version} (${AUTHORITY.note.toLowerCase()}).`, `Management approves up to USD ${i.n(AUTHORITY.approve.MANAGER)}; Admin without limit. Always someone other than the requester and the verifier. Policy v${AUTHORITY.version} (example limits).`);
+  const lim = i.n(AUTHORITY.approve.DIRECTOR_COMERCIAL ?? 0);
+  const rule = t(`Aprueban Director Comercial y Finanzas hasta USD ${lim}; Gerencia sin límite. Siempre una persona distinta de quien solicitó y de quien verificó. Política v${AUTHORITY.version} (${AUTHORITY.note.toLowerCase()}).`, `Commercial Director and Finance approve up to USD ${lim}; Management without limit. Always someone other than the requester and the verifier. Policy v${AUTHORITY.version} (example limits).`);
   return { can: reasons.length === 0, reasons, rule, limit };
 }
 

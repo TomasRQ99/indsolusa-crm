@@ -4,7 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { assertCanEdit, canManageAll } from "@/lib/permissions";
+import { assertCanEditMoney, assertCanEditOps, canFinance, canManageAll } from "@/lib/permissions";
 import { optionalDate, optionalText, parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
 import { addDays, bankDiscrepancies, esagra, invoiceBlockers, invoiceCash, nextDocNumber, paymentState, today } from "@/lib/domain";
@@ -19,7 +19,14 @@ const currency = z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, "3-letter c
 
 async function requireManager() {
   const user = await requireUser();
-  if (!canManageAll(user)) throw new Error("Solo Gerencia o Administración / Management or admin only.");
+  if (!canManageAll(user)) throw new Error("Solo Gerencia o Director Comercial / Management only.");
+  return user;
+}
+
+/** Treasury & cash work: management or Finanzas (user decision 2026-11-09). */
+async function requireFinance() {
+  const user = await requireUser();
+  if (!canFinance(user)) throw new Error("Solo Gerencia, Director Comercial o Finanzas / Management or Finance only.");
   return user;
 }
 
@@ -36,7 +43,7 @@ export async function issueInvoice(deliveryId: string) {
       deal: { include: { account: true, invoices: { select: { amount: true } } } },
     },
   });
-  assertCanEdit(user, d.deal.ownerId);
+  assertCanEditMoney(user, d.deal.ownerId);
   if (d.invoice) redirect(`/administracion/cobrar?f=${d.invoice.id}`);
   const blockers = invoiceBlockers(d, d.deal, d.deal.account);
   if (blockers.length) throw new Error("La remisión aún tiene bloqueos / The delivery note still has blockers.");
@@ -155,7 +162,7 @@ export async function applyPayment(paymentId: string, formData: FormData) {
 }
 
 export async function reconcilePayment(paymentId: string) {
-  const user = await requireManager();
+  const user = await requireFinance();
   const p = await db.customerPayment.findUniqueOrThrow({ where: { id: paymentId }, include: { applications: true } });
   if (!p.applications.length) throw new Error("Primero aplica el pago a sus facturas / Apply the payment to its invoices first.");
   await db.customerPayment.updateMany({
@@ -186,7 +193,7 @@ export async function savePayRules(formData: FormData) {
 export async function requestSupplierPayment(spoId: string, formData: FormData) {
   const user = await requireUser();
   const spo = await db.supplierPO.findUniqueOrThrow({ where: { id: spoId }, include: { deal: { select: { ownerId: true } } } });
-  assertCanEdit(user, spo.deal.ownerId);
+  assertCanEditOps(user, spo.deal.ownerId);
   const data = parseForm(
     z.object({
       amount: money.refine((v) => v > 0, "Amount"),
@@ -225,7 +232,7 @@ async function loadPayment(id: string) {
  * supplier (never one from the document) and confirms the bank data.
  */
 export async function verifySupplierPayment(id: string, formData: FormData) {
-  const user = await requireManager(); // Treasury only (least privilege); never the requester
+  const user = await requireFinance(); // Treasury only (least privilege); never the requester
   const { p, state } = await loadPayment(id);
   if (state !== "VERIFY") throw new Error("Este pago no requiere verificación / This payment needs no verification.");
   if (p.requestedById === user.id) throw new Error("Quien solicita el pago no puede verificarlo / The requester cannot verify.");
@@ -289,7 +296,7 @@ export async function approveSupplierPayment(id: string, formData: FormData) {
  * If the bank already shows the debit, it is confirmed (= paid). Otherwise it stays "sent, not confirmed".
  */
 export async function recordExecution(id: string, formData: FormData) {
-  const user = await requireManager();
+  const user = await requireFinance();
   const p = await db.supplierPayment.findUniqueOrThrow({ where: { id }, include: { executions: true, supplierPo: { include: { supplier: true } } } });
   const state = paymentState({ ...p, discrepancies: bankDiscrepancies(p.supplierPo.supplier, p).length, executions: p.executions });
   if (state !== "EXECUTE") payBack(id, "err=estado");
@@ -327,7 +334,7 @@ export async function markUncertain(executionId: string, formData: FormData) {
  * Never retry before reconciling: that's how double payments happen.
  */
 export async function reconcileExecution(executionId: string, outcome: "CONFIRMED" | "FAILED", formData: FormData) {
-  const user = await requireManager();
+  const user = await requireFinance();
   const e = await db.paymentExecution.findUniqueOrThrow({ where: { id: executionId } });
   if (e.state !== "SENT" && e.state !== "UNCERTAIN") payBack(e.paymentId, "err=estado");
   const evidence = String(formData.get("evidence") ?? "").trim().slice(0, 300);

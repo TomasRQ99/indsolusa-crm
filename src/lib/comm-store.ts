@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { understand } from "./comm";
 import type { SessionUser } from "./auth";
+import { canManageAll } from "./permissions";
 
 /** Re-read a thread's inbound messages and refresh SOLU's proposals. Decisions a person already made are kept. */
 export async function refreshUnderstanding(threadId: string) {
@@ -37,7 +38,7 @@ export async function refreshUnderstanding(threadId: string) {
 
 /** Threads this person may see: their customers, plus unmatched ones. Managers see all. */
 export function threadScope(user: SessionUser) {
-  if (user.role === "ADMIN" || user.role === "MANAGER") return {};
+  if (canManageAll(user)) return {};
   return { OR: [{ accountId: null }, { account: { ownerId: user.id } }] };
 }
 

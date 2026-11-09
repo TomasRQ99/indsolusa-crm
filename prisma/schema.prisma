@@ -10,10 +10,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Business role names the team recognizes (user decision 2026-11-09). Old → new: ADMIN → GERENCIA,
+// MANAGER → DIRECTOR_COMERCIAL, REP → NEGOCIADOR_COMERCIAL. NEGOCIADOR_OPERATIVO and FINANZAS are new.
 enum Role {
-  ADMIN
-  MANAGER
-  REP
+  GERENCIA
+  DIRECTOR_COMERCIAL
+  NEGOCIADOR_COMERCIAL
+  NEGOCIADOR_OPERATIVO
+  FINANZAS
   MARKETING
 }
 
@@ -54,7 +58,7 @@ model User {
   email              String    @unique
   name               String
   passwordHash       String
-  role               Role      @default(REP)
+  role               Role      @default(NEGOCIADOR_COMERCIAL)
   active             Boolean   @default(true)
   lang               Lang      @default(ES)
   // Length of a normal working day, used by Mi Plan to size capacity.

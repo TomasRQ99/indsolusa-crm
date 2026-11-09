@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canEdit } from "@/lib/permissions";
+import { canEditOps } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { invoiceBlockers, invoiceCash } from "@/lib/domain";
 import { blockerLabel } from "@/lib/labels";
@@ -24,7 +24,7 @@ export default async function DeliveryPage({ params }: { params: Promise<{ id: s
     },
   });
   if (!d) notFound();
-  const editable = canEdit(user, d.deal.ownerId);
+  const editable = canEditOps(user, d.deal.ownerId);
   const blockers = invoiceBlockers(d, d.deal, d.deal.account);
   const amount = linesTotal(d.lines, (l) => l.qty, (l) => l.dealItem.unitPrice);
 

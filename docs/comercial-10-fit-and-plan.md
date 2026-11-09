@@ -44,7 +44,7 @@ Note on numbering: v1.3 reuses section numbers 57–63 already used by v1.2. In 
 |---|---|---|
 | C-01 | Personal goals: who sees them, no ranking | **Decided 2026-11-09:** only the person and their manager. No team ranking, no activity counts. |
 | C-02 | Selling/importing entity per market (USA, Colombia) | **Decided 2026-11-09:** both, depending on the deal — each Journey states which entity sells (built in a later wave). |
-| C-03 | Role mapping (Negociador Comercial/Operativo, Finanzas, Director) | Proposal (to confirm): Negociador Comercial/Operativo → REP; Director Comercial / Gerencia → MANAGER; Finanzas → ADMIN until a FINANCE role exists. |
+| C-03 | Role mapping (Negociador Comercial/Operativo, Finanzas, Director) | **Decided & built 2026-11-09:** the spec names are the real roles. ADMIN → GERENCIA (all powers), MANAGER → DIRECTOR_COMERCIAL, REP → NEGOCIADOR_COMERCIAL; new NEGOCIADOR_OPERATIVO (own Journeys + purchasing/shipments/delivery notes on any Journey, never the customer quote) and FINANZAS (money side on any Journey + payments ≤ USD 25k); MARKETING unchanged. Rules in `src/lib/permissions.ts`. |
 | C-04 | One Journey = one Need, or several Needs per Journey | Proposal: one Need per Journey (as today). |
 | C-05 | Eságara gate threshold | **Frozen by spec:** 20.00 % on net sale, strictly below triggers; stored as versioned policy (`MarketSetting` key `comPolicy`). **Built in C2.** |
 | C-06 | Who approves a low-Eságara exception, amount bands | **Decided 2026-11-09:** MANAGER or ADMIN, never the requester. No amount bands yet. **Built in C2.** |

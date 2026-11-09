@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
@@ -5,10 +6,11 @@ import { demoLoaded } from "@/lib/demo";
 import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
 import { TestEmailButton } from "@/components/TestEmailButton";
 import { mailConfig } from "@/lib/mail";
+import { ROLE_LABEL, ROLES } from "@/lib/permissions";
 import { createUser, loadDemoData, removeDemoData, setUserRole, toggleUserActive } from "./actions";
 
 export default async function UsersPage() {
-  const admin = await requireRole("ADMIN");
+  const admin = await requireRole("GERENCIA");
   const i = makeI18n(admin.lang);
   const { t } = i;
   const [users, demo] = await Promise.all([
@@ -16,14 +18,15 @@ export default async function UsersPage() {
     demoLoaded(),
   ]);
   const mail = mailConfig();
-  const roleOptions = (
-    <>
-      <option value="REP">{t("Comercial", "Rep")}</option>
-      <option value="MARKETING">{t("Mercadeo", "Marketing")}</option>
-      <option value="MANAGER">{t("Gerencia", "Manager")}</option>
-      <option value="ADMIN">{t("Administración", "Admin")}</option>
-    </>
-  );
+  const roleOptions = <>{ROLES.map((r) => <option key={r} value={r}>{t(ROLE_LABEL[r].es, ROLE_LABEL[r].en)}</option>)}</>;
+  const roleHelp: Record<string, [string, string]> = {
+    NEGOCIADOR_COMERCIAL: ["Edita los Journeys que lleva.", "Edits the Journeys they own."],
+    NEGOCIADOR_OPERATIVO: ["Lo suyo, más compras, envíos, remisiones y solicitudes a proveedores de cualquier Journey. No cambia la cotización al cliente.", "Their own, plus purchasing, shipments, delivery notes and supplier RFQs on any Journey. Doesn't change the customer quote."],
+    FINANZAS: ["Facturas, cobros, caja, verificación bancaria, ejecución y conciliación de pagos, pago de comisiones. Aprueba pagos a proveedores hasta USD 25.000.", "Invoices, collections, cash, bank verification, payment execution and reconciliation, commission payouts. Approves supplier payments up to USD 25,000."],
+    MARKETING: ["Como Negociador Comercial, y además carga datos de mercado.", "Like a Commercial Negotiator, plus loads market data."],
+    DIRECTOR_COMERCIAL: ["Edita todo; aprueba pagos hasta USD 25.000, cupos y excepciones de Eságara; ve Insights.", "Edits everything; approves payments up to USD 25,000, credit and Eságara exceptions; sees Insights."],
+    GERENCIA: ["Todo lo anterior, sin límite de pagos, y además personas, datos y política de comisiones.", "All of the above, with no payment limit, plus people, data and commission policy."],
+  };
 
   return (
     <>
@@ -57,10 +60,13 @@ export default async function UsersPage() {
           <label>{t("Nombre", "Name")}<input name="name" required /></label>
           <label>{t("Correo", "Email")}<input name="email" type="email" required /></label>
           <label>{t("Contraseña temporal", "Temporary password")}<input name="password" type="password" minLength={10} required /></label>
-          <label>{t("Rol", "Role")}<select name="role" defaultValue="REP">{roleOptions}</select></label>
+          <label>{t("Rol", "Role")}<select name="role" defaultValue="NEGOCIADOR_COMERCIAL">{roleOptions}</select></label>
           <button type="submit">{t("Crear usuario", "Create user")}</button>
         </form>
-        <p className="src" style={{ marginTop: 6 }}>{t("Comercial edita lo suyo. Gerencia edita todo y aprueba pagos, cupos y comisiones. Administración además gestiona usuarios.", "Reps edit their own records. Managers edit everything and approve payments, credit and commissions. Admins also manage users.")}</p>
+        <dl className="qv-dl" style={{ marginTop: 10 }}>
+          {ROLES.map((r) => <Fragment key={r}><dt>{t(ROLE_LABEL[r].es, ROLE_LABEL[r].en)}</dt><dd className="small">{t(...roleHelp[r])}</dd></Fragment>)}
+        </dl>
+        <p className="src" style={{ marginTop: 6 }}>{t("Todos pueden ver todos los registros.", "Everyone can see all records.")}</p>
       </div>
 
       <div className="card flush">
@@ -73,7 +79,7 @@ export default async function UsersPage() {
                 <tr key={u.id} className={u.active ? undefined : "muted"}>
                   <td><b>{u.name}</b>{self && t(" (tú)", " (you)")}</td>
                   <td>{u.email}</td>
-                  <td>{self ? <span className="badge">{u.role}</span> : (
+                  <td>{self ? <span className="badge">{t(ROLE_LABEL[u.role].es, ROLE_LABEL[u.role].en)}</span> : (
                     <form action={setUserRole.bind(null, u.id)}><AutoSubmitSelect name="role" defaultValue={u.role} aria-label={t(`Rol de ${u.name}`, `Role for ${u.name}`)}>{roleOptions}</AutoSubmitSelect></form>
                   )}</td>
                   <td>{u.active ? t("Activo", "Active") : t("Desactivado", "Deactivated")}</td>

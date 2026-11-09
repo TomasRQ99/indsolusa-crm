@@ -4,7 +4,7 @@
 import { db } from "./db";
 import { addDays, today } from "./domain";
 import { spanishCountry } from "./company";
-import { canEdit } from "./permissions";
+import { canEdit, canEditMoney } from "./permissions";
 import { quoteNo } from "./quote";
 import type { SessionUser } from "./auth";
 import type { RfqItem } from "./rfq";
@@ -100,7 +100,7 @@ export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: stri
       to: billing ?? c?.email ?? null, toName: billing ? inv.account.name : c ? `${c.firstName} ${c.lastName}`.trim() : inv.account.name, about: `${inv.number} · ${inv.account.name}`,
       dealId: inv.deal.id, accountId: inv.accountId, back: `/administracion/cobrar?f=${inv.id}`, ref: { kind: "INVOICE", id: inv.id, code: inv.number, party: "CUSTOMER", supplierId: null },
       warn: due <= 0 ? (ui ? "This invoice has no open balance." : "Esta factura no tiene saldo pendiente.") : null,
-      canSend: canEdit(user, inv.deal.ownerId) || user.role === "ADMIN",
+      canSend: canEditMoney(user, inv.deal.ownerId),
     };
   }
   return null;
