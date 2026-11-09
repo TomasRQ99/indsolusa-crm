@@ -1120,6 +1120,7 @@ model Quote {
   scenarios   QuoteScenario[]
   invoices    Invoice[]
   customerPos CustomerPO[]
+  esagaraExceptions EsagaraException[]
 
   @@unique([number, rev])
   @@index([dealId])
@@ -2028,4 +2029,40 @@ model NeedDismissal {
   note      String?
   byName    String
   createdAt DateTime @default(now())
+}
+
+/// Comercial C2 (v1.1 §45): a request to present/accept a quote version whose projected Eságara is below the policy threshold.
+/// The economics the approver saw are frozen in `snapshot`; decisions are never edited, only appended to `history`.
+/// status: REQUESTED | APPROVED | REJECTED | RETURNED | EXPIRED
+model EsagaraException {
+  id              String    @id @default(cuid())
+  quoteId         String
+  quote           Quote     @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  dealId          String
+  accountId       String
+  currency        String    @default("USD")
+  saleAmount      Decimal   @db.Decimal(14, 2)
+  esagaraAmount   Decimal   @db.Decimal(14, 2)
+  esagaraPct      Decimal   @db.Decimal(7, 2)
+  thresholdPct    Decimal   @db.Decimal(7, 2)
+  policyVersion   Int
+  reasonCode      String
+  narrative       String
+  expectedBenefit String
+  scope           String
+  alternatives    String?
+  snapshot        Json
+  status          String    @default("REQUESTED")
+  requestedById   String
+  requestedByName String
+  requestedAt     DateTime  @default(now())
+  decidedById     String?
+  decidedByName   String?
+  decidedAt       DateTime?
+  comments        String?
+  history         Json      @default("[]")
+
+  @@index([status])
+  @@index([quoteId])
+  @@index([accountId])
 }

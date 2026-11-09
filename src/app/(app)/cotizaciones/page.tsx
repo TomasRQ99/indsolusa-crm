@@ -3,23 +3,24 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { canManageAll } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
-import { buildQuote, futureZone, policyFloor, quoteInclude, quoteNo } from "@/lib/quote";
+import { buildQuote, futureZone, quoteInclude, quoteNo } from "@/lib/quote";
+import { quoteFloors } from "@/lib/esagara-gate";
 
 // Commercial Future: open quotes grouped by what they need from the person, never by amount or probability.
 export default async function CommercialFuturePage() {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
-  const policy = await policyFloor();
   const quotes = await db.quote.findMany({
     where: { status: { in: ["DRAFT", "PRESENTED"] }, ...(canManageAll(user) ? {} : { deal: { ownerId: user.id } }) },
     include: quoteInclude,
     orderBy: { createdAt: "desc" },
   });
 
+  const floors = await quoteFloors(quotes.map((q) => q.id));
   type Row = { q: (typeof quotes)[number]; b: ReturnType<typeof buildQuote>; zone: "today" | "window" | "waiting" | "clarity"; line: string };
   const rows: Row[] = quotes.map((q) => {
-    const b = buildQuote(q, i, policy);
+    const b = buildQuote(q, i, { version: floors.version, floorPct: floors.floor(q.id), threshold: floors.threshold });
     if (q.status === "DRAFT") {
       return b.blocking.length === 0
         ? { q, b, zone: "today" as const, line: t("Lista para presentar", "Ready to present") }

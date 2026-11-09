@@ -40,6 +40,8 @@ export function makeI18n(lang: Lang) {
     money2: (v: unknown, currency = "USD") => `${currency} ${num2.format(Number(v ?? 0))}`,
     /** 18,4 % */
     pct: (v: number | null | undefined) => (v == null || !isFinite(v) ? "—" : `${pct1.format(v)} %`),
+    /** 19,99 % — where a policy threshold is read with two decimals (Eságara gate). */
+    pct2: (v: number | null | undefined) => (v == null || !isFinite(v) ? "—" : `${num2.format(v)} %`),
     date: (d: Date | null | undefined) => (d ? dLong(d) : "—"),
     dateShort: (d: Date | null | undefined) => (d ? dShort(d) : "—"),
     day: (d: Date | null | undefined) => (d ? dDay(d) : "—"),

@@ -6,7 +6,9 @@ import { requireUser } from "@/lib/auth";
 import { assertCanEdit } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { nextDocNumber, today } from "@/lib/domain";
-import { buildQuote, costOf, policyFloor, quoteInclude, quoteNo, saleOf, validUntil } from "@/lib/quote";
+import { buildQuote, costOf, quoteInclude, quoteNo, saleOf, validUntil } from "@/lib/quote";
+import { quoteFloor } from "@/lib/esagara-gate";
+import { costDrops } from "@/lib/esagara-rules";
 import { makeI18n } from "@/lib/i18n";
 import { money2, mulMoney } from "@/lib/money";
 
@@ -92,8 +94,14 @@ export async function saveSolution(id: string, fd: FormData) {
 
 /** Landed cost: each component keeps its source; a change records why. */
 export async function saveCosts(id: string, fd: FormData) {
-  await draftOnly(id);
+  const { q } = await draftOnly(id);
   const cur = String(fd.get("costCurrency") ?? "USD").trim().toUpperCase().slice(0, 3) || "USD";
+  // Eságara Gate §49: a known cost can't go down silently to lift the Eságara — it needs a reason (and stays audited).
+  const drops = costDrops(
+    { supplierCost: Number(q.supplierCost), freightCost: Number(q.freightCost), otherCosts: Number(q.otherCosts) },
+    { supplierCost: num(fd, "supplierCost") ?? 0, freightCost: num(fd, "freightCost") ?? 0, otherCosts: num(fd, "otherCosts") ?? 0 },
+  );
+  if (drops.length && !txt(fd, "changeNote", 300)) back(id, "err=motivo-costo");
   await db.quote.update({
     where: { id },
     data: {
@@ -202,7 +210,7 @@ export async function removeScenario(id: string, scenarioId: string) {
 export async function presentQuote(id: string, fd: FormData) {
   const { user } = await draftOnly(id);
   const q = await db.quote.findUniqueOrThrow({ where: { id }, include: quoteInclude });
-  const policy = await policyFloor();
+  const policy = await quoteFloor(id);
   const b = buildQuote(q, makeI18n(user.lang), policy);
   if (b.blocking.length > 0) back(id, "err=bloqueada");
   const on = dayOf(fd.get("presentedOn")) ?? today();

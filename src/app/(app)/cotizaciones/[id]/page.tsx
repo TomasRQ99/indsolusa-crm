@@ -6,7 +6,10 @@ import { expectedPaymentDays } from "@/lib/pay-behavior";
 import { canEdit } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { addDays, dayInput, daysBetween } from "@/lib/domain";
-import { buildQuote, policyFloor, quoteInclude, quoteNo, saleOf } from "@/lib/quote";
+import { buildQuote, costOf, quoteInclude, quoteNo, saleOf } from "@/lib/quote";
+import { quoteFloor } from "@/lib/esagara-gate";
+import { gateOf } from "@/lib/esagara-rules";
+import { EXC_ERR, EXC_OK, ExceptionCard } from "../../comercial/esagara/ExceptionCard";
 import { Popovers } from "@/components/Popovers";
 import {
   createRevision, markDeclined, presentQuote, recommendScenario, removeLine, removeScenario,
@@ -23,12 +26,13 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const sp = await searchParams;
   const [q, policy, pos, dealInvoices] = await Promise.all([
     db.quote.findUnique({ where: { id }, include: quoteInclude }),
-    policyFloor(),
+    quoteFloor(id),
     db.customerPO.findMany({ where: { quoteId: id }, orderBy: { receivedAt: "desc" }, select: { id: true, number: true, receivedAt: true, rejectedAt: true, acceptance: { select: { id: true } } } }),
     db.invoice.findMany({ where: { deal: { quotes: { some: { id } } } }, orderBy: { issuedAt: "asc" }, select: { id: true, number: true, amount: true, issuedAt: true } }),
   ]);
   if (!q) notFound();
-  const B = buildQuote(q, i, policy);
+  const B = buildQuote(q, i, { ...policy, approvedBy: policy.exception?.status === "APPROVED" && !policy.outside ? policy.exception.decidedByName : null });
+  const gate = gateOf(saleOf(q.lines), costOf(q), policy.policy);
   const pay = await expectedPaymentDays(q.deal.accountId);
   const d = q.deal;
   const editable = canEdit(user, d.ownerId);
@@ -61,6 +65,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     aceptada: t("Aceptada. La OC quedó en el Journey; ya se puede facturar al entregar.", "Accepted. The PO is on the Journey; it can be invoiced on delivery."),
     rechazada: t("Registrado: el cliente no aceptó.", "Recorded: the customer did not accept."),
     espera: t("Esperando con control. SOLU lo devuelve a Mi Día en la fecha indicada.", "Waiting with control. SOLU brings it back to My Day on the given date."),
+    ...EXC_OK(t),
   };
   const errMsg: Record<string, string> = {
     presentada: t("Esta versión ya fue presentada y no cambia. Crea una revisión.", "This version was already presented and doesn't change. Create a revision."),
@@ -68,6 +73,8 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     "sin-oc": t("Escribe el número de OC del cliente.", "Write the customer's PO number."),
     espera: t("Escribe qué esperas y hasta cuándo.", "Write what you're waiting for and until when."),
     estado: t("Esta acción no aplica en el estado actual.", "This action doesn't apply in the current state."),
+    "motivo-costo": t("Un costo bajó: escribe por qué en «Motivo del cambio» (por ejemplo, nueva proforma). Así nadie sube la Eságara quitando costos reales.", "A cost went down: write why in “Reason for change” (e.g., new proforma). That way nobody lifts Eságara by removing real costs."),
+    ...EXC_ERR(t),
   };
 
   const QA = ({ label, children, wide, right, cls = "" }: { label: React.ReactNode; children: React.ReactNode; wide?: boolean; right?: boolean; cls?: string }) => (
@@ -199,12 +206,13 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
           </div>
           <div className="qv-box pol">
             <span className="k">{t("Política comercial", "Commercial policy")}</span>
-            <b className="tv">{policy.floorPct != null ? `≥ ${policy.floorPct} %` : "—"}</b>
-            <span className="src">{policy.version ? t(`Piso de eságara de la política v${policy.version}. SOLU no inventa fórmulas.`, `Eságara floor of policy v${policy.version}. SOLU doesn't invent formulas.`) : t("No hay política cargada.", "No policy loaded.")}</span>
+            <b className="tv">≥ {i.pct2(policy.threshold)}</b>
+            <span className="src">{t(`Umbral de Eságara · política v${policy.version}. Por debajo se presenta solo con una excepción aprobada.`, `Eságara threshold · policy v${policy.version}. Below it, it's presented only with an approved exception.`)}{policy.floorPct < policy.threshold && ` ${t(`Con la excepción aprobada, esta versión se cubre hasta ${i.pct2(policy.floorPct)}.`, `With the approved exception, this version is covered down to ${i.pct2(policy.floorPct)}.`)}`}</span>
           </div>
         </div>
         <PayLine />
-        {(B.econAlert || (draft && B.belowFloor)) && <p className="qv-alert">{t("La eságara queda por debajo del piso de la política. Revisa precio o costos, o pide aprobación a Gerencia.", "Eságara falls below the policy floor. Review price or costs, or ask Management to approve.")}</p>}
+        {B.econAlert && !draft && <p className="qv-alert">{t("Los costos de hoy dejan la Eságara por debajo del umbral. Lo presentado no cambia; revisa con el proveedor o crea una revisión.", "Today's costs leave Eságara below the threshold. What was presented doesn't change; check with the supplier or create a revision.")}</p>}
+        <ExceptionCard quoteId={q.id} i={i} user={user} editable={editable} draft={draft} gate={gate} threshold={policy.threshold} exception={policy.exception} outside={policy.outside} />
 
         <div className="tscroll" style={{ marginTop: 14 }}>
           <table className="qv-cost">
@@ -599,7 +607,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
 
   const EconCompact = () => (
     <section className="jblock">
-      <div className="jbh"><b>ECONOMICS</b><span className="grow" />{B.econAlert ? <span className="sig risk">{t("Cruzó el piso de la política", "Crossed the policy floor")}</span> : <span className="sig ok">{t("Dentro de la política", "Within policy")}</span>}</div>
+      <div className="jbh"><b>ECONOMICS</b><span className="grow" />{B.econAlert ? <span className="sig risk">{t("Cruzó el umbral de la política", "Crossed the policy threshold")}</span> : <span className="sig ok">{t("Dentro de la política", "Within policy")}</span>}</div>
       <div className="qv-econ two">
         <div className="qv-box prot"><span className="k">{t("Protegida al presentar", "Protected at presenting")}</span><b className="tv">{money(Number(q.protEsagra ?? 0))}</b><span className="tsub">{i.pct(q.protSale ? (Number(q.protEsagra) / Number(q.protSale)) * 100 : null)}</span><span className="src">{t(`Política v${q.protPolicy ?? "—"} · ${i.day(q.presentedAt)}`, `Policy v${q.protPolicy ?? "—"} · ${i.day(q.presentedAt)}`)}</span></div>
         <div className={`qv-box cur${B.econAlert ? " alert" : ""}`}><span className="k">{t("Esperada hoy", "Expected today")}</span><b className="tv">{money(B.curEsagra)}</b><span className="tsub">{i.pct(B.curPct)}</span><span className="src">{B.econChanged ? t("Los costos cambiaron después de presentar.", "Costs changed after presenting.") : t("Sin cambios de costo.", "No cost changes.")}</span></div>

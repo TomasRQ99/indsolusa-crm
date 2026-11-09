@@ -174,7 +174,11 @@ export function buildPo(po: PoFull, i: I, floorPct: number | null) {
     { ok: !!q && (q.status === "PRESENTED" || q.status === "ACCEPTED"), text: t("Responde a una cotización presentada y vigente", "Answers a presented, current quote") },
     { ok: resolvedDate, text: dateMaterial ? t("La diferencia de fecha tiene una resolución confirmada", "The date difference has a confirmed resolution") : t("La fecha de la PO se puede proteger", "The PO date can be protected") },
     { ok: otherMaterial.length === 0, text: otherMaterial.length ? t(`Otras diferencias materiales: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`, `Other material differences: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`) : t("Productos, cantidades, precios y condiciones coinciden", "Products, quantities, prices and terms match") },
-    { ok: !chosen || chosen.state !== "CONFIRMED" || !options.find((o) => o.option === chosen.option)?.belowFloor, text: t("La eságara resultante respeta el piso de la política", "Resulting eságara respects the policy floor") },
+    { ok: !chosen || chosen.state !== "CONFIRMED" || !options.find((o) => o.option === chosen.option)?.belowFloor, text: t("La Eságara resultante respeta el umbral de la política (o tiene excepción aprobada)", "Resulting Eságara respects the policy threshold (or has an approved exception)") },
+    // Eságara Protection Gate before accepting the Deal (module 10 v1.1 §44): the protected economics of the quote.
+    ...(q && q.protSale != null && q.protCost != null && Number(q.protSale) > 0 && floorPct != null
+      ? (() => { const p = Math.round(((Number(q.protSale) - Number(q.protCost)) / Number(q.protSale)) * 10000) / 100; return [{ ok: p >= floorPct, text: p >= floorPct ? t(`Eságara protegida ${i.pct2(p)}: dentro de la política`, `Protected Eságara ${i.pct2(p)}: within policy`) : t(`Eságara protegida ${i.pct2(p)} bajo el umbral: necesita una excepción aprobada en la cotización`, `Protected Eságara ${i.pct2(p)} below the threshold: needs an approved exception on the quote`) }]; })()
+      : []),
   ];
   const canAccept = !accepted && !rejected && pre.every((p) => p.ok);
 

@@ -5,7 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { canEdit } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { addDays, daysBetween } from "@/lib/domain";
-import { policyFloor, quoteNo } from "@/lib/quote";
+import { quoteNo } from "@/lib/quote";
+import { quoteFloor } from "@/lib/esagara-gate";
 import { buildPo, poInclude } from "@/lib/po";
 import { Popovers } from "@/components/Popovers";
 import { acceptPo, chooseResolution, confirmResolution, rejectPo, withdrawResolution } from "../actions";
@@ -19,7 +20,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
   const sp = await searchParams;
   const po = await db.customerPO.findUnique({ where: { id }, include: poInclude });
   if (!po) notFound();
-  const policy = await policyFloor();
+  const policy = await quoteFloor(po.quoteId);
   const B = buildPo(po, i, policy.floorPct);
   const d = po.deal;
   const q = po.quote;
@@ -163,7 +164,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
                       <p>{o.what}</p>
                       <dl className="qv-dl tight2">
                         <dt>{t("Promesa", "Promise")}</dt><dd className="mono">{i.date(o.promiseDate)} {o.meetsPo ? <span className="ok-t">· {t("cumple la PO", "meets the PO")}</span> : <span className="attn-t">· {t("no cumple la PO", "doesn't meet the PO")}</span>}</dd>
-                        <dt>Eságara</dt><dd className="mono">{money(o.esagra)} · {i.pct(o.pct)}{o.costDelta > 0 && o.priceDelta === 0 ? ` (−${money(o.costDelta)})` : ""}{o.belowFloor && <span className="risk-t"> · {t("bajo el piso", "below floor")}</span>}</dd>
+                        <dt>Eságara</dt><dd className="mono">{money(o.esagra)} · {i.pct(o.pct)}{o.costDelta > 0 && o.priceDelta === 0 ? ` (−${money(o.costDelta)})` : ""}{o.belowFloor && <span className="risk-t"> · {t("bajo el umbral", "below threshold")}</span>}</dd>
                         <dt>{t("Quién actúa", "Who acts")}</dt><dd>{o.whoActs}</dd>
                         <dt>{t("Riesgo", "Risk")}</dt><dd>{o.risk}</dd>
                         <dt>{t("Para confirmarla", "To confirm it")}</dt><dd>{o.needs}</dd>

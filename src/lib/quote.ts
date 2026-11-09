@@ -29,13 +29,8 @@ export type QuoteFull = Prisma.QuoteGetPayload<{ include: typeof quoteInclude }>
 
 export const quoteNo = (q: { number: string; rev: number }) => `${q.number}${q.rev > 0 ? ` Rev. ${q.rev}` : ""}`;
 
-/** Esagra floor from the commission policy in force (first tier that pays). */
-export async function policyFloor() {
-  const p = await db.commissionPolicy.findFirst({ orderBy: { version: "desc" } });
-  const tiers = ((p?.tiers ?? []) as { min: number; rate: number }[]).slice().sort((a, b) => a.min - b.min);
-  const floor = tiers.find((x) => x.rate > 0)?.min ?? null;
-  return { version: p?.version ?? null, floorPct: floor };
-}
+// The Eságara floor now comes from the Eságara Protection Gate (esagara-gate.ts: quoteFloor / quoteFloors),
+// not from the commission tiers: the commission policy decides pay, the gate decides who must approve.
 
 export function saleOf(lines: { qty: number; unitPrice: Prisma.Decimal | number }[]) {
   return linesTotal(lines, (l) => l.qty, (l) => l.unitPrice);
@@ -67,7 +62,7 @@ export function validUntil(q: { issuedAt: Date | null; presentedAt: Date | null;
 
 type Check = { ok: boolean; text: string; fix?: string; tab?: string };
 
-export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null; floorPct: number | null }) {
+export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null; floorPct: number | null; threshold?: number; approvedBy?: string | null }) {
   const { t } = i;
   const now = today();
   const d = q.deal;
@@ -78,7 +73,10 @@ export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null;
   const pct = sale > 0 ? (esagra / sale) * 100 : null;
   const presented = q.status !== "DRAFT";
   const offerUntil = validUntil(q);
-  const belowFloor = policy.floorPct != null && pct != null && pct < policy.floorPct;
+  // Two decimals, as the policy reads it (19.99 % triggers, 20.00 % doesn't).
+  const pctR = pct == null ? null : Math.round(pct * 100) / 100;
+  const belowFloor = policy.floorPct != null && pctR != null && pctR < policy.floorPct;
+  const underThreshold = policy.threshold != null && pctR != null && pctR < policy.threshold;
 
   // Current expected economics: the latest known costs on the Journey (they can move after presenting).
   const dealCost = sumMoney([d.supplierCost, d.freightCost, d.otherCosts]);
@@ -103,7 +101,11 @@ export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null;
     { ok: Number(q.supplierCost) > 0 && !!q.supplierSrc, text: t("El costo del proveedor tiene fuente", "The supplier cost has a source"), fix: t("Indica de dónde sale (proforma, correo)", "Say where it comes from (proforma, email)"), tab: "costs" },
     { ok: q.leadMinDays != null && q.leadMaxDays != null, text: t("El tiempo de entrega está definido", "Lead time is defined"), fix: t("Indica días después de la OC", "Set days after PO"), tab: "terms" },
     { ok: !!q.promiseText, text: t("La promesa posible tiene su condición", "The possible promise has its condition"), fix: t("Escribe qué prometemos y bajo qué condición", "Write what we promise and under what condition"), tab: "solution" },
-    { ok: !belowFloor, text: policy.floorPct != null ? t(`La eságara (${i.pct(pct)}) no baja del piso de la política v${policy.version} (${policy.floorPct} %)`, `Eságara (${i.pct(pct)}) is not below policy v${policy.version} floor (${policy.floorPct} %)`) : t("Hay política comercial para calcular la eságara", "There is a commercial policy to calculate eságara"), fix: t("Revisa precio o costos, o pide aprobación a Gerencia", "Review price or costs, or ask Management to approve"), tab: "costs" },
+    belowFloor
+      ? { ok: false, text: t(`La Eságara (${i.pct2(pctR)}) está bajo el umbral de la política (${policy.threshold ?? policy.floorPct} %)`, `Eságara (${i.pct2(pctR)}) is below the policy threshold (${policy.threshold ?? policy.floorPct} %)`), fix: t("Revisa precio o costos, o pide una excepción con su razón", "Review price or costs, or request an exception with its reason"), tab: "costs" }
+      : underThreshold
+        ? { ok: true, text: t(`Eságara ${i.pct2(pctR)} bajo el umbral, con excepción aprobada${policy.approvedBy ? ` por ${policy.approvedBy}` : ""}`, `Eságara ${i.pct2(pctR)} below the threshold, with an approved exception${policy.approvedBy ? ` by ${policy.approvedBy}` : ""}`) }
+        : { ok: true, text: t(`La Eságara (${i.pct(pct)}) no baja del umbral de la política v${policy.version} (${policy.threshold ?? policy.floorPct} %)`, `Eságara (${i.pct(pct)}) is not below policy v${policy.version} threshold (${policy.threshold ?? policy.floorPct} %)`) },
   ];
   const ifYes: Check[] = [
     { ok: a.taxDataComplete, text: t("Datos tributarios del cliente completos", "Customer tax data complete"), fix: t("Si dice sí hoy, no se podría facturar", "If they say yes today, it couldn't be invoiced") },
@@ -147,7 +149,7 @@ export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null;
   }
 
   return {
-    sale, cost, esagra, pct, presented, offerUntil, belowFloor, versions,
+    sale, cost, esagra, pct, presented, offerUntil, belowFloor, underThreshold, versions,
     protSale, currentCost, curSale, curEsagra, curPct, econChanged, econAlert,
     ready, ifYes, blocking, clocks, windowEnd, next, waiting, now,
     leadText: leadTimeText(q, q.presentedAt ?? now),

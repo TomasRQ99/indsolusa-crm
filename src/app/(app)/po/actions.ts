@@ -9,7 +9,8 @@ import { refreshApp } from "@/lib/revalidate";
 import { today } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
 import { money2, sumMoney } from "@/lib/money";
-import { policyFloor, quoteNo } from "@/lib/quote";
+import { quoteNo } from "@/lib/quote";
+import { quoteFloor } from "@/lib/esagara-gate";
 import { buildPo, poInclude } from "@/lib/po";
 
 const dayOf = (s: FormDataEntryValue | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(`${String(s)}T00:00:00Z`) : null);
@@ -62,7 +63,7 @@ export async function registerPo(quoteId: string, fd: FormData) {
 export async function chooseResolution(id: string, option: "AMEND_DATE" | "EXPEDITE_ABSORB" | "EXPEDITE_CHARGE") {
   const { user, po } = await loadPo(id);
   if (po.acceptance || po.rejectedAt) back(id, "err=cerrada");
-  const policy = await policyFloor();
+  const policy = await quoteFloor(po.quoteId);
   const B = buildPo(po, makeI18n(user.lang), policy.floorPct);
   const o = B.options.find((x) => x.option === option);
   if (!o) back(id, "err=opcion");
@@ -100,7 +101,7 @@ export async function withdrawResolution(id: string, resolutionId: string) {
  */
 export async function acceptPo(id: string) {
   const { user, po } = await loadPo(id);
-  const policy = await policyFloor();
+  const policy = await quoteFloor(po.quoteId);
   const i = makeI18n("ES");
   const B = buildPo(po, i, policy.floorPct);
   if (!B.canAccept || !po.quote || !B.promiseDate) back(id, "err=precondicion");

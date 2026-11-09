@@ -33,10 +33,11 @@ export const MODULES: NavModule[] = [
     ],
   },
   {
-    key: "comercial", es: "COMERCIAL", en: "COMMERCIAL", match: ["/deals", "/cotizaciones"],
+    key: "comercial", es: "COMERCIAL", en: "COMMERCIAL", match: ["/deals", "/cotizaciones", "/comercial"],
     tabs: [
       { href: "/deals", es: "Journeys", en: "Journeys" },
       { href: "/cotizaciones", es: "Futuro comercial", en: "Commercial future" },
+      { href: "/comercial/esagara", es: "Excepciones de Eságara", en: "Eságara exceptions" },
     ],
   },
   {
