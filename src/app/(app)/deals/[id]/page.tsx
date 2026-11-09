@@ -35,6 +35,8 @@ import { prepareSpo } from "../../compras/actions";
 import { recordShipment } from "../../logistica/actions";
 import { forwardOf, fwdLabel } from "@/lib/logistics";
 import { lineAmount, linesTotal } from "@/lib/money";
+import type { NeedContext } from "@/lib/need-handoff";
+import MarketContext from "@/components/MarketContext";
 
 const TAB_ORDER: TabKey[] = ["resumen", "need", "source", "quote", "execute", "finance", "file", "result"];
 
@@ -101,6 +103,7 @@ export default async function JourneyPage({
   const later = TAB_ORDER.filter((k) => !shown.includes(k));
 
   const okMsg: Record<string, string> = {
+    mercado: t("Journey creado. Ya trae lo que Mercado sabía: no hace falta volver a escribirlo.", "Journey created. It already carries what Mercado knew: no need to retype it."),
     need: t("Necesidad guardada.", "Need saved."),
     promise: t("Promesa al cliente guardada. Queda en «Qué cambió».", "Customer promise saved. It shows in “What changed”."),
     source: t("Fuente y costos guardados.", "Source and costs saved."),
@@ -569,6 +572,7 @@ export default async function JourneyPage({
         <div className="jbh"><b>{t("QUÉ NECESITA, CÓMO Y CUÁNDO", "WHAT IS NEEDED, HOW AND WHEN")}</b></div>
         {editable ? <NeedForm inline /> : <DesiredResult />}
       </section>
+      <MarketContext ctx={deal.needContext as NeedContext | null} t={t} day={i.day} />
       <PhaseLog phase="need" title={t("REGISTRO DE LA NECESIDAD", "NEED RECORD")} empty={t("Agrega lo que el cliente te cuenta: problema, contexto, quién decide, restricciones.", "Add what the customer tells you: problem, context, who decides, constraints.")} />
     </>
   );

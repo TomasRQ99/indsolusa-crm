@@ -1,4 +1,5 @@
 import Link from "next/link";
+import NeedSuggestions from "../../NeedSuggestions";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
@@ -68,6 +69,7 @@ export default async function PersonPage({ params, searchParams }: { params: Pro
       </div>
       {sp.ok && OK[sp.ok] && <div className="note okn">{t(...OK[sp.ok])}</div>}
       {sp.err && ERR[sp.err] && <div className="note attn">{t(...ERR[sp.err])}</div>}
+      <NeedSuggestions scope={{ contactId: c.id }} back={`/mercado/personas/${c.id}`} t={t} day={i.day} user={user} sp={sp} />
 
       <div className="grid cols-2">
         <section className="card" id="recordar">

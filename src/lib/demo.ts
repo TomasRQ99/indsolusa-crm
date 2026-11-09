@@ -645,6 +645,7 @@ export async function loadDemo(adminId: string) {
       await seedMarketDemo(tx, d, paola, lacteos, pacifico);
       await seedMarketM4(tx, d, { siderId: sider.id, ownerId: paola.id, ownerName: paola.name, treasurerId: diana.id });
       await seedMarketM5(tx, d, paola.name, lacteos.id);
+      await seedMarketM6(tx, d, paola.name, lacteos.id);
 
       await tx.task.createMany({
         data: [
@@ -766,6 +767,15 @@ async function seedMarketM5(tx: Prisma.TransactionClient, d: (n: number) => Date
   ] });
 }
 
+/** Mercado M6 sample (§25 step 13): a conversation reveals a concrete difficulty with a Siemens drive before the shutdown. */
+async function seedMarketM6(tx: Prisma.TransactionClient, d: (n: number) => Date, by: string, lacteosId: string) {
+  const jorge = await tx.contact.findFirst({ where: { accountId: lacteosId, firstName: "Jorge" }, select: { id: true } });
+  if (!jorge) return;
+  await tx.personNote.create({ data: { contactId: jorge.id, kind: "PROBLEM", statement: "El variador Siemens SINAMICS G120C de la bomba de alimentación de la UHT 1 se dispara por sobretemperatura y quieren resolverlo antes de la parada de enero", evidence: "«Si ese variador se cae en plena producción, paramos la UHT»", sourceType: "CONVERSATION", sourceRef: "Llamada con Jorge Pérez", confidence: "REPORTED", observedAt: d(-2), capturedByName: by } });
+  const tulua = await tx.plant.findFirst({ where: { accountId: lacteosId, name: "Planta Tuluá" }, select: { id: true } });
+  if (tulua) await tx.installedAsset.create({ data: { plantId: tulua.id, process: "Pasteurización y UHT", line: "UHT 1", name: "Variador de la bomba de alimentación", manufacturer: "Siemens", model: "SINAMICS G120C 6SL3210-1KE21-7UF1", operationalRole: "Controla la bomba que alimenta la UHT", redundancy: "NONE", critical: true, criticalWhy: "Si se detiene, la UHT se queda sin alimentación", observedAt: d(-2), sourceType: "CONVERSATION", sourceRef: "Llamada con Jorge Pérez", confidence: "REPORTED", capturedByName: by } });
+}
+
 /** Environments loaded before Mercado existed get only the Mercado sample, nothing else is touched. */
 async function topUpMarketDemo() {
   const paola = await db.user.findUnique({ where: { email: `paola${DEMO_DOMAIN}` }, select: { id: true, name: true } });
@@ -790,6 +800,8 @@ async function topUpMarketDemo() {
   }
   // M5 sample if missing.
   if (!(await db.personNote.count({ where: { contact: { accountId: lacteos.id } } }))) await db.$transaction((tx) => seedMarketM5(tx, d, paola.name, lacteos.id), { timeout: 30000 });
+  // M6 sample if missing.
+  if (!(await db.personNote.count({ where: { kind: "PROBLEM", sourceType: "CONVERSATION", contact: { accountId: lacteos.id } } }))) await db.$transaction((tx) => seedMarketM6(tx, d, paola.name, lacteos.id), { timeout: 30000 });
 }
 
 const NAMEPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320"><rect width="520" height="320" fill="#8a9097"/><rect x="20" y="20" width="480" height="280" rx="10" fill="#d9dde1" stroke="#5c636a" stroke-width="3"/><circle cx="42" cy="42" r="7" fill="#9aa1a8"/><circle cx="478" cy="42" r="7" fill="#9aa1a8"/><circle cx="42" cy="278" r="7" fill="#9aa1a8"/><circle cx="478" cy="278" r="7" fill="#9aa1a8"/><text x="60" y="78" font-family="Arial" font-weight="700" font-size="30" fill="#0f9d9a">SIEMENS</text><text x="60" y="112" font-family="Arial" font-size="20" fill="#222">SINAMICS G120C</text><text x="60" y="150" font-family="Courier New" font-size="18" fill="#222">6SL3210-1KE21-7UF1</text><text x="60" y="184" font-family="Arial" font-size="16" fill="#222">IN: 3AC 380-480V 50/60Hz 18,5A</text><text x="60" y="210" font-family="Arial" font-size="16" fill="#222">OUT: 3AC 0-480V 16,5A 7,5kW</text><text x="60" y="236" font-family="Arial" font-size="14" fill="#444">S/N: XAJ2-7781-0042  IP20</text><text x="60" y="262" font-family="Arial" font-size="12" fill="#666">Made in Germany</text></svg>`;
@@ -799,6 +811,7 @@ export async function removeDemo() {
   const ids = demoUsers.map((u) => u.id);
   await db.$transaction(
     async (tx) => {
+      await tx.needDismissal.deleteMany({ where: { accountId: { in: (await tx.account.findMany({ where: { isDemo: true }, select: { id: true } })).map((a) => a.id) } } });
       await tx.contact.deleteMany({ where: { account: { isDemo: true } } });
       await tx.account.deleteMany({ where: { isDemo: true } });
       await tx.supplier.deleteMany({ where: { isDemo: true } });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import NeedSuggestions from "../../NeedSuggestions";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
@@ -93,6 +94,7 @@ export default async function CompanyExplorationPage({ params, searchParams }: {
       </div>
       {sp.ok && MSG_OK[sp.ok] && <div className="note okn">{t(...MSG_OK[sp.ok])}</div>}
       {sp.err && MSG_ERR[sp.err] && <div className="note attn">{t(...MSG_ERR[sp.err])}</div>}
+      <NeedSuggestions scope={{ accountIds: [a.id] }} back={back} t={t} day={i.day} user={user} sp={sp} />
 
       <div className="grid cols-2">
         <section className="card">

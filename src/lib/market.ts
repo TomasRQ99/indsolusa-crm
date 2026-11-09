@@ -95,6 +95,8 @@ export async function explorationWorkspace(id: string) {
       whiteSpaces: { orderBy: { createdAt: "desc" }, include: { account: { select: { id: true, name: true } } } },
       futures: { orderBy: { expectedAt: "asc" }, include: { account: { select: { name: true } }, plant: { select: { name: true } } } },
       tasks: { where: { status: "OPEN" }, select: { id: true, title: true, dueDate: true } },
+      // M6 §25.18: Journeys born here and what they taught us (market learning).
+      deals: { orderBy: { createdAt: "desc" }, select: { id: true, code: true, title: true, stage: true, resultState: true, actualResult: true, closureLearning: true, closedAt: true, createdAt: true, account: { select: { name: true } }, owner: { select: { name: true } } } },
     },
   });
   if (!e) return null;

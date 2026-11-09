@@ -249,6 +249,15 @@ model Deal {
   promiseRevisions      Int         @default(0)
   promiseRevisedAt      DateTime?
   promiseChangeCause    String?
+  // Mercado M6 (§12): a Need confirmed from Mercado keeps where it came from and what Mercado knew then.
+  explorationId         String?
+  exploration           Exploration? @relation(fields: [explorationId], references: [id], onDelete: SetNull)
+  plantId               String?
+  plant                 Plant?       @relation(fields: [plantId], references: [id], onDelete: SetNull)
+  /// note:<id> | future:<id> | signal:<id> — the evidence the Need was confirmed from
+  originRef             String?
+  /// Frozen copy of the inherited context at confirmation (items with their source ids).
+  needContext           Json?
 
   resultEvidence  ResultEvidence[]
   recoveries      Recovery[]
@@ -1504,6 +1513,7 @@ model Exploration {
   whiteSpaces WhiteSpace[]
   futures     FutureOpportunity[]
   tasks       Task[]
+  deals       Deal[]
 
   @@index([lifecycle, movement])
 }
@@ -1619,6 +1629,7 @@ model Plant {
   impacts     ImpactProfile[]
   insights    AccountInsight[]
   employments Employment[]
+  deals       Deal[]
 
   @@index([accountId])
 }
@@ -2007,4 +2018,14 @@ model PreparedMessage {
 
   @@index([contactId])
   @@index([accountId])
+}
+
+/// Mercado M6: a suggested Need that a person said is not a need (so SOLU stops suggesting it). ref = note:<id> | future:<id>
+model NeedDismissal {
+  id        String   @id @default(cuid())
+  ref       String   @unique
+  accountId String
+  note      String?
+  byName    String
+  createdAt DateTime @default(now())
 }

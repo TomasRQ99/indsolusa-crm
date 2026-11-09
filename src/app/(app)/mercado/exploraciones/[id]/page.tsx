@@ -1,4 +1,5 @@
 import Link from "next/link";
+import NeedSuggestions from "../../NeedSuggestions";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { canEdit } from "@/lib/permissions";
@@ -61,6 +62,18 @@ export default async function ExplorationPage({ params, searchParams }: { params
       </div>
       {ok && OK[ok] && <div className="note okn">{t(...OK[ok])}</div>}
       {sp.err && ERR[sp.err] && <div className="note attn">{t(...ERR[sp.err])}</div>}
+      {!closed && <NeedSuggestions scope={{ accountIds: companies.map((c) => c.id) }} back={`/mercado/exploraciones/${e.id}`} t={t} day={i.day} user={user} sp={sp} />}
+      {e.deals.length > 0 && (
+        <section className="mk-sec">
+          <h2>{t("Necesidades que nacieron aquí", "Needs born here")}</h2>
+          <ul className="mk-ul">{e.deals.map((d) => (
+            <li key={d.id} className="small">
+              <Link href={`/deals/${d.id}`}>{d.code} {d.title}</Link><span className="src"> · {d.account.name} · {d.owner.name} · {i.day(d.createdAt)}</span>
+              {d.resultState !== "PENDING" ? <span className="block">{t("Resultado", "Result")}: {d.actualResult ?? d.resultState}{d.closureLearning ? ` · ${t("Aprendizaje", "Learning")}: ${d.closureLearning}` : ""}</span> : <span className="src block">{t("En curso: el resultado volverá aquí como aprendizaje.", "In progress: the result will come back here as learning.")}</span>}
+            </li>
+          ))}</ul>
+        </section>
+      )}
 
       {closed ? (
         <div className="card mk-move">

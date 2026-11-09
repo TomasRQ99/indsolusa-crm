@@ -8,7 +8,7 @@ import type { PrismaClient } from "@prisma/client";
 export const AUDITED: Record<string, readonly string[] | "all"> = {
   User: ["role", "active", "email", "name"],
   Account: ["creditLimit", "paymentTermsDays", "allowsPartialBilling", "taxId", "requiresReceptionCode", "requiresPortal", "ownerId"],
-  Deal: ["amount", "supplierCost", "freightCost", "otherCosts", "stage", "ownerId", "promisedDate", "poAcceptedAt", "creditExceptionById", "creditExceptionAt", "creditExceptionNote", "closedAt"],
+  Deal: ["amount", "supplierCost", "freightCost", "otherCosts", "stage", "ownerId", "promisedDate", "poAcceptedAt", "creditExceptionById", "creditExceptionAt", "creditExceptionNote", "closedAt", "explorationId", "plantId", "originRef"],
   DealItem: ["qty", "unitPrice", "code", "description"],
   Supplier: ["bankBeneficiary", "bankName", "bankAccount", "bankSwift", "bankVerifiedAt", "bankVerifiedById", "paymentTerms", "advancePct", "currency", "taxId"],
   Quote: ["status", "rev", "supplierCost", "freightCost", "otherCosts", "fxRate", "protSale", "protCost", "protEsagra", "presentedAt", "decidedAt", "validityDays", "paymentTerms", "incoterm"],
@@ -42,6 +42,8 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   PersonNote: ["kind", "statement", "evidence", "confidence", "supersededAt"],
   OpenLoop: ["side", "what", "dueAt", "status", "closedNote", "closedByName"],
   PreparedMessage: "all",
+  // M6: a suggested Need someone set aside.
+  NeedDismissal: "all",
   // Economic data: the import is the audited unit (who loaded which file, with which scale/currency, who committed).
   // Snapshots are immutable and come only from a committed import, so they aren't logged one by one.
   IntelligenceSource: ["name", "kind"],
