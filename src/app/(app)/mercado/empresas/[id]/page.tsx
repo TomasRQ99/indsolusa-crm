@@ -8,6 +8,9 @@ import { addAlias, addEmployment, addInsight, addOpenQuestion, addPlantFromCompa
 import { MSG_ERR, MSG_OK, Prov, ProvFields } from "../../ui";
 import { companyEconomics } from "@/lib/econ";
 import { EconBlock } from "../../EconBlock";
+import { PayBlock } from "../../PayBlock";
+import { paymentBehavior } from "@/lib/pay-behavior";
+import { canManageAll } from "@/lib/permissions";
 
 // Company Exploration (Módulo 09 §13.3): who is this company and where could we be useful?
 // What we know (with source) · what changed · what we don't know · next useful movement. No giant form:
@@ -23,7 +26,7 @@ export default async function CompanyExplorationPage({ params, searchParams }: {
   const data = await companyExploration(id);
   if (!data) notFound();
   const { a } = data;
-  const econ = await companyEconomics({ accountId: a.id, taxId: a.taxId });
+  const [econ, pay] = await Promise.all([companyEconomics({ accountId: a.id, taxId: a.taxId }), paymentBehavior(a.id)]);
   const i = makeI18n(user.lang);
   const { t } = i;
   const L = (x: { es: string; en: string } | undefined) => (x ? t(x.es, x.en) : "");
@@ -136,6 +139,12 @@ export default async function CompanyExplorationPage({ params, searchParams }: {
         <h2>{t("Inteligencia económica", "Economic intelligence")}</h2>
         {econ ? <EconBlock d={econ} t={t} lang={user.lang} day={i.day} /> : <div className="card empty small">{a.taxId ? t("No hay cifras públicas cargadas para este NIT todavía.", "No public figures loaded for this NIT yet.") : t("Sin NIT no podemos enlazar sus cifras públicas. Agrégalo en el cliente.", "Without a NIT we can't link its public figures. Add it on the customer.")}</div>}
       </section>
+
+      <section className="mk-sec" id="pagos">
+        <h2>{t("Cómo paga", "How they pay")}</h2>
+        {pay && <PayBlock b={pay.b} rules={pay.rules.value} rulesVersion={pay.rules.version} detail={canManageAll(user)} t={t} i={i} accountId={a.id} />}
+      </section>
+
       <section className="mk-sec">
         <h2>{t("Cómo funciona esta empresa", "How this account works")}</h2>
         <div className="grid cols-2">

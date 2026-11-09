@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { expectedPaymentDays } from "@/lib/pay-behavior";
 import { canEdit } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { addDays, dayInput, daysBetween } from "@/lib/domain";
@@ -28,6 +29,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   ]);
   if (!q) notFound();
   const B = buildQuote(q, i, policy);
+  const pay = await expectedPaymentDays(q.deal.accountId);
   const d = q.deal;
   const editable = canEdit(user, d.ownerId);
   const draft = q.status === "DRAFT";
@@ -145,6 +147,9 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     </section>
   );
 
+  // ---------- Collection days (§10.4): agreed vs what history says ----------
+  const PayLine = () => (pay ? <p className="small" style={{ marginTop: 10 }}>{t("Cobro", "Collection")}: {t(`plazo pactado ${pay.contractualDays} d`, `${pay.contractualDays}-day agreed terms`)}{pay.expectedDays != null ? <> · {t(`según historial ${pay.expectedDays} d`, `history says ${pay.expectedDays} d`)}{pay.deltaDays ? <b className={pay.deltaDays > 0 ? "attn-t" : ""}> ({pay.deltaDays > 0 ? "+" : ""}{pay.deltaDays} {t("días de financiación", "days of financing")})</b> : null}<span className="src"> · {t(`promedio de ${pay.n} factura(s) cobrada(s) y conciliada(s)${pay.enough ? "" : ", orientativo"}`, `average of ${pay.n} collected and reconciled invoice(s)${pay.enough ? "" : ", indicative"}`)} · <Link href={`/mercado/empresas/${q.deal.accountId}#pagos`}>{t("cómo paga", "how they pay")}</Link></span></> : <span className="src"> · {t("sin historial de cobro todavía", "no collection history yet")}</span>}</p> : null);
+
   // ---------- Economics ----------
   const Economics = () => {
     const v = B.versions;
@@ -198,6 +203,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
             <span className="src">{policy.version ? t(`Piso de eságara de la política v${policy.version}. SOLU no inventa fórmulas.`, `Eságara floor of policy v${policy.version}. SOLU doesn't invent formulas.`) : t("No hay política cargada.", "No policy loaded.")}</span>
           </div>
         </div>
+        <PayLine />
         {(B.econAlert || (draft && B.belowFloor)) && <p className="qv-alert">{t("La eságara queda por debajo del piso de la política. Revisa precio o costos, o pide aprobación a Gerencia.", "Eságara falls below the policy floor. Review price or costs, or ask Management to approve.")}</p>}
 
         <div className="tscroll" style={{ marginTop: 14 }}>
@@ -598,6 +604,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
         <div className="qv-box prot"><span className="k">{t("Protegida al presentar", "Protected at presenting")}</span><b className="tv">{money(Number(q.protEsagra ?? 0))}</b><span className="tsub">{i.pct(q.protSale ? (Number(q.protEsagra) / Number(q.protSale)) * 100 : null)}</span><span className="src">{t(`Política v${q.protPolicy ?? "—"} · ${i.day(q.presentedAt)}`, `Policy v${q.protPolicy ?? "—"} · ${i.day(q.presentedAt)}`)}</span></div>
         <div className={`qv-box cur${B.econAlert ? " alert" : ""}`}><span className="k">{t("Esperada hoy", "Expected today")}</span><b className="tv">{money(B.curEsagra)}</b><span className="tsub">{i.pct(B.curPct)}</span><span className="src">{B.econChanged ? t("Los costos cambiaron después de presentar.", "Costs changed after presenting.") : t("Sin cambios de costo.", "No cost changes.")}</span></div>
       </div>
+      <PayLine />
       <p className="src" style={{ marginTop: 8 }}>{t("SOLU solo avisa si se cruza el piso de la política o si cambia la promesa.", "SOLU only warns if the policy floor is crossed or the promise changes.")}</p>
     </section>
   );

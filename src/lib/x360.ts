@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { daysBetween, invoiceCash, today } from "./domain";
 import type { makeI18n } from "./i18n";
-import { payHistory } from "./billing";
+import { DEFAULT_PAY_RULES, payBehavior, toPayInvoice, type PayRules } from "./pay-rules";
 
 type I = ReturnType<typeof makeI18n>;
 
@@ -75,21 +75,15 @@ export const customerInclude = {
 export type Customer360 = Prisma.AccountGetPayload<{ include: typeof customerInclude }>;
 
 /** How this customer actually pays: real delays, promises kept, short payments. */
-export function billingPattern(a: Customer360, now = today()) {
-  const hist = payHistory(a.invoices);
-  let kept = 0, broken = 0;
-  for (const inv of a.invoices) {
-    const c = invoiceCash(inv);
-    for (const p of inv.promises) {
-      const paidBy = inv.applications.filter((x) => x.payment.receivedAt <= p.promisedFor).reduce((s, x) => s + Number(x.amount), 0);
-      if (paidBy >= c.amount - 0.005) kept++;
-      else if (p.promisedFor < now) broken++;
-    }
-  }
+export function billingPattern(a: Customer360, now = today(), rules: PayRules = DEFAULT_PAY_RULES) {
+  // One truth with Mercado's payment behavior: only reconciled cash keeps a promise or counts as paid.
+  const b = payBehavior(a.invoices.map(toPayInvoice), a.paymentTermsDays, now, rules);
+  const hist = { n: b.expected.n, avg: b.expected.avgDelay ?? 0, enough: b.expected.enough };
+  const { kept, broken } = b.promises;
   const shortPays = a.invoices.filter((inv) => inv.shortPayNote).map((inv) => inv.shortPayNote!);
   const open = a.invoices.reduce((s, inv) => s + invoiceCash(inv).balance, 0);
   const lastPaid = a.invoices.flatMap((inv) => inv.applications.filter((x) => x.payment.reconciledAt).map((x) => x.payment.receivedAt)).sort((x, y) => +y - +x)[0] ?? null;
-  return { hist, kept, broken, shortPays, open, lastPaid, invoices: a.invoices.length };
+  return { hist, kept, broken, shortPays, open, lastPaid, invoices: a.invoices.length, behavior: b };
 }
 
 /** What we delivered that is (or should be) running at the customer, with the result it gave. */

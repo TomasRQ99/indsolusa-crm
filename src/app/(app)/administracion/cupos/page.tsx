@@ -4,17 +4,21 @@ import { requireUser } from "@/lib/auth";
 import { canManageAll } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { loadCredit } from "@/lib/queries";
-import { grantCreditException, setCreditLimit } from "../actions";
+import { grantCreditException, savePayRules, setCreditLimit } from "../actions";
+import { paymentBehaviors } from "@/lib/pay-behavior";
+import { DEFAULT_PAY_RULES } from "@/lib/pay-rules";
 
-export default async function CreditLimitsPage() {
+export default async function CreditLimitsPage({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
   const manager = canManageAll(user);
+  const sp = await searchParams;
   const [rows, others] = await Promise.all([
     loadCredit(),
     db.account.findMany({ where: { creditLimit: null }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
+  const pb = await paymentBehaviors(rows.map((r) => r.id));
   const over = rows.filter((r) => r.limit != null && r.used > r.limit);
   const near = rows.filter((r) => r.limit != null && r.used <= r.limit && r.used > r.limit * 0.8);
 
@@ -42,7 +46,13 @@ export default async function CreditLimitsPage() {
               const isOver = r.limit != null && r.used > r.limit;
               return [
                 <tr key={r.id} id={r.id} className={isOver ? "sel" : undefined}>
-                  <td><Link href={`/accounts/${r.id}`}><b>{r.name}</b></Link><span className="src">{r.owner.name}{r.overdueCount ? ` · ${r.overdueCount} ${t("facturas vencidas", "overdue invoices")}` : ""}</span></td>
+                  <td><Link href={`/accounts/${r.id}`}><b>{r.name}</b></Link><span className="src">{r.owner.name}{r.overdueCount ? ` · ${r.overdueCount} ${t("facturas vencidas", "overdue invoices")}` : ""}</span>{(() => {
+                    const b = pb.byId.get(r.id);
+                    const e = b?.expected;
+                    if (!b || !e || e.expectedDays == null) return null;
+                    const ot = b.windows[3].onTimePct;
+                    return <span className="src">{t(`paga en ~${e.expectedDays} d (plazo ${e.contractualDays})`, `pays in ~${e.expectedDays} d (${e.contractualDays}-day terms)`)}{ot != null ? t(` · a tiempo ${i.n(ot)} %`, ` · on time ${i.n(ot)} %`) : ""}{b.trend.trend === "WORSE" && <b className="attn-t">{t(" · paga más lento: conviene revisar", " · paying more slowly: worth a review")}</b>} · <Link href={`/mercado/empresas/${r.id}#pagos`}>{t("cómo paga", "how they pay")}</Link></span>;
+                  })()}</td>
                   <td className="n val">{r.limit == null ? "—" : i.n(r.limit)}</td>
                   <td className="n val">{i.n(r.used)}<span className="src">{t("fact.", "inv.")} {i.n(r.openInvoices)} · {t("OC", "PO")} {i.n(r.uninvoiced)}</span></td>
                   <td style={{ verticalAlign: "middle" }}>{r.limit != null && <div className="bar"><i className={isOver ? "risk" : pct > 80 ? "attn" : ""} style={{ width: `${pct}%` }} /></div>}</td>
@@ -112,6 +122,31 @@ export default async function CreditLimitsPage() {
               </form>
             ))}
           </div>
+        </details>
+      )}
+      {manager && (
+        <details className="card" id="reglas-pago" style={{ marginTop: 16 }} open={sp.ok === "reglas"}>
+          <summary><b>{t("Reglas del comportamiento de pago", "Payment behavior rules")}</b> <span className="src">{pb.rules.version ? t(`versión ${pb.rules.version} · ${pb.rules.by} · ${i.day(pb.rules.at!)}`, `version ${pb.rules.version} · ${pb.rules.by} · ${i.day(pb.rules.at!)}`) : t("valores propuestos, sin cambios todavía", "proposed values, not changed yet")}</span></summary>
+          {sp.ok === "reglas" && <p className="small ok-t">{t("Reglas guardadas como una nueva versión.", "Rules saved as a new version.")}</p>}
+          <p className="small">{t("Definen cómo SOLU resume la forma de pagar de cada cliente (Mercado, Comercial y esta página). Solo informan: nunca cambian un cupo ni un plazo.", "They define how SOLU summarizes how each customer pays (Market, Commercial and this page). Information only: they never change a limit or terms.")}</p>
+          <form action={savePayRules} className="stack" style={{ gap: 8 }}>
+            {([
+              ["graceDays", t("Pagar hasta N días después del vencimiento cuenta como «a tiempo»", "Paying up to N days after due counts as “on time”"), t("días", "days")],
+              ["expectedWindowMonths", t("Días esperados de pago: promedio de las facturas cobradas en los últimos", "Expected payment days: average of invoices collected in the last"), t("meses", "months")],
+              ["minInvoices", t("Mínimo de facturas para que no sea solo orientativo", "Minimum invoices so it's not just indicative"), t("facturas", "invoices")],
+              ["trendDays", t("Tendencia: el retraso promedio de los últimos 6 meses debe moverse al menos", "Trend: the average delay of the last 6 months must move at least"), t("días", "days")],
+              ["bandSmallUsd", t("Factura «pequeña» por debajo de", "“Small” invoice below"), "USD"],
+              ["bandLargeUsd", t("Factura «grande» desde", "“Large” invoice from"), "USD"],
+            ] as const).map(([k, label, unit]) => (
+              <label key={k} className="row small" style={{ gap: 8, alignItems: "center" }}>
+                <span style={{ flex: 1 }}>{label}</span>
+                <input name={k} type="number" min="0" step="1" defaultValue={pb.rules.value[k]} style={{ width: 110 }} />
+                <span className="muted" style={{ width: 60 }}>{unit}</span>
+                {pb.rules.value[k] !== DEFAULT_PAY_RULES[k] && <span className="src">{t(`propuesto: ${DEFAULT_PAY_RULES[k]}`, `proposed: ${DEFAULT_PAY_RULES[k]}`)}</span>}
+              </label>
+            ))}
+            <div><button type="submit">{t("Guardar como nueva versión", "Save as a new version")}</button></div>
+          </form>
         </details>
       )}
     </>

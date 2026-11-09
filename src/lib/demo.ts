@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { refreshUnderstanding } from "./comm-store";
+import { refreshPaymentBehaviorSafe } from "./pay-behavior";
 import { addDays, nextCode, nextDocNumber, today } from "./domain";
 
 // Sample data so every SOLU screen can be seen working. Every record is marked
@@ -642,6 +643,7 @@ export async function loadDemo(adminId: string) {
         ]);
 
       await seedMarketDemo(tx, d, paola, lacteos, pacifico);
+      await seedMarketM4(tx, d, { siderId: sider.id, ownerId: paola.id, ownerName: paola.name, treasurerId: diana.id });
 
       await tx.task.createMany({
         data: [
@@ -657,6 +659,8 @@ export async function loadDemo(adminId: string) {
   );
   // SOLU reads the sample conversations once they exist.
   for (const th of await db.commThread.findMany({ where: { account: { isDemo: true } }, select: { id: true } })) await refreshUnderstanding(th.id);
+  // Payment behavior of the sample customers, as if Treasury had just reconciled (creates the M4 trend signal).
+  for (const a of await db.account.findMany({ where: { isDemo: true }, select: { id: true } })) await refreshPaymentBehaviorSafe(a.id, "Datos de ejemplo cargados");
 }
 
 
@@ -725,6 +729,20 @@ async function seedMarketM2(tx: Prisma.TransactionClient, d: (n: number) => Date
   if (jorge) await tx.employment.create({ data: { contactId: jorge.id, accountId: lacteos.id, plantId: tuluaId, area: "Mantenimiento", role: "Jefe de mantenimiento", sourceType: "CONVERSATION", sourceRef: "Llamada", confidence: "VERIFIED", capturedByName: by } });
 }
 
+const M4_TITLE = "Repuestos de mantenimiento (pedidos recurrentes)";
+
+/** Mercado M4 sample (§27 case 7): Siderúrgica agreed 45 days and lately pays in ~60, after paying near terms the year before. */
+async function seedMarketM4(tx: Prisma.TransactionClient, d: (n: number) => Date, ids: { siderId: string; ownerId: string; ownerName: string; treasurerId: string }) {
+  await tx.account.update({ where: { id: ids.siderId }, data: { paymentTermsDays: 45 } });
+  const dl = await tx.deal.create({ data: { title: M4_TITLE, accountId: ids.siderId, ownerId: ids.ownerId, stage: "WON", createdAt: d(-490), desiredResult: "Repuestos de mantenimiento a tiempo para cada parada", resultState: "ACHIEVED", actualResult: "Cada pedido llegó antes de su parada", resultConfirmedAt: d(-30), resultConfirmedByName: ids.ownerName, closedAt: d(-20), closedByName: ids.ownerName, closureSummary: "Pedidos recurrentes entregados y cobrados.", closureNoSignalReason: "Sin necesidad nueva declarada" } });
+  const rows: [issued: number, paidAfter: number, amount: number, promise?: number][] = [[-480, 47, 2400], [-420, 50, 3100], [-360, 46, 1800], [-170, 62, 2900], [-130, 64, 3400], [-95, 60, 2200, 60]];
+  for (const [issued, paidAfter, amount, promise] of rows) {
+    const inv = await tx.invoice.create({ data: { number: await nextDocNumber(tx), dealId: dl.id, accountId: ids.siderId, amount, esagraAtIssue: Math.round(amount * 0.25), issuedAt: d(issued), dueAt: d(issued + 45), issuedById: ids.ownerId, syncState: "CONFIRMED", externalSystem: "QuickBooks", externalId: `QB-M4${-issued}`, syncAt: d(issued) } });
+    if (promise) await tx.paymentPromise.create({ data: { invoiceId: inv.id, promisedFor: d(issued + promise), promisedBy: "Sandra Gómez (Tesorería)", source: "Llamada", recordedById: ids.ownerId, createdAt: d(issued + 50) } });
+    await tx.customerPayment.create({ data: { accountId: ids.siderId, amount, receivedAt: d(issued + paidAfter), reference: `TRF M4${-issued}`, createdById: ids.ownerId, reconciledAt: d(issued + paidAfter + 1), reconciledById: ids.treasurerId, applications: { create: [{ invoiceId: inv.id, amount }] } } });
+  }
+}
+
 /** Environments loaded before Mercado existed get only the Mercado sample, nothing else is touched. */
 async function topUpMarketDemo() {
   const paola = await db.user.findUnique({ where: { email: `paola${DEMO_DOMAIN}` }, select: { id: true, name: true } });
@@ -740,6 +758,13 @@ async function topUpMarketDemo() {
   // Mercado M1 sample already there: add only the M2 part if missing.
   const tulua = await db.plant.findFirst({ where: { accountId: lacteos.id, name: "Planta Tuluá" }, select: { id: true } });
   if (tulua && !(await db.accountInsight.count({ where: { accountId: lacteos.id } }))) await db.$transaction((tx) => seedMarketM2(tx, d, paola.name, lacteos, tulua.id), { timeout: 30000 });
+  // M4 sample if missing.
+  const sider = await db.account.findFirst({ where: { isDemo: true, name: "Siderúrgica del Norte" + TAG }, select: { id: true } });
+  const diana = await db.user.findUnique({ where: { email: `diana${DEMO_DOMAIN}` }, select: { id: true } });
+  if (sider && diana && !(await db.deal.count({ where: { accountId: sider.id, title: M4_TITLE } }))) {
+    await db.$transaction((tx) => seedMarketM4(tx, d, { siderId: sider.id, ownerId: paola.id, ownerName: paola.name, treasurerId: diana.id }), { timeout: 30000 });
+    for (const a of await db.account.findMany({ where: { isDemo: true }, select: { id: true } })) await refreshPaymentBehaviorSafe(a.id, "Datos de ejemplo cargados");
+  }
 }
 
 const NAMEPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320"><rect width="520" height="320" fill="#8a9097"/><rect x="20" y="20" width="480" height="280" rx="10" fill="#d9dde1" stroke="#5c636a" stroke-width="3"/><circle cx="42" cy="42" r="7" fill="#9aa1a8"/><circle cx="478" cy="42" r="7" fill="#9aa1a8"/><circle cx="42" cy="278" r="7" fill="#9aa1a8"/><circle cx="478" cy="278" r="7" fill="#9aa1a8"/><text x="60" y="78" font-family="Arial" font-weight="700" font-size="30" fill="#0f9d9a">SIEMENS</text><text x="60" y="112" font-family="Arial" font-size="20" fill="#222">SINAMICS G120C</text><text x="60" y="150" font-family="Courier New" font-size="18" fill="#222">6SL3210-1KE21-7UF1</text><text x="60" y="184" font-family="Arial" font-size="16" fill="#222">IN: 3AC 380-480V 50/60Hz 18,5A</text><text x="60" y="210" font-family="Arial" font-size="16" fill="#222">OUT: 3AC 0-480V 16,5A 7,5kW</text><text x="60" y="236" font-family="Arial" font-size="14" fill="#444">S/N: XAJ2-7781-0042  IP20</text><text x="60" y="262" font-family="Arial" font-size="12" fill="#666">Made in Germany</text></svg>`;

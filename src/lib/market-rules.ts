@@ -23,6 +23,7 @@ export const SIGNAL_KINDS: Record<string, L> = {
   DISCONTINUATION: { es: "Descontinuación", en: "Discontinuation" },
   REGULATORY: { es: "Cambio regulatorio", en: "Regulatory change" },
   ECONOMIC: { es: "Cambio económico", en: "Economic change" },
+  PAYMENT: { es: "Cambio en cómo paga", en: "Change in how they pay" },
   SHUTDOWN: { es: "Parada programada", en: "Planned shutdown" },
   ROLE_CHANGE: { es: "Cambio de rol", en: "Role change" },
   OTHER: { es: "Otro cambio", en: "Other change" },

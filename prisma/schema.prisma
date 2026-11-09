@@ -135,6 +135,7 @@ model Account {
   insights      AccountInsight[]
   employments   Employment[]
   marketCompany MarketCompany?
+  payBehaviors  PaymentBehaviorSnapshot[]
 
   @@index([ownerId])
   @@index([name])
@@ -1901,4 +1902,25 @@ model MarketSetting {
   createdAt     DateTime @default(now())
 
   @@unique([key, version])
+}
+
+/// Mercado M4 (§4.21, §10): how a customer actually pays, recomputed when cash is reconciled.
+/// A new row only when the figures change, so the history of rows is the trend over time. Derived data: not audited.
+model PaymentBehaviorSnapshot {
+  id           String   @id @default(cuid())
+  accountId    String
+  account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  formula      String
+  rulesVersion Int
+  reason       String
+  expectedDays Int?
+  avgDelay     Float?
+  onTimePct    Float?
+  trend        String
+  collected    Int
+  openTotal    Decimal  @db.Decimal(14, 2)
+  metrics      Json
+  createdAt    DateTime @default(now())
+
+  @@index([accountId, createdAt])
 }

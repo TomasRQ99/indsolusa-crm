@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { cmpMoney, linesTotal, subMoney, sumMoney } from "./money";
 import { addDays, daysBetween, invoiceCash, today } from "./domain";
 import type { makeI18n } from "./i18n";
+import { DEFAULT_PAY_RULES, expectedOf, invoiceFacts, toPayInvoice, type PayRules, type RawPayInvoice } from "./pay-rules";
 
 type I = ReturnType<typeof makeI18n>;
 
@@ -135,18 +136,12 @@ export function pendingDeliveries(deal: BillingDeal) {
 
 type Tone = "ok" | "risk" | "attn" | "wait" | "info" | "dash";
 
-/** How late this customer usually pays, from invoices fully collected and reconciled. */
-export function payHistory(invoices: { dueAt: Date; amount: Prisma.Decimal | number; applications: { amount: Prisma.Decimal | number; payment: { reconciledAt: Date | null; receivedAt: Date } }[] }[]) {
-  const delays: number[] = [];
-  for (const inv of invoices) {
-    const rec = inv.applications.filter((a) => a.payment.reconciledAt);
-    const paid = sumMoney(rec.map((a) => a.amount));
-    if (!rec.length || cmpMoney(paid, inv.amount) < 0) continue;
-    const last = rec.reduce((m, a) => (a.payment.receivedAt > m ? a.payment.receivedAt : m), rec[0].payment.receivedAt);
-    delays.push(daysBetween(inv.dueAt, last));
-  }
-  if (!delays.length) return { n: 0, avg: 0 };
-  return { n: delays.length, avg: Math.round(delays.reduce((s, x) => s + x, 0) / delays.length) };
+/** How late this customer usually pays, from invoices fully collected and reconciled.
+ *  Same rule as Mercado's payment behavior (pay-rules.ts expectedOf), so there is one truth. */
+export function payHistory(invoices: RawPayInvoice[], rules: PayRules = DEFAULT_PAY_RULES, contractualDays = 30, now = today()) {
+  const facts = invoices.map((x) => invoiceFacts(toPayInvoice(x), now));
+  const e = expectedOf(facts, contractualDays, now, rules);
+  return { n: e.n, avg: e.avgDelay ?? 0, enough: e.enough };
 }
 
 export type CashView = ReturnType<typeof cashViewOf>;

@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { canEdit, canManageAll } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { addDays, invoiceCash, today } from "@/lib/domain";
+import { getPayRules } from "@/lib/pay-behavior";
 import { billingInclude, DEAL_LEVEL, cashTimeline, cashViewOf, deliveryAmount, partialOf, payHistory, pendingDeliveries, readinessOf, syncLabel, unallocatedOf, type Req } from "@/lib/billing";
 import { Popovers } from "@/components/Popovers";
 import { accountingBridge, allocateCash, issueFromReadiness, markShortPay, recordEvidence, recordPayPromise, reconcileCash, requestEvidence } from "./actions";
@@ -22,15 +23,16 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
   const now = today();
   const a = deal.account;
 
-  const [acctInvoices, openPayments] = await Promise.all([
+  const [acctInvoices, openPayments, payRules] = await Promise.all([
     db.invoice.findMany({
       where: { accountId: a.id },
       orderBy: { issuedAt: "asc" },
       include: { deal: { select: { id: true, code: true } }, applications: { select: { amount: true, payment: { select: { reconciledAt: true, receivedAt: true } } } } },
     }),
     db.customerPayment.findMany({ where: { accountId: a.id, reconciledAt: null }, orderBy: { receivedAt: "desc" }, include: { applications: { select: { amount: true } } } }),
+    getPayRules(),
   ]);
-  const hist = payHistory(acctInvoices);
+  const hist = payHistory(acctInvoices, payRules.value, a.paymentTermsDays, now);
   const openInv = acctInvoices
     .map((inv) => { const c = invoiceCash(inv); return { inv, room: c.balance - c.pendingReconcile }; })
     .filter((x) => x.room > 0.005)

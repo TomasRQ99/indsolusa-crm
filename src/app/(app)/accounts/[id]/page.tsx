@@ -13,6 +13,7 @@ import { createContact } from "../../contacts/actions";
 import { logActivity } from "../../activities/actions";
 import { createNeedFromContext } from "../../productos/actions";
 import { mailConfig } from "@/lib/mail";
+import { getPayRules } from "@/lib/pay-behavior";
 import { EmailComposer } from "@/components/EmailComposer";
 import { Popovers } from "@/components/Popovers";
 
@@ -27,10 +28,11 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
   const editable = canEdit(user, a.ownerId);
   const mail = mailConfig();
   const recipients = a.contacts.filter((c) => c.email).map((c) => ({ id: c.id, label: `${c.firstName} ${c.lastName} <${c.email}>` }));
-  const [users, docs] = await Promise.all([
+  const [users, docs, payRules] = await Promise.all([
     canManageAll(user) ? db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
     // The file bytes stay in the database: only the list is loaded here.
     db.accountDocument.findMany({ where: { accountId: id }, orderBy: { createdAt: "desc" }, select: { id: true, kind: true, name: true, size: true, extracted: true, createdAt: true } }),
+    getPayRules(),
   ]);
   const F = ({ f, src }: { f: Fresh; src?: string | null }) => <span className={`fresh${f.stale ? " stale" : ""}`}>{src ? `${src} · ` : ""}{f.label}{f.stale && f.at ? ` · ${t("confirmar", "re-confirm")}` : ""}</span>;
 
@@ -44,7 +46,9 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
   const signals = a.deals.flatMap((d) => d.continuity.filter((c) => !c.resolvedAt).map((c) => ({ c, d }))).sort((x, y) => +(x.c.triggerOn ?? x.c.createdAt) - +(y.c.triggerOn ?? y.c.createdAt));
   const nextSignal = signals.find((s) => s.c.triggerOn && s.c.triggerOn >= now) ?? signals[0] ?? null;
   // Billing pattern & installed context
-  const bp = billingPattern(a, now);
+  const bp = billingPattern(a, now, payRules.value);
+  const ex = bp.behavior.expected;
+  const onTime = bp.behavior.windows[3].onTimePct;
   const installed = installedContext(a);
   // Relationships: business role + last real interaction per contact.
   const lastTouch = (contactId: string) => {
@@ -93,8 +97,8 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
         </div>
         <div className="x3-f">
           <span className="k">{t("CÓMO PAGA", "HOW THEY PAY")}</span>
-          <b>{bp.hist.n ? (bp.hist.avg > 0 ? t(`~${bp.hist.avg} d después del vencimiento`, `~${bp.hist.avg} d after due`) : t("A tiempo", "On time")) : t("Sin historial", "No history")}</b>
-          <span className="src">{t(`plazo ${a.paymentTermsDays} d`, `${a.paymentTermsDays}-day terms`)}{bp.hist.n ? t(` · ${bp.hist.n} factura(s) cobrada(s)`, ` · ${bp.hist.n} invoice(s) collected`) : ""}{bp.kept + bp.broken ? t(` · promesas cumplidas ${bp.kept}/${bp.kept + bp.broken}`, ` · promises kept ${bp.kept}/${bp.kept + bp.broken}`) : ""}</span>
+          <b>{ex.expectedDays != null ? t(`Paga en ~${ex.expectedDays} d (plazo ${a.paymentTermsDays})`, `Pays in ~${ex.expectedDays} d (${a.paymentTermsDays}-day terms)`) : t("Sin historial", "No history")}</b>
+          <span className="src">{ex.expectedDays == null ? t(`plazo ${a.paymentTermsDays} d`, `${a.paymentTermsDays}-day terms`) : t(`${ex.n} factura(s) cobrada(s)${ex.enough ? "" : " · orientativo"}`, `${ex.n} invoice(s) collected${ex.enough ? "" : " · indicative"}`)}{onTime != null ? t(` · a tiempo ${i.n(onTime)} %`, ` · on time ${i.n(onTime)} %`) : ""}{bp.kept + bp.broken ? t(` · promesas cumplidas ${bp.kept}/${bp.kept + bp.broken}`, ` · promises kept ${bp.kept}/${bp.kept + bp.broken}`) : ""} · <Link href={`/mercado/empresas/${a.id}#pagos`}>{t("detalle", "detail")}</Link></span>
           <F f={freshness(i, bp.lastPaid, 180, now)} src={t("último pago", "last payment")} />
         </div>
         <div className={`x3-f${nextSignal?.c.triggerOn && nextSignal.c.triggerOn < now ? " stale" : ""}`}>

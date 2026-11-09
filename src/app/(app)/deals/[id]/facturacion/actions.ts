@@ -8,6 +8,7 @@ import { refreshApp } from "@/lib/revalidate";
 import { addDays, esagra, invoiceCash, nextDocNumber, today } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
 import { cmpMoney, money2, mulMoney, subMoney, sumMoney } from "@/lib/money";
+import { refreshPaymentBehaviorSafe } from "@/lib/pay-behavior";
 import { billingInclude, DEAL_LEVEL, deliveryAmount, partialOf, readinessOf, REQ_KEYS, reqLabel, type ReqKey } from "@/lib/billing";
 
 const dayOf = (s: FormDataEntryValue | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(`${String(s)}T00:00:00Z`) : null);
@@ -199,6 +200,7 @@ export async function reconcileCash(dealId: string, paymentId: string) {
   const rest = subMoney(p.amount, sumMoney(p.applications.map((a) => a.amount)));
   if (rest > 0 && !p.residualNote) back(dealId, "err=residuo-pendiente");
   await db.customerPayment.updateMany({ where: { id: paymentId, reconciledAt: null }, data: { reconciledAt: new Date(), reconciledById: user.id } });
+  await refreshPaymentBehaviorSafe(p.accountId, `Pago conciliado ${p.reference ?? ""}`.trim());
   back(dealId, "ok=conciliado");
 }
 

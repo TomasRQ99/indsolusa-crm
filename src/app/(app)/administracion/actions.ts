@@ -10,6 +10,8 @@ import { refreshApp } from "@/lib/revalidate";
 import { addDays, bankDiscrepancies, esagra, invoiceBlockers, invoiceCash, nextDocNumber, paymentState, today } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
 import { authorityFor, treasuryChecks } from "@/lib/purchasing";
+import { getPayRules, refreshPaymentBehaviorSafe } from "@/lib/pay-behavior";
+import { DEFAULT_PAY_RULES, type PayRules } from "@/lib/pay-rules";
 import { cmpMoney, linesTotal, money2, mulMoney, subMoney, sumMoney } from "@/lib/money";
 
 const money = z.coerce.number().min(0).max(1e12).transform((v) => money2(v));
@@ -160,7 +162,23 @@ export async function reconcilePayment(paymentId: string) {
     where: { id: paymentId, reconciledAt: null },
     data: { reconciledAt: new Date(), reconciledById: user.id },
   });
+  await refreshPaymentBehaviorSafe(p.accountId, `Pago conciliado ${p.reference ?? ""}`.trim());
   refreshApp();
+}
+
+/** Payment-behavior rules (Mercado M4): a new version each time; earlier versions stay as history. */
+export async function savePayRules(formData: FormData) {
+  const user = await requireManager();
+  const cur = await getPayRules();
+  const limits: Record<keyof PayRules, [number, number]> = { graceDays: [0, 60], expectedWindowMonths: [3, 60], minInvoices: [1, 50], trendDays: [1, 90], bandSmallUsd: [0, 1e9], bandLargeUsd: [0, 1e9] };
+  const value = Object.fromEntries((Object.keys(DEFAULT_PAY_RULES) as (keyof PayRules)[]).map((k) => {
+    const v = Number(String(formData.get(k) ?? "").replace(",", "."));
+    return [k, Number.isFinite(v) && v >= limits[k][0] && v <= limits[k][1] ? Math.round(v) : cur.value[k]];
+  })) as PayRules;
+  if (value.bandLargeUsd <= value.bandSmallUsd) value.bandLargeUsd = cur.value.bandLargeUsd > value.bandSmallUsd ? cur.value.bandLargeUsd : value.bandSmallUsd + 1;
+  await db.marketSetting.create({ data: { key: "payRules", version: cur.version + 1, value, updatedByName: user.name } });
+  refreshApp();
+  redirect("/administracion/cupos?ok=reglas#reglas-pago");
 }
 
 // ---------- Supplier payments ----------
