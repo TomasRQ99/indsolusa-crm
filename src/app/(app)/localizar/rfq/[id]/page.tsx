@@ -43,6 +43,7 @@ export default async function RfqPage({ params, searchParams }: { params: Promis
         <div className="jh-title"><h1>{items.map((x) => `${x.qty} × ${x.mpn}`).join(" · ")}</h1></div>
         <p className="jh-sub">{t(`enviada por ${rfq.createdByName} el ${i.day(rfq.createdAt)}`, `sent by ${rfq.createdByName} on ${i.day(rfq.createdAt)}`)}{rfq.neededBy ? t(` · respuesta antes del ${i.day(rfq.neededBy)}`, ` · answer by ${i.day(rfq.neededBy)}`) : ""} · {t(`${answered} de ${rfq.recipients.length} respondieron`, `${answered} of ${rfq.recipients.length} answered`)}</p>
       </header>
+      {sp.ok === "correo" && <p className="note okn">{t("Correo enviado desde la cuenta de la empresa.", "Email sent from the company account.")}</p>}
       {sp.ok === "enviada" && <p className="note">{t(`Solicitud enviada. Te dejé un pendiente para revisar respuestas en 2 días hábiles. Cuando llegue la cotización o proforma, súbela con “Registrar respuesta”.`, `Request sent. I left you a to-do to check answers in 2 working days. When the quote or proforma arrives, upload it with “Record answer”.`)}</p>}
 
       <section className="jblock loc-sec">
@@ -56,6 +57,7 @@ export default async function RfqPage({ params, searchParams }: { params: Promis
               <td>{r.doc ? <Link href={`/localizar/ofertas/${r.doc.id}`}>{r.doc.reference ?? r.doc.fileName}</Link> : "—"}</td>
               <td className="loc-rowacts">
                 {r.status !== "ANSWERED" && <Link className="link small" href={`/localizar/ofertas/nueva?rfqr=${r.id}`}>{t("Registrar respuesta", "Record answer")}</Link>}
+                {r.status === "SENT" && <Link className="link small" href={`/correo/nuevo?tpl=FOLLOWUP&id=${r.id}`}>{t("Recordar", "Follow up")}</Link>}
                 {r.status === "SENT" && <form action={setRecipientStatus.bind(null, r.id)}><input type="hidden" name="status" value="DECLINED" /><button className="link small" type="submit">{t("No cotiza", "Won't quote")}</button></form>}
                 {r.status === "DECLINED" && <form action={setRecipientStatus.bind(null, r.id)}><input type="hidden" name="status" value="SENT" /><button className="link small" type="submit">{t("Deshacer", "Undo")}</button></form>}
                 {r.status === "FAILED" && <form action={resendRecipient.bind(null, r.id)}><button className="link small" type="submit">{t("Reintentar envío", "Retry sending")}</button></form>}
@@ -77,7 +79,7 @@ export default async function RfqPage({ params, searchParams }: { params: Promis
                   <thead><tr><th>{t("Proveedor", "Supplier")}</th><th className="n">{t("Precio unit.", "Unit price")}</th><th>{t("Plazo", "Lead time")}</th><th>{t("Válida hasta", "Valid until")}</th><th>Incoterm</th></tr></thead>
                   <tbody>{os.map((o) => (
                     <tr key={o.id}>
-                      <td>{o.supplier.name}{o.docId && <> · <Link className="small" href={`/localizar/ofertas/${o.docId}`}>{t("documento", "document")}</Link></>}<SupplierEvidenceLine ev={sev.get(o.supplierId)} t={t} /></td>
+                      <td>{o.supplier.name}{o.docId && <> · <Link className="small" href={`/localizar/ofertas/${o.docId}`}>{t("documento", "document")}</Link></>} · <Link className="small" href={`/correo/nuevo?tpl=NEGOTIATE&id=${o.id}`}>{t("Negociar", "Negotiate")}</Link><SupplierEvidenceLine ev={sev.get(o.supplierId)} t={t} /></td>
                       <td className="n mono">{o.currency} {i.n2(o.unitPrice)}{o.qty && o.qty !== it.qty ? <span className="src block">{t(`cotizó ${o.qty}`, `quoted ${o.qty}`)}</span> : null}</td>
                       <td>{o.leadText ?? (o.leadDaysMin != null ? `${o.leadDaysMin}–${o.leadDaysMax} d` : "—")}</td>
                       <td className={o.validUntil && o.validUntil < now ? "loc-expired" : undefined}>{o.validUntil ? i.day(o.validUntil) : "—"}{o.validUntil && o.validUntil < now ? ` · ${t("vencida", "expired")}` : ""}</td>

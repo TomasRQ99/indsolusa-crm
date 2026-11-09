@@ -9,11 +9,11 @@ import { recordPromise } from "../actions";
 
 const ORDER: ReceivableState[] = ["BROKEN", "NEEDS_ACTION", "RECEIVED_PENDING", "WAITING", "UPCOMING"];
 
-export default async function ReceivablesPage({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
+export default async function ReceivablesPage({ searchParams }: { searchParams: Promise<{ f?: string; ok?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
-  const { f } = await searchParams;
+  const { f, ok } = await searchParams;
   const now = today();
   const rows = await loadReceivables();
   const sel = rows.find((r) => r.id === f) ?? rows.find((r) => r.state === "BROKEN") ?? rows[0];
@@ -25,14 +25,6 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
   const total = rows.reduce((s, r) => s + r.cash.balance, 0);
   const sumOf = (s: ReceivableState) => rows.filter((r) => r.state === s).reduce((x, r) => x + r.cash.balance, 0);
   const next14 = rows.filter((r) => { const e = expected(r); return e && e <= addDays(now, 14) && r.state !== "RECEIVED_PENDING"; }).reduce((s, r) => s + r.cash.balance, 0);
-
-  const draft = sel
-    ? encodeURIComponent(
-        `Hola,\n\nEspero que estén muy bien. Les escribo sobre la factura ${sel.number} por ${i.money2(sel.cash.balance)}${sel.deal.customerPo ? ` (OC ${sel.deal.customerPo})` : ""}.` +
-          (sel.promise ? ` Teníamos registrado que el pago llegaría el ${i.date(sel.promise.promisedFor)} y aún no lo vemos en el banco; puede que esté en camino.` : ` Venció el ${i.date(sel.dueAt)}.`) +
-          `\n\n¿Nos ayudan a confirmar la fecha en que se programará el pago, o si hace falta algún documento de nuestra parte?\n\nMuchas gracias,\n${user.name}`,
-      )
-    : "";
 
   return (
     <>
@@ -46,6 +38,7 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
         <Link className="btn secondary" href="/administracion/pagos-recibidos">{t("Registrar pago recibido", "Record payment received")}</Link>
       </div>
 
+      {ok === "correo" && <p className="note okn">{t("Recordatorio enviado desde la cuenta de la empresa. Quedó registrado en el Journey.", "Reminder sent from the company account. It's logged on the Journey.")}</p>}
       <section className="sum">
         <div><span className="k">{t("Por cobrar", "Outstanding")}</span><span className="v">{i.n(total)}</span><span className="s">USD · {rows.length} {t("facturas", "invoices")}</span></div>
         <div><span className="k">{t("Compromiso incumplido", "Commitment missed")}</span><span className="v">{i.n(sumOf("BROKEN"))}</span><span className="s">{rows.filter((r) => r.state === "BROKEN").length} {t("facturas", "invoices")}</span></div>
@@ -105,9 +98,9 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
                 <dt>{t("Responsable", "Owner")}</dt><dd>{sel.account.owner.name}</dd>
               </dl>
               {(sel.state === "BROKEN" || sel.state === "NEEDS_ACTION") && (
-                <a className="btn wide" href={`mailto:${contacts.map((c) => c.email).join(",")}?subject=${encodeURIComponent(`Factura ${sel.number}`)}&body=${draft}`}>
-                  {t("Preparar contacto con su Tesorería", "Prepare contact with their Treasury")}
-                </a>
+                <Link className="btn wide" href={`/correo/nuevo?tpl=PAYMENT&id=${sel.id}`}>
+                  {t("Preparar recordatorio de pago", "Prepare payment reminder")}
+                </Link>
               )}
               {(sel.state === "BROKEN" || sel.state === "NEEDS_ACTION") && contacts.length === 0 && (
                 <p className="src" style={{ marginTop: 6 }}>{t("Este cliente no tiene contactos con correo. Agrégalos en su ficha.", "This customer has no contacts with email. Add them on the customer record.")}</p>

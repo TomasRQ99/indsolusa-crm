@@ -72,6 +72,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
   const L = (m: Record<string, { es: string; en: string }>, k: string | null) => (k && m[k] ? t(m[k].es, m[k].en) : "—");
 
   const notes: Record<string, string> = {
+    correo: t("Correo enviado desde la cuenta de la empresa.", "Email sent from the company account."),
     creado: t("Parte agregada al catálogo.", "Part added to the catalog."),
     guardado: t("Cambios guardados.", "Changes saved."),
     alias: t("Listo: ahora también la encuentras por ese número o nombre.", "Done: you'll now also find it by that number or name."),
@@ -260,7 +261,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
                   const exp = o.validUntil && o.validUntil < nowTs;
                   return (
                     <tr key={o.id} className={exp ? "loc-expired" : undefined}>
-                      <td><Link href={`/suppliers/${o.supplier.id}`}>{o.supplier.name}</Link>{o.codeAsQuoted !== p.mpn && <span className="src block mono">{t("como", "as")} {o.codeAsQuoted}</span>}<SupplierEvidenceLine ev={sev.get(o.supplier.id)} t={t} /></td>
+                      <td><Link href={`/suppliers/${o.supplier.id}`}>{o.supplier.name}</Link>{o.codeAsQuoted !== p.mpn && <span className="src block mono">{t("como", "as")} {o.codeAsQuoted}</span>}<SupplierEvidenceLine ev={sev.get(o.supplier.id)} t={t} /><Link className="link small" href={`/correo/nuevo?tpl=NEGOTIATE&id=${o.id}`}>{t("Negociar", "Negotiate")}</Link></td>
                       <td className="n mono">{o.currency} {i.n2(o.unitPrice)}{o.qty ? <span className="src block">{t(`por ${o.qty}`, `for ${o.qty}`)}</span> : null}</td>
                       <td>{o.leadText ?? "—"}{o.incoterm ? <span className="src block">{o.incoterm}</span> : null}</td>
                       <td>{o.validUntil ? i.day(o.validUntil) : <span className="src">{t("sin fecha", "no date")}</span>}{exp ? <span className="src block">{t("vencida · confirmar", "expired · re-confirm")}</span> : null}</td>

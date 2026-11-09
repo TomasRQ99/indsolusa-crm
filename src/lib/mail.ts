@@ -59,7 +59,8 @@ function bccList() {
     .filter(Boolean);
 }
 
-export async function sendMail(opts: { to: Recipient; subject: string; text: string; senderName?: string }) {
+/** `html` is optional: when given, Outlook shows it (the plain `text` stays as the fallback). */
+export async function sendMail(opts: { to: Recipient; subject: string; text: string; html?: string; senderName?: string }) {
   // Test mode: MAIL_DRY_RUN=1 writes the email to the server log instead of sending it.
   if (process.env.MAIL_DRY_RUN === "1") {
     console.log(`[MAIL_DRY_RUN] to=${toAddress(opts.to).address} subject=${opts.subject}\n${opts.text}\n[/MAIL_DRY_RUN]`);
@@ -125,7 +126,7 @@ function explainTokenError(desc: string) {
 async function sendViaGraph(
   g: { tenant: string; clientId: string; clientSecret: string },
   from: string,
-  opts: { to: Recipient; subject: string; text: string },
+  opts: { to: Recipient; subject: string; text: string; html?: string },
 ) {
   const token = await graphToken(g);
   const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(from)}/sendMail`, {
@@ -134,7 +135,7 @@ async function sendViaGraph(
     body: JSON.stringify({
       message: {
         subject: opts.subject,
-        body: { contentType: "Text", content: opts.text },
+        body: opts.html ? { contentType: "HTML", content: opts.html } : { contentType: "Text", content: opts.text },
         toRecipients: [{ emailAddress: toAddress(opts.to) }],
         bccRecipients: bccList().map((address) => ({ emailAddress: { address } })),
       },
@@ -164,7 +165,7 @@ let transporter: Transporter | null = null;
 async function sendViaSmtp(
   s: { host?: string; port: number; secure: boolean; user?: string; pass?: string },
   from: string,
-  opts: { to: Recipient; subject: string; text: string; senderName?: string },
+  opts: { to: Recipient; subject: string; text: string; html?: string; senderName?: string },
 ) {
   transporter ??= nodemailer.createTransport({
     host: s.host,
@@ -181,6 +182,7 @@ async function sendViaSmtp(
     bcc: bcc.length ? bcc : undefined,
     subject: opts.subject,
     text: opts.text,
+    html: opts.html,
   });
 }
 

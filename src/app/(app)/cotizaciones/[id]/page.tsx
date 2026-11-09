@@ -44,6 +44,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   }[q.status];
 
   const okMsg: Record<string, string> = {
+    correo: t("Correo enviado al cliente desde la cuenta de la empresa. Quedó registrado en el Journey.", "Email sent to the customer from the company account. It's logged on the Journey."),
     creada: t("Cotización creada con los productos y costos del Journey.", "Quote created from the Journey's products and costs."),
     abierta: t("Ya había un borrador abierto: es este.", "There was already an open draft: this one."),
     solucion: t("Solución y promesa guardadas.", "Solution and promise saved."),
@@ -91,6 +92,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
         <div className="jh-act">
           <a className="qa-btn" href={pdf(q.lang)} target="_blank" rel="noopener">{t("Ver PDF", "View PDF")} ({q.lang})</a>
           <a className="qa-btn" href={pdf(q.lang === "EN" ? "ES" : "EN")} target="_blank" rel="noopener">{q.lang === "EN" ? "ES" : "EN"}</a>
+          {editable && !draft && q.status !== "SUPERSEDED" && <Link className="qa-btn" href={`/correo/nuevo?tpl=OFFER&id=${q.id}`}>{t("Enviar al cliente por correo", "Email to customer")}</Link>}
           {editable && !draft && q.status !== "SUPERSEDED" && q.status !== "ACCEPTED" && (
             <form action={createRevision.bind(null, q.id)}><button type="submit" className="qa-btn">{t("Crear revisión", "Create revision")}</button></form>
           )}

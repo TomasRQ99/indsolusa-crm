@@ -105,7 +105,7 @@ export default async function NewRfq({ searchParams }: { searchParams: Promise<{
           {preview && (
             <details className="loc-preview"><summary>{t("Ver cómo se verá el correo (inglés)", "Preview the email (English)")}</summary>
               <p className="mono small"><b>{preview.subject}</b></p>
-              <pre>{preview.text}</pre>
+              <div className="mail-preview" dangerouslySetInnerHTML={{ __html: preview.html }} />
             </details>
           )}
           <div><button type="submit">{t("Enviar solicitud", "Send request")}</button></div>

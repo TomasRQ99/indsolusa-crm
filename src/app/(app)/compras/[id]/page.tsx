@@ -28,6 +28,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
   const history = (spo.history as { version: number; amount: number; reason: string; releasedAt: string }[] | null) ?? [];
 
   const okMsg: Record<string, string> = {
+    correo: t("Correo enviado al proveedor desde la cuenta de la empresa.", "Email sent to the supplier from the company account."),
     preparada: t("Supplier PO preparada desde la cotización y el requerimiento de compra. Revisa y libera.", "Supplier PO prepared from the quote and the purchase requirement. Review and release."),
     guardada: t("Borrador actualizado.", "Draft updated."),
     liberada: t("Supplier PO liberada. Sus términos ya no se editan; los pagos siguen sus hitos.", "Supplier PO released. Its terms are no longer edited; payments follow its milestones."),
@@ -67,6 +68,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
           <p className="crumb k"><Link href={`/deals/${d.id}?tab=execute`}>{d.code ?? "Journey"}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
           <span className="jid">{spo.code} · v{spo.version}</span>
           <span className="grow" />
+          {B.released && !spo.shippedAt && <Link className="btn secondary" href={`/correo/nuevo?tpl=DELIVERY&id=${spo.id}`}>{t("Pedir fecha de despacho", "Ask for ship date")}</Link>}
         </div>
         <div className="jh-title">
           <h1>Supplier PO · {s.name}</h1>

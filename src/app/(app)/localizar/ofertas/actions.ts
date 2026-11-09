@@ -11,6 +11,7 @@ import { brandIn, categoryIn } from "@/lib/part-lexicon";
 import { partKey } from "@/lib/parts";
 import { MAX_SUPPLIER_DOC_BYTES, bankCheck, parseLead, parseMoney, readSupplierDoc } from "@/lib/supplier-doc";
 import { isUsCountry, rfqEmail, type RfqItem } from "@/lib/rfq";
+import { spanishCountry } from "@/lib/company";
 
 const txt = (fd: FormData, k: string, max = 300) => {
   const v = String(fd.get(k) ?? "").trim().slice(0, max);
@@ -195,10 +196,10 @@ export async function createRfq(fd: FormData) {
   });
   // One separate email per supplier (they never see each other). Language: chosen, or by country (Colombia → Spanish).
   for (const s of withEmail) {
-    const lang = langPref === "ES" || langPref === "EN" ? langPref : /colombia|espa|m[eé]xico|per[uú]|chile|argentin|ecuador|panam/i.test(s.country ?? "") ? "ES" : "EN";
+    const lang = langPref === "ES" || langPref === "EN" ? langPref : spanishCountry(s.country) ? "ES" : "EN";
     const mail = rfqEmail({ code: rfq.code, lang, supplierName: s.name, items, neededBy, notes, senderName: user.name, from });
     let status = "SENT", error: string | null = null;
-    try { await sendMail({ to: { address: s.email!, name: s.name }, subject: mail.subject, text: mail.text, senderName: user.name }); }
+    try { await sendMail({ to: { address: s.email!, name: s.name }, subject: mail.subject, text: mail.text, html: mail.html, senderName: user.name }); }
     catch (e) { status = "FAILED"; error = describeMailError(e).slice(0, 300); }
     await db.rfqRecipient.create({ data: { rfqId: rfq.id, supplierId: s.id, email: s.email!, status, sentAt: status === "SENT" ? new Date() : null, error } });
   }
@@ -223,10 +224,10 @@ export async function resendRecipient(recipientId: string) {
   const user = await requireUser();
   const r = await db.rfqRecipient.findUniqueOrThrow({ where: { id: recipientId }, include: { rfq: true, supplier: { select: { name: true, email: true, country: true } } } });
   const email = r.supplier.email ?? r.email;
-  const lang = r.rfq.lang === "ES" || r.rfq.lang === "EN" ? r.rfq.lang : /colombia|espa|m[eé]xico|per[uú]|chile|argentin|ecuador|panam/i.test(r.supplier.country ?? "") ? "ES" : "EN";
+  const lang = r.rfq.lang === "ES" || r.rfq.lang === "EN" ? r.rfq.lang : spanishCountry(r.supplier.country) ? "ES" : "EN";
   const mail = rfqEmail({ code: r.rfq.code, lang, supplierName: r.supplier.name, items: r.rfq.items as RfqItem[], neededBy: r.rfq.neededBy, notes: r.rfq.notes, senderName: user.name, from: mailConfig().from ?? "sales@indsolusa.com" });
   try {
-    await sendMail({ to: { address: email, name: r.supplier.name }, subject: mail.subject, text: mail.text, senderName: user.name });
+    await sendMail({ to: { address: email, name: r.supplier.name }, subject: mail.subject, text: mail.text, html: mail.html, senderName: user.name });
     await db.rfqRecipient.update({ where: { id: r.id }, data: { status: "SENT", sentAt: new Date(), error: null, email } });
   } catch (e) {
     await db.rfqRecipient.update({ where: { id: r.id }, data: { status: "FAILED", error: describeMailError(e).slice(0, 300) } });
