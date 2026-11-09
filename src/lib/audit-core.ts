@@ -114,9 +114,12 @@ export function makeAuditHook(base: PrismaClient) {
     if (!model || !(model in AUDITED) || !WRITES.has(operation)) return query(args);
     const a = (args ?? {}) as { where?: object; data?: Record<string, unknown> | Record<string, unknown>[]; create?: Record<string, unknown>; update?: Record<string, unknown> };
     let before: Record<string, unknown>[] = [];
+    // Read only what the audit compares (a stored file or a long text never needs to travel for it).
+    const t = AUDITED[model];
+    const sel = t === "all" ? {} : { select: Object.fromEntries(["id", ...t].map((k) => [k, true])) };
     try {
-      if (operation === "update" || operation === "upsert" || operation === "delete") { const r = a.where ? await del(model).findUnique({ where: a.where }) : null; before = r ? [r] : []; }
-      else if (operation === "updateMany" || operation === "updateManyAndReturn" || operation === "deleteMany") before = await del(model).findMany({ where: a.where ?? {}, take: 500 });
+      if (operation === "update" || operation === "upsert" || operation === "delete") { const r = a.where ? await del(model).findUnique({ where: a.where, ...sel }) : null; before = r ? [r] : []; }
+      else if (operation === "updateMany" || operation === "updateManyAndReturn" || operation === "deleteMany") before = await del(model).findMany({ where: a.where ?? {}, take: 500, ...sel });
     } catch { before = []; }
 
     const result = await query(args);

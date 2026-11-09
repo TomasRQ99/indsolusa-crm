@@ -1304,6 +1304,24 @@ a:hover .ich-lb { fill: var(--brand); text-decoration: underline; }
 .ich-dl.down { stroke: var(--risk); stroke-opacity: .45; }
 .ich-fut { fill: var(--brand); }
 .ich-late { fill: var(--risk); }
+/* Economic patterns (EconCharts). Categorical slots validated on white (CVD ΔE ≥ 9); labels + tables carry identity. */
+.ec { max-width: 720px; }
+.ec-bar { fill: var(--brand); }
+.ec-bar.neg { fill: var(--ink-3); }
+.ec-hit { fill: transparent; }
+.ec-hit:hover { fill: var(--ink); fill-opacity: .04; }
+.ec-line { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.ec-dot { stroke: var(--surface); stroke-width: 2; }
+.ec-s1 { stroke: #2a78d6; } .ec-dot.ec-s1, i.ec-s1 { fill: #2a78d6; background: #2a78d6; }
+.ec-s2 { stroke: #eb6834; } .ec-dot.ec-s2, i.ec-s2 { fill: #eb6834; background: #eb6834; }
+.ec-s3 { stroke: #1baf7a; } .ec-dot.ec-s3, i.ec-s3 { fill: #1baf7a; background: #1baf7a; }
+.ec-s4 { stroke: #eda100; } .ec-dot.ec-s4, i.ec-s4 { fill: #eda100; background: #eda100; }
+.ec-dot.ec-s1, .ec-dot.ec-s2, .ec-dot.ec-s3, .ec-dot.ec-s4 { stroke: var(--surface); }
+/* Diverging cells for growth (blue up, red down, neutral at zero); the number is always written in ink. */
+.ec-up1 { background: #e6effa; } .ec-up2 { background: #cde2fb; }
+.ec-dn1 { background: #fbeaea; } .ec-dn2 { background: #f6d2d2; }
+.ec-tab td.n, .ec-tab th.n { white-space: nowrap; }
+.ec-key { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
 .ihb { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
 .ihb li { display: grid; grid-template-columns: minmax(0, 46%) minmax(0, 1fr) auto; gap: 8px; align-items: center; }
 .ihb-l { overflow-wrap: anywhere; color: var(--ink-2); }

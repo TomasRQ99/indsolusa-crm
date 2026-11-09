@@ -2,13 +2,13 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { canImportData } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
-import { explore, PAGE } from "@/lib/econ";
+import { explore, isPattern, PAGE, PATTERNS, type PatternKey } from "@/lib/econ";
 import { bigMoney } from "@/lib/fin-rules";
 
 // Mercado M3 · Economic Explorer (§9.7): which companies look solid enough to be worth getting to know?
 // Facts and trends only. No scores, no credit decisions.
 
-type SP = { q?: string; sector?: string; place?: string; min?: string; cur?: string; g?: string; e?: string; p?: string; nc?: string; pl?: string; y?: string; page?: string };
+type SP = { q?: string; sector?: string; place?: string; min?: string; cur?: string; g?: string; e?: string; p?: string; nc?: string; pl?: string; y?: string; page?: string; pat?: string };
 
 export default async function EconomicExplorer({ searchParams }: { searchParams: Promise<SP> }) {
   const user = await requireUser();
@@ -19,7 +19,7 @@ export default async function EconomicExplorer({ searchParams }: { searchParams:
     q: sp.q?.trim().slice(0, 80) || undefined, sector: sp.sector?.trim().slice(0, 60) || undefined, place: sp.place?.trim().slice(0, 60) || undefined,
     minRev: Number(sp.min) > 0 ? Number(sp.min) : undefined, currency: sp.cur === "USD" ? "USD" : "COP",
     growing: sp.g === "1", equityPos: sp.e === "1", profitable: sp.p === "1", notCustomer: sp.nc === "1", withPlants: sp.pl === "1",
-    year: Number(sp.y) > 1989 ? Number(sp.y) : undefined, page: Number(sp.page) > 0 ? Number(sp.page) : 1,
+    year: Number(sp.y) > 1989 ? Number(sp.y) : undefined, page: Number(sp.page) > 0 ? Number(sp.page) : 1, pattern: isPattern(sp.pat) ? sp.pat : undefined,
   };
   const r = await explore(f);
   const pages = Math.max(1, Math.ceil(r.total / PAGE));
@@ -34,7 +34,11 @@ export default async function EconomicExplorer({ searchParams }: { searchParams:
           <h1>{t("Explorador económico", "Economic explorer")}</h1>
           <p>{t("¿Qué empresas parecen lo bastante sólidas para que valga la pena conocerlas? Hechos y tendencias de fuentes públicas; nunca una decisión de crédito.", "Which companies look solid enough to be worth getting to know? Facts and trends from public sources; never a credit decision.")}</p>
         </div>
-        {canImportData(user) && <Link href="/mercado/fuentes" className="btn secondary">{t("Fuentes de inteligencia", "Intelligence sources")}</Link>}
+        <div className="row">
+          <Link href="/mercado/economia/patrones" className="btn secondary">{t("Patrones por sector", "Patterns by sector")}</Link>
+          <Link href="/mercado/economia/comparar" className="btn secondary">{t("Comparar empresas", "Compare companies")}</Link>
+          {canImportData(user) && <Link href="/mercado/fuentes" className="btn secondary">{t("Fuentes de inteligencia", "Intelligence sources")}</Link>}
+        </div>
       </div>
 
       <form className="card mk-filters" method="get">
@@ -44,6 +48,7 @@ export default async function EconomicExplorer({ searchParams }: { searchParams:
         <input name="place" defaultValue={sp.place} placeholder={t("Departamento o ciudad", "Department or city")} />
         <label className="row small">{t("Ingresos desde", "Revenue from")}<input name="min" type="number" min="0" defaultValue={sp.min} style={{ width: 110 }} /><select name="cur" defaultValue={f.currency}><option>COP</option><option>USD</option></select><span className="muted">{t("millones", "million")}</span></label>
         <select name="y" defaultValue={sp.y ?? ""}><option value="">{t("Último año disponible", "Latest year available")}</option>{r.years.map((y) => <option key={y} value={y}>FY{y}</option>)}</select>
+        <select name="pat" defaultValue={f.pattern ?? ""}><option value="">{t("Cualquier patrón de varios años", "Any multi-year pattern")}</option>{(Object.keys(PATTERNS) as PatternKey[]).map((k) => <option key={k} value={k}>{t(PATTERNS[k].es, PATTERNS[k].en)}</option>)}</select>
         <label className="loc-check"><input type="checkbox" name="g" value="1" defaultChecked={f.growing} /> {t("Ingresos creciendo", "Revenue growing")}</label>
         <label className="loc-check"><input type="checkbox" name="e" value="1" defaultChecked={f.equityPos} /> {t("Patrimonio positivo", "Positive equity")}</label>
         <label className="loc-check"><input type="checkbox" name="p" value="1" defaultChecked={f.profitable} /> {t("Con utilidad", "Profitable")}</label>
@@ -58,14 +63,19 @@ export default async function EconomicExplorer({ searchParams }: { searchParams:
           <span className="src block">{r.years.length ? t("Prueba con menos filtros.", "Try fewer filters.") : t("Cuando se cargue un archivo de Supersociedades en Fuentes de inteligencia, aquí podrás filtrar miles de empresas por tamaño, sector, región y tendencia.", "Once a Supersociedades file is loaded in Intelligence sources, you'll be able to filter thousands of companies by size, sector, region and trend here.")}</span></div>
       ) : (
         <>
-          <p className="small muted">{t(`${i.n(r.total)} empresas · ordenadas por ingresos`, `${i.n(r.total)} companies · sorted by revenue`)}</p>
+          <form action="/mercado/economia/comparar" method="get">
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <p className="small muted">{t(`${i.n(r.total)} empresas · ordenadas por ingresos`, `${i.n(r.total)} companies · sorted by revenue`)}</p>
+            <button type="submit" className="secondary small">{t("Comparar las marcadas (hasta 4)", "Compare the ticked ones (up to 4)")}</button>
+          </div>
           <div className="card flush mk-scroll">
             <table>
-              <thead><tr><th>{t("Empresa", "Company")}</th><th className="n">{t("Ingresos", "Revenue")}</th><th className="n">{t("vs. año anterior", "vs. prior year")}</th><th>{t("Patrimonio · utilidad", "Equity · profit")}</th><th>{t("Señales", "Signals")}</th><th>{t("Relación", "Relationship")}</th></tr></thead>
+              <thead><tr><th><span className="sr-only">{t("Comparar", "Compare")}</span></th><th>{t("Empresa", "Company")}</th><th className="n">{t("Ingresos", "Revenue")}</th><th className="n">{t("vs. año anterior", "vs. prior year")}</th><th>{t("Patrimonio · utilidad", "Equity · profit")}</th><th>{t("Señales", "Signals")}</th><th>{t("Relación", "Relationship")}</th></tr></thead>
               <tbody>{r.list.map((x) => {
                 const g = growth(x);
                 return (
                   <tr key={x.id}>
+                    <td><input type="checkbox" name="id" value={x.id} aria-label={t(`Comparar ${x.name}`, `Compare ${x.name}`)} /></td>
                     <td><Link href={`/mercado/economia/${x.id}`}><b>{x.name}</b></Link><span className="src">NIT {x.nit}{x.sector ? ` · ${x.sector}` : ""}{x.city || x.department ? ` · ${[x.city, x.department].filter(Boolean).join(", ")}` : ""}</span></td>
                     <td className="n">{bigMoney(x.currency, x.revenue, user.lang)}<span className="src">FY{x.fiscalYear}</span></td>
                     <td className="n">{g == null ? "—" : <span className={g >= 0 ? "" : "muted"}>{g > 0 ? "+" : ""}{i.n(g)} %</span>}</td>
@@ -77,6 +87,7 @@ export default async function EconomicExplorer({ searchParams }: { searchParams:
               })}</tbody>
             </table>
           </div>
+          </form>
           {pages > 1 && <div className="row" style={{ justifyContent: "center", marginTop: 8 }}>{r.page > 1 && <Link href={qs(r.page - 1)}>← {t("Anterior", "Previous")}</Link>}<span className="small muted">{t(`Página ${r.page} de ${pages}`, `Page ${r.page} of ${pages}`)}</span>{r.page < pages && <Link href={qs(r.page + 1)}>{t("Siguiente", "Next")} →</Link>}</div>}
         </>
       )}

@@ -6,12 +6,16 @@ import { createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { readSheet, type Cell } from "./sheet-read";
-import { DEFAULT_THRESHOLDS, FORMULA_VERSION, MONEY_FIELDS, checkRows, econSignals, findHeaderRow, suggestMapping, type Mapping, type MoneyField, type ParsedRow, type Snap, type Thresholds } from "./fin-rules";
+import { DEFAULT_THRESHOLDS, FORMULA_VERSION, MONEY_FIELDS, checkRows, econSignals, findHeaderRow, sameCompanyName, suggestMapping, type Mapping, type MoneyField, type ParsedRow, type Snap, type Thresholds } from "./fin-rules";
 import { fold } from "./part-lexicon";
 
 export const MAX_FILE = 25 * 1024 * 1024;
-const nameKey = (s: string | null | undefined) => fold(s ?? "").replace(/\b(s\.?a\.?s?|ltda|s\.?a|y cia|e\.?u|bic)\b/g, "").replace(/[^a-z0-9ñ]/g, "");
 const nitKeyOf = (v: string | null | undefined) => { const d = (v ?? "").replace(/\D/g, ""); return d.length >= 6 ? d.slice(0, 9) : null; };
+
+/** The figures SOLU shows for a year: the newest publication first (an older file never replaces a newer report), then the latest saved. */
+export const SNAP_ORDER: Prisma.FinancialSnapshotOrderByWithRelationInput[] = [{ fiscalYear: "desc" }, { import: { reportYear: { sort: "desc", nulls: "last" } } }, { createdAt: "desc" }];
+/** Same order in raw SQL (s = "FinancialSnapshot", i = its "DatasetImport"). */
+export const SNAP_ORDER_SQL = Prisma.sql`i."reportYear" DESC NULLS LAST, s."createdAt" DESC`;
 
 type Headers = { row: number; cells: Cell[]; sheetName: string; sheetNames: string[]; notes?: string[] };
 
@@ -66,7 +70,7 @@ export async function chooseSheet(importId: string, sheet: string) {
   const imp = await db.datasetImport.findUniqueOrThrow({ where: { id: importId } });
   const parsed = parseFile(imp.fileName, Buffer.from(imp.data), sheet);
   await db.datasetRow.deleteMany({ where: { importId } });
-  await db.datasetImport.update({ where: { id: importId }, data: { status: "MAPPING_REQUIRED", headers: parsed.headers as unknown as Prisma.InputJsonValue, preview: parsed.data.slice(0, 8) as unknown as Prisma.InputJsonValue, rowCount: parsed.data.length, mapping: Object.fromEntries(Object.entries(suggestMapping(parsed.headers.cells))) as Prisma.InputJsonValue, okCount: 0, errorCount: 0, reviewCount: 0 } });
+  await db.datasetImport.update({ where: { id: importId }, select: { id: true }, data: { status: "MAPPING_REQUIRED", headers: parsed.headers as unknown as Prisma.InputJsonValue, preview: parsed.data.slice(0, 8) as unknown as Prisma.InputJsonValue, rowCount: parsed.data.length, mapping: Object.fromEntries(Object.entries(suggestMapping(parsed.headers.cells))) as Prisma.InputJsonValue, okCount: 0, errorCount: 0, reviewCount: 0 } });
 }
 
 type Opts = { mapping: Mapping; scale: string; currency: string; decimalStyle: string | null; fixedYear: number | null };
@@ -89,9 +93,21 @@ export async function validateImport(importId: string, o: Opts) {
   const compByNit = new Map(companies.map((c) => [c.nit, c]));
   const accCount = new Map<string, number>();
   for (const a of accounts) { const k = nitKeyOf(a.taxId); if (k) accCount.set(k, (accCount.get(k) ?? 0) + 1); }
-  const existing = companies.length ? await db.financialSnapshot.findMany({ where: { companyId: { in: companies.map((c) => c.id) }, import: { status: "COMMITTED" } }, orderBy: { createdAt: "desc" } }) : [];
-  const snapKey = new Map<string, (typeof existing)[number]>();
-  for (const s of existing) { const k = `${s.companyId}|${s.fiscalYear}`; if (!snapKey.has(k)) snapKey.set(k, s); }
+  // The publication this file is: the most recent year it reports.
+  const reportYear = checked.reduce<number | null>((m, c) => (c.parsed.year && (!m || c.parsed.year > m) ? c.parsed.year : m), null);
+  const existing = companies.length ? await db.financialSnapshot.findMany({ where: { companyId: { in: companies.map((c) => c.id) }, import: { status: "COMMITTED" } }, orderBy: SNAP_ORDER, include: { import: { select: { reportYear: true } } } }) : [];
+  // Every committed version per company and year (shown version first), and the newest publication per company.
+  const snapKey = new Map<string, (typeof existing)[number][]>();
+  const newestReport = new Map<string, number>();
+  for (const s of existing) {
+    const k = `${s.companyId}|${s.fiscalYear}`; snapKey.set(k, [...(snapKey.get(k) ?? []), s]);
+    const ry = s.import.reportYear ?? s.fiscalYear; if (ry > (newestReport.get(s.companyId) ?? 0)) newestReport.set(s.companyId, ry);
+  }
+  // Same figures = every amount both files report is equal (an older file may simply not have a column).
+  const sameFigures = (s: (typeof existing)[number], v: ParsedRow["values"]) => {
+    const both = MONEY_FIELDS.filter((k) => s[k] != null && v[k] != null);
+    return both.length > 0 && both.every((k) => Number(s[k]) === v[k]);
+  };
 
   const rows = checked.map((c) => {
     const msgs = c.messages.map((m) => m.es);
@@ -101,13 +117,18 @@ export async function validateImport(importId: string, o: Opts) {
     if (status !== "ERROR" && p.nit && p.year) {
       if ((keyCount.get(`${p.nit}|${p.year}`) ?? 0) > 1) review("NIT repetido en el archivo para el mismo año: incluye solo una fila");
       const comp = compByNit.get(p.nit);
-      if (comp && nameKey(comp.name) !== nameKey(p.name) && !comp.otherNames.some((n) => nameKey(n) === nameKey(p.name))) review(`Mismo NIT con otra razón social (antes: ${comp.name})`);
+      const olderFile = !!comp && !!reportYear && reportYear < (newestReport.get(comp.id) ?? 0);
+      if (comp && !sameCompanyName(comp.name, p.name) && !comp.otherNames.some((n) => sameCompanyName(n, p.name))) review(olderFile ? `Mismo NIT con otra razón social (nombre actual: ${comp.name})` : `Mismo NIT con otra razón social (antes: ${comp.name})`);
       if ((accCount.get(p.nit) ?? 0) > 1) review("Este NIT coincide con más de un cliente en SOLU");
-      const prev = comp ? snapKey.get(`${comp.id}|${p.year}`) : undefined;
-      if (prev) {
-        const same = MONEY_FIELDS.every((k) => (prev[k] == null ? null : Number(prev[k])) === (p.values[k] ?? null));
-        if (same) { status = "SKIPPED"; msgs.push("Ya importado con las mismas cifras"); }
-        else review(`Ya existe ${p.year} con otras cifras: si la incluyes se guarda como otra versión (la anterior no se borra)`);
+      const versions = comp ? snapKey.get(`${comp.id}|${p.year}`) ?? [] : [];
+      if (versions.length) {
+        if (versions.some((s) => sameFigures(s, p.values))) { status = "SKIPPED"; msgs.push("Ya importado con las mismas cifras"); }
+        else {
+          const shownReport = versions[0].import.reportYear ?? p.year;
+          review(reportYear && reportYear < shownReport
+            ? `Ya existe ${p.year} con otras cifras: la publicación de ${shownReport} (más reciente) sigue siendo la que se muestra; si la incluyes, esta queda como versión anterior`
+            : `Ya existe ${p.year} con otras cifras: si la incluyes se guarda como la versión vigente (la anterior no se borra)`);
+        }
       }
     }
     return { importId, rowNo: c.rowNo, nit: p.nit, year: p.year, name: p.name, parsed: p as unknown as Prisma.InputJsonValue, status, messages: msgs, decision: null as string | null };
@@ -116,7 +137,7 @@ export async function validateImport(importId: string, o: Opts) {
   const counts = { ok: rows.filter((r) => r.status === "OK").length, err: rows.filter((r) => r.status === "ERROR").length, rev: rows.filter((r) => r.status === "REVIEW").length };
   await db.datasetRow.deleteMany({ where: { importId } });
   for (let i = 0; i < rows.length; i += 1000) await db.datasetRow.createMany({ data: rows.slice(i, i + 1000) });
-  await db.datasetImport.update({ where: { id: importId }, data: { mapping: o.mapping as Prisma.InputJsonValue, scale: o.scale, currency: o.currency, decimalStyle: o.decimalStyle, fixedYear: o.fixedYear, okCount: counts.ok, errorCount: counts.err, reviewCount: counts.rev, status: counts.rev ? "REVIEW_REQUIRED" : "READY_TO_COMMIT" } });
+  await db.datasetImport.update({ where: { id: importId }, select: { id: true }, data: { mapping: o.mapping as Prisma.InputJsonValue, scale: o.scale, currency: o.currency, decimalStyle: o.decimalStyle, fixedYear: o.fixedYear, reportYear, okCount: counts.ok, errorCount: counts.err, reviewCount: counts.rev, status: counts.rev ? "REVIEW_REQUIRED" : "READY_TO_COMMIT" } });
   // Reusable mapping template for this source (§23).
   await db.intelligenceSource.update({ where: { id: imp.sourceId }, data: { mapping: { headers: h.cells.map((c) => fold(String(c ?? ""))), mapping: o.mapping, scale: o.scale, decimalStyle: o.decimalStyle, currency: o.currency } as Prisma.InputJsonValue } });
   return counts;
@@ -125,8 +146,25 @@ export async function validateImport(importId: string, o: Opts) {
 /** The person decides review rows; when none is pending the import is ready. */
 export async function decideRows(importId: string, where: Prisma.DatasetRowWhereInput, decision: "INCLUDE" | "EXCLUDE") {
   await db.datasetRow.updateMany({ where: { ...where, importId, status: "REVIEW" }, data: { decision } });
+  return refreshPending(importId);
+}
+
+/** The group label of a review message: the text before " (" and before ":". The page groups the same way. */
+export const groupOf = (m: string) => m.split(" (")[0].split(":")[0];
+
+/** Every review row with that kind of exception, decided in one statement inside the database
+ *  (no list of thousands of ids travels to the database). */
+export async function decideGroup(importId: string, group: string, decision: "INCLUDE" | "EXCLUDE") {
+  await db.$executeRaw`UPDATE "DatasetRow" SET decision = ${decision}
+    WHERE "importId" = ${importId} AND status = 'REVIEW'
+      AND EXISTS (SELECT 1 FROM unnest(messages) m WHERE split_part(split_part(m, ' (', 1), ':', 1) = ${group})`;
+  return refreshPending(importId);
+}
+
+async function refreshPending(importId: string) {
   const pending = await db.datasetRow.count({ where: { importId, status: "REVIEW", decision: null } });
-  await db.datasetImport.update({ where: { id: importId }, data: { status: pending ? "REVIEW_REQUIRED" : "READY_TO_COMMIT" } });
+  // select: never send the stored file back (it can be several MB).
+  await db.datasetImport.update({ where: { id: importId }, data: { status: pending ? "REVIEW_REQUIRED" : "READY_TO_COMMIT" }, select: { id: true } });
   return pending;
 }
 
@@ -145,25 +183,34 @@ export async function linkCompaniesToAccounts(tx: Prisma.TransactionClient | typ
 /** Commit: one transaction. Snapshots are immutable; names that changed are kept as other names. Then economic
  *  signals for companies that are customers/prospects (others show their signals in the Explorer). */
 export async function commitImport(importId: string, byName: string): Promise<{ error?: string; snapshots?: number; signals?: number }> {
-  const imp = await db.datasetImport.findUniqueOrThrow({ where: { id: importId }, include: { source: true } });
+  // select: the stored file isn't needed here (it can be several MB).
+  const imp = await db.datasetImport.findUniqueOrThrow({ where: { id: importId }, select: { status: true, scale: true, currency: true, sourceId: true, reportYear: true, source: { select: { name: true } } } });
   if (imp.status !== "READY_TO_COMMIT") return { error: imp.status === "COMMITTED" ? "ya" : "pendiente" };
   if (!imp.scale || !imp.currency) return { error: "pendiente" };
-  const rows = await db.datasetRow.findMany({ where: { importId, OR: [{ status: "OK" }, { status: "REVIEW", decision: "INCLUDE" }] }, orderBy: { rowNo: "asc" } });
+  const rows = await db.datasetRow.findMany({ where: { importId, OR: [{ status: "OK" }, { status: "REVIEW", decision: "INCLUDE" }] }, orderBy: { rowNo: "asc" }, select: { nit: true, year: true, parsed: true } });
   const seen = new Set<string>();
   for (const r of rows) { const k = `${r.nit}|${r.year}`; if (seen.has(k)) return { error: "repetido" }; seen.add(k); }
+  const reportYear = imp.reportYear ?? rows.reduce((m, r) => Math.max(m, r.year ?? 0), 0);
   const touched: string[] = [];
   await db.$transaction(async (tx) => {
     const parsed = rows.map((r) => r.parsed as unknown as ParsedRow);
     const nits = [...new Set(parsed.map((p) => p.nit!))];
     const existing = await tx.marketCompany.findMany({ where: { nit: { in: nits } } });
     const byNit = new Map(existing.map((c) => [c.nit, c]));
-    const fresh = new Map<string, ParsedRow>();
-    for (const p of parsed) if (!byNit.has(p.nit!)) fresh.set(p.nit!, p);
-    for (let i = 0, list = [...fresh.values()]; i < list.length; i += 1000) await tx.marketCompany.createMany({ data: list.slice(i, i + 1000).map((p) => ({ nit: p.nit!, name: p.name!, ciiu: p.ciiu, sector: p.sector, department: p.department, city: p.city })), skipDuplicates: true });
+    // Newest row of this file per NIT (its name is the one the file uses most recently).
+    const rowOf = new Map<string, ParsedRow>();
+    for (const p of parsed) { const o = rowOf.get(p.nit!); if (!o || (p.year ?? 0) > (o.year ?? 0)) rowOf.set(p.nit!, p); }
+    const fresh = [...rowOf.values()].filter((p) => !byNit.has(p.nit!));
+    for (let i = 0; i < fresh.length; i += 1000) await tx.marketCompany.createMany({ data: fresh.slice(i, i + 1000).map((p) => ({ nit: p.nit!, name: p.name!, ciiu: p.ciiu, sector: p.sector, department: p.department, city: p.city })), skipDuplicates: true });
+    // Most recent publication already saved per company: an older file never renames a company, it adds a former name.
+    const newest = existing.length ? await tx.$queryRaw<{ companyId: string; ry: number }[]>`SELECT s."companyId", max(COALESCE(i."reportYear", s."fiscalYear"))::int AS ry FROM "FinancialSnapshot" s JOIN "DatasetImport" i ON i.id = s."importId" AND i.status = 'COMMITTED' WHERE s."companyId" = ANY(${existing.map((c) => c.id)}) GROUP BY s."companyId"` : [];
+    const newestOf = new Map(newest.map((r) => [r.companyId, r.ry]));
     for (const c of existing) {
-      const p = parsed.find((x) => x.nit === c.nit)!;
-      const renamed = nameKey(c.name) !== nameKey(p.name);
-      if (renamed || (!c.sector && p.sector) || (!c.ciiu && p.ciiu)) await tx.marketCompany.update({ where: { id: c.id }, data: { ...(renamed ? { name: p.name!, otherNames: [...new Set([...c.otherNames, c.name])] } : {}), sector: c.sector ?? p.sector, ciiu: c.ciiu ?? p.ciiu, department: c.department ?? p.department, city: c.city ?? p.city } });
+      const p = rowOf.get(c.nit)!;
+      const renamed = !!p.name && !sameCompanyName(c.name, p.name) && !c.otherNames.some((n) => sameCompanyName(n, p.name));
+      const newer = reportYear >= (newestOf.get(c.id) ?? 0);
+      const names = renamed ? (newer ? { name: p.name!, otherNames: [...new Set([...c.otherNames, c.name])] } : { otherNames: [...new Set([...c.otherNames, p.name!])] }) : {};
+      if (renamed || (!c.sector && p.sector) || (!c.ciiu && p.ciiu) || (!c.department && p.department) || (!c.city && p.city)) await tx.marketCompany.update({ where: { id: c.id }, select: { id: true }, data: { ...names, sector: c.sector ?? p.sector, ciiu: c.ciiu ?? p.ciiu, department: c.department ?? p.department, city: c.city ?? p.city } });
     }
     const all = await tx.marketCompany.findMany({ where: { nit: { in: nits } }, select: { id: true, nit: true } });
     const idOf = new Map(all.map((c) => [c.nit, c.id]));
@@ -173,13 +220,13 @@ export async function commitImport(importId: string, byName: string): Promise<{ 
     }));
     for (let i = 0; i < snaps.length; i += 1000) await tx.financialSnapshot.createMany({ data: snaps.slice(i, i + 1000) });
     await linkCompaniesToAccounts(tx);
-    await tx.datasetImport.update({ where: { id: importId }, data: { status: "COMMITTED", committedAt: new Date(), committedByName: byName } });
+    await tx.datasetImport.update({ where: { id: importId }, select: { id: true }, data: { status: "COMMITTED", committedAt: new Date(), committedByName: byName, reportYear } });
     touched.push(...all.map((c) => c.id));
   }, { timeout: 180000, maxWait: 20000 });
 
   // Economic signals for linked companies (outside the transaction: they're derived, not canonical).
   const th = (await getThresholds()).value;
-  const linked = await db.marketCompany.findMany({ where: { id: { in: touched }, accountId: { not: null } }, include: { snapshots: { where: { import: { status: "COMMITTED" } }, orderBy: [{ fiscalYear: "desc" }, { createdAt: "desc" }] } } });
+  const linked = await db.marketCompany.findMany({ where: { id: { in: touched }, accountId: { not: null } }, include: { snapshots: { where: { import: { status: "COMMITTED" } }, orderBy: SNAP_ORDER } } });
   let signals = 0;
   for (const c of linked) {
     const latest = c.snapshots[0];

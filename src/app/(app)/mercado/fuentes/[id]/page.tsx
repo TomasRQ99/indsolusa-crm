@@ -14,11 +14,10 @@ import { IMPORT_STATUS } from "../../ui";
 const ERR: Record<string, [string, string]> = {
   escala: ["Elige la escala de las cifras. SOLU no la supone: un error aquí multiplica todo por mil.", "Pick the scale of the figures. SOLU doesn't assume it: a mistake here multiplies everything by a thousand."],
   moneda: ["Elige la moneda de las cifras.", "Pick the currency of the figures."], mapeo: ["Faltan columnas importantes (abajo).", "Important columns are missing (below)."],
-  pendiente: ["Aún hay filas por revisar.", "There are still rows to review."], repetido: ["Hay dos filas incluidas con el mismo NIT y año: deja solo una.", "Two included rows have the same NIT and year: keep only one."], ya: ["Este archivo ya se guardó.", "This file was already saved."],
+  pendiente: ["Aún hay filas por revisar.", "There are still rows to review."], decision: ["No se pudo guardar la decisión. No se cambió nada: inténtalo de nuevo en un momento.", "The decision couldn't be saved. Nothing changed: try again in a moment."], guardar: ["No se pudo guardar el archivo. No se guardó nada (es todo o nada): inténtalo de nuevo en un momento.", "The file couldn't be saved. Nothing was saved (all or nothing): try again in a moment."], repetido: ["Hay dos filas incluidas con el mismo NIT y año: deja solo una.", "Two included rows have the same NIT and year: keep only one."], ya: ["Este archivo ya se guardó.", "This file was already saved."],
 };
-const groupOf = (m: string) => m.split(" (")[0].split(":")[0];
 
-export default async function ImportPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; n?: string; s?: string }> }) {
+export default async function ImportPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; n?: string; s?: string; g?: string }> }) {
   const user = await requireUser();
   if (!canImportData(user)) redirect("/mercado/economia");
   const { id } = await params;
@@ -42,15 +41,20 @@ export default async function ImportPage({ params, searchParams }: { params: Pro
   const styleGuess = imp.decimalStyle ?? suggestDecimalStyle(samples);
   const problems = mappingProblems(mapping, imp.fixedYear);
 
+  // Kinds of exception over every review row (not only the rows shown), with how many are still undecided.
+  const groupRows = validated ? await db.$queryRaw<{ g: string; n: number; open: number }[]>`SELECT split_part(split_part(m, ' (', 1), ':', 1) AS g, count(*)::int AS n, count(*) FILTER (WHERE r.decision IS NULL)::int AS open FROM "DatasetRow" r, unnest(r.messages) m WHERE r."importId" = ${id} AND r.status = 'REVIEW' GROUP BY 1 ORDER BY 2 DESC` : [];
+  const only = sp.g && groupRows.some((x) => x.g === sp.g) ? sp.g : null;
   const [review, errors, okSample, pending] = validated ? await Promise.all([
-    db.datasetRow.findMany({ where: { importId: id, status: "REVIEW" }, orderBy: { rowNo: "asc" }, take: 300 }),
+    (only
+      ? db.$queryRaw<{ id: string }[]>`SELECT r.id FROM "DatasetRow" r WHERE r."importId" = ${id} AND r.status = 'REVIEW' AND EXISTS (SELECT 1 FROM unnest(r.messages) m WHERE split_part(split_part(m, ' (', 1), ':', 1) = ${only}) ORDER BY r."rowNo" LIMIT 300`.then((x) => db.datasetRow.findMany({ where: { id: { in: x.map((y) => y.id) } }, orderBy: { rowNo: "asc" } }))
+      : db.datasetRow.findMany({ where: { importId: id, status: "REVIEW" }, orderBy: { rowNo: "asc" }, take: 300 })),
     db.datasetRow.findMany({ where: { importId: id, status: "ERROR" }, orderBy: { rowNo: "asc" }, take: 200 }),
     db.datasetRow.findMany({ where: { importId: id, status: "OK" }, orderBy: { rowNo: "asc" }, take: 5 }),
     db.datasetRow.count({ where: { importId: id, status: "REVIEW", decision: null } }),
   ]) : [[], [], [], 0];
-  const skipped = validated ? await db.datasetRow.count({ where: { importId: id, status: "SKIPPED" } }) : 0;
-  const groups = [...new Set(review.flatMap((r) => r.messages.map(groupOf)))];
+  const [skipped, included] = validated ? await Promise.all([db.datasetRow.count({ where: { importId: id, status: "SKIPPED" } }), db.datasetRow.count({ where: { importId: id, status: "REVIEW", decision: "INCLUDE" } })]) : [0, 0];
   const cur = imp.currency ?? "COP";
+  const shownOf = only ? (groupRows.find((x) => x.g === only)?.n ?? 0) : imp.reviewCount;
 
   return (
     <>
@@ -129,13 +133,16 @@ export default async function ImportPage({ params, searchParams }: { params: Pro
           {review.length > 0 && (
             <>
               <h2>4. {t("Excepciones a revisar", "Exceptions to review")}</h2>
-              {!committed && groups.length > 0 && (
+              {groupRows.length > 0 && (
                 <div className="card">
-                  <span className="small">{t("Decidir todas las de un tipo:", "Decide all of one kind:")}</span>
-                  <ul className="mk-ul">{groups.map((g) => (
-                    <li key={g} className="row"><span style={{ flex: 1 }}>{g}</span>
+                  <span className="small">{committed ? t("Tipos de excepción:", "Kinds of exception:") : t("Decidir todas las de un tipo:", "Decide all of one kind:")}</span>
+                  <ul className="mk-ul">{groupRows.map(({ g, n, open }) => (
+                    <li key={g} className="row"><span style={{ flex: 1 }}>{g} <span className="src">{t(`${i.n(n)} filas · ${i.n(open)} sin decidir`, `${i.n(n)} rows · ${i.n(open)} undecided`)}</span></span>
+                      {only === g ? <Link href={`/mercado/fuentes/${imp.id}#revisar`} className="small">{t("Ver todas", "Show all")}</Link> : <Link href={`/mercado/fuentes/${imp.id}?g=${encodeURIComponent(g)}#revisar`} className="small">{t("Ver solo estas", "Show only these")}</Link>}
+                      {!committed && <>
                       <form action={decide.bind(null, imp.id)}><input type="hidden" name="group" value={g} /><input type="hidden" name="decision" value="INCLUDE" /><button type="submit" className="link small">{t("Incluir todas", "Include all")}</button></form>
                       <form action={decide.bind(null, imp.id)}><input type="hidden" name="group" value={g} /><input type="hidden" name="decision" value="EXCLUDE" /><button type="submit" className="link small">{t("Excluir todas", "Exclude all")}</button></form>
+                      </>}
                     </li>
                   ))}</ul>
                 </div>
@@ -157,7 +164,7 @@ export default async function ImportPage({ params, searchParams }: { params: Pro
                     </tr>
                   ))}</tbody>
                 </table>
-                {imp.reviewCount > review.length && <p className="src" style={{ padding: "8px 16px" }}>{t(`Mostrando ${review.length} de ${imp.reviewCount}. Usa «Decidir todas las de un tipo».`, `Showing ${review.length} of ${imp.reviewCount}. Use “Decide all of one kind”.`)}</p>}
+                {shownOf > review.length && <p className="src" style={{ padding: "8px 16px" }}>{t(`Mostrando ${review.length} de ${i.n(shownOf)}. Usa «Decidir todas las de un tipo».`, `Showing ${review.length} of ${i.n(shownOf)}. Use “Decide all of one kind”.`)}</p>}
               </div>
             </>
           )}
@@ -173,7 +180,7 @@ export default async function ImportPage({ params, searchParams }: { params: Pro
           {!committed && (
             <div className="card row">
               {imp.status === "READY_TO_COMMIT" ? (
-                <form action={commit.bind(null, imp.id)}><button type="submit">{t(`Guardar ${i.n(imp.okCount + review.filter((r) => r.decision === "INCLUDE").length)} filas en SOLU`, `Save ${i.n(imp.okCount + review.filter((r) => r.decision === "INCLUDE").length)} rows in SOLU`)}</button></form>
+                <form action={commit.bind(null, imp.id)}><button type="submit">{t(`Guardar ${i.n(imp.okCount + included)} filas en SOLU`, `Save ${i.n(imp.okCount + included)} rows in SOLU`)}</button></form>
               ) : <span className="small muted">{t(`Decide las ${pending} excepciones pendientes para poder guardar.`, `Decide the ${pending} pending exceptions to be able to save.`)}</span>}
               <form action={discard.bind(null, imp.id)}><button type="submit" className="secondary">{t("Descartar este archivo", "Discard this file")}</button></form>
               <span className="src block" style={{ flexBasis: "100%" }}>{t("Guardar es una sola operación: o se guarda todo o nada. Los años anteriores nunca se reemplazan.", "Saving is a single operation: all or nothing. Earlier years are never replaced.")}</span>

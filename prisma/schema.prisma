@@ -1840,6 +1840,8 @@ model DatasetImport {
   currency        String?
   decimalStyle    String?
   fixedYear       Int?
+  /// Most recent fiscal year the file reports (its publication). For the same year, the newest publication wins.
+  reportYear      Int?
   okCount         Int                 @default(0)
   errorCount      Int                 @default(0)
   reviewCount     Int                 @default(0)

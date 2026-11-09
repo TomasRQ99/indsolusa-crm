@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { canImportData, canManageAll } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
-import { chooseSheet, commitImport, decideRows, getThresholds, uploadDataset, validateImport } from "@/lib/dataset-import";
+import { chooseSheet, commitImport, decideGroup, decideRows, getThresholds, uploadDataset, validateImport } from "@/lib/dataset-import";
 import { DEFAULT_THRESHOLDS, FIELDS, SCALES, SOURCE_KINDS, isTarget, type FieldKey, type Mapping } from "@/lib/fin-rules";
 
 const BASE = "/mercado/fuentes";
@@ -67,19 +67,26 @@ export async function decide(importId: string, fd: FormData) {
   await importer();
   const decision = fd.get("decision") === "INCLUDE" ? "INCLUDE" : "EXCLUDE";
   const rowId = String(fd.get("rowId") ?? "");
-  const group = String(fd.get("group") ?? "");
-  if (rowId) await decideRows(importId, { id: rowId }, decision);
-  else if (group) {
-    const rows = await db.datasetRow.findMany({ where: { importId, status: "REVIEW" }, select: { id: true, messages: true } });
-    const ids = rows.filter((r) => r.messages.some((m) => m.split(" (")[0].split(":")[0] === group)).map((r) => r.id);
-    await decideRows(importId, { id: { in: ids } }, decision);
+  const group = String(fd.get("group") ?? "").slice(0, 200);
+  let failed = false;
+  try {
+    if (rowId) await decideRows(importId, { id: rowId }, decision);
+    else if (group) await decideGroup(importId, group, decision);
+  } catch (e) {
+    // The person sees a clear message on the same page; the cause goes to the server log.
+    console.error("decide failed", importId, group || rowId, e);
+    failed = true;
   }
-  go(`${BASE}/${importId}#revisar`);
+  go(failed ? `${BASE}/${importId}?err=decision#revisar` : `${BASE}/${importId}?ok=decidido#revisar`);
 }
 
 export async function commit(importId: string) {
   const user = await importer();
-  const r = await commitImport(importId, user.name);
+  let r: Awaited<ReturnType<typeof commitImport>>;
+  try { r = await commitImport(importId, user.name); } catch (e) {
+    console.error("commit failed", importId, e);
+    r = { error: "guardar" };
+  }
   if (r.error) go(`${BASE}/${importId}?err=${r.error}`);
   go(`${BASE}/${importId}?ok=guardado&n=${r.snapshots}&s=${r.signals}`);
 }

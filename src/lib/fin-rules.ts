@@ -329,6 +329,100 @@ export function econSignals(snaps: Snap[], th: Thresholds = DEFAULT_THRESHOLDS):
   return out;
 }
 
+// ── Company names across files ────────────────────────────────────────────────
+// Supersociedades writes the same legal name differently year to year ("D1 S.A.S" / "D1 S A S",
+// "BAVARIA & CIA S.C.A" / "BAVARIA Y CIA SCA", names written twice). Those are not a different company.
+// Legal forms and connectors ("S.A.S.", "& CIA", "E.S.P.", "C.I.", "BIC") don't tell companies apart.
+const LEGAL_FORM = new Set(["sas", "sa", "ltda", "sca", "scs", "esp", "bic", "ci", "eu", "cia", "y", "en", "ltd", "limitada"]);
+// Spelled-out legal forms and a legal status (being in reorganization doesn't make it another company).
+const SPELLED: [RegExp, string][] = [
+  [/\bsociedad por acciones simplificada\b/g, " sas "], [/\bsociedad anonima\b/g, " sa "], [/\bcomercializadora internacional\b/g, " ci "],
+  [/\bempresa de servicios publicos\b/g, " esp "], [/\ben (reorganizacion|liquidacion|reestructuracion)( judicial)?\b/g, " "],
+];
+// "sasci" (from "S.A.S C.I") is two legal forms run together.
+const onlyForms = (w: string): boolean => !w || [...LEGAL_FORM].some((f) => w.startsWith(f) && onlyForms(w.slice(f.length)));
+export function companyNameKey(name: string | null | undefined): string {
+  let s = fold(name ?? "").replace(/&/g, " y ").replace(/[^a-z0-9ñ]+/g, " ");
+  for (const [re, to] of SPELLED) s = s.replace(re, to);
+  const words = s.trim().split(" ").filter(Boolean);
+  // Single letters in a row are one abbreviation: "s a s" → "sas", "e s p" → "esp".
+  const merged: string[] = [];
+  words.forEach((w, n) => { if (w.length === 1 && n > 0 && words[n - 1].length === 1) merged[merged.length - 1] += w; else merged.push(w); });
+  const core = merged.filter((w) => !LEGAL_FORM.has(w) && !(w.length <= 8 && onlyForms(w)));
+  let key = (core.length ? core : merged).join("");
+  // "ITALCOL SA ITALCOL SA" → "italcol"
+  const half = key.length / 2;
+  if (key.length >= 6 && Number.isInteger(half) && key.slice(0, half) === key.slice(half)) key = key.slice(0, half);
+  return key;
+}
+function editDistance(a: string, b: string, cap: number): number {
+  if (Math.abs(a.length - b.length) > cap) return cap + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    let best = i;
+    for (let j = 1; j <= b.length; j++) { cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); best = Math.min(best, cur[j]); }
+    if (best > cap) return cap + 1;
+    prev = cur;
+  }
+  return prev[b.length];
+}
+/** Same company name, written differently (punctuation, legal form, a typo of one or two letters in a long name). */
+export function sameCompanyName(a: string | null | undefined, b: string | null | undefined): boolean {
+  const x = companyNameKey(a), y = companyNameKey(b);
+  if (!x || !y) return x === y;
+  if (x === y) return true;
+  return Math.min(x.length, y.length) >= 10 && editDistance(x, y, 2) <= 2;
+}
+
+// ── Patterns across years (like-for-like) ─────────────────────────────────────
+export type YearPoint = { year: number; revenue: number | null; netIncome: number | null; equity: number | null; assets: number | null; liabilities: number | null };
+/** One row per year (best version first in the input), oldest → newest, with growth and margins. */
+export function yearSeries(snaps: Snap[]) {
+  const ys = byYear(snaps).reverse();
+  return ys.map((s, n) => {
+    const p = ys[n - 1];
+    const consecutive = p && s.fiscalYear - p.fiscalYear === 1;
+    return {
+      year: s.fiscalYear, currency: s.currency, revenue: s.revenue ?? null, netIncome: s.netIncome ?? null, equity: s.equity ?? null, assets: s.assets ?? null, liabilities: s.liabilities ?? null,
+      growth: consecutive && s.revenue != null && p.revenue != null && p.revenue > 0 ? r1(pct(s.revenue, p.revenue)) : null,
+      margin: s.revenue && s.netIncome != null ? r1((s.netIncome / s.revenue) * 100) : null,
+      leverage: s.assets && s.liabilities != null ? r1((s.liabilities / s.assets) * 100) : null,
+    };
+  });
+}
+export type SeriesRow = ReturnType<typeof yearSeries>[number];
+/** Compound annual growth of revenue between the first and last year with revenue (needs ≥ 2 years apart by ≥ 1). */
+export function cagr(rows: SeriesRow[]): { pct: number; from: number; to: number } | null {
+  const w = rows.filter((r) => r.revenue != null && r.revenue > 0);
+  if (w.length < 2) return null;
+  const a = w[0], b = w[w.length - 1];
+  const n = b.year - a.year;
+  if (n < 1) return null;
+  return { pct: r1((Math.pow(b.revenue! / a.revenue!, 1 / n) - 1) * 100), from: a.year, to: b.year };
+}
+/** Plain-language pattern of a company over the years it has. Facts only. */
+export function patternFacts(rows: SeriesRow[]): L[] {
+  const out: L[] = [];
+  const d = (n: number) => String(n).replace(".", ","); // Spanish decimal comma
+  const g = rows.map((r) => r.growth).filter((x): x is number => x != null);
+  const c = cagr(rows);
+  if (c && c.to - c.from >= 2) out.push({ es: `Ingresos ${c.pct >= 0 ? "crecieron" : "cayeron"} ${d(Math.abs(c.pct))} % por año en promedio (${c.from}–${c.to})`, en: `Revenue ${c.pct >= 0 ? "grew" : "fell"} ${Math.abs(c.pct)}% a year on average (${c.from}–${c.to})` });
+  if (g.length >= 2) {
+    const up = g.filter((x) => x > 0).length;
+    if (up === g.length) out.push({ es: `Ingresos subieron todos los años (${g.length} de ${g.length})`, en: `Revenue rose every year (${g.length} of ${g.length})` });
+    else if (up === 0) out.push({ es: `Ingresos bajaron todos los años (${g.length} de ${g.length})`, en: `Revenue fell every year (${g.length} of ${g.length})` });
+    else out.push({ es: `Ingresos subieron ${up} de ${g.length} años`, en: `Revenue rose ${up} of ${g.length} years` });
+  }
+  const prof = rows.filter((r) => r.netIncome != null);
+  if (prof.length >= 2) { const k = prof.filter((r) => r.netIncome! > 0).length; out.push({ es: `Con utilidad ${k} de ${prof.length} años`, en: `Profitable ${k} of ${prof.length} years` }); }
+  const m = rows.filter((r) => r.margin != null);
+  if (m.length >= 2) { const x = r1(m[m.length - 1].margin! - m[0].margin!); if (Math.abs(x) >= 1) out.push({ es: `Margen neto ${x > 0 ? "sube" : "baja"} ${d(Math.abs(x))} puntos (${m[0].year}: ${d(m[0].margin!)} % → ${m[m.length - 1].year}: ${d(m[m.length - 1].margin!)} %)`, en: `Net margin ${x > 0 ? "up" : "down"} ${Math.abs(x)} points (${m[0].year}: ${m[0].margin}% → ${m[m.length - 1].year}: ${m[m.length - 1].margin}%)` }); }
+  const l = rows.filter((r) => r.leverage != null);
+  if (l.length >= 2) { const x = r1(l[l.length - 1].leverage! - l[0].leverage!); if (Math.abs(x) >= 5) out.push({ es: `Endeudamiento ${x > 0 ? "sube" : "baja"} ${d(Math.abs(x))} puntos desde ${l[0].year}`, en: `Leverage ${x > 0 ? "up" : "down"} ${Math.abs(x)} points since ${l[0].year}` }); }
+  return out;
+}
+
 /** Big amounts the way Colombian business people read them: "COP 390.512 M". */
 export function bigMoney(currency: string, v: number | null | undefined, lang: string) {
   if (v == null) return "—";
