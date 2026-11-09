@@ -8,6 +8,7 @@ import { refreshApp } from "@/lib/revalidate";
 import { nextDocNumber, today } from "@/lib/domain";
 import { buildQuote, costOf, quoteInclude, quoteNo, saleOf, validUntil } from "@/lib/quote";
 import { quoteFloor } from "@/lib/esagara-gate";
+import { scopeState } from "@/lib/scope";
 import { costDrops } from "@/lib/esagara-rules";
 import { makeI18n } from "@/lib/i18n";
 import { money2, mulMoney } from "@/lib/money";
@@ -211,7 +212,9 @@ export async function presentQuote(id: string, fd: FormData) {
   const { user } = await draftOnly(id);
   const q = await db.quote.findUniqueOrThrow({ where: { id }, include: quoteInclude });
   const policy = await quoteFloor(id);
-  const b = buildQuote(q, makeI18n(user.lang), policy);
+  // Same scope rules as the screen (C1): an unclear functional scope blocks presenting on the server too.
+  const scope = await scopeState(q.dealId, q.lines.map((l) => ({ code: l.code, description: l.description })), q);
+  const b = buildQuote(q, makeI18n(user.lang), policy, scope);
   if (b.blocking.length > 0) back(id, "err=bloqueada");
   const on = dayOf(fd.get("presentedOn")) ?? today();
   const sale = saleOf(q.lines);

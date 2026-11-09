@@ -263,6 +263,11 @@ model Deal {
   /// Frozen copy of the inherited context at confirmation (items with their source ids).
   needContext           Json?
 
+  // Comercial C1 · Technical & Scope
+  scopeLines          ScopeLine[]
+  technicalFacts      TechnicalFact[]
+  scopeConfirmations  ScopeConfirmation[]
+
   resultEvidence  ResultEvidence[]
   recoveries      Recovery[]
   continuity      ContinuitySignal[]
@@ -2026,6 +2031,98 @@ model PreparedMessage {
 }
 
 /// Mercado M6: a suggested Need that a person said is not a need (so SOLU stops suggesting it). ref = note:<id> | future:<id>
+// ---------- Comercial C1 · Technical Discovery & Functional Assembly (module 10 §4–5) ----------
+
+/// One component of the solution in the Assembly Scope Matrix. "Requested" (what the customer literally asked)
+/// and "required for function" (what it needs to actually work) are separate facts; status says what we do about it.
+model ScopeLine {
+  id                 String   @id @default(cuid())
+  dealId             String
+  deal               Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  position           Int      @default(0)
+  component          String
+  code               String?
+  manufacturer       String?
+  qty                Int      @default(1)
+  family             String?
+  requested          Boolean  @default(false)
+  requiredForFunction Boolean @default(true)
+  /// INCLUDED | EXCLUDED | OPTIONAL | CUSTOMER_SUPPLIED | TO_CONFIRM
+  status             String   @default("TO_CONFIRM")
+  /// EXACT | PROBABLE | MULTIPLE | UNKNOWN — uncertainty is kept, never rounded up
+  identity           String   @default("UNKNOWN")
+  /// OEM_NEW | NEW | USED | REFURBISHED | ANY
+  condition          String?
+  alternativesAllowed Boolean @default(false)
+  note               String?
+  source             String?
+  confirmationId     String?
+  confirmation       ScopeConfirmation? @relation(fields: [confirmationId], references: [id], onDelete: SetNull)
+  createdByName      String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  facts              TechnicalFact[]
+
+  @@index([dealId])
+}
+
+/// A technical fact about a scope line (nameplate value, spec). Versioned: a correction supersedes, never overwrites.
+model TechnicalFact {
+  id             String    @id @default(cuid())
+  dealId         String
+  deal           Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  scopeLineId    String?
+  scopeLine      ScopeLine? @relation(fields: [scopeLineId], references: [id], onDelete: Cascade)
+  key            String
+  value          String
+  /// CONFIRMED (seen on nameplate/document) | REPORTED (someone said it) | HYPOTHESIS (inferred)
+  state          String    @default("REPORTED")
+  source         String
+  evidence       String?
+  recordedByName String
+  createdAt      DateTime  @default(now())
+  supersededAt   DateTime?
+
+  @@index([dealId])
+  @@index([scopeLineId])
+}
+
+/// What the customer confirmed about the scope (who, how, when, in their words). Resolves ambiguous terms and
+/// covers excluded / customer-supplied lines.
+model ScopeConfirmation {
+  id             String    @id @default(cuid())
+  dealId         String
+  deal           Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  text           String
+  confirmedBy    String
+  channel        String
+  confirmedAt    DateTime
+  terms          String[]  @default([])
+  recordedByName String
+  createdAt      DateTime  @default(now())
+  lines          ScopeLine[]
+
+  @@index([dealId])
+}
+
+/// Evidenced, versioned relationship between two products (by code or name). Never an automatic AI equivalence.
+model ProductRelationship {
+  id             String    @id @default(cuid())
+  fromKey        String
+  fromLabel      String
+  /// PART_OF | ASSEMBLED_WITH | DRIVES | REQUIRES | MATES_WITH | OPTIONAL_WITH | CUSTOMER_REUSES | SOLD_AS_ASSEMBLY | SOLD_SEPARATELY
+  kind           String
+  toKey          String
+  toLabel        String
+  evidence       String
+  recordedByName String
+  createdAt      DateTime  @default(now())
+  supersededAt   DateTime?
+
+  @@index([fromKey])
+  @@index([toKey])
+}
+
 model NeedDismissal {
   id        String   @id @default(cuid())
   ref       String   @unique

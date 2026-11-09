@@ -572,6 +572,10 @@ export default async function JourneyPage({
         <div className="jbh"><b>{t("QUÉ NECESITA, CÓMO Y CUÁNDO", "WHAT IS NEEDED, HOW AND WHEN")}</b></div>
         {editable ? <NeedForm inline /> : <DesiredResult />}
       </section>
+      <section className="jblock">
+        <div className="jbh"><b>{t("TÉCNICO Y ALCANCE", "TECHNICAL & SCOPE")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/alcance`}>{t("Abrir", "Open")}</Link></div>
+        <p className="quiet-p">{t("Qué pidió el cliente, qué necesita para que funcione y qué cotizamos. Si hay un «completo», un «kit» o un motor que quizás lleva reductor, aquí se aclara antes de presentar.", "What the customer asked, what it needs to work and what we quote. If there's a “complete”, a “kit” or a motor that may need a gearbox, it's clarified here before presenting.")}</p>
+      </section>
       <MarketContext ctx={deal.needContext as NeedContext | null} t={t} day={i.day} />
       <PhaseLog phase="need" title={t("REGISTRO DE LA NECESIDAD", "NEED RECORD")} empty={t("Agrega lo que el cliente te cuenta: problema, contexto, quién decide, restricciones.", "Add what the customer tells you: problem, context, who decides, constraints.")} />
     </>

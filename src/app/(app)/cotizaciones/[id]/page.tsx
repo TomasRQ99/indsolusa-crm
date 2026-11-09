@@ -9,6 +9,7 @@ import { addDays, dayInput, daysBetween } from "@/lib/domain";
 import { buildQuote, costOf, quoteInclude, quoteNo, saleOf } from "@/lib/quote";
 import { quoteFloor } from "@/lib/esagara-gate";
 import { gateOf } from "@/lib/esagara-rules";
+import { scopeState } from "@/lib/scope";
 import { EXC_ERR, EXC_OK, ExceptionCard } from "../../comercial/esagara/ExceptionCard";
 import { Popovers } from "@/components/Popovers";
 import {
@@ -31,7 +32,8 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     db.invoice.findMany({ where: { deal: { quotes: { some: { id } } } }, orderBy: { issuedAt: "asc" }, select: { id: true, number: true, amount: true, issuedAt: true } }),
   ]);
   if (!q) notFound();
-  const B = buildQuote(q, i, { ...policy, approvedBy: policy.exception?.status === "APPROVED" && !policy.outside ? policy.exception.decidedByName : null });
+  const scope = q.status === "DRAFT" ? await scopeState(q.dealId, q.lines.map((l) => ({ code: l.code, description: l.description })), q) : null;
+  const B = buildQuote(q, i, { ...policy, approvedBy: policy.exception?.status === "APPROVED" && !policy.outside ? policy.exception.decidedByName : null }, scope);
   const gate = gateOf(saleOf(q.lines), costOf(q), policy.policy);
   const pay = await expectedPaymentDays(q.deal.accountId);
   const d = q.deal;
@@ -428,6 +430,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
       <div>
         <div className="jbh"><b>READY TO PRESENT</b><span className="grow" />{B.blocking.length === 0 ? <span className="sig ok">{t("Lista", "Ready")}</span> : <span className="sig attn">{t(`${B.blocking.length} pendiente(s)`, `${B.blocking.length} open`)}</span>}</div>
         <ul className="qv-checks">{B.ready.map((c, n) => <Check key={n} {...c} />)}</ul>
+        <p className="src" style={{ marginTop: 6 }}><Link href={`/deals/${d.id}/alcance`}>{t("Técnico y alcance", "Technical & scope")}</Link>{scope && scope.state === "NOT_STARTED" ? ` · ${t("caso simple, nada que aclarar", "simple case, nothing to clarify")}` : ""}</p>
         {editable && B.blocking.length === 0 && (
           <form action={presentQuote.bind(null, q.id)} className="qa-form" style={{ marginTop: 12 }}>
             <div className="qa-row">

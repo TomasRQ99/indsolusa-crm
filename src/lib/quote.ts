@@ -62,7 +62,7 @@ export function validUntil(q: { issuedAt: Date | null; presentedAt: Date | null;
 
 type Check = { ok: boolean; text: string; fix?: string; tab?: string };
 
-export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null; floorPct: number | null; threshold?: number; approvedBy?: string | null }) {
+export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null; floorPct: number | null; threshold?: number; approvedBy?: string | null }, scope?: { state: string; blocks: boolean; gaps: { es: string; en: string; severity: string }[] } | null) {
   const { t } = i;
   const now = today();
   const d = q.deal;
@@ -97,6 +97,10 @@ export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null;
   const ready: Check[] = [
     { ok: !!d.desiredResult, text: t("El resultado deseado del cliente está escrito", "The customer's desired result is written"), fix: t("Escríbelo en la necesidad del Journey", "Write it in the Journey need"), tab: "solution" },
     { ok: !!q.solution, text: t("La solución está en una frase", "The solution is one sentence"), fix: t("Escribe qué logra el cliente", "Write what the customer achieves"), tab: "solution" },
+    // C1 (AC02/AC03): a simple spare part with nothing ambiguous adds no check at all (AC18).
+    ...(scope && scope.state !== "NOT_STARTED"
+      ? [(() => { const g = scope.gaps.filter((x) => x.severity !== "WARN"); return { ok: !scope.blocks, text: t("El alcance funcional está claro: lo cotizado hace que funcione", "Functional scope is clear: what's quoted makes it work"), fix: g.length ? t(`${g[0].es}${g.length > 1 ? ` (y ${g.length - 1} más)` : ""} · ver «Técnico y alcance»`, `${g[0].en}${g.length > 1 ? ` (and ${g.length - 1} more)` : ""} · see “Technical & scope”`) : undefined, tab: "scope" }; })()]
+      : []),
     { ok: q.lines.length > 0 && q.lines.every((l) => Number(l.unitPrice) > 0), text: t("Todas las líneas tienen precio", "Every line has a price"), fix: t("Completa los precios", "Fill in the prices"), tab: "lines" },
     { ok: Number(q.supplierCost) > 0 && !!q.supplierSrc, text: t("El costo del proveedor tiene fuente", "The supplier cost has a source"), fix: t("Indica de dónde sale (proforma, correo)", "Say where it comes from (proforma, email)"), tab: "costs" },
     { ok: q.leadMinDays != null && q.leadMaxDays != null, text: t("El tiempo de entrega está definido", "Lead time is defined"), fix: t("Indica días después de la OC", "Set days after PO"), tab: "terms" },

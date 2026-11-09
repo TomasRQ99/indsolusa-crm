@@ -45,6 +45,10 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   // M6: a suggested Need someone set aside.
   NeedDismissal: "all",
   EsagaraException: "all",
+  ScopeLine: "all",
+  TechnicalFact: "all",
+  ScopeConfirmation: "all",
+  ProductRelationship: "all",
   // Economic data: the import is the audited unit (who loaded which file, with which scale/currency, who committed).
   // Snapshots are immutable and come only from a committed import, so they aren't logged one by one.
   IntelligenceSource: ["name", "kind"],

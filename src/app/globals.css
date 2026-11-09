@@ -876,6 +876,23 @@ details.ci-more > summary { font-size: 13px; color: var(--ink-2); cursor: pointe
 .exc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px 24px; margin: 10px 0; }
 .exc-grid .qv-dl.tight { grid-template-columns: 150px minmax(0, 1fr); }
 .exc-decide { margin-top: 8px; max-width: 640px; }
+/* Comercial C1 · Technical & scope */
+.scp-amb { margin-top: 10px; }
+.scp-amb ul, .scp-sug ul { margin: 6px 0; padding-left: 18px; font-size: 13px; }
+.scp-amb li { margin-bottom: 6px; overflow-wrap: anywhere; }
+.scp-amb li.done b { text-decoration: line-through; color: var(--ink-3); }
+.scp-amb .sig { margin-left: 6px; }
+.scp-mx td { vertical-align: top; }
+.scp-mx tr.gap td:first-child { box-shadow: inset 3px 0 0 var(--risk); }
+.scp-add { margin-top: 10px; }
+.scp-add > form { margin-top: 10px; max-width: 640px; }
+.scp-sug { margin-top: 12px; padding: 8px 12px; background: var(--bg); border-radius: 6px; }
+.scp-sug form.inline { display: inline; margin-left: 6px; }
+.scp-tech { padding: 10px 0; border-top: 1px solid var(--line); }
+.scp-tech:first-of-type { border-top: 0; }
+.scp-tech-h { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.scp-msg { width: 100%; font: inherit; font-size: 13px; line-height: 19px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); resize: vertical; }
+.scp-fs { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .qv-cost { width: 100%; }
 .qv-cost td.cur, .qv-cost th.cur { background: var(--brand-soft); }
 .qv-cost td.chg { box-shadow: inset 0 -2px 0 var(--attn); }

@@ -646,6 +646,7 @@ export async function loadDemo(adminId: string) {
       await seedMarketM4(tx, d, { siderId: sider.id, ownerId: paola.id, ownerName: paola.name, treasurerId: diana.id });
       await seedMarketM5(tx, d, paola.name, lacteos.id);
       await seedMarketM6(tx, d, paola.name, lacteos.id);
+      await seedComercialC1(tx, d, paola.name);
 
       await tx.task.createMany({
         data: [
@@ -776,6 +777,21 @@ async function seedMarketM6(tx: Prisma.TransactionClient, d: (n: number) => Date
   if (tulua) await tx.installedAsset.create({ data: { plantId: tulua.id, process: "Pasteurización y UHT", line: "UHT 1", name: "Variador de la bomba de alimentación", manufacturer: "Siemens", model: "SINAMICS G120C 6SL3210-1KE21-7UF1", operationalRole: "Controla la bomba que alimenta la UHT", redundancy: "NONE", critical: true, criticalWhy: "Si se detiene, la UHT se queda sin alimentación", observedAt: d(-2), sourceType: "CONVERSATION", sourceRef: "Llamada con Jorge Pérez", confidence: "REPORTED", capturedByName: by } });
 }
 
+/** Comercial C1 sample: the Papeles del Sur dosing-pump draft gets a scope matrix with an open question. */
+const C1_TITLE = "Bombas dosificadoras";
+async function seedComercialC1(tx: Prisma.TransactionClient, d: (n: number) => Date, by: string) {
+  const deal = await tx.deal.findFirst({ where: { title: C1_TITLE, account: { isDemo: true } }, select: { id: true, quotes: { select: { number: true }, take: 1 } } });
+  if (!deal || (await tx.scopeLine.count({ where: { dealId: deal.id } }))) return;
+  const pump = await tx.scopeLine.create({ data: { dealId: deal.id, position: 0, component: "Bomba dosificadora de diafragma 30 l/h", code: "DDA-30", qty: 3, family: "BOMBA", requested: true, requiredForFunction: true, status: "INCLUDED", identity: "PROBABLE", condition: "NEW", source: `Cotización ${deal.quotes[0]?.number ?? ""}`.trim(), createdByName: by } });
+  await tx.scopeLine.create({ data: { dealId: deal.id, position: 1, component: "Controlador con entrada 4–20 mA", qty: 3, requested: false, requiredForFunction: true, status: "TO_CONFIRM", identity: "UNKNOWN", note: "La solución promete control por señal 4–20 mA; no sabemos si la planta ya tiene el controlador", source: "Solución de la cotización", createdByName: by } });
+  await tx.technicalFact.createMany({ data: [
+    { dealId: deal.id, scopeLineId: pump.id, key: "flow", value: "30 l/h", state: "CONFIRMED", source: "Ficha técnica del proveedor (ejemplo)", recordedByName: by, createdAt: d(-3) },
+    { dealId: deal.id, scopeLineId: pump.id, key: "head", value: "10 bar", state: "REPORTED", source: "Marta León por teléfono", recordedByName: by, createdAt: d(-2) },
+  ] });
+  const rel = { fromKey: "DDA30", kind: "REQUIRES", toKey: "kit de inyeccion y valvula de pie" };
+  if (!(await tx.productRelationship.count({ where: { ...rel, supersededAt: null } }))) await tx.productRelationship.create({ data: { ...rel, fromLabel: "DDA-30", toLabel: "Kit de inyección y válvula de pie", evidence: "Manual del fabricante, sección de instalación (ejemplo)", recordedByName: by } });
+}
+
 /** Environments loaded before Mercado existed get only the Mercado sample, nothing else is touched. */
 async function topUpMarketDemo() {
   const paola = await db.user.findUnique({ where: { email: `paola${DEMO_DOMAIN}` }, select: { id: true, name: true } });
@@ -802,6 +818,8 @@ async function topUpMarketDemo() {
   if (!(await db.personNote.count({ where: { contact: { accountId: lacteos.id } } }))) await db.$transaction((tx) => seedMarketM5(tx, d, paola.name, lacteos.id), { timeout: 30000 });
   // M6 sample if missing.
   if (!(await db.personNote.count({ where: { kind: "PROBLEM", sourceType: "CONVERSATION", contact: { accountId: lacteos.id } } }))) await db.$transaction((tx) => seedMarketM6(tx, d, paola.name, lacteos.id), { timeout: 30000 });
+  // Comercial C1 sample if missing.
+  if (!(await db.scopeLine.count({ where: { deal: { title: C1_TITLE, account: { isDemo: true } } } }))) await db.$transaction((tx) => seedComercialC1(tx, d, paola.name), { timeout: 30000 });
 }
 
 const NAMEPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320"><rect width="520" height="320" fill="#8a9097"/><rect x="20" y="20" width="480" height="280" rx="10" fill="#d9dde1" stroke="#5c636a" stroke-width="3"/><circle cx="42" cy="42" r="7" fill="#9aa1a8"/><circle cx="478" cy="42" r="7" fill="#9aa1a8"/><circle cx="42" cy="278" r="7" fill="#9aa1a8"/><circle cx="478" cy="278" r="7" fill="#9aa1a8"/><text x="60" y="78" font-family="Arial" font-weight="700" font-size="30" fill="#0f9d9a">SIEMENS</text><text x="60" y="112" font-family="Arial" font-size="20" fill="#222">SINAMICS G120C</text><text x="60" y="150" font-family="Courier New" font-size="18" fill="#222">6SL3210-1KE21-7UF1</text><text x="60" y="184" font-family="Arial" font-size="16" fill="#222">IN: 3AC 380-480V 50/60Hz 18,5A</text><text x="60" y="210" font-family="Arial" font-size="16" fill="#222">OUT: 3AC 0-480V 16,5A 7,5kW</text><text x="60" y="236" font-family="Arial" font-size="14" fill="#444">S/N: XAJ2-7781-0042  IP20</text><text x="60" y="262" font-family="Arial" font-size="12" fill="#666">Made in Germany</text></svg>`;
@@ -817,6 +835,7 @@ export async function removeDemo() {
       await tx.supplier.deleteMany({ where: { isDemo: true } });
       await tx.productFact.deleteMany({ where: { recordedByName: { endsWith: TAG } } });
       await tx.productSignal.deleteMany({ where: { reportedByName: { endsWith: TAG } } });
+      await tx.productRelationship.deleteMany({ where: { recordedByName: { endsWith: TAG } } });
       // Mercado sample data (explorations cascade to links, gaps and tasks).
       await tx.marketSignal.deleteMany({ where: { capturedByName: { endsWith: TAG } } });
       await tx.knowledgeGap.deleteMany({ where: { createdByName: { endsWith: TAG } } });
