@@ -46,7 +46,7 @@ This file is the Sprint 0 deliverable that §31 asks for: how the module fits th
 | Customer vs supplier company | **Decided:** keep `Account` and `Supplier` separate and link them by NIT (`Supplier.taxId`, first 9 digits). The workspace shows "También proveedor". |
 | Marketing role | **Decided:** new role `MARKETING` ("Mercadeo"). Same access as REP: explores and adds facts, never sees bank or credit detail. |
 
-**Status:** M0 + M1 delivered (2026-11-09). Not in M0 yet: `Employment` and company aliases (moved to M2 with the Company/Plant views).
+**Status:** M0 + M1 delivered (2026-11-09). M2 delivered (2026-11-09): `/mercado/empresas/[id]` and `/mercado/plantas/[id]`, `AccountAlias`, `AccountInsight` (OPERATE/DECIDE/BUY/VALUE/HURT; VALUE requires evidence; replaced observations keep `supersededAt`), `InstalledAsset`, `ImpactProfile` (REPORTED range or GUIDED: min = units/h × contribution, max = min + scrap/h + idle labor/h, restart cost shown apart — a proposed rule, adjustable), `Employment`, rule-based discovery questions (§6, max 5, only about unknowns). Voice/photo capture stays off until the AI key exists.
 
 ## 4. Build plan by waves (contract §29, adapted to current constraints)
 

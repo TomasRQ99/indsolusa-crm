@@ -33,6 +33,11 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   WhiteSpace: ["kind", "what", "status", "note"],
   Plant: ["name", "accountId", "city", "country", "operationType", "confidence", "sourceType"],
   FutureOpportunity: ["kind", "description", "accountId", "expectedAt", "status", "closedNote", "dealId", "confidence", "valueBasis"],
+  AccountAlias: ["name", "kind", "accountId"],
+  AccountInsight: ["block", "topic", "area", "step", "condition", "statement", "evidence", "confidence", "supersededAt", "supersededNote"],
+  InstalledAsset: ["name", "manufacturer", "model", "serial", "critical", "redundancy", "confidence"],
+  ImpactProfile: ["scope", "stopsLine", "level", "currency", "costPerHourMin", "costPerHourMax", "unitsPerHour", "contributionUnit", "scrapPerHour", "idleLaborPerHour", "restartCost", "confidence"],
+  Employment: ["contactId", "accountId", "plantId", "area", "role", "startedOn", "endedOn"],
 };
 const MASK = new Set(["bankAccount", "docAccount"]);
 const SKIP = new Set(["id", "createdAt", "updatedAt"]);

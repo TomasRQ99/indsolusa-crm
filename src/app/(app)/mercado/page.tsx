@@ -57,7 +57,7 @@ export default async function MercadoHome({ searchParams }: { searchParams: Prom
             <article key={s.id} className="card mk-card">
               <div className="mk-head">
                 <span className="sig info">{L(SIGNAL_KINDS[s.kind])}</span>
-                {s.account && <Link href={`/accounts/${s.account.id}`}><b>{nameOf(s.account.name)}</b></Link>}
+                {s.account && <Link href={`/mercado/empresas/${s.account.id}`}><b>{nameOf(s.account.name)}</b></Link>}
                 {s.plant && <span className="muted small">· {s.plant.name}{s.plant.city ? `, ${s.plant.city}` : ""}</span>}
               </div>
               <dl className="mk-dl">
@@ -155,7 +155,7 @@ export default async function MercadoHome({ searchParams }: { searchParams: Prom
         <section className="mk-sec">
           <h2>{t("Relaciones que pueden crecer", "Relationships that can grow")}</h2>
           <div className="grid cols-3">
-            {h.grow.map((g) => <div key={g.id} className="card"><Link href={`/accounts/${g.id}`}><b>{g.name}</b></Link><span className="src block">{t("Donde aún no estamos", "Where we aren't yet")}: {g.whites.join(" · ")}</span></div>)}
+            {h.grow.map((g) => <div key={g.id} className="card"><Link href={`/mercado/empresas/${g.id}`}><b>{g.name}</b></Link><span className="src block">{t("Donde aún no estamos", "Where we aren't yet")}: {g.whites.join(" · ")}</span></div>)}
           </div>
         </section>
       )}

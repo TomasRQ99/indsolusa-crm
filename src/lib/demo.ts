@@ -695,17 +695,51 @@ async function seedMarketDemo(tx: Prisma.TransactionClient, d: (n: number) => Da
     { explorationId: ex.id, accountId: lacteos.id, kind: "TECHNOLOGY", what: "Rodamientos SKF de los homogeneizadores", why: "Solo les vendemos bombas e instrumentación; los rodamientos los compran a otro distribuidor.", createdByName: by, createdAt: d(-8) },
   ] });
   await tx.futureOpportunity.create({ data: { kind: "SHUTDOWN", description: "Parada anual de la línea UHT 1 en enero", accountId: lacteos.id, plantId: tulua.id, process: "UHT 1", explorationId: ex.id, expectedAt: d(70), impact: "Cambian sellos, rodamientos y empaques de la línea en 5 días", valueBasis: "Sin precio aún: depende de la lista de repuestos", nextMove: "Pedir la lista de repuestos de la parada en diciembre", ownerId: paola.id, sourceType: "CONVERSATION", sourceRef: "Jorge Pérez", observedAt: d(-10), confidence: "REPORTED", capturedByName: by, createdAt: d(-10) } });
+  await seedMarketM2(tx, d, by, lacteos, tulua.id);
   await tx.futureOpportunity.create({ data: { kind: "CAPEX", description: "Compra de equipos para la segunda línea UHT", accountId: lacteos.id, plantId: tulua.id, process: "UHT 2", explorationId: ex.id, expectedAt: d(60), impact: "Equipos nuevos: bombas sanitarias, instrumentación Siemens", valueBasis: "Desconocido", ownerId: paola.id, sourceType: "CONVERSATION", sourceRef: "Jorge Pérez, llamada", observedAt: d(-6), confidence: "REPORTED", capturedByName: by, createdAt: d(-6) } });
+}
+
+/** Mercado M2: how Lácteos del Valle works, what is installed in Tuluá, what a stop costs, who is who. */
+async function seedMarketM2(tx: Prisma.TransactionClient, d: (n: number) => Date, by: string, lacteos: { id: string }, tuluaId: string) {
+  const jorge = await tx.contact.findFirst({ where: { accountId: lacteos.id, firstName: "Jorge" }, select: { id: true } });
+  const prov = { sourceType: "CONVERSATION", sourceRef: "Jorge Pérez (Mantenimiento)", confidence: "REPORTED", capturedByName: by };
+  await tx.accountAlias.create({ data: { accountId: lacteos.id, name: "Lácteos del Valle S.A.S.", kind: "LEGAL", createdByName: by } });
+  await tx.accountInsight.createMany({ data: [
+    { accountId: lacteos.id, block: "DECIDE", area: "Mantenimiento", step: "DETECT", statement: "Mantenimiento detecta la falla y especifica el repuesto", observedAt: d(-40), ...prov },
+    { accountId: lacteos.id, block: "DECIDE", area: "Mantenimiento", step: "SPECIFY", statement: "Jorge define la referencia exacta; no aceptan equivalentes sin ficha técnica", observedAt: d(-40), ...prov },
+    { accountId: lacteos.id, block: "DECIDE", area: "Compras", step: "NEGOTIATE", statement: "Compras pide cotizaciones y negocia plazo", observedAt: d(-40), ...prov },
+    { accountId: lacteos.id, block: "DECIDE", area: "Gerencia de planta", step: "APPROVE", condition: "más de COP 50 millones", statement: "La gerente de planta aprueba las compras grandes", observedAt: d(-30), ...prov },
+    { accountId: lacteos.id, block: "BUY", topic: "QUOTES", statement: "Piden 2 cotizaciones, salvo urgencias de parada", observedAt: d(-30), ...prov },
+    { accountId: lacteos.id, block: "BUY", topic: "PAYMENT", statement: "Pagan a 30 días por transferencia", observedAt: d(-200), sourceType: "INTERNAL", sourceRef: "Historia de pagos con nosotros", confidence: "VERIFIED", capturedByName: by },
+    { accountId: lacteos.id, block: "VALUE", topic: "CONTINUITY", area: "Mantenimiento", statement: "Prefieren pagar más si el repuesto llega antes de la parada", evidence: "Jorge: «prefiero pagar el flete aéreo a parar la UHT un día»", observedAt: d(-28), ...prov },
+    { accountId: lacteos.id, block: "VALUE", topic: "COMPATIBILITY", statement: "Les importa que el repuesto resista la limpieza CIP", evidence: "Recovery de sellos EPDM → FKM en octubre", observedAt: d(-20), sourceType: "INTERNAL", sourceRef: "Journey sellos bomba CIP", confidence: "VERIFIED", capturedByName: by },
+    { accountId: lacteos.id, plantId: tuluaId, block: "OPERATE", statement: "Tres turnos, seis días por semana; la parada mayor es en enero", observedAt: d(-40), ...prov },
+    { accountId: lacteos.id, plantId: tuluaId, block: "HURT", statement: "Una parada de la UHT 1 obliga a desviar leche a otra planta", observedAt: d(-28), ...prov },
+  ] });
+  const pump = await tx.installedAsset.create({ data: { plantId: tuluaId, process: "Limpieza CIP", line: "CIP 1", name: "Bomba centrífuga sanitaria de CIP", manufacturer: "Alfa Laval", model: "LKH-20", operationalRole: "Impulsa la soda caliente en la limpieza de la UHT", redundancy: "NONE", critical: true, criticalWhy: "Sin CIP no se puede limpiar ni arrancar la UHT", knownComponents: "Sellos mecánicos FKM", observedAt: d(-25), sourceType: "VISIT", sourceRef: "Visita técnica", confidence: "VERIFIED", capturedByName: by } });
+  await tx.installedAsset.createMany({ data: [
+    { plantId: tuluaId, process: "Pasteurización y UHT", line: "UHT 1", name: "Transmisores de presión del pasteurizador", manufacturer: "Siemens", model: "SITRANS P 7MF0340", redundancy: "PARTIAL", observedAt: d(-90), sourceType: "INTERNAL", sourceRef: "Journey transmisores pasteurizador", confidence: "VERIFIED", capturedByName: by },
+    { plantId: tuluaId, process: "Pasteurización y UHT", line: "UHT 1", name: "Homogeneizador", manufacturer: "SKF", model: "Rodamientos 6310 (por confirmar)", operationalRole: "Homogeniza la leche antes del tratamiento UHT", redundancy: "UNKNOWN", observedAt: d(-8), sourceType: "CONVERSATION", sourceRef: "Jorge Pérez", confidence: "INFERRED", capturedByName: by },
+  ] });
+  await tx.impactProfile.create({ data: { plantId: tuluaId, assetId: pump.id, scope: "Línea UHT 1", stopsLine: "YES", timeToImpact: "Unas 4 horas con el tanque pulmón", level: "REPORTED", currency: "COP", costPerHourMin: 35000000, costPerHourMax: 50000000, basis: "«Una hora con la UHT parada nos cuesta entre 35 y 50 millones»", observedAt: d(-28), ...prov } });
+  if (jorge) await tx.employment.create({ data: { contactId: jorge.id, accountId: lacteos.id, plantId: tuluaId, area: "Mantenimiento", role: "Jefe de mantenimiento", sourceType: "CONVERSATION", sourceRef: "Llamada", confidence: "VERIFIED", capturedByName: by } });
 }
 
 /** Environments loaded before Mercado existed get only the Mercado sample, nothing else is touched. */
 async function topUpMarketDemo() {
   const paola = await db.user.findUnique({ where: { email: `paola${DEMO_DOMAIN}` }, select: { id: true, name: true } });
-  if (!paola || (await db.exploration.count({ where: { ownerId: paola.id } }))) return;
+  if (!paola) return;
   const [lacteos, pacifico] = await Promise.all(["Lácteos del Valle", "Alimentos del Pacífico"].map((n) => db.account.findFirst({ where: { isDemo: true, name: n + TAG }, select: { id: true, name: true } })));
   if (!lacteos || !pacifico) return;
   const T = today();
-  await db.$transaction((tx) => seedMarketDemo(tx, (n) => addDays(T, n), paola, lacteos, pacifico), { timeout: 30000 });
+  const d = (n: number) => addDays(T, n);
+  if (!(await db.exploration.count({ where: { ownerId: paola.id } }))) {
+    await db.$transaction((tx) => seedMarketDemo(tx, d, paola, lacteos, pacifico), { timeout: 30000 });
+    return;
+  }
+  // Mercado M1 sample already there: add only the M2 part if missing.
+  const tulua = await db.plant.findFirst({ where: { accountId: lacteos.id, name: "Planta Tuluá" }, select: { id: true } });
+  if (tulua && !(await db.accountInsight.count({ where: { accountId: lacteos.id } }))) await db.$transaction((tx) => seedMarketM2(tx, d, paola.name, lacteos, tulua.id), { timeout: 30000 });
 }
 
 const NAMEPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320"><rect width="520" height="320" fill="#8a9097"/><rect x="20" y="20" width="480" height="280" rx="10" fill="#d9dde1" stroke="#5c636a" stroke-width="3"/><circle cx="42" cy="42" r="7" fill="#9aa1a8"/><circle cx="478" cy="42" r="7" fill="#9aa1a8"/><circle cx="42" cy="278" r="7" fill="#9aa1a8"/><circle cx="478" cy="278" r="7" fill="#9aa1a8"/><text x="60" y="78" font-family="Arial" font-weight="700" font-size="30" fill="#0f9d9a">SIEMENS</text><text x="60" y="112" font-family="Arial" font-size="20" fill="#222">SINAMICS G120C</text><text x="60" y="150" font-family="Courier New" font-size="18" fill="#222">6SL3210-1KE21-7UF1</text><text x="60" y="184" font-family="Arial" font-size="16" fill="#222">IN: 3AC 380-480V 50/60Hz 18,5A</text><text x="60" y="210" font-family="Arial" font-size="16" fill="#222">OUT: 3AC 0-480V 16,5A 7,5kW</text><text x="60" y="236" font-family="Arial" font-size="14" fill="#444">S/N: XAJ2-7781-0042  IP20</text><text x="60" y="262" font-family="Arial" font-size="12" fill="#666">Made in Germany</text></svg>`;

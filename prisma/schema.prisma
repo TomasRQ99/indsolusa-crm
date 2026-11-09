@@ -131,6 +131,9 @@ model Account {
   gaps          KnowledgeGap[]
   whiteSpaces   WhiteSpace[]
   futures       FutureOpportunity[]
+  aliases       AccountAlias[]
+  insights      AccountInsight[]
+  employments   Employment[]
 
   @@index([ownerId])
   @@index([name])
@@ -166,10 +169,11 @@ model Contact {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  deals      Deal[]
-  tasks      Task[]
-  activities Activity[]
-  threads    CommThread[]
+  deals       Deal[]
+  tasks       Task[]
+  activities  Activity[]
+  threads     CommThread[]
+  employments Employment[]
 
   @@index([accountId])
   @@index([lastName, firstName])
@@ -1601,11 +1605,140 @@ model Plant {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  signals MarketSignal[]
-  gaps    KnowledgeGap[]
-  futures FutureOpportunity[]
+  signals     MarketSignal[]
+  gaps        KnowledgeGap[]
+  futures     FutureOpportunity[]
+  assets      InstalledAsset[]
+  impacts     ImpactProfile[]
+  insights    AccountInsight[]
+  employments Employment[]
 
   @@index([accountId])
+}
+
+/// Other names the same organization goes by (Mercado §4.3): legal name, trade name, acronym.
+model AccountAlias {
+  id            String   @id @default(cuid())
+  accountId     String
+  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  name          String
+  kind          String   @default("TRADE") // LEGAL | TRADE | ACRONYM
+  createdByName String
+  createdAt     DateTime @default(now())
+
+  @@unique([accountId, name])
+}
+
+/// "How this account works" (Mercado §7, §4.16–4.18): one observation with its evidence.
+/// block = OPERATE | DECIDE | BUY | VALUE | HURT. DECIDE rows form the Decision Map (area + step + condition).
+/// Observations are never overwritten: a replaced one keeps supersededAt and the reason.
+model AccountInsight {
+  id             String    @id @default(cuid())
+  accountId      String
+  account        Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  plantId        String?
+  plant          Plant?    @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  block          String
+  topic          String?
+  area           String?
+  step           String?
+  condition      String?
+  statement      String
+  evidence       String?
+  sourceType     String
+  sourceRef      String?
+  observedAt     DateTime
+  confidence     String    @default("REPORTED")
+  capturedByName String
+  supersededAt   DateTime?
+  supersededNote String?
+  createdAt      DateTime  @default(now())
+
+  @@index([accountId, block])
+}
+
+/// Installed equipment observed at a plant (Mercado §4.8). Plant → process → line → asset.
+model InstalledAsset {
+  id              String   @id @default(cuid())
+  plantId         String
+  plant           Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  process         String?
+  line            String?
+  name            String
+  manufacturer    String?
+  model           String?
+  serial          String?
+  operationalRole String?
+  redundancy      String   @default("UNKNOWN") // NONE | PARTIAL | FULL | UNKNOWN
+  critical        Boolean  @default(false)
+  criticalWhy     String?
+  knownComponents String?
+  sourceType      String
+  sourceRef       String?
+  observedAt      DateTime
+  confidence      String   @default("REPORTED")
+  capturedByName  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  impacts ImpactProfile[]
+
+  @@index([plantId])
+}
+
+/// What a stop costs (Mercado §4.19, §8): always a range with its basis, never false precision.
+/// level REPORTED = the customer's own figure; GUIDED = SOLU computed it from the inputs below.
+model ImpactProfile {
+  id               String          @id @default(cuid())
+  plantId          String
+  plant            Plant           @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  assetId          String?
+  asset            InstalledAsset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  scope            String
+  stopsLine        String          @default("UNKNOWN") // YES | PARTIAL | NO | UNKNOWN
+  timeToImpact     String?
+  level            String          @default("REPORTED")
+  currency         String          @default("COP")
+  costPerHourMin   Decimal?        @db.Decimal(16, 2)
+  costPerHourMax   Decimal?        @db.Decimal(16, 2)
+  unitsPerHour     Decimal?        @db.Decimal(14, 2)
+  contributionUnit Decimal?        @db.Decimal(16, 2)
+  scrapPerHour     Decimal?        @db.Decimal(16, 2)
+  idleLaborPerHour Decimal?        @db.Decimal(16, 2)
+  restartCost      Decimal?        @db.Decimal(16, 2)
+  basis            String?
+  sourceType       String
+  sourceRef        String?
+  observedAt       DateTime
+  confidence       String          @default("REPORTED")
+  capturedByName   String
+  createdAt        DateTime        @default(now())
+
+  @@index([plantId])
+}
+
+/// A person's job at a company (Mercado §4.10): person (Contact) ≠ employment. Dates, plant, area, real role.
+/// No psychological profiles or personal data without a business reason.
+model Employment {
+  id             String    @id @default(cuid())
+  contactId      String
+  contact        Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  accountId      String
+  account        Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  plantId        String?
+  plant          Plant?    @relation(fields: [plantId], references: [id], onDelete: SetNull)
+  area           String?
+  role           String?
+  startedOn      DateTime?
+  endedOn        DateTime?
+  sourceType     String
+  sourceRef      String?
+  confidence     String    @default("REPORTED")
+  capturedByName String
+  createdAt      DateTime  @default(now())
+
+  @@index([accountId])
+  @@index([contactId])
 }
 
 /// Future that is not a Need or a quote yet (Mercado v2.2 §41). No invented probabilities.

@@ -160,13 +160,13 @@ export default async function ExplorationPage({ params, searchParams }: { params
             const link = e.links.find((l) => l.kind === "ACCOUNT" && l.refId === c.id);
             return (
               <div key={c.id} className="card">
-                <div className="mk-head"><Link href={`/accounts/${c.id}`}><b>{c.name}</b></Link>{c.alsoSupplier && <Link href={`/suppliers/${c.alsoSupplier.id}`} className="sig info">{t("También proveedor", "Also a supplier")}</Link>}</div>
+                <div className="mk-head"><Link href={`/mercado/empresas/${c.id}`}><b>{c.name}</b></Link>{c.alsoSupplier && <Link href={`/suppliers/${c.alsoSupplier.id}`} className="sig info">{t("También proveedor", "Also a supplier")}</Link>}</div>
                 {link?.why && <span className="src block">{link.why}</span>}
                 <p className="small"><span className="sig ok">{t("Hecho", "Fact")}</span> {c.history.deals ? t(`${c.history.deals} Journey(s) con nosotros, ${c.history.won} ganado(s).`, `${c.history.deals} Journey(s) with us, ${c.history.won} won.`) : t("Aún no hemos trabajado juntos.", "We haven't worked together yet.")}
                   {c.history.contacts.length > 0 && ` ${t("Conocemos a", "We know")}: ${c.history.contacts.slice(0, 4).map((x) => `${x.name}${x.title ? ` (${x.title})` : ""}`).join(", ")}.`}</p>
                 <b className="small">{t("Plantas", "Plants")}</b>
                 {c.plants.length === 0 ? <p className="muted small">{t("No conocemos sus plantas todavía.", "We don't know their plants yet.")}</p> : (
-                  <ul className="mk-ul">{c.plants.map((p) => <li key={p.id}>{p.name}{p.city ? `, ${p.city}` : ""}{p.operationType ? ` · ${p.operationType}` : ""} <span className={`sig ${CONFIDENCE[p.confidence]?.cls ?? "info"}`}>{L(CONFIDENCE[p.confidence])}</span><span className="src block">{L(SOURCES[p.sourceType])}{p.sourceRef ? ` · ${p.sourceRef}` : ""} · {i.day(p.observedAt)}</span></li>)}</ul>
+                  <ul className="mk-ul">{c.plants.map((p) => <li key={p.id}><Link href={`/mercado/plantas/${p.id}`}>{p.name}</Link>{p.city ? `, ${p.city}` : ""}{p.operationType ? ` · ${p.operationType}` : ""} <span className={`sig ${CONFIDENCE[p.confidence]?.cls ?? "info"}`}>{L(CONFIDENCE[p.confidence])}</span><span className="src block">{L(SOURCES[p.sourceType])}{p.sourceRef ? ` · ${p.sourceRef}` : ""} · {i.day(p.observedAt)}</span></li>)}</ul>
                 )}
                 {mine && link && <form action={unlink.bind(null, e.id, link.id)}><button type="submit" className="link small">{t("Quitar de la exploración", "Remove from exploration")}</button></form>}
               </div>

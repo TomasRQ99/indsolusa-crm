@@ -29,8 +29,12 @@ export async function createExploration(fd: FormData) {
   const user = await requireUser();
   const sentence = txt(fd, "sentence", 400);
   if (!sentence || sentence.length < 6) go("/mercado?err=frase");
-  const accounts = await db.account.findMany({ select: { id: true, name: true } });
+  const list = await db.account.findMany({ select: { id: true, name: true, aliases: { select: { name: true } } } });
+  // Other names the company goes by also count ("Alpina" for its legal name). Links keep the canonical name.
+  const accounts = list.flatMap((a) => [{ id: a.id, name: a.name }, ...a.aliases.map((x) => ({ id: a.id, name: x.name }))]);
   const s = structureSentence(sentence!, { accounts });
+  const canon = new Map(list.map((a) => [a.id, a.name]));
+  s.accounts = [...new Map(s.accounts.map((a) => [a.id, { id: a.id, name: canon.get(a.id) ?? a.name }])).values()];
   const e = await db.exploration.create({
     data: {
       name: s.name, purpose: s.purpose, scope: s.scope, scopeText: s.scopeText || null, ownerId: user.id, movement: "CLARITY_NEEDED",

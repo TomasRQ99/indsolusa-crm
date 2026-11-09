@@ -38,6 +38,11 @@ const MODELS: Record<string, { es: string; en: string; href?: (id: string) => st
   WhiteSpace: { es: "Espacio sin explorar", en: "White space" },
   Plant: { es: "Planta", en: "Plant" },
   FutureOpportunity: { es: "Oportunidad futura", en: "Future opportunity" },
+  AccountAlias: { es: "Otro nombre de la empresa", en: "Company alias" },
+  AccountInsight: { es: "Cómo funciona la empresa", en: "How the account works" },
+  InstalledAsset: { es: "Equipo instalado", en: "Installed equipment" },
+  ImpactProfile: { es: "Impacto de paro", en: "Downtime impact" },
+  Employment: { es: "Rol de una persona", en: "Person's role" },
 };
 const GROUPS: { key: string; es: string; en: string; models: string[] }[] = [
   { key: "cobro", es: "Facturas y cobros", en: "Invoices and collections", models: ["Invoice", "CustomerPayment", "PaymentApplication"] },
@@ -46,7 +51,7 @@ const GROUPS: { key: string; es: string; en: string; models: string[] }[] = [
   { key: "venta", es: "Cotizaciones, OC y Journeys", en: "Quotes, POs and Journeys", models: ["Quote", "QuoteLine", "CustomerPO", "PoAcceptance", "PoResolution", "Deal", "DealItem"] },
   { key: "credito", es: "Crédito de clientes", en: "Customer credit", models: ["Account"] },
   { key: "acceso", es: "Roles, accesos y comisiones", en: "Roles, access and commissions", models: ["User", "CommissionPolicy", "CommissionEntry"] },
-  { key: "mercado", es: "Mercado", en: "Market", models: ["Exploration", "MarketSignal", "KnowledgeGap", "WhiteSpace", "Plant", "FutureOpportunity"] },
+  { key: "mercado", es: "Mercado", en: "Market", models: ["Exploration", "MarketSignal", "KnowledgeGap", "WhiteSpace", "Plant", "FutureOpportunity", "AccountAlias", "AccountInsight", "InstalledAsset", "ImpactProfile", "Employment"] },
 ];
 const FIELDS: Record<string, [string, string]> = {
   amount: ["Monto", "Amount"], amountUsd: ["Monto USD", "Amount USD"], currency: ["Moneda", "Currency"], status: ["Estado", "Status"], state: ["Estado", "State"], stage: ["Etapa", "Stage"],

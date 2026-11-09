@@ -71,7 +71,7 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
           <F f={freshness(i, lastInteraction, 90, now)} src={t("última interacción", "last interaction")} />
         </div>
         <div className="jh-title"><h1>{a.name}</h1></div>
-        <p className="jh-sub">{a.industry ?? t("Sin industria", "No industry")} · {t("Responsable", "Owner")}: {a.owner.name} · {t(`cliente desde ${i.day(a.createdAt)}`, `customer since ${i.day(a.createdAt)}`)}</p>
+        <p className="jh-sub">{a.industry ?? t("Sin industria", "No industry")} · {t("Responsable", "Owner")}: {a.owner.name} · {t(`cliente desde ${i.day(a.createdAt)}`, `customer since ${i.day(a.createdAt)}`)} · <Link href={`/mercado/empresas/${a.id}`}>{t("Cómo funciona esta empresa (Mercado)", "How this company works (Market)")}</Link></p>
       </header>
 
       {isNew && (

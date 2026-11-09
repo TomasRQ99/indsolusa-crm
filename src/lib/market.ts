@@ -1,7 +1,7 @@
 // Mercado (Módulo 09) — read models for the Home ("Explorar") and the exploration workspace.
 // Everything shown keeps its source and certainty; nothing here scores or ranks people or companies.
 import { db } from "./db";
-import { horizonOf, type Horizon } from "./market-rules";
+import { horizonOf, impactRange, suggestQuestions, type Horizon } from "./market-rules";
 
 const DAY = 864e5;
 const strip = (n: string) => n.replace(/\s*\(ejemplo\)\s*$/, "");
@@ -117,4 +117,96 @@ export async function explorationWorkspace(id: string) {
 export function nitKey(v: string | null | undefined) {
   const d = (v ?? "").replace(/\D/g, "");
   return d.length >= 6 ? d.slice(0, 9) : null;
+}
+
+// ---------- M2 · Company Exploration and Plant Exploration ----------
+
+const live = { supersededAt: null };
+const dec = (v: unknown) => (v == null ? null : Number(v));
+
+/** Explorations that include this company, with their single next movement. */
+async function explorationsOf(accountId: string) {
+  const links = await db.explorationLink.findMany({ where: { kind: "ACCOUNT", refId: accountId }, select: { explorationId: true } });
+  if (!links.length) return [];
+  return db.exploration.findMany({ where: { id: { in: links.map((l) => l.explorationId) } }, orderBy: [{ lifecycle: "asc" }, { updatedAt: "desc" }], select: { id: true, name: true, purpose: true, lifecycle: true, nextMove: true, nextMoveAt: true, waitingFor: true, waitingUntil: true, triggerOn: true, triggerEvent: true, resultSummary: true, owner: { select: { name: true } } } });
+}
+
+/** Company Exploration (§13.3): who is this company and where could we be useful? */
+export async function companyExploration(accountId: string) {
+  const a = await db.account.findUnique({
+    where: { id: accountId },
+    include: {
+      owner: { select: { name: true } },
+      aliases: { orderBy: { createdAt: "asc" } },
+      plants: { orderBy: { name: "asc" }, include: { _count: { select: { assets: true, impacts: true } }, assets: { select: { manufacturer: true, critical: true } } } },
+      employments: { where: { endedOn: null }, include: { contact: { select: { id: true, firstName: true, lastName: true, title: true, email: true } }, plant: { select: { name: true } } }, orderBy: { createdAt: "asc" } },
+      contacts: { select: { id: true, firstName: true, lastName: true, title: true }, orderBy: { lastName: "asc" } },
+      insights: { where: { plantId: null }, orderBy: [{ supersededAt: "asc" }, { observedAt: "desc" }] },
+      marketSignals: { orderBy: { observedAt: "desc" }, take: 10 },
+      futures: { where: { status: "OPEN" }, orderBy: { expectedAt: "asc" }, include: { plant: { select: { name: true } } } },
+      whiteSpaces: { orderBy: [{ status: "asc" }, { createdAt: "desc" }] },
+      gaps: { orderBy: [{ status: "asc" }, { createdAt: "desc" }], take: 30 },
+      deals: { orderBy: { createdAt: "desc" }, take: 8, select: { id: true, code: true, title: true, stage: true, amount: true, createdAt: true } },
+      _count: { select: { deals: true } },
+    },
+  });
+  if (!a) return null;
+  const [won, explorations, sameNit, plantInsights] = await Promise.all([
+    db.deal.count({ where: { accountId, stage: "WON" } }),
+    explorationsOf(accountId),
+    nitKey(a.taxId) ? db.supplier.findMany({ where: { taxId: { not: null } }, select: { id: true, name: true, taxId: true } }).then((s) => s.filter((x) => nitKey(x.taxId) === nitKey(a.taxId))) : Promise.resolve([]),
+    db.accountInsight.findMany({ where: { accountId, plantId: { not: null }, ...live }, include: { plant: { select: { name: true } } }, orderBy: { observedAt: "desc" } }),
+  ]);
+  const insights = a.insights.filter((x) => !x.supersededAt);
+  const brandLinks = explorations.length ? await db.explorationLink.findMany({ where: { explorationId: { in: explorations.map((e) => e.id) }, kind: "BRAND" }, select: { label: true } }) : [];
+  // Technologies: what we saw installed (fact) vs. what an exploration is about (interest, not a fact about them).
+  const installed = [...new Set(a.plants.flatMap((p) => p.assets.map((x) => x.manufacturer).filter((m): m is string => !!m)))];
+  const interest = [...new Set(brandLinks.map((b) => b.label))].filter((b) => !installed.some((m) => m.toLowerCase() === b.toLowerCase()));
+  const employed = new Set(a.employments.map((e) => e.contactId));
+  const openGaps = a.gaps.filter((g) => g.status === "OPEN");
+  const known = { blocks: new Set([...insights, ...plantInsights].map((x) => x.block)), assets: a.plants.reduce((s, p) => s + p._count.assets, 0), impacts: a.plants.reduce((s, p) => s + p._count.impacts, 0), futures: a.futures.length, people: a.employments.length + a.contacts.filter((c) => !employed.has(c.id)).length };
+  return {
+    a, won, explorations, alsoSupplier: sameNit, insights, superseded: a.insights.filter((x) => x.supersededAt), plantInsights,
+    installed, interest, otherContacts: a.contacts.filter((c) => !employed.has(c.id)), openGaps, learned: a.gaps.filter((g) => g.status === "RESOLVED").slice(0, 8),
+    questions: suggestQuestions(known, new Set(a.gaps.map((g) => g.question))),
+  };
+}
+
+/** Plant Exploration (§13.4): how does this plant work and what could affect its continuity? */
+export async function plantExploration(plantId: string) {
+  const p = await db.plant.findUnique({
+    where: { id: plantId },
+    include: {
+      account: { select: { id: true, name: true } },
+      assets: { orderBy: [{ process: "asc" }, { line: "asc" }, { name: "asc" }] },
+      impacts: { orderBy: { createdAt: "desc" }, include: { asset: { select: { name: true } } } },
+      employments: { where: { endedOn: null }, include: { contact: { select: { id: true, firstName: true, lastName: true, title: true } } } },
+      insights: { where: live, orderBy: { observedAt: "desc" } },
+      signals: { orderBy: { observedAt: "desc" } },
+      gaps: { orderBy: [{ status: "asc" }, { createdAt: "desc" }] },
+      futures: { where: { status: "OPEN" }, orderBy: { expectedAt: "asc" } },
+    },
+  });
+  if (!p) return null;
+  const [explorations, deals, contacts] = await Promise.all([
+    explorationsOf(p.accountId),
+    db.deal.findMany({ where: { accountId: p.accountId }, orderBy: { createdAt: "desc" }, take: 6, select: { id: true, code: true, title: true, stage: true, createdAt: true } }),
+    db.contact.findMany({ where: { accountId: p.accountId }, select: { id: true, firstName: true, lastName: true }, orderBy: { lastName: "asc" } }),
+  ]);
+  // Plant → process → line → asset (§4.7).
+  const tree = new Map<string, Map<string, typeof p.assets>>();
+  for (const x of p.assets) {
+    const pr = x.process || "Sin proceso definido", ln = x.line || "—";
+    if (!tree.has(pr)) tree.set(pr, new Map());
+    const m = tree.get(pr)!; if (!m.has(ln)) m.set(ln, []); m.get(ln)!.push(x);
+  }
+  const impacts = p.impacts.map((x) => ({ ...x, range: impactRange({ level: x.level, costPerHourMin: dec(x.costPerHourMin), costPerHourMax: dec(x.costPerHourMax), unitsPerHour: dec(x.unitsPerHour), contributionUnit: dec(x.contributionUnit), scrapPerHour: dec(x.scrapPerHour), idleLaborPerHour: dec(x.idleLaborPerHour) }), restart: dec(x.restartCost) }));
+  const known = { blocks: new Set(p.insights.map((x) => x.block)), assets: p.assets.length, impacts: p.impacts.length, futures: p.futures.length, people: p.employments.length };
+  return {
+    p, explorations, deals, contacts, impacts,
+    tree: [...tree.entries()].map(([process, lines]) => ({ process, lines: [...lines.entries()].map(([line, assets]) => ({ line, assets })) })),
+    critical: p.assets.filter((x) => x.critical || x.redundancy === "NONE"),
+    openGaps: p.gaps.filter((g) => g.status === "OPEN"),
+    questions: suggestQuestions({ ...known, blocks: new Set([...known.blocks, "DECIDE", "BUY", "VALUE"]) }, new Set(p.gaps.map((g) => g.question)), 4),
+  };
 }
