@@ -34,6 +34,7 @@ export default async function RepliesPage({ searchParams }: { searchParams: Prom
           <p>{t("Qué correos enviados desde sales@ ya tienen respuesta, por plantilla y por proveedor. Solo se lee el buzón (no se mueve ni se marca nada) y solo las respuestas a correos que SOLU envió. No mide personas.", "Which emails sent from sales@ have been answered, by template and by supplier. The mailbox is only read (nothing is moved or marked) and only replies to emails SOLU sent. It doesn't measure people.")}</p>
         </div>
         <div className="grow" />
+        <Link className="btn secondary" href="/correo/entrega">{t("¿Llegan nuestros correos?", "Do our emails arrive?")}</Link>
         <form action={checkReplies}><button type="submit" className="secondary">{t("Revisar el buzón ahora", "Check the mailbox now")}</button></form>
       </div>
       {sp.ok === "revisado" && <p className="note okn">{t(`Buzón revisado: ${sp.n ?? 0} respuesta(s) nueva(s).`, `Mailbox checked: ${sp.n ?? 0} new repl(ies).`)}</p>}

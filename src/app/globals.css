@@ -1460,3 +1460,20 @@ a.loc-chip:hover { background: var(--brand-soft); color: var(--brand); }
 .rp-list li > a { flex: none; }
 .rp-chip { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 600; color: var(--ok); background: var(--ok-soft); border-radius: 10px; padding: 1px 8px; }.tscroll { overflow-x: auto; max-width: 100%; }
 .rp-warn { color: var(--attn); }
+
+/* E3 · delivery health */
+.mh-list { list-style: none; margin: 10px 0; padding: 0; }
+.mh-list li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); min-width: 0; }
+.mh-list li:first-child { border-top: 0; }
+.mh-list li > div { min-width: 0; flex: 1; }
+.mh-list p { margin: 4px 0 0; color: var(--ink-2); }
+.mh-ico { flex: none; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; background: var(--surface-sunken); color: var(--ink-2); }
+.mh-ok .mh-ico { background: var(--ok-soft); color: var(--ok); }
+.mh-warn .mh-ico { background: var(--attn-soft); color: var(--attn); }
+.mh-fail .mh-ico { background: var(--risk-soft); color: var(--risk); }
+.mh-lv { font-size: 11px; font-weight: 600; color: var(--ink-3, var(--ink-2)); margin-left: 6px; }
+.mh-rec { overflow-wrap: anywhere; background: var(--surface-sunken); padding: 4px 8px; border-radius: var(--radius); }
+.mh-form { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.mh-form input { flex: 1; min-width: 0; max-width: 320px; }
+tr.mh-warn td:first-child { box-shadow: inset 3px 0 0 var(--attn); }
+tr.mh-fail td:first-child { box-shadow: inset 3px 0 0 var(--risk); }

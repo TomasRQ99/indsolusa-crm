@@ -27,6 +27,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
     asunto: t("Escribe el asunto.", "Enter the subject."),
     texto: t("El mensaje está vacío.", "The message is empty."),
     envio: t("No se pudo enviar: ", "Couldn't send: ") + (sp.msg ?? ""),
+    enlace: t("No se envió: el texto tiene un enlace acortado o a una dirección IP, y los filtros de spam suelen bloquearlos. Usa el enlace completo: ", "Not sent: the text has a shortened link or a link to an IP address, which spam filters often block. Use the full link: ") + (sp.msg ?? ""),
   };
 
   return (
@@ -69,7 +70,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
         <section className="jblock loc-sec">
           <div className="jbh"><b>{t("MENSAJE", "MESSAGE")}</b></div>
           <textarea name="body" rows={18} defaultValue={c.mail.text} className="mail-body" />
-          <p className="src">{t("Si no cambias el texto, sale con formato (tabla de partes). Si lo editas, sale como texto simple con tus cambios.", "If you don't change the text, it goes out formatted (parts table). If you edit it, it goes out as plain text with your changes.")}</p>
+          <p className="src">{t("Si no cambias el texto, sale con formato (tabla de partes). Si lo editas, sale como texto simple con tus cambios.", "If you don't change the text, it goes out formatted (parts table). If you edit it, it goes out as plain text with your changes.")} {t("Si pegas enlaces, SOLU les quita los parámetros de rastreo (utm, fbclid…).", "If you paste links, SOLU removes their tracking parameters (utm, fbclid…).")}</p>
           <details className="loc-preview"><summary>{t("Ver cómo se verá con formato", "Preview with formatting")}</summary>
             <div className="mail-preview" dangerouslySetInnerHTML={{ __html: c.mail.html }} />
           </details>

@@ -7,6 +7,7 @@ import { refreshApp } from "@/lib/revalidate";
 import { describeMailError, mailConfig, sendMail } from "@/lib/mail";
 import { composeFrom } from "@/lib/email-compose";
 import { recordOutbound, syncReplies } from "@/lib/mail-replies";
+import { domainReport, linkIssues, stripTracking } from "@/lib/mail-health";
 import { TEMPLATES, textToHtml, type MailLang, type TemplateKey } from "@/lib/email-templates";
 
 const PHASE: Record<TemplateKey, string> = { RFQ: "source", FOLLOWUP: "source", NEGOTIATE: "source", DELIVERY: "execute", OFFER: "quote", PAYMENT: "finance" };
@@ -34,7 +35,10 @@ export async function sendComposed(fd: FormData) {
   const custom = String(fd.get("customSubject") ?? "").trim().slice(0, 250);
   const subject = (pick === "custom" ? custom : c.mail.subjects[Number(pick)] ?? c.mail.subjects[0]).slice(0, 250);
   if (!subject) redirect(qs("err=asunto"));
-  const body = String(fd.get("body") ?? "").replace(/\r\n/g, "\n").trim().slice(0, 20000);
+  // E3: tracking parameters are removed from links; shorteners and raw IP links are not sent.
+  const body = stripTracking(String(fd.get("body") ?? "").replace(/\r\n/g, "\n").trim().slice(0, 20000)).text;
+  const bad = linkIssues(body).filter((x) => x.kind === "SHORTENER" || x.kind === "IP");
+  if (bad.length) redirect(qs(`err=enlace&msg=${encodeURIComponent(bad[0].url.slice(0, 120))}`));
   if (!body) redirect(qs("err=texto"));
   // Unedited text keeps the formatted version (tables); edited text is sent as the person wrote it.
   const html = body === c.mail.text.trim() ? c.mail.html : textToHtml(body);
@@ -59,4 +63,12 @@ export async function checkReplies() {
   try { n = (await syncReplies({ force: true })).found; } catch { redirect("/correo/respuestas?err=1"); }
   refreshApp();
   redirect(`/correo/respuestas?ok=revisado&n=${n}`);
+}
+/** E3: re-run the read-only DNS check now (optionally for another domain). */
+export async function recheckDomain(fd: FormData) {
+  await requireUser();
+  const d = String(fd.get("domain") ?? "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "");
+  const ok = /^(?=.{3,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/.test(d);
+  await domainReport({ force: true, domain: ok ? d : undefined });
+  redirect(`/correo/entrega${ok ? `?d=${encodeURIComponent(d)}` : ""}`);
 }
