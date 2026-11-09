@@ -136,6 +136,8 @@ model Account {
   employments   Employment[]
   marketCompany MarketCompany?
   payBehaviors  PaymentBehaviorSnapshot[]
+  openLoops     OpenLoop[]
+  prepared      PreparedMessage[]
 
   @@index([ownerId])
   @@index([name])
@@ -176,6 +178,9 @@ model Contact {
   activities  Activity[]
   threads     CommThread[]
   employments Employment[]
+  personNotes PersonNote[]
+  openLoops   OpenLoop[]
+  prepared    PreparedMessage[]
 
   @@index([accountId])
   @@index([lastName, firstName])
@@ -1923,4 +1928,83 @@ model PaymentBehaviorSnapshot {
   createdAt    DateTime @default(now())
 
   @@index([accountId, createdAt])
+}
+
+/// Mercado M5 (§11.4): what we remember about a person, only business-relevant things they said or showed.
+/// Never psychological profiles or personal labels (§11.5); comm-policy.ts refuses them on save.
+/// kind: DECISION_ROLE | VALUES | OBJECTIVE | PROBLEM | TOPIC | PREFERENCE
+model PersonNote {
+  id             String    @id @default(cuid())
+  contactId      String
+  contact        Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  kind           String
+  statement      String
+  evidence       String?
+  sourceType     String
+  sourceRef      String?
+  observedAt     DateTime
+  confidence     String    @default("REPORTED")
+  capturedByName String
+  supersededAt   DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([contactId])
+}
+
+/// Mercado M5 (§11.4, §11.6): a commitment still open — ours (OURS) or theirs (THEIRS).
+/// status: OPEN | DONE | DROPPED. Tasks, Journey waits, payment promises and recoveries are read as loops too, not copied here.
+model OpenLoop {
+  id             String    @id @default(cuid())
+  side           String
+  what           String
+  dueAt          DateTime?
+  accountId      String?
+  account        Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  contactId      String?
+  contact        Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  dealId         String?
+  explorationId  String?
+  status         String    @default("OPEN")
+  closedAt       DateTime?
+  closedNote     String?
+  closedByName   String?
+  sourceType     String
+  sourceRef      String?
+  observedAt     DateTime
+  capturedByName String
+  createdAt      DateTime  @default(now())
+
+  @@index([accountId, status])
+  @@index([contactId, status])
+}
+
+/// Mercado M5 (§11.12): a message prepared through the communication policy, with what it was built from.
+/// SOLU never sends it: a person reviews, edits and sends it, then records it here (human-review gate).
+/// status: DRAFT | SENT | DISCARDED
+model PreparedMessage {
+  id                  String    @id @default(cuid())
+  purpose             String
+  audienceRole        String?
+  channel             String
+  contactId           String?
+  contact             Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  accountId           String?
+  account             Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  draft               String
+  finalText           String?
+  sourceContextIds    String[]
+  factsUsed           Json
+  inferencesUsed      Json
+  tonePolicy          String    @default("carnegie")
+  policyVersion       String
+  requiresHumanReview Boolean   @default(true)
+  checks              Json
+  status              String    @default("DRAFT")
+  reviewedByName      String?
+  reviewedAt          DateTime?
+  createdByName       String
+  generatedAt         DateTime  @default(now())
+
+  @@index([contactId])
+  @@index([accountId])
 }

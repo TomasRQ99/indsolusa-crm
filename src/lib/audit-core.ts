@@ -38,6 +38,10 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   InstalledAsset: ["name", "manufacturer", "model", "serial", "critical", "redundancy", "confidence"],
   ImpactProfile: ["scope", "stopsLine", "level", "currency", "costPerHourMin", "costPerHourMax", "unitsPerHour", "contributionUnit", "scrapPerHour", "idleLaborPerHour", "restartCost", "confidence"],
   Employment: ["contactId", "accountId", "plantId", "area", "role", "startedOn", "endedOn"],
+  // M5: what we remember about a person, commitments, and every message a person reviewed and sent.
+  PersonNote: ["kind", "statement", "evidence", "confidence", "supersededAt"],
+  OpenLoop: ["side", "what", "dueAt", "status", "closedNote", "closedByName"],
+  PreparedMessage: "all",
   // Economic data: the import is the audited unit (who loaded which file, with which scale/currency, who committed).
   // Snapshots are immutable and come only from a committed import, so they aren't logged one by one.
   IntelligenceSource: ["name", "kind"],

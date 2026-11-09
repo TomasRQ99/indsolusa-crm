@@ -186,7 +186,7 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
             <div className="jbh"><b>{t("RELACIONES", "RELATIONSHIPS")}</b></div>
             {a.contacts.length === 0 ? <p className="quiet-p small">{t("Sin contactos.", "No contacts.")}</p> : (
               <ul className="plain small">{a.contacts.map((c) => (
-                <li key={c.id}><b>{c.firstName} {c.lastName}</b>{c.title ? ` · ${c.title}` : ""}<span className="src block">{c.email ?? "—"} · <F f={freshness(i, lastTouch(c.id), 120, now)} src={t("último contacto", "last contact")} /></span></li>
+                <li key={c.id}><b><Link href={`/mercado/personas/${c.id}`}>{c.firstName} {c.lastName}</Link></b>{c.title ? ` · ${c.title}` : ""}<span className="src block">{c.email ?? "—"} · <F f={freshness(i, lastTouch(c.id), 120, now)} src={t("último contacto", "last contact")} /></span></li>
               ))}</ul>
             )}
           </div>

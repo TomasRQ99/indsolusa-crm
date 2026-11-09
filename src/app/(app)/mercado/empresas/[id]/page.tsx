@@ -213,14 +213,14 @@ export default async function CompanyExplorationPage({ params, searchParams }: {
           <div className="card">
             <ul className="mk-ul">
               {a.employments.map((e) => (
-                <li key={e.id}><b>{fullName(e.contact)}</b>{e.role ? ` · ${e.role}` : e.contact.title ? ` · ${e.contact.title}` : ""}<span className="muted">{e.area ? ` · ${e.area}` : ""}{e.plant ? ` · ${e.plant.name}` : ""}</span>
+                <li key={e.id}><b><Link href={`/mercado/personas/${e.contact.id}`}>{fullName(e.contact)}</Link></b>{e.role ? ` · ${e.role}` : e.contact.title ? ` · ${e.contact.title}` : ""}<span className="muted">{e.area ? ` · ${e.area}` : ""}{e.plant ? ` · ${e.plant.name}` : ""}</span>
                   <Prov t={t} day={i.day} x={{ ...e, observedAt: e.startedOn }} />
                   <details><summary className="small muted">{t("Ya no está en este rol", "No longer in this role")}</summary>
                     <form action={endEmployment.bind(null, e.id)} className="row"><input type="hidden" name="back" value={back} /><input name="endedOn" type="date" /><button type="submit" className="secondary">{t("Guardar", "Save")}</button></form>
                   </details>
                 </li>
               ))}
-              {data.otherContacts.map((c) => <li key={c.id}>{fullName(c)}{c.title ? ` · ${c.title}` : ""} <span className="src">{t("contacto sin rol confirmado", "contact without a confirmed role")}</span></li>)}
+              {data.otherContacts.map((c) => <li key={c.id}><Link href={`/mercado/personas/${c.id}`}>{fullName(c)}</Link>{c.title ? ` · ${c.title}` : ""} <span className="src">{t("contacto sin rol confirmado", "contact without a confirmed role")}</span></li>)}
             </ul>
             {a.employments.length + data.otherContacts.length === 0 && <p className="small muted">{t("Aún no conocemos a nadie aquí.", "We don't know anyone here yet.")}</p>}
             <details>

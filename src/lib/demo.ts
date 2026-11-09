@@ -644,6 +644,7 @@ export async function loadDemo(adminId: string) {
 
       await seedMarketDemo(tx, d, paola, lacteos, pacifico);
       await seedMarketM4(tx, d, { siderId: sider.id, ownerId: paola.id, ownerName: paola.name, treasurerId: diana.id });
+      await seedMarketM5(tx, d, paola.name, lacteos.id);
 
       await tx.task.createMany({
         data: [
@@ -743,6 +744,28 @@ async function seedMarketM4(tx: Prisma.TransactionClient, d: (n: number) => Date
   }
 }
 
+/** Mercado M5 sample: what we remember about Jorge Pérez and the commitments still open with him. */
+async function seedMarketM5(tx: Prisma.TransactionClient, d: (n: number) => Date, by: string, lacteosId: string) {
+  const jorge = await tx.contact.findFirst({ where: { accountId: lacteosId, firstName: "Jorge" }, select: { id: true } });
+  if (!jorge) return;
+  const prov = { contactId: jorge.id, sourceType: "CONVERSATION", sourceRef: "Llamada con Jorge Pérez", confidence: "REPORTED", capturedByName: by };
+  await tx.personNote.createMany({ data: [
+    { kind: "DECISION_ROLE", statement: "Define la referencia técnica exacta; Compras no cambia lo que él especifica", observedAt: d(-40), ...prov },
+    { kind: "VALUES", statement: "Que el repuesto llegue antes de la parada, aunque cueste más", evidence: "«Prefiero pagar el flete aéreo a parar la UHT un día»", observedAt: d(-28), ...prov },
+    { kind: "OBJECTIVE", statement: "Llegar a la parada de enero con todos los repuestos en planta", observedAt: d(-10), ...prov },
+    { kind: "PROBLEM", statement: "La soda cáustica del CIP daña los sellos EPDM", evidence: "Recovery de sellos de octubre", observedAt: d(-21), ...prov, sourceType: "INTERNAL", sourceRef: "Journey sellos bomba CIP", confidence: "VERIFIED" },
+    { kind: "PREFERENCE", statement: "Prefiere WhatsApp para temas urgentes y correo para fichas técnicas", observedAt: d(-25), ...prov },
+  ] });
+  // Jorge was the person on the Lácteos Journeys, and the commitments below came from a call with him.
+  await tx.deal.updateMany({ where: { accountId: lacteosId, contactId: null }, data: { contactId: jorge.id } });
+  const paola = await tx.user.findFirst({ where: { name: by }, select: { id: true } });
+  if (paola) await tx.activity.create({ data: { type: "CALL", subject: "Llamada sobre la parada de enero", body: "Quedamos en enviarle la ficha de los sellos FKM; él nos pasa la lista de repuestos de la parada.", userId: paola.id, contactId: jorge.id, accountId: lacteosId, occurredAt: d(-9) } });
+  await tx.openLoop.createMany({ data: [
+    { side: "OURS", what: "Enviar la ficha técnica de los sellos FKM para la bomba CIP 2", dueAt: d(-2), accountId: lacteosId, contactId: jorge.id, sourceType: "CONVERSATION", sourceRef: "Llamada con Jorge Pérez", observedAt: d(-9), capturedByName: by },
+    { side: "THEIRS", what: "Lista de repuestos de la parada de enero", dueAt: d(30), accountId: lacteosId, contactId: jorge.id, sourceType: "CONVERSATION", sourceRef: "Llamada con Jorge Pérez", observedAt: d(-9), capturedByName: by },
+  ] });
+}
+
 /** Environments loaded before Mercado existed get only the Mercado sample, nothing else is touched. */
 async function topUpMarketDemo() {
   const paola = await db.user.findUnique({ where: { email: `paola${DEMO_DOMAIN}` }, select: { id: true, name: true } });
@@ -765,6 +788,8 @@ async function topUpMarketDemo() {
     await db.$transaction((tx) => seedMarketM4(tx, d, { siderId: sider.id, ownerId: paola.id, ownerName: paola.name, treasurerId: diana.id }), { timeout: 30000 });
     for (const a of await db.account.findMany({ where: { isDemo: true }, select: { id: true } })) await refreshPaymentBehaviorSafe(a.id, "Datos de ejemplo cargados");
   }
+  // M5 sample if missing.
+  if (!(await db.personNote.count({ where: { contact: { accountId: lacteos.id } } }))) await db.$transaction((tx) => seedMarketM5(tx, d, paola.name, lacteos.id), { timeout: 30000 });
 }
 
 const NAMEPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320"><rect width="520" height="320" fill="#8a9097"/><rect x="20" y="20" width="480" height="280" rx="10" fill="#d9dde1" stroke="#5c636a" stroke-width="3"/><circle cx="42" cy="42" r="7" fill="#9aa1a8"/><circle cx="478" cy="42" r="7" fill="#9aa1a8"/><circle cx="42" cy="278" r="7" fill="#9aa1a8"/><circle cx="478" cy="278" r="7" fill="#9aa1a8"/><text x="60" y="78" font-family="Arial" font-weight="700" font-size="30" fill="#0f9d9a">SIEMENS</text><text x="60" y="112" font-family="Arial" font-size="20" fill="#222">SINAMICS G120C</text><text x="60" y="150" font-family="Courier New" font-size="18" fill="#222">6SL3210-1KE21-7UF1</text><text x="60" y="184" font-family="Arial" font-size="16" fill="#222">IN: 3AC 380-480V 50/60Hz 18,5A</text><text x="60" y="210" font-family="Arial" font-size="16" fill="#222">OUT: 3AC 0-480V 16,5A 7,5kW</text><text x="60" y="236" font-family="Arial" font-size="14" fill="#444">S/N: XAJ2-7781-0042  IP20</text><text x="60" y="262" font-family="Arial" font-size="12" fill="#666">Made in Germany</text></svg>`;
