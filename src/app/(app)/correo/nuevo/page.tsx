@@ -6,6 +6,7 @@ import { mailConfig } from "@/lib/mail";
 import { composeFrom } from "@/lib/email-compose";
 import { TEMPLATES, type TemplateKey } from "@/lib/email-templates";
 import { sendComposed } from "../actions";
+import MailBodyHints from "@/components/MailBodyHints";
 
 export default async function ComposeMail({ searchParams }: { searchParams: Promise<{ tpl?: string; id?: string; lang?: string; err?: string; msg?: string }> }) {
   const user = await requireUser();
@@ -71,7 +72,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
 
         <section className="jblock loc-sec">
           <div className="jbh"><b>{t("MENSAJE", "MESSAGE")}</b></div>
-          <textarea name="body" rows={18} defaultValue={c.mail.text} className="mail-body" />
+          <MailBodyHints original={c.mail.text} tpl={tpl} ui={user.lang === "EN" ? "EN" : "ES"} />
           <p className="src">{t("Si no cambias el texto, sale con formato (tabla de partes). Si lo editas, sale como texto simple con tus cambios.", "If you don't change the text, it goes out formatted (parts table). If you edit it, it goes out as plain text with your changes.")} {t("Si pegas enlaces, SOLU les quita los parámetros de rastreo (utm, fbclid…).", "If you paste links, SOLU removes their tracking parameters (utm, fbclid…).")}</p>
           <details className="loc-preview"><summary>{t("Ver cómo se verá con formato", "Preview with formatting")}</summary>
             <div className="mail-preview" dangerouslySetInnerHTML={{ __html: c.mail.html }} />

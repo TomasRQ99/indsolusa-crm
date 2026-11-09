@@ -134,7 +134,8 @@ const RX = {
   pressure: word(String.raw`urgente|solo por hoy|oferta limitada|última oportunidad|ultima oportunidad|act now|limited offer|last chance`),
   closeness: word(String.raw`como siempre|como hablamos|querid[oa] amig[oa]|nuestra gran amistad|as always|as we discussed|dear friend`),
   selfStart: /^(en industry solutions|industry solutions es|somos (una|la) empresa|we are a|at industry solutions)/i,
-  unfilled: /\{\{|\}\}|\[\[|\bXXX\b|\bTODO\b|<nombre>|<name>/i,
+  // Case-sensitive on purpose: "todo" is an everyday Spanish word; only the placeholder "TODO" counts.
+  unfilled: /\{\{|\}\}|\[\[|\bXXX\b|\bTODO\b|<nombre>|<name>/,
   stopWords: /(no podemos continuar|antes de continuar|verificaci[oó]n independiente|can't continue|cannot continue|independent verification)/i,
 };
 
@@ -155,6 +156,15 @@ export function checkMessage(text: string, c: Pick<Ctx, "purpose" | "hasHistory"
   if (text.split(/\s+/).length > 160) add("LONG", "WARN", "Es largo. Breve y humano funciona mejor.", "It's long. Short and human works better.");
   if (!/\?/.test(text) && c.purpose !== "HARD_STOP") add("NO_STEP", "WARN", "No propone una pregunta ni un siguiente paso.", "It doesn't offer a question or a next step.");
   return out;
+}
+
+/** Existing email templates (E1) go through the same check, as WARNINGS ONLY (user decision 2026-11-09).
+ *  Anything already in the approved template text is the baseline and is never flagged; only what the person adds is. */
+export const TEMPLATE_PURPOSE: Record<string, Purpose> = { PAYMENT: "COLLECTION", FOLLOWUP: "FOLLOW_UP", NEGOTIATE: "FOLLOW_UP", DELIVERY: "FOLLOW_UP", OFFER: "FOLLOW_UP", RFQ: "FOLLOW_UP" };
+export function templateHints(edited: string, original: string, tpl: string): Issue[] {
+  const c = { purpose: TEMPLATE_PURPOSE[tpl] ?? "FOLLOW_UP", hasHistory: true } as const;
+  const base = new Set(checkMessage(original, c).map((x) => x.code));
+  return checkMessage(edited, c).filter((x) => !base.has(x.code)).map((x) => ({ ...x, severity: "WARN" as const }));
 }
 
 /** §11.5: memory about a person never holds personal labels or profiling. */
