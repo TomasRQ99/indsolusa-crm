@@ -22,7 +22,7 @@ export const FIELDS: Record<FieldKey, L & { words: string[] }> = {
   department: { es: "Departamento", en: "Department / state", words: ["departamento", "departamento domicilio", "estado"] },
   city: { es: "Ciudad", en: "City", words: ["ciudad", "ciudad domicilio", "municipio", "municipio domicilio"] },
   revenue: { es: "Ingresos", en: "Revenue", words: ["ingresos operacionales", "ingresos de actividades ordinarias", "ingresos", "ventas", "ingresos operacionales netos", "ventas netas", "total ingresos operacionales"] },
-  operatingIncome: { es: "Utilidad operacional", en: "Operating income", words: ["utilidad operacional", "ganancia operacional", "resultado operacional", "ganancia perdida por actividades de operacion", "utilidad perdida operacional"] },
+  operatingIncome: { es: "Utilidad operacional", en: "Operating income", words: ["utilidad operacional", "ganancia operacional", "resultado operacional", "ganancia perdida por actividades de operacion", "ganancia perdida por actividad de operacion", "utilidad perdida operacional", "resultado de actividades de operacion"] },
   netIncome: { es: "Utilidad neta", en: "Net income", words: ["ganancia perdida", "utilidad neta", "resultado del ejercicio", "ganancia perdida neta", "utilidad perdida neta", "utilidad del ejercicio"] },
   assets: { es: "Activos totales", en: "Total assets", words: ["total activos", "activos totales", "activos", "total de activos"] },
   liabilities: { es: "Pasivos totales", en: "Total liabilities", words: ["total pasivos", "pasivos totales", "pasivos", "total de pasivos"] },
@@ -48,14 +48,40 @@ export const SOURCE_KINDS: Record<string, L> = {
 };
 
 const norm = (h: Cell) => fold(String(h ?? "")).replace(/[^a-z0-9ñ ]/g, " ").replace(/\s+/g, " ").trim();
-/** Exact header recognition only (predictable); anything else the person maps. */
-export function suggestMapping(headers: Cell[]): Record<number, FieldKey> {
-  const out: Record<number, FieldKey> = {};
-  const used = new Set<FieldKey>();
+
+/** Fields that can come once per year in "wide" files ("TOTAL ACTIVOS 2025 | TOTAL ACTIVOS 2024"). */
+const PER_YEAR = new Set<FieldKey>([...MONEY_FIELDS, "employees"]);
+/** A mapping target: a field ("assets") or a field of one year taken from the column title ("assets@2025"). */
+export type Target = string;
+export const targetOf = (v: Target) => { const [f, y] = String(v).split("@"); return { field: f as FieldKey, year: y ? Number(y) : null }; };
+export const isTarget = (v: string) => { const t = targetOf(v); return t.field in FIELDS && (t.year == null || (PER_YEAR.has(t.field) && t.year >= 1990 && t.year <= 2200)); };
+export const targetLabel = (v: Target): L => { const t = targetOf(v); const f = FIELDS[t.field]; return t.year ? { es: `${f.es} · ${t.year}`, en: `${f.en} · ${t.year}` } : { es: f.es, en: f.en }; };
+const titleYear = (n: string) => /\b(19|20)\d{2}\b/.exec(n)?.[0] ?? null;
+/** Years written in column titles of figure columns (for the per-year choices). */
+export function headerYears(headers: Cell[]): number[] {
+  const ys = new Set<number>();
+  for (const h of headers) {
+    const n = norm(h), y = titleYear(n);
+    if (!y) continue;
+    const base = n.replace(y, " ").replace(/\s+/g, " ").trim();
+    if ([...PER_YEAR].some((k) => FIELDS[k].words.includes(base))) ys.add(Number(y));
+  }
+  return [...ys].sort((a, b) => b - a);
+}
+/** Exact header recognition only (predictable); anything else the person maps.
+ *  A year inside a figure column's title makes it that year's figure. */
+export function suggestMapping(headers: Cell[]): Record<number, Target> {
+  const out: Record<number, Target> = {};
+  const used = new Set<Target>();
   headers.forEach((h, i) => {
     const n = norm(h);
-    const hit = (Object.keys(FIELDS) as FieldKey[]).find((k) => !used.has(k) && FIELDS[k].words.includes(n));
-    if (hit) { out[i] = hit; used.add(hit); }
+    const exact = (Object.keys(FIELDS) as FieldKey[]).find((k) => !used.has(k) && FIELDS[k].words.includes(n));
+    if (exact) { out[i] = exact; used.add(exact); return; }
+    const y = titleYear(n);
+    if (!y) return;
+    const base = n.replace(y, " ").replace(/\s+/g, " ").trim();
+    const k = [...PER_YEAR].find((f) => FIELDS[f].words.includes(base) && !used.has(`${f}@${y}`));
+    if (k) { out[i] = `${k}@${y}`; used.add(`${k}@${y}`); }
   });
   return out;
 }
@@ -125,20 +151,22 @@ export function parseYear(c: Cell, now = new Date()): number | null {
   return y && y >= 1990 && y <= now.getUTCFullYear() ? y : null;
 }
 
-export type Mapping = Record<string, FieldKey>; // column index (as string) → field
+export type Mapping = Record<string, Target>; // column index (as string) → field, or field@year
 export type ParsedRow = { nit: string | null; name: string | null; year: number | null; ciiu: string | null; sector: string | null; department: string | null; city: string | null; values: Partial<Record<MoneyField, number>>; employees: number | null };
 export type RowCheck = { parsed: ParsedRow; status: "OK" | "ERROR" | "REVIEW"; messages: L[] };
 
 /** Material columns (§9.3): NIT, name, year (column or fixed) and at least revenue or assets. */
 export function mappingProblems(mapping: Mapping, fixedYear: number | null): L[] {
-  const f = new Set(Object.values(mapping));
+  const ts = Object.values(mapping).map(targetOf);
+  const f = new Set(ts.map((x) => x.field));
+  const perYear = ts.some((x) => x.year);
   const p: L[] = [];
   if (!f.has("nit")) p.push({ es: "Falta la columna del NIT", en: "NIT column missing" });
   if (!f.has("name")) p.push({ es: "Falta la columna de razón social", en: "Company name column missing" });
-  if (!f.has("year") && !fixedYear) p.push({ es: "Falta el año: elige la columna o escribe el año del archivo", en: "Year missing: pick the column or type the file's year" });
+  if (!f.has("year") && !fixedYear && !perYear) p.push({ es: "Falta el año: elige la columna o escribe el año del archivo", en: "Year missing: pick the column or type the file's year" });
   if (!f.has("revenue") && !f.has("assets")) p.push({ es: "Mapea al menos ingresos o activos", en: "Map at least revenue or assets" });
   const dup = Object.values(mapping).filter((v, i, a) => a.indexOf(v) !== i);
-  if (dup.length) p.push({ es: `Hay campos asignados a dos columnas: ${[...new Set(dup)].map((d) => FIELDS[d].es).join(", ")}`, en: `Fields mapped twice: ${[...new Set(dup)].map((d) => FIELDS[d].en).join(", ")}` });
+  if (dup.length) p.push({ es: `Hay campos asignados a dos columnas: ${[...new Set(dup)].map((d) => targetLabel(d).es).join(", ")}`, en: `Fields mapped twice: ${[...new Set(dup)].map((d) => targetLabel(d).en).join(", ")}` });
   return p;
 }
 
@@ -185,6 +213,18 @@ export function checkRow(row: Cell[], mapping: Mapping, o: { scale: string; deci
     parsed: { nit: n.key, name, year, ciiu: txt(at("ciiu") ?? null), sector: txt(at("sector") ?? null), department: txt(at("department") ?? null), city: txt(at("city") ?? null), values, employees: emp != null && !Number.isNaN(emp) && emp >= 0 ? Math.round(emp) : null },
     status, messages,
   };
+}
+
+/** One file row → one check per year. Wide files (figures per year in the title) give one record per year;
+ *  a year with no figures at all is skipped (e.g. a company without the previous year). */
+export function checkRows(row: Cell[], mapping: Mapping, o: { scale: string; decimalStyle: string | null; fixedYear: number | null; now?: Date }): RowCheck[] {
+  const years = [...new Set(Object.values(mapping).map((v) => targetOf(v).year).filter((y): y is number => !!y))].sort((a, b) => b - a);
+  if (!years.length) return [checkRow(row, mapping, o)];
+  const plain: Mapping = Object.fromEntries(Object.entries(mapping).filter(([, v]) => !targetOf(v).year && v !== "year"));
+  const subOf = (y: number): Mapping => ({ ...plain, ...Object.fromEntries(Object.entries(mapping).filter(([, v]) => targetOf(v).year === y).map(([c, v]) => [c, targetOf(v).field])) });
+  const filled = (m: Mapping) => Object.entries(m).some(([c, v]) => PER_YEAR.has(v as FieldKey) && row[Number(c)] != null && String(row[Number(c)]).trim() !== "");
+  const out = years.filter((y) => filled(subOf(y))).map((y) => checkRow(row, subOf(y), { ...o, fixedYear: y }));
+  return out.length ? out : [checkRow(row, subOf(years[0]), { ...o, fixedYear: years[0] })];
 }
 
 // ---------- Indicators, facts and signals ----------

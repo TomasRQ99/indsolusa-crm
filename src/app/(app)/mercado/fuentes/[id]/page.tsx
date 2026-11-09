@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { canImportData } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
-import { FIELDS, SCALES, bigMoney, mappingProblems, needsDecimalStyle, suggestDecimalStyle, type FieldKey, type Mapping, type ParsedRow } from "@/lib/fin-rules";
+import { FIELDS, SCALES, bigMoney, headerYears, mappingProblems, targetOf, needsDecimalStyle, suggestDecimalStyle, type FieldKey, type Mapping, type ParsedRow } from "@/lib/fin-rules";
 import type { Cell } from "@/lib/sheet-read";
 import { commit, decide, discard, saveMapping, setSheet } from "../actions";
 import { IMPORT_STATUS } from "../../ui";
@@ -27,13 +27,16 @@ export default async function ImportPage({ params, searchParams }: { params: Pro
   if (!imp) notFound();
   const i = makeI18n(user.lang);
   const { t } = i;
-  const h = (imp.headers ?? {}) as { row?: number; cells?: (string | null)[]; sheetName?: string; sheetNames?: string[] };
+  const h = (imp.headers ?? {}) as { row?: number; cells?: (string | null)[]; sheetName?: string; sheetNames?: string[]; notes?: string[] };
   const cells = h.cells ?? [];
   const preview = (imp.preview ?? []) as Cell[][];
   const mapping = (imp.mapping ?? {}) as Mapping;
   const committed = imp.status === "COMMITTED";
   const validated = ["REVIEW_REQUIRED", "READY_TO_COMMIT", "COMMITTED"].includes(imp.status);
-  const moneyCols = Object.entries(mapping).filter(([, f]) => !["nit", "name", "year", "ciiu", "sector", "department", "city"].includes(f)).map(([c]) => Number(c));
+  const moneyCols = Object.entries(mapping).filter(([, f]) => !["nit", "name", "year", "ciiu", "sector", "department", "city"].includes(targetOf(f).field)).map(([c]) => Number(c));
+  // Years written in the column titles (wide files: one record per year from each row).
+  const years = [...new Set([...headerYears(cells), ...Object.values(mapping).map((v) => targetOf(v).year).filter((y): y is number => !!y)])].sort((a, b) => b - a);
+  const PER_YEAR_KEYS: FieldKey[] = ["revenue", "operatingIncome", "netIncome", "assets", "liabilities", "equity", "currentAssets", "currentLiabilities", "debt", "employees"];
   const samples = preview.flatMap((r) => moneyCols.map((c) => r[c] ?? null));
   const styleNeeded = needsDecimalStyle(samples);
   const styleGuess = imp.decimalStyle ?? suggestDecimalStyle(samples);
@@ -83,19 +86,21 @@ export default async function ImportPage({ params, searchParams }: { params: Pro
                   <tr key={n}>
                     <td><b>{c ?? `(${t("sin título", "untitled")} ${n + 1})`}</b></td>
                     <td className="small muted">{preview.slice(0, 3).map((r) => r[n]).filter((v) => v != null).map((v) => String(v).slice(0, 28)).join(" · ") || "—"}</td>
-                    <td><select name={`col_${n}`} defaultValue={mapping[String(n)] ?? ""}><option value="">{t("— no usar —", "— don't use —")}</option>{(Object.keys(FIELDS) as FieldKey[]).map((k) => <option key={k} value={k}>{t(FIELDS[k].es, FIELDS[k].en)}</option>)}</select></td>
+                    <td><select name={`col_${n}`} defaultValue={mapping[String(n)] ?? ""}><option value="">{t("— no usar —", "— don't use —")}</option>{(Object.keys(FIELDS) as FieldKey[]).map((k) => <option key={k} value={k}>{t(FIELDS[k].es, FIELDS[k].en)}</option>)}{years.map((y) => <optgroup key={y} label={t(`Cifras de ${y}`, `${y} figures`)}>{PER_YEAR_KEYS.map((k) => <option key={`${k}@${y}`} value={`${k}@${y}`}>{t(`${FIELDS[k].es} · ${y}`, `${FIELDS[k].en} · ${y}`)}</option>)}</optgroup>)}</select></td>
                   </tr>
                 ))}</tbody>
               </table>
             </div>
+            {years.length > 0 && <p className="small">{t(`Este archivo trae varios años en la misma fila (${years.join(" y ")}): cada fila se guarda como un registro por año. Si un año no trae cifras, se omite.`, `This file has several years on the same row (${years.join(" and ")}): each row is saved as one record per year. A year without figures is skipped.`)}</p>}
             {problems.length > 0 && <div className="note attn">{problems.map((p) => t(p.es, p.en)).join(" · ")}</div>}
             <h2>2. {t("Escala, moneda y año", "Scale, currency and year")}</h2>
             <div className="card row">
               <label>{t("Las cifras están en", "Figures are in")}<select name="scale" defaultValue={imp.scale ?? ""} required><option value="" disabled>{t("Elige…", "Pick…")}</option>{Object.entries(SCALES).map(([k, v]) => <option key={k} value={k}>{t(v.es, v.en)}</option>)}</select></label>
               <label>{t("Moneda", "Currency")}<select name="currency" defaultValue={imp.currency ?? ""} required><option value="" disabled>{t("Elige…", "Pick…")}</option><option>COP</option><option>USD</option></select></label>
               {styleNeeded && <label>{t("Formato de números", "Number format")}<select name="decimalStyle" defaultValue={styleGuess ?? ""} required><option value="" disabled>{t("Elige…", "Pick…")}</option><option value="COMMA">1.234,56</option><option value="DOT">1,234.56</option></select></label>}
+              {(h.notes?.length ?? 0) > 0 && <div className="note" style={{ flexBasis: "100%" }}><b>{t("El archivo dice, arriba de la tabla:", "The file says, above the table:")}</b> {h.notes!.map((x) => `«${x}»`).join(" · ")}<span className="src block">{t("Usa esa nota para elegir la escala: «Miles de pesos» = Miles; «Millones de pesos» = Millones.", "Use that note to pick the scale: “Miles de pesos” = Thousands; “Millones de pesos” = Millions.")}</span></div>}
               <label>{t("Año (si el archivo no tiene columna de año)", "Year (if the file has no year column)")}<input name="fixedYear" type="number" min="1990" max={new Date().getUTCFullYear()} defaultValue={imp.fixedYear ?? ""} style={{ width: 100 }} /></label>
-              <span className="src block" style={{ flexBasis: "100%" }}>{t("Supersociedades suele publicar en miles de millones de pesos; revisa el encabezado o la nota del archivo. Después de revisar verás cómo queda una empresa conocida antes de guardar.", "Supersociedades often publishes in thousands of millions of pesos; check the header or the file's note. After checking you'll see how a known company looks before saving.")}</span>
+              <span className="src block" style={{ flexBasis: "100%" }}>{t("Revisa la nota del archivo (por ejemplo «Miles de pesos»). Después de revisar verás cómo queda una empresa conocida antes de guardar.", "Check the file's note (for example “Miles de pesos”). After checking you'll see how a known company looks before saving.")}</span>
             </div>
             <button type="submit">{validated ? t("Volver a revisar todas las filas", "Check all rows again") : t("Revisar todas las filas", "Check all rows")}</button>
           </form>

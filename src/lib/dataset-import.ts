@@ -6,14 +6,14 @@ import { createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { readSheet, type Cell } from "./sheet-read";
-import { DEFAULT_THRESHOLDS, FORMULA_VERSION, MONEY_FIELDS, checkRow, econSignals, findHeaderRow, suggestMapping, type Mapping, type MoneyField, type ParsedRow, type Snap, type Thresholds } from "./fin-rules";
+import { DEFAULT_THRESHOLDS, FORMULA_VERSION, MONEY_FIELDS, checkRows, econSignals, findHeaderRow, suggestMapping, type Mapping, type MoneyField, type ParsedRow, type Snap, type Thresholds } from "./fin-rules";
 import { fold } from "./part-lexicon";
 
 export const MAX_FILE = 25 * 1024 * 1024;
 const nameKey = (s: string | null | undefined) => fold(s ?? "").replace(/\b(s\.?a\.?s?|ltda|s\.?a|y cia|e\.?u|bic)\b/g, "").replace(/[^a-z0-9ñ]/g, "");
 const nitKeyOf = (v: string | null | undefined) => { const d = (v ?? "").replace(/\D/g, ""); return d.length >= 6 ? d.slice(0, 9) : null; };
 
-type Headers = { row: number; cells: Cell[]; sheetName: string; sheetNames: string[] };
+type Headers = { row: number; cells: Cell[]; sheetName: string; sheetNames: string[]; notes?: string[] };
 
 export async function getThresholds(): Promise<{ value: Thresholds; version: number; by: string | null; at: Date | null }> {
   const s = await db.marketSetting.findFirst({ where: { key: "econThresholds" }, orderBy: { version: "desc" } });
@@ -25,7 +25,9 @@ function parseFile(fileName: string, buf: Buffer, sheet?: string) {
   const hr = findHeaderRow(s.rows);
   const cells = (s.rows[hr] ?? []).map((c) => (c == null ? null : String(c)));
   const data = s.rows.slice(hr + 1).filter((r) => r && r.some((c) => c != null));
-  return { headers: { row: hr, cells, sheetName: s.sheetName, sheetNames: s.sheetNames } as Headers, data };
+  // Text written above the table (title, "Miles de pesos"…): shown next to the scale choice, never applied by itself.
+  const notes = [...new Set(s.rows.slice(0, hr).flat().filter((c): c is string => typeof c === "string" && c.trim().length > 0).map((c) => c.trim().slice(0, 200)))].slice(0, 6);
+  return { headers: { row: hr, cells, sheetName: s.sheetName, sheetNames: s.sheetNames, notes } as Headers, data };
 }
 
 /** Upload: keeps the file, detects columns, suggests a mapping (the source's template first). Duplicate files are refused. */
@@ -74,7 +76,7 @@ export async function validateImport(importId: string, o: Opts) {
   const imp = await db.datasetImport.findUniqueOrThrow({ where: { id: importId }, include: { source: true } });
   const h = imp.headers as unknown as Headers;
   const { data } = parseFile(imp.fileName, Buffer.from(imp.data), h.sheetName);
-  const checked = data.map((r, n) => ({ rowNo: h.row + 2 + n, ...checkRow(r, o.mapping, { scale: o.scale, decimalStyle: o.decimalStyle, fixedYear: o.fixedYear }) }));
+  const checked = data.flatMap((r, n) => checkRows(r, o.mapping, { scale: o.scale, decimalStyle: o.decimalStyle, fixedYear: o.fixedYear }).map((c) => ({ rowNo: h.row + 2 + n, ...c })));
 
   // Cross-row and cross-database checks.
   const keyCount = new Map<string, number>();

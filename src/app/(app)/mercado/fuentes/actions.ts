@@ -9,7 +9,7 @@ import { requireUser } from "@/lib/auth";
 import { canImportData, canManageAll } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { chooseSheet, commitImport, decideRows, getThresholds, uploadDataset, validateImport } from "@/lib/dataset-import";
-import { DEFAULT_THRESHOLDS, FIELDS, SCALES, SOURCE_KINDS, type FieldKey, type Mapping } from "@/lib/fin-rules";
+import { DEFAULT_THRESHOLDS, FIELDS, SCALES, SOURCE_KINDS, isTarget, type FieldKey, type Mapping } from "@/lib/fin-rules";
 
 const BASE = "/mercado/fuentes";
 const go = (path: string): never => { refreshApp(); redirect(path); };
@@ -47,7 +47,7 @@ export async function saveMapping(importId: string, fd: FormData) {
   if (!imp || imp.status === "COMMITTED") go(`${BASE}/${importId}`);
   const cells = ((imp!.headers as { cells?: unknown[] }).cells ?? []);
   const mapping: Mapping = {};
-  cells.forEach((_, i) => { const v = String(fd.get(`col_${i}`) ?? ""); if (v && v in FIELDS) mapping[String(i)] = v as FieldKey; });
+  cells.forEach((_, i) => { const v = String(fd.get(`col_${i}`) ?? ""); if (v && isTarget(v)) mapping[String(i)] = v; });
   const scale = String(fd.get("scale") ?? ""), currency = String(fd.get("currency") ?? "");
   const decimalStyle = ["COMMA", "DOT"].includes(String(fd.get("decimalStyle"))) ? String(fd.get("decimalStyle")) : null;
   const y = Number(fd.get("fixedYear") || 0);
