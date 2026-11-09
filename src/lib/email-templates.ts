@@ -1,5 +1,5 @@
 // E1: email templates. The request for quotation is the company's own template (shared 2026-11-06),
-// kept word for word in English and translated faithfully to Spanish; the other five follow its voice.
+// English lightly proofread with the user's OK (2026-11-09) and translated faithfully to Spanish; the other five follow its voice.
 // Rules: specs and quantities come from SOLU records (never retyped); one clear request with a date;
 // short paragraphs; 2–3 subject suggestions with the part/order number; Spanish for LatAm, simple
 // English otherwise. Never: bank details (only from the verified profile), customer name or our
@@ -78,18 +78,18 @@ export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; nee
   const en = o.lang === "EN";
   const blocks: Block[] = en ? [
     { p: "Dear Sirs," },
-    { p: `${COMPANY.legalName}, is a company with offices in Miami and NY. We serve all 50 states in the US and Puerto Rico. Our mission is to help our customers with their urgent requests and ensure all spare parts are delivered on a timely manner.` },
-    { p: "Currently, we have received an URGENT request from a special customer regarding the following product(s):" },
+    { p: `${COMPANY.legalName} is a company with offices in Miami and New York. We serve all 50 U.S. states and Puerto Rico. Our mission is to help our customers with their urgent requests and to ensure all spare parts are delivered in a timely manner.` },
+    { p: "We have just received an URGENT request from a special customer for the following product(s):" },
     { items: o.items },
-    { p: "Please send us pictures, a diagram or technical data sheet of the quoted items, to double check with our customer and avoid any mistake." },
-    { p: "To get the purchase order from our customer, please confirm your:" },
-    { bullets: ["Best resale price:", "Availability (Lead time after you received our payment):", "Payment options:", "Approximate Weight and Box Dimensions:"] },
+    { p: "Please send us pictures, a diagram or the technical data sheet of the quoted items, so we can double-check with our customer and avoid any mistakes." },
+    { p: "To secure the purchase order from our customer, please confirm your:" },
+    { bullets: ["Best resale price:", "Availability (lead time after receiving our payment):", "Payment options:", "Approximate weight and box dimensions:"] },
     ...(o.neededBy ? [{ p: `We would appreciate your answer by ${longDay(o.neededBy, "EN")}.`, strong: true }] : []),
     ...(o.notes ? [{ p: o.notes }] : []),
-    { p: "For quoting and invoicing purposes below our complete information:" },
+    { p: "For quoting and invoicing purposes, please find our complete information below:" },
     { addresses: true, lang: "EN" },
-    { p: `We will do our best to close the sale.  If we get the order from our customer, please note our company's payment policy is to ${COMPANY.supplierPayment.EN}.` },
-    { p: "We look forward to hear from you and build a strong relationship with you." },
+    { p: `We will do our best to close the sale. If we receive the order from our customer, please note that our company's payment policy is to ${COMPANY.supplierPayment.EN}.` },
+    { p: "We look forward to hearing from you and building a strong relationship with you." },
     { p: `Our reference: ${o.code}` },
     ...signature("EN", o.sender, o.from),
   ] : [
