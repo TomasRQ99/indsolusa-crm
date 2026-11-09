@@ -23,7 +23,7 @@ export async function GET(req: Request) {
 
   const screens = MODULES.flatMap((m) =>
     m.tabs
-      .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || user.role === "ADMIN"))
+      .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || user.role === "ADMIN") && (!tab.roles || tab.roles.includes(user.role)))
       .filter((tab) => words.some((w) => norm(`${tab.es} ${tab.en} ${m.es} ${m.en}`).includes(w)))
       .map((tab) => ({ href: tab.href, label: `${es ? m.es : m.en} · ${es ? tab.es : tab.en}` })),
   ).slice(0, 5);

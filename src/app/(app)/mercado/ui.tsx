@@ -25,6 +25,7 @@ export function Prov({ t, day, x }: { t: T; day: (d: Date) => string; x: { sourc
 }
 
 export const MSG_OK: Record<string, [string, string]> = {
+  prospecto: ["Empresa agregada como prospecto, con sus cifras públicas enlazadas por NIT. Ahora puedes conocerla.", "Company added as a prospect, with its public figures linked by NIT. Now you can get to know it."],
   alias: ["Nombre agregado. SOLU también reconocerá a la empresa por él.", "Name added. SOLU will also recognize the company by it."],
   insight: ["Gracias. Ahora el equipo sabe un poco mejor cómo trabaja esta empresa.", "Thanks. The team now knows a bit better how this company works."],
   cambio: ["Anotado. La observación anterior queda en el historial con el motivo.", "Noted. The previous observation stays in history with the reason."],
@@ -39,4 +40,15 @@ export const MSG_ERR: Record<string, [string, string]> = {
   equipo: ["Escribe qué equipo es.", "Write what equipment it is."], impacto: ["Di qué se detiene (línea, equipo o planta).", "Say what stops (line, equipment or plant)."],
   guiado: ["Para estimar necesitamos al menos la producción por hora y la contribución por unidad.", "To estimate we need at least production per hour and contribution per unit."],
   persona: ["Elige un contacto o escribe el nombre.", "Pick a contact or write the name."], pregunta: ["Escribe la pregunta.", "Write the question."], respuesta: ["Escribe la respuesta.", "Write the answer."],
+};
+
+/** Dataset import states (§23). */
+export const IMPORT_STATUS: Record<string, [string, string, string]> = {
+  MAPPING_REQUIRED: ["Falta mapear columnas", "Columns to map", "attn"],
+  REVIEW_REQUIRED: ["Revisar excepciones", "Review exceptions", "attn"],
+  READY_TO_COMMIT: ["Listo para guardar", "Ready to save", "info"],
+  COMMITTED: ["Guardado", "Saved", "ok"],
+  FAILED: ["No se pudo leer", "Couldn't be read", "risk"],
+  DISCARDED: ["Descartado", "Discarded", "wait"],
+  PARSED: ["Leído", "Read", "wait"],
 };

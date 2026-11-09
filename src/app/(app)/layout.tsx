@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const modules: ShellModule[] = MODULES.map((m) => {
     const tabs = m.tabs
-      .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || user.role === "ADMIN"))
+      .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || user.role === "ADMIN") && (!tab.roles || tab.roles.includes(user.role)))
       .map((tab) => ({ href: tab.href, label: es ? tab.es : tab.en }));
     return { key: m.key, label: es ? m.es : m.en, href: tabs[0]?.href ?? m.match[0], match: m.match, tabs };
   });

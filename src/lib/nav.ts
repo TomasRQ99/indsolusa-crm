@@ -4,7 +4,7 @@
 
 export type ModuleKey = "midia" | "mercado" | "comercial" | "operaciones" | "administracion" | "proyectos" | "equipo" | "gerencia";
 
-export type NavTab = { href: string; es: string; en: string; managerOnly?: boolean; adminOnly?: boolean };
+export type NavTab = { href: string; es: string; en: string; managerOnly?: boolean; adminOnly?: boolean; roles?: string[] };
 export type NavModule = { key: ModuleKey; es: string; en: string; match: string[]; tabs: NavTab[] };
 
 export const MODULES: NavModule[] = [
@@ -23,6 +23,8 @@ export const MODULES: NavModule[] = [
     key: "mercado", es: "MERCADO", en: "MARKET", match: ["/mercado", "/accounts", "/contacts", "/suppliers", "/localizar", "/productos"],
     tabs: [
       { href: "/mercado", es: "Explorar", en: "Explore" },
+      { href: "/mercado/economia", es: "Economía", en: "Economy" },
+      { href: "/mercado/fuentes", es: "Fuentes", en: "Sources", roles: ["ADMIN", "MANAGER", "MARKETING"] },
       { href: "/accounts", es: "Clientes", en: "Customers" },
       { href: "/contacts", es: "Contactos", en: "Contacts" },
       { href: "/suppliers", es: "Proveedores", en: "Suppliers" },

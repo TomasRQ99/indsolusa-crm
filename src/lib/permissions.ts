@@ -15,3 +15,8 @@ export function assertCanEdit(user: SessionUser, ownerId: string) {
     throw new Error("You do not have permission to change this record.");
   }
 }
+
+/** Mercado §18: loading economic datasets is for Administration, Management and Marketing. */
+export function canImportData(user: SessionUser) {
+  return canManageAll(user) || user.role === "MARKETING";
+}

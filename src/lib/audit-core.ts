@@ -38,6 +38,11 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   InstalledAsset: ["name", "manufacturer", "model", "serial", "critical", "redundancy", "confidence"],
   ImpactProfile: ["scope", "stopsLine", "level", "currency", "costPerHourMin", "costPerHourMax", "unitsPerHour", "contributionUnit", "scrapPerHour", "idleLaborPerHour", "restartCost", "confidence"],
   Employment: ["contactId", "accountId", "plantId", "area", "role", "startedOn", "endedOn"],
+  // Economic data: the import is the audited unit (who loaded which file, with which scale/currency, who committed).
+  // Snapshots are immutable and come only from a committed import, so they aren't logged one by one.
+  IntelligenceSource: ["name", "kind"],
+  DatasetImport: ["fileName", "status", "scale", "currency", "decimalStyle", "fixedYear", "committedAt", "committedByName"],
+  MarketSetting: "all",
 };
 const MASK = new Set(["bankAccount", "docAccount"]);
 const SKIP = new Set(["id", "createdAt", "updatedAt"]);

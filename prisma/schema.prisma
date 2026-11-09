@@ -134,6 +134,7 @@ model Account {
   aliases       AccountAlias[]
   insights      AccountInsight[]
   employments   Employment[]
+  marketCompany MarketCompany?
 
   @@index([ownerId])
   @@index([name])
@@ -1777,4 +1778,127 @@ model FutureOpportunity {
   createdAt      DateTime     @default(now())
 
   @@index([status, expectedAt])
+}
+
+/// Mercado M3 · where economic data comes from (§9.1). The column mapping is reusable per source.
+model IntelligenceSource {
+  id            String              @id @default(cuid())
+  name          String              @unique
+  kind          String              @default("OTHER") // SUPERSOCIEDADES | CAMARA | SECTOR | PROVIDED | INTERNAL | OTHER
+  description   String?
+  mapping       Json?
+  createdByName String
+  createdAt     DateTime            @default(now())
+  imports       DatasetImport[]
+  snapshots     FinancialSnapshot[]
+}
+
+/// One uploaded file (§9.2, §23). The original file is kept as evidence; rows are staged before any canonical write.
+/// status: PARSED | MAPPING_REQUIRED | REVIEW_REQUIRED | READY_TO_COMMIT | COMMITTED | FAILED | DISCARDED
+model DatasetImport {
+  id              String              @id @default(cuid())
+  sourceId        String
+  source          IntelligenceSource  @relation(fields: [sourceId], references: [id])
+  fileName        String
+  mime            String
+  size            Int
+  hash            String              @unique
+  data            Bytes
+  status          String              @default("PARSED")
+  headers         Json
+  preview         Json
+  rowCount        Int                 @default(0)
+  mapping         Json?
+  scale           String?
+  currency        String?
+  decimalStyle    String?
+  fixedYear       Int?
+  okCount         Int                 @default(0)
+  errorCount      Int                 @default(0)
+  reviewCount     Int                 @default(0)
+  failure         String?
+  createdByName   String
+  createdAt       DateTime            @default(now())
+  committedAt     DateTime?
+  committedByName String?
+  rows            DatasetRow[]
+  snapshots       FinancialSnapshot[]
+}
+
+/// Staging row. status OK | ERROR | REVIEW | SKIPPED; decision INCLUDE | EXCLUDE for REVIEW rows.
+model DatasetRow {
+  id       String        @id @default(cuid())
+  importId String
+  import   DatasetImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  rowNo    Int
+  nit      String?
+  year     Int?
+  name     String?
+  parsed   Json?
+  status   String
+  messages String[]
+  decision String?
+
+  @@index([importId, status])
+  @@index([importId, nit, year])
+}
+
+/// A company as seen in economic datasets, keyed by NIT (first 9 digits). Linked to a customer/prospect by NIT.
+model MarketCompany {
+  id         String              @id @default(cuid())
+  nit        String              @unique
+  name       String
+  otherNames String[]
+  ciiu       String?
+  sector     String?
+  department String?
+  city       String?
+  accountId  String?             @unique
+  account    Account?            @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  snapshots  FinancialSnapshot[]
+
+  @@index([name])
+}
+
+/// Immutable yearly figures from one import (§9.4). Amounts in currency units (scale already applied).
+/// A later file for the same year is another version, never an overwrite.
+model FinancialSnapshot {
+  id                 String             @id @default(cuid())
+  companyId          String
+  company            MarketCompany      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYear         Int
+  sourceId           String
+  source             IntelligenceSource @relation(fields: [sourceId], references: [id])
+  importId           String
+  import             DatasetImport      @relation(fields: [importId], references: [id])
+  currency           String
+  unitsScale         String
+  revenue            Decimal?           @db.Decimal(22, 2)
+  operatingIncome    Decimal?           @db.Decimal(22, 2)
+  netIncome          Decimal?           @db.Decimal(22, 2)
+  assets             Decimal?           @db.Decimal(22, 2)
+  liabilities        Decimal?           @db.Decimal(22, 2)
+  equity             Decimal?           @db.Decimal(22, 2)
+  currentAssets      Decimal?           @db.Decimal(22, 2)
+  currentLiabilities Decimal?           @db.Decimal(22, 2)
+  debt               Decimal?           @db.Decimal(22, 2)
+  employees          Int?
+  createdAt          DateTime           @default(now())
+
+  @@unique([companyId, fiscalYear, importId])
+  @@index([fiscalYear])
+}
+
+/// Versioned settings decided by management (e.g. thresholds for economic signals, decision log §32).
+model MarketSetting {
+  id            String   @id @default(cuid())
+  key           String
+  version       Int
+  value         Json
+  updatedByName String
+  createdAt     DateTime @default(now())
+
+  @@unique([key, version])
 }

@@ -1513,3 +1513,10 @@ a.mk-link:hover { border-color: var(--brand); }
 .mk-impact { margin: 4px 0; font-size: 13px; }
 .mk-map > li > b { color: var(--ink-1); }
 .mk-map .mk-ul { margin-left: 12px; }
+.mk-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.mk-filters input:not([type=checkbox]) { min-width: 0; flex: 1 1 160px; }
+.mk-scroll { overflow-x: auto; }
+.mk-scroll table { min-width: 640px; }
+.mk-th { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px 16px; align-items: end; }
+.mk-th label { font-size: 12px; }
+tr.muted td { color: var(--ink-3); }
