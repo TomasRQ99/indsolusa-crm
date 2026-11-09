@@ -427,7 +427,7 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
             : t(`Cobrar USD ${i.n(balance)}${overdueInv.length ? `; ${overdueInv.length} factura(s) vencida(s)` : ""}.`, `Collect USD ${i.n(balance)}${overdueInv.length ? `; ${overdueInv.length} overdue invoice(s)` : ""}.`),
     },
     {
-      q: t("¿Cuánta esagra deja?", "How much esagra does it leave?"),
+      q: t("¿Cuánta eságara deja?", "How much eságara does it leave?"),
       a: t(`USD ${i.n(eg.value)} (${i.pct(eg.pct)}) = venta ${i.n(deal.amount)} − proveedor ${i.n(deal.supplierCost)} − fletes ${i.n(deal.freightCost)} − otros ${i.n(deal.otherCosts)}.`, `USD ${i.n(eg.value)} (${i.pct(eg.pct)}) = sale ${i.n(deal.amount)} − supplier ${i.n(deal.supplierCost)} − freight ${i.n(deal.freightCost)} − other ${i.n(deal.otherCosts)}.`),
     },
     {

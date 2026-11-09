@@ -194,10 +194,10 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
           <div className="qv-box pol">
             <span className="k">{t("Política comercial", "Commercial policy")}</span>
             <b className="tv">{policy.floorPct != null ? `≥ ${policy.floorPct} %` : "—"}</b>
-            <span className="src">{policy.version ? t(`Piso de esagra de la política v${policy.version}. SOLU no inventa fórmulas.`, `Esagra floor of policy v${policy.version}. SOLU doesn't invent formulas.`) : t("No hay política cargada.", "No policy loaded.")}</span>
+            <span className="src">{policy.version ? t(`Piso de eságara de la política v${policy.version}. SOLU no inventa fórmulas.`, `Eságara floor of policy v${policy.version}. SOLU doesn't invent formulas.`) : t("No hay política cargada.", "No policy loaded.")}</span>
           </div>
         </div>
-        {(B.econAlert || (draft && B.belowFloor)) && <p className="qv-alert">{t("La esagra queda por debajo del piso de la política. Revisa precio o costos, o pide aprobación a Gerencia.", "Esagra falls below the policy floor. Review price or costs, or ask Management to approve.")}</p>}
+        {(B.econAlert || (draft && B.belowFloor)) && <p className="qv-alert">{t("La eságara queda por debajo del piso de la política. Revisa precio o costos, o pide aprobación a Gerencia.", "Eságara falls below the policy floor. Review price or costs, or ask Management to approve.")}</p>}
 
         <div className="tscroll" style={{ marginTop: 14 }}>
           <table className="qv-cost">
@@ -231,7 +231,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
                 <td />
               </tr>
               <tr className="tot">
-                <td>Esagra</td>
+                <td>Eságara</td>
                 {(showVersions ? v : v.filter((x) => x.current)).map((x) => { const e = x.sale - x.supplier - x.freight - x.other; return <td key={x.id} className={`n val${x.current ? " cur" : ""}`}>{i.n2(e)}<span className="src block">{x.sale > 0 ? i.pct((e / x.sale) * 100) : "—"}</span></td>; })}
                 <td />
               </tr>
@@ -242,7 +242,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
         <p className="src" style={{ marginTop: 8 }}>
           {q.costCurrency === "USD" || !q.fxRate
             ? t("Sin exposición cambiaria: proveedor y cliente en USD.", "No FX exposure: supplier and customer in USD.")
-            : t(`Tasa ${q.costCurrency}→USD ${Number(q.fxRate)} · ${q.fxSource ?? "fuente sin registrar"}. Si la tasa se mueve antes de pagar al proveedor, cambia la esagra.`, `Rate ${q.costCurrency}→USD ${Number(q.fxRate)} · ${q.fxSource ?? "source not recorded"}. If the rate moves before paying the supplier, esagra changes.`)}
+            : t(`Tasa ${q.costCurrency}→USD ${Number(q.fxRate)} · ${q.fxSource ?? "fuente sin registrar"}. Si la tasa se mueve antes de pagar al proveedor, cambia la eságara.`, `Rate ${q.costCurrency}→USD ${Number(q.fxRate)} · ${q.fxSource ?? "source not recorded"}. If the rate moves before paying the supplier, eságara changes.`)}
         </p>
       </section>
     );
@@ -271,7 +271,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
               {sc.map((s) => <div key={s.id} className={`v mono${s.recommended ? " rec" : ""}`}>{money(Number(s.price))}</div>)}
               <div className="k">{t("Entrega", "Delivery")}</div>
               {sc.map((s) => <div key={s.id} className={`v${s.recommended ? " rec" : ""}`}>{s.leadMinDays}–{s.leadMaxDays} {t("días", "days")}<span className="src block">{i.day(addDays(B.now, s.leadMinDays))} – {i.day(addDays(B.now, s.leadMaxDays))}</span></div>)}
-              <div className="k">Esagra</div>
+              <div className="k">Eságara</div>
               {sc.map((s) => { const e = Number(s.price) - Number(s.cost); const p = Number(s.price) > 0 ? (e / Number(s.price)) * 100 : null; const low = policy.floorPct != null && p != null && p < policy.floorPct; return <div key={s.id} className={`v mono${s.recommended ? " rec" : ""}${low ? " low" : ""}`}>{i.pct(p)}{low && <span className="src block">{t("bajo el piso", "below floor")}</span>}</div>; })}
               <div className="k">{t("Riesgo", "Risk")}</div>
               {sc.map((s) => <div key={s.id} className={`v${s.recommended ? " rec" : ""}`}>{s.risk ?? "—"}</div>)}

@@ -123,11 +123,11 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
   const dealImpact = (d: D): Fact => {
     const e = esagra(d);
     const parts = [i.money(d.amount)];
-    if (Number(d.supplierCost) > 0 && e.pct != null) parts.push(t(`esagra ≈ ${i.money(e.value)} (${i.pct(e.pct)})`, `margin ≈ ${i.money(e.value)} (${i.pct(e.pct)})`));
+    if (Number(d.supplierCost) > 0 && e.pct != null) parts.push(t(`eságara ≈ ${i.money(e.value)} (${i.pct(e.pct)})`, `margin ≈ ${i.money(e.value)} (${i.pct(e.pct)})`));
     let text = t(`Está en juego ${parts.join(" · ")} en etapa ${stageLabel(i, d.stage)}.`, `${parts.join(" · ")} at stake, stage ${stageLabel(i, d.stage)}.`);
     if (d.promisedDate && d.promisedDate >= now) text += " " + t(`Le prometiste al cliente: «${d.promiseText ?? d.title}» para el ${i.dateShort(d.promisedDate)}.`, `You promised the customer "${d.promiseText ?? d.title}" by ${i.dateShort(d.promisedDate)}.`);
     else if (d.closeDate && d.closeDate >= now) text += " " + t(`El cliente decide hacia el ${i.dateShort(d.closeDate)}.`, `The customer decides around ${i.dateShort(d.closeDate)}.`);
-    return { text, src: Number(d.supplierCost) > 0 ? t("Esagra calculada con los costos del Journey", "Margin calculated from the Journey costs") : undefined };
+    return { text, src: Number(d.supplierCost) > 0 ? t("Eságara calculada con los costos del Journey", "Margin calculated from the Journey costs") : undefined };
   };
   const whoDeal = (d: D) => ({
     title: strip(d.account.name),

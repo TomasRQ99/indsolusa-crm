@@ -135,7 +135,7 @@ export function buildPo(po: PoFull, i: I, floorPct: number | null) {
       options.push({
         option: "EXPEDITE_ABSORB", scenarioLabel: fast.label,
         title: t(`Cumplir el ${i.day(po.requiredBy)} con «${fast.label}» y absorber el costo`, `Meet ${i.day(po.requiredBy)} with "${fast.label}" and absorb the cost`),
-        what: t(`Llega el ${i.day(fd)}. El precio al cliente no cambia; la esagra baja ${money(delta)}.`, `Arrives ${i.day(fd)}. Customer price unchanged; esagra drops ${money(delta)}.`),
+        what: t(`Llega el ${i.day(fd)}. El precio al cliente no cambia; la eságara baja ${money(delta)}.`, `Arrives ${i.day(fd)}. Customer price unchanged; eságara drops ${money(delta)}.`),
         promiseDate: fd, meetsPo: true, costDelta: delta, priceDelta: 0, esagra: eA, pct: pctOf(eA, sale), belowFloor: below(pctOf(eA, sale)),
         whoActs: t("Nosotros y el proveedor", "Us and the supplier"),
         risk: fast.risk,
@@ -147,7 +147,7 @@ export function buildPo(po: PoFull, i: I, floorPct: number | null) {
       options.push({
         option: "EXPEDITE_CHARGE", scenarioLabel: fast.label,
         title: t(`Cumplir el ${i.day(po.requiredBy)} y cobrar la diferencia (${money(pDelta)})`, `Meet ${i.day(po.requiredBy)} and charge the difference (${money(pDelta)})`),
-        what: t(`Llega el ${i.day(fd)} a ${money(Number(fast.price))}. La esagra se mantiene.`, `Arrives ${i.day(fd)} at ${money(Number(fast.price))}. Esagra holds.`),
+        what: t(`Llega el ${i.day(fd)} a ${money(Number(fast.price))}. La eságara se mantiene.`, `Arrives ${i.day(fd)} at ${money(Number(fast.price))}. Eságara holds.`),
         promiseDate: fd, meetsPo: true, costDelta: delta, priceDelta: pDelta, esagra: eC, pct: pctOf(eC, Number(fast.price)), belowFloor: below(pctOf(eC, Number(fast.price))),
         whoActs: t("El cliente aprueba el nuevo valor", "The customer approves the new amount"),
         risk: t("El cliente puede demorar la aprobación del mayor valor", "The customer may take time to approve the higher amount"),
@@ -173,7 +173,7 @@ export function buildPo(po: PoFull, i: I, floorPct: number | null) {
     { ok: !!q && (q.status === "PRESENTED" || q.status === "ACCEPTED"), text: t("Responde a una cotización presentada y vigente", "Answers a presented, current quote") },
     { ok: resolvedDate, text: dateMaterial ? t("La diferencia de fecha tiene una resolución confirmada", "The date difference has a confirmed resolution") : t("La fecha de la PO se puede proteger", "The PO date can be protected") },
     { ok: otherMaterial.length === 0, text: otherMaterial.length ? t(`Otras diferencias materiales: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`, `Other material differences: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`) : t("Productos, cantidades, precios y condiciones coinciden", "Products, quantities, prices and terms match") },
-    { ok: !chosen || chosen.state !== "CONFIRMED" || !options.find((o) => o.option === chosen.option)?.belowFloor, text: t("La esagra resultante respeta el piso de la política", "Resulting esagra respects the policy floor") },
+    { ok: !chosen || chosen.state !== "CONFIRMED" || !options.find((o) => o.option === chosen.option)?.belowFloor, text: t("La eságara resultante respeta el piso de la política", "Resulting eságara respects the policy floor") },
   ];
   const canAccept = !accepted && !rejected && pre.every((p) => p.ok);
 

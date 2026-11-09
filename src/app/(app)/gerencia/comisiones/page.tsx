@@ -74,7 +74,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
         {policy ? (
           <div className="row" style={{ justifyContent: "space-between" }}>
             <span><b>{t("Política", "Policy")} v{policy.version}</b> · {t("vigente desde", "in force since")} {i.date(policy.effectiveFrom)} · {t("aprobada por", "approved by")} {policy.approvedBy}</span>
-            <span className="mono small">{t("venta", "sale")}: {t("esagra al facturar", "esagra at invoicing")} × {t("tramo", "tier")} × {salePct} % · {t("recaudo", "collection")}: ({t("esagra final", "final esagra")} × {t("tramo", "tier")}) − {t("lo ganado a la venta", "sale half")}</span>
+            <span className="mono small">{t("venta", "sale")}: {t("eságara al facturar", "eságara at invoicing")} × {t("tramo", "tier")} × {salePct} % · {t("recaudo", "collection")}: ({t("eságara final", "final eságara")} × {t("tramo", "tier")}) − {t("lo ganado a la venta", "sale half")}</span>
             <span>{t("Tramos", "Tiers")}: {tiers.map((tr, k) => `${tr.min}${tiers[k + 1] ? `–${tiers[k + 1].min}` : "+"} % → ${tr.rate} %`).join(" · ")} · {t("cliente nuevo", "new customer")} +{i.n2(policy.newClientBonus)} pts · {t(`${policy.lossDays} días vencida: no se gana el recaudo`, `${policy.lossDays} days overdue: collection half not earned`)}</span>
           </div>
         ) : (
@@ -92,7 +92,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
       <div className="two">
         <div className="card flush">
           <table>
-            <thead><tr><th>{t("Journey · cliente", "Journey · customer")}</th><th className="n">{t("Venta", "Sale")}</th><th className="n">{t("Esagra facturar → final", "Esagra invoice → final")}</th><th>{t("Ent → Con", "Del → Rec")}</th><th style={{ borderLeft: "1px solid var(--line)" }}>{salePct} % {t("a la venta", "at sale")}</th><th style={{ borderLeft: "1px solid var(--line)" }}>{100 - salePct} % {t("al recaudo", "at collection")}</th></tr></thead>
+            <thead><tr><th>{t("Journey · cliente", "Journey · customer")}</th><th className="n">{t("Venta", "Sale")}</th><th className="n">{t("Eságara facturar → final", "Eságara invoice → final")}</th><th>{t("Ent → Con", "Del → Rec")}</th><th style={{ borderLeft: "1px solid var(--line)" }}>{salePct} % {t("a la venta", "at sale")}</th><th style={{ borderLeft: "1px solid var(--line)" }}>{100 - salePct} % {t("al recaudo", "at collection")}</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.key} className={sel?.key === r.key ? "sel" : undefined}>
@@ -141,11 +141,11 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
                 {sel.esagraAtIssue != null ? (
                   <>
                     <span className="src">{t("A la venta", "At sale")} · {t("factura", "invoice")} {sel.invoiceNumber}</span>
-                    <div>{i.n2(sel.esagraAtIssue)} <span className="src" style={{ display: "inline" }}>{t("esagra al facturar", "esagra at invoicing")} · {i.pct(sel.pctAtIssue)}</span></div>
+                    <div>{i.n2(sel.esagraAtIssue)} <span className="src" style={{ display: "inline" }}>{t("eságara al facturar", "eságara at invoicing")} · {i.pct(sel.pctAtIssue)}</span></div>
                     <div>× {sel.rateAtIssue} % × {salePct} % = <b>{i.n2(sel.saleHalf.amount)}</b></div>
                     <hr style={{ border: 0, borderTop: "1px solid var(--line-strong)" }} />
                     <span className="src">{t("Al recaudo", "At collection")}</span>
-                    <div>{i.n2(sel.esagraFinal)} <span className="src" style={{ display: "inline" }}>{t("esagra final", "final esagra")} · {i.pct(sel.pctFinal)}</span></div>
+                    <div>{i.n2(sel.esagraFinal)} <span className="src" style={{ display: "inline" }}>{t("eságara final", "final eságara")} · {i.pct(sel.pctFinal)}</span></div>
                     <div>× {sel.rateFinal} % = {i.n2((sel.esagraFinal * sel.rateFinal) / 100)} <span className="src" style={{ display: "inline" }}>total</span></div>
                     <div>− {i.n2(sel.saleHalf.amount)} = <b>{i.n2(sel.collectionHalf.amount)}</b></div>
                   </>
@@ -169,7 +169,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
           <summary>{t("Nueva versión de la política", "New policy version")}</summary>
           <form action={createPolicyVersion} className="stack" style={{ maxWidth: 560 }}>
             <label>{t("Vigente desde", "In force from")}<input name="effectiveFrom" type="date" required defaultValue={dayInput(today())} /></label>
-            <label>{t("Tramos (esagra % : comisión %), uno por línea", "Tiers (esagra % : commission %), one per line")}<textarea name="tiers" required defaultValue={tiers.length ? tiers.map((x) => `${x.min}:${x.rate}`).join("\n") : "0:0\n12:8\n18:10"} /></label>
+            <label>{t("Tramos (eságara % : comisión %), uno por línea", "Tiers (eságara % : commission %), one per line")}<textarea name="tiers" required defaultValue={tiers.length ? tiers.map((x) => `${x.min}:${x.rate}`).join("\n") : "0:0\n12:8\n18:10"} /></label>
             <div className="row">
               <label>{t("Bono cliente nuevo (pts)", "New customer bonus (pts)")}<input name="newClientBonus" type="number" step="0.5" defaultValue={policy ? Number(policy.newClientBonus) : 2} /></label>
               <label>{t("% a la venta", "% at sale")}<input name="salePercent" type="number" min="0" max="100" defaultValue={policy?.salePercent ?? 50} /></label>

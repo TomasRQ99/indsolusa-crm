@@ -588,7 +588,7 @@ export default async function JourneyPage({
             <button type="submit">{t("Guardar fuente", "Save source")}</button>
           </form>
         ) : <p>{deal.sourcingNote ?? "—"}</p>}
-        <p className="src" style={{ marginTop: 8 }}>{t("Esagra calculada", "Calculated esagra")}: USD {i.n(J.eg.value)} · {i.pct(J.eg.pct)}</p>
+        <p className="src" style={{ marginTop: 8 }}>{t("Eságara calculada", "Calculated eságara")}: USD {i.n(J.eg.value)} · {i.pct(J.eg.pct)}</p>
       </section>
       {deal.supplierPos.length > 0 && (
         <section className="jblock">
@@ -696,7 +696,7 @@ export default async function JourneyPage({
             <button type="submit">{t("Guardar condiciones", "Save terms")}</button>
           </form>
         ) : <p>{deal.incoterm ?? "—"} · {deal.paymentTerms ?? "—"}</p>}
-        <p className="src" style={{ marginTop: 8 }}>{t("Esagra calculada", "Calculated esagra")}: USD {i.n(J.eg.value)} · {i.pct(J.eg.pct)} · {t("venta − proveedor − fletes − otros", "sale − supplier − freight − other")}</p>
+        <p className="src" style={{ marginTop: 8 }}>{t("Eságara calculada", "Calculated eságara")}: USD {i.n(J.eg.value)} · {i.pct(J.eg.pct)} · {t("venta − proveedor − fletes − otros", "sale − supplier − freight − other")}</p>
         {editable && !deal.quoteSentAt && (
           <form action={markQuoteSent.bind(null, deal.id)} className="qa-row" style={{ marginTop: 10 }}>
             <H />
@@ -875,7 +875,7 @@ export default async function JourneyPage({
             ))}
           </div>
         )}
-        <p className="src" style={{ marginTop: 8 }}>{t("Esagra calculada", "Calculated esagra")}: USD {i.n(J.eg.value)} · {i.pct(J.eg.pct)}</p>
+        <p className="src" style={{ marginTop: 8 }}>{t("Eságara calculada", "Calculated eságara")}: USD {i.n(J.eg.value)} · {i.pct(J.eg.pct)}</p>
       </section>
       <PhaseLog phase="finance" title={t("REGISTRO FINANCIERO", "FINANCE RECORD")} empty={t("Registra acuerdos de pago, retenciones y novedades de cobro.", "Record payment agreements, withholdings and collection updates.")} />
     </>

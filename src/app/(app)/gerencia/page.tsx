@@ -54,7 +54,7 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
   const ASKS = [
     { key: "resultados", q: t("¿Por qué no logramos algunos resultados?", "Why did we fall short on some results?") },
     { key: "dependencias", q: t("¿De qué proveedor depende lo comprometido?", "Which supplier does the committed future depend on?") },
-    { key: "esagra", q: t("¿Dónde perdimos esagra protegida?", "Where did we lose protected esagra?") },
+    { key: "esagra", q: t("¿Dónde perdimos eságara protegida?", "Where did we lose protected eságara?") },
     { key: "promesas", q: t("¿Qué promesas cambiaron tarde o sin aviso?", "Which promises changed late or without warning?") },
   ];
   const askAnswer = (() => {
@@ -72,7 +72,7 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
       for (const s of dep) lines.push({ href: `/suppliers/${s.id}`, text: `${bareName(s.name)} — ${i.money(s.committed)} (${Math.round((s.committed / total) * 100)} %) · ${s.journeys.size} Journey(s) · ${s.measured ? t(`${s.onTime} de ${s.measured} despachos a tiempo en 12 meses`, `${s.onTime} of ${s.measured} shipments on time in 12 months`) : t("sin despachos medidos", "no measured shipments")}` });
     } else if (sp.ask === "esagra") {
       const er = deals.map((d) => ({ d, e: economicsOf(d) })).filter((x) => x.e.erosion).sort((a, b) => b.e.erosion!.amount - a.e.erosion!.amount);
-      lead = er.length ? t(`Se perdieron ${i.money(er.reduce((s, x) => s + x.e.erosion!.amount, 0))} de esagra protegida en ${er.length} Journey(s):`, `${i.money(er.reduce((s, x) => s + x.e.erosion!.amount, 0))} of protected esagra lost in ${er.length} Journey(s):`) : t("Ningún Journey perdió esagra frente a lo protegido.", "No Journey lost esagra against what was protected.");
+      lead = er.length ? t(`Se perdieron ${i.money(er.reduce((s, x) => s + x.e.erosion!.amount, 0))} de eságara protegida en ${er.length} Journey(s):`, `${i.money(er.reduce((s, x) => s + x.e.erosion!.amount, 0))} of protected eságara lost in ${er.length} Journey(s):`) : t("Ningún Journey perdió eságara frente a lo protegido.", "No Journey lost eságara against what was protected.");
       for (const { d, e } of er) { const p = e.erosion!.parts; const part = [p.price < -1 ? t(`precio −${i.money(-p.price)}`, `price −${i.money(-p.price)}`) : "", p.supplier < -1 ? t(`costo proveedor +${i.money(-p.supplier)}`, `supplier cost +${i.money(-p.supplier)}`) : "", p.freight < -1 ? t(`flete/otros +${i.money(-p.freight)}`, `freight/other +${i.money(-p.freight)}`) : ""].filter(Boolean).join(" · "); lines.push({ href: `/deals/${d.id}`, text: `${jName(d)} — −${i.money(e.erosion!.amount)}: ${part} (${t("protegida en", "protected in")} ${e.prot!.ref})` }); }
     } else if (sp.ask === "promesas") {
       const ps = deals.map((d) => ({ d, p: promiseOf(d) })).filter((x) => x.p && (x.p.silent || (x.p.revised && !x.p.revisedInTime)));
@@ -194,9 +194,9 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
               </table>
             )}
           </Q>
-          <Q q={t("¿La esagra protegida se mantiene en lo que está en curso?", "Is the protected esagra holding in what's in progress?")} a={live.length ? t(`${live.filter((x) => x.e.cur.value < x.e.prot!.value - 1).length} de ${live.length} Journeys en curso están por debajo de lo protegido (${i.money(live.reduce((s, x) => s + Math.max(0, x.e.prot!.value - x.e.cur.value), 0))}).`, `${live.filter((x) => x.e.cur.value < x.e.prot!.value - 1).length} of ${live.length} Journeys in progress are below what was protected (${i.money(live.reduce((s, x) => s + Math.max(0, x.e.prot!.value - x.e.cur.value), 0))}).`) : t("Ningún Journey en curso tiene economía protegida (cotización presentada).", "No Journey in progress has protected economics (presented quote).")}
+          <Q q={t("¿La eságara protegida se mantiene en lo que está en curso?", "Is the protected eságara holding in what's in progress?")} a={live.length ? t(`${live.filter((x) => x.e.cur.value < x.e.prot!.value - 1).length} de ${live.length} Journeys en curso están por debajo de lo protegido (${i.money(live.reduce((s, x) => s + Math.max(0, x.e.prot!.value - x.e.cur.value), 0))}).`, `${live.filter((x) => x.e.cur.value < x.e.prot!.value - 1).length} of ${live.length} Journeys in progress are below what was protected (${i.money(live.reduce((s, x) => s + Math.max(0, x.e.prot!.value - x.e.cur.value), 0))}).`) : t("Ningún Journey en curso tiene economía protegida (cotización presentada).", "No Journey in progress has protected economics (presented quote).")}
             side={<Legend items={[{ cls: "ich-prot", label: t("protegida", "protected"), shape: "ring" }, { cls: "ich-cur", label: t("actual", "current"), shape: "dot" }]} />}>
-            {live.length > 0 && <Dumbbell label="esagra" rows={live.map(({ d, e }) => ({ label: jName(d), href: `/deals/${d.id}`, prot: (e.prot!.value / e.prot!.sale) * 100, cur: e.cur.pct, fin: null, down: e.cur.value < e.prot!.value - 1, tip: `${jName(d)} · ${t("protegida", "protected")} ${i.money(e.prot!.value)} (${i.pct((e.prot!.value / e.prot!.sale) * 100)}) → ${t("actual", "current")} ${i.money(e.cur.value)} (${i.pct(e.cur.pct)})` }))} />}
+            {live.length > 0 && <Dumbbell label="eságara" rows={live.map(({ d, e }) => ({ label: jName(d), href: `/deals/${d.id}`, prot: (e.prot!.value / e.prot!.sale) * 100, cur: e.cur.pct, fin: null, down: e.cur.value < e.prot!.value - 1, tip: `${jName(d)} · ${t("protegida", "protected")} ${i.money(e.prot!.value)} (${i.pct((e.prot!.value / e.prot!.sale) * 100)}) → ${t("actual", "current")} ${i.money(e.cur.value)} (${i.pct(e.cur.pct)})` }))} />}
           </Q>
         </div>
         <Q q={t("¿De qué proveedores depende lo comprometido?", "Which suppliers does the committed future depend on?")} a={dep.length ? t(`${bareName(dep[0].name)} sostiene el ${Math.round((dep[0].committed / depTotal) * 100)} % de lo comprometido con compra abierta.`, `${bareName(dep[0].name)} carries ${Math.round((dep[0].committed / depTotal) * 100)} % of committed value with open purchases.`) : t("Nada comprometido depende hoy de una compra abierta.", "Nothing committed depends on an open purchase today.")}>
@@ -213,7 +213,7 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
       { k: "RESULT", l: t("Resultado parcial / no logrado", "Result partial / not achieved") },
       { k: "RECOVERY", l: "Recovery" },
       { k: "PROMISE", l: t("Promesa revisada / incumplida", "Promise revised / missed") },
-      { k: "ESAGRA", l: t("Esagra perdida", "Esagra lost") },
+      { k: "ESAGRA", l: t("Eságara perdida", "Eságara lost") },
     ];
     const causes = [...CAUSE_KEYS, "UNKNOWN"] as CauseKey[];
     const cell = (c: CauseKey, e: Effect) => rows.filter((r) => r.cause === c && r.effect === e);
@@ -229,7 +229,7 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
         {header}
         {filterNote}
         <Q q={t("¿Qué causas producen qué efectos?", "Which causes produce which effects?")} a={top ? t(`${cName(top.c)} es la causa más repetida: ${top.n} Journey(s). ${unknown ? `${unknown} Journey(s) sin causa registrada.` : ""}`, `${cName(top.c)} is the most repeated cause: ${top.n} Journey(s). ${unknown ? `${unknown} Journey(s) with no cause recorded.` : ""}`) : t("No hay efectos negativos registrados.", "No negative effects recorded.")}>
-          {usedCauses.length === 0 ? <p className="quiet-p">{t("Sin Recoveries, promesas cambiadas, esagra perdida ni resultados parciales.", "No Recoveries, changed promises, lost esagra or partial results.")}</p> : (
+          {usedCauses.length === 0 ? <p className="quiet-p">{t("Sin Recoveries, promesas cambiadas, eságara perdida ni resultados parciales.", "No Recoveries, changed promises, lost eságara or partial results.")}</p> : (
             <div className="iv-scroll">
               <table className="x3-t iv-matrix">
                 <thead><tr><th>{t("Causa", "Cause")}</th>{EFFECTS.map((e) => <th key={e.k} className="n">{e.l}</th>)}</tr></thead>
@@ -386,7 +386,7 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
           {proms.some((x) => x.p!.outcome !== "KEPT") && <ul className="plain small">{proms.filter((x) => x.p!.outcome !== "KEPT").map(({ d, p }) => <li key={d.id}><Link href={`/deals/${d.id}`}>{jName(d)}</Link> · {p!.outcome === "MISSED" ? <b className="risk-t">{t(`${p!.deltaActual} d después de la original`, `${p!.deltaActual} d after the original`)}</b> : t("revisada antes de la fecha original", "revised before the original date")} · {cName(p!.changeCause ?? "UNKNOWN")}{p!.silent && <b className="risk-t"> · {t("sin aviso previo", "no prior warning")}</b>}</li>)}</ul>}
         </Q>
 
-        <Q q={t("¿Cuánta esagra protegimos, cuánta tenemos y cuánta quedó?", "How much esagra did we protect, how much do we have, and how much was left?")}
+        <Q q={t("¿Cuánta eságara protegimos, cuánta tenemos y cuánta quedó?", "How much eságara did we protect, how much do we have, and how much was left?")}
           a={econP.length ? t(`En ${econP.length} Journey(s) facturados: protegida ${i.money(tot.prot)} → actual ${i.money(tot.cur)} → final ${i.money(tot.fin)} (${i.pct(tot.sale ? (tot.fin / tot.sale) * 100 : null)} de la venta).`, `In ${econP.length} invoiced Journey(s): protected ${i.money(tot.prot)} → current ${i.money(tot.cur)} → final ${i.money(tot.fin)} (${i.pct(tot.sale ? (tot.fin / tot.sale) * 100 : null)} of sales).`) : t("Ningún Journey con cotización presentada terminó de facturarse este mes.", "No Journey with a presented quote finished invoicing this month.")}
           side={<Legend items={[{ cls: "ich-prot", label: t("protegida", "protected"), shape: "ring" }, { cls: "ich-fin", label: t("final", "final"), shape: "dot" }, { cls: "ich-fin down", label: t("final bajo lo protegido", "final below protected"), shape: "dot" }]} />}>
           {econP.length > 0 && (
@@ -396,7 +396,7 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
                 <div><span className="k">{t("Actual", "Current")}</span><b>{i.money(tot.cur)}</b><span className="src">{t("costos reales del Journey", "the Journey's real costs")}</span></div>
                 <div><span className="k">{t("Final", "Final")}</span><b>{i.money(tot.fin)}</b><span className="src">{t("facturada", "invoiced")}{tot.fin < tot.prot - 1 && <b className="risk-t"> · −{i.money(tot.prot - tot.fin)}</b>}</span></div>
               </div>
-              <Dumbbell label="esagra" rows={econP.map(({ d, e }) => ({ label: jName(d), href: `/deals/${d.id}`, prot: (e.prot!.value / e.prot!.sale) * 100, cur: e.cur.pct, fin: e.final!.sale ? (e.final!.value / e.final!.sale) * 100 : null, down: e.final!.value < e.prot!.value - 1, tip: `${jName(d)} · ${t("protegida", "protected")} ${i.money(e.prot!.value)} (${e.prot!.ref}) → ${t("final", "final")} ${i.money(e.final!.value)}${e.erosion ? ` · ${cName(e.erosion.cause)}` : ""}` }))} />
+              <Dumbbell label="eságara" rows={econP.map(({ d, e }) => ({ label: jName(d), href: `/deals/${d.id}`, prot: (e.prot!.value / e.prot!.sale) * 100, cur: e.cur.pct, fin: e.final!.sale ? (e.final!.value / e.final!.sale) * 100 : null, down: e.final!.value < e.prot!.value - 1, tip: `${jName(d)} · ${t("protegida", "protected")} ${i.money(e.prot!.value)} (${e.prot!.ref}) → ${t("final", "final")} ${i.money(e.final!.value)}${e.erosion ? ` · ${cName(e.erosion.cause)}` : ""}` }))} />
             </>
           )}
           {econ.length > econP.length && <p className="src">{t(`${econ.length - econP.length} Journey(s) facturados sin cotización presentada: sin economía protegida para comparar.`, `${econ.length - econP.length} invoiced Journey(s) with no presented quote: no protected economics to compare.`)}</p>}

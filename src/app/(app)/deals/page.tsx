@@ -84,7 +84,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
                     <span className="src">{d.code ?? ""} · {d.account.name}</span>
                     <span className="row" style={{ justifyContent: "space-between" }}>
                       <span className="val">{i.money(d.amount)}</span>
-                      {eg.pct != null && Number(d.supplierCost) > 0 && <span className="src" title={t("Esagra", "Esagra")}>{i.pct(eg.pct)}</span>}
+                      {eg.pct != null && Number(d.supplierCost) > 0 && <span className="src" title={t("Eságara", "Eságara")}>{i.pct(eg.pct)}</span>}
                     </span>
                     {d.waitingFor ? (
                       <span className="src">⏸ {d.waitingFor}</span>
