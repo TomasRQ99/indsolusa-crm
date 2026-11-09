@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import PDFDocument from "pdfkit";
 import { addDays, daysBetween } from "./domain";
+import { lineAmount, sumMoney } from "./money";
 
 // Customer documents (Quote, Commercial Invoice) in the Industry Solutions USA format.
 // Brand documents: Helvetica (metric twin of Arial), not SOLU's UI fonts or colours.
@@ -185,8 +186,8 @@ export async function renderDoc(doc: QuoteDoc | InvoiceDoc): Promise<Buffer> {
   const bottom = pdf.page.height - 64;
   let sum = 0;
   for (const l of doc.lines) {
-    const total = l.qty * l.unitPrice;
-    sum += total;
+    const total = lineAmount(l.qty, l.unitPrice);
+    sum = sumMoney([sum, total]);
     font(false).fontSize(9);
     const cells = [String(l.qty), l.code ?? "", l.description, docMoney(l.unitPrice, doc.lang), docMoney(total, doc.lang)];
     const h = Math.max(...cells.map((c, n) => pdf.heightOfString(c || " ", { width: cols[n].w - 10 }))) + 10;

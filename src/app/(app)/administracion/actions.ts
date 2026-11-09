@@ -10,8 +10,9 @@ import { refreshApp } from "@/lib/revalidate";
 import { addDays, bankDiscrepancies, esagra, invoiceBlockers, invoiceCash, nextDocNumber, paymentState, today } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
 import { authorityFor, treasuryChecks } from "@/lib/purchasing";
+import { cmpMoney, linesTotal, money2, mulMoney, subMoney, sumMoney } from "@/lib/money";
 
-const money = z.coerce.number().min(0).max(1e12);
+const money = z.coerce.number().min(0).max(1e12).transform((v) => money2(v));
 const currency = z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, "3-letter currency code").default("USD");
 
 async function requireManager() {
@@ -45,10 +46,10 @@ export async function issueInvoice(deliveryId: string) {
     if (!approved) redirect(`/deals/${d.dealId}/facturacion?err=no-listo`);
   }
 
-  const invoiced = d.deal.invoices.reduce((s, i) => s + Number(i.amount), 0);
+  const invoiced = sumMoney(d.deal.invoices.map((i) => i.amount));
   const amount = d.lines.length
-    ? d.lines.reduce((s, l) => s + l.qty * Number(l.dealItem.unitPrice), 0)
-    : Math.max(0, Number(d.deal.amount) - invoiced);
+    ? linesTotal(d.lines, (l) => l.qty, (l) => l.dealItem.unitPrice)
+    : Math.max(0, subMoney(d.deal.amount, invoiced));
   if (amount <= 0) throw new Error("Nada por facturar / Nothing to invoice.");
   const eg = esagra(d.deal);
   const issuedAt = today();
@@ -66,7 +67,7 @@ export async function issueInvoice(deliveryId: string) {
         issuedAt,
         dueAt: addDays(issuedAt, d.deal.account.paymentTermsDays),
         amount,
-        esagraAtIssue: eg.pct == null ? 0 : Math.round(amount * eg.pct) / 100,
+        esagraAtIssue: eg.pct == null ? 0 : mulMoney(amount, eg.pct / 100),
         issuedById: user.id,
         quoteId: quote?.id ?? null,
         docLang: quote?.lang ?? d.deal.account.docLang,
@@ -97,7 +98,7 @@ function applicationsFrom(formData: FormData) {
   const out: { invoiceId: string; amount: number }[] = [];
   for (const [k, v] of formData.entries()) {
     if (!k.startsWith("apply_")) continue;
-    const amount = Number(v || 0);
+    const amount = money2(String(v || 0).trim().replace(",", "."));
     if (amount > 0) out.push({ invoiceId: k.slice(6), amount });
   }
   return out;
@@ -113,7 +114,8 @@ async function checkApplications(accountId: string, apps: { invoiceId: string; a
     const inv = invoices.find((i) => i.id === a.invoiceId);
     if (!inv) throw new Error("Factura de otro cliente / Invoice belongs to another customer.");
     const c = invoiceCash(inv);
-    if (a.amount > c.balance - c.pendingReconcile + 0.005) throw new Error(`${inv.number}: max ${(c.balance - c.pendingReconcile).toFixed(2)}`);
+    const max = subMoney(c.balance, c.pendingReconcile);
+    if (cmpMoney(a.amount, max) > 0) throw new Error(`${inv.number}: max ${max.toFixed(2)}`);
   }
 }
 
@@ -130,7 +132,7 @@ export async function recordCustomerPayment(formData: FormData) {
     formData,
   );
   const apps = applicationsFrom(formData);
-  if (apps.reduce((s, a) => s + a.amount, 0) > data.amount + 0.005) throw new Error("Se aplicó más de lo recibido / Applied more than received.");
+  if (cmpMoney(sumMoney(apps.map((a) => a.amount)), data.amount) > 0) throw new Error("Se aplicó más de lo recibido / Applied more than received.");
   await checkApplications(data.accountId, apps);
   await db.customerPayment.create({
     data: { ...data, createdById: user.id, applications: { create: apps } },
@@ -143,8 +145,8 @@ export async function applyPayment(paymentId: string, formData: FormData) {
   const p = await db.customerPayment.findUniqueOrThrow({ where: { id: paymentId }, include: { applications: true } });
   if (p.reconciledAt) throw new Error("Ya conciliado / Already reconciled.");
   const apps = applicationsFrom(formData);
-  const used = p.applications.reduce((s, a) => s + Number(a.amount), 0);
-  if (used + apps.reduce((s, a) => s + a.amount, 0) > Number(p.amount) + 0.005) throw new Error("Se aplicó más de lo recibido / Applied more than received.");
+  const used = sumMoney(p.applications.map((a) => a.amount));
+  if (cmpMoney(sumMoney([used, ...apps.map((a) => a.amount)]), p.amount) > 0) throw new Error("Se aplicó más de lo recibido / Applied more than received.");
   await checkApplications(p.accountId, apps);
   await db.paymentApplication.createMany({ data: apps.map((a) => ({ ...a, paymentId })) });
   refreshApp();

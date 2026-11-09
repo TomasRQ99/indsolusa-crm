@@ -9,6 +9,7 @@ import { paymentStateLabel } from "@/lib/labels";
 import { buildSpo, spoInclude } from "@/lib/purchasing";
 import { Popovers } from "@/components/Popovers";
 import { newVersion, releaseSpo, requestPayment, saveDraft } from "../actions";
+import { lineAmount } from "@/lib/money";
 
 export default async function SupplierPoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string }> }) {
   const user = await requireUser();
@@ -119,7 +120,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
                       <tr key={l.id}>
                         <td className="val">{l.qty}</td><td className="mono small">{l.code ?? "—"}</td><td>{l.description}</td>
                         <td className="n val">{!B.released && editable ? <input name={`cost_${n}`} type="number" step="0.01" min="0" defaultValue={Number(l.unitCost)} style={{ width: 110, textAlign: "right" }} aria-label={t("Costo unitario", "Unit cost")} /> : i.n2(l.unitCost)}</td>
-                        <td className="n val">{i.n2(Number(l.unitCost) * l.qty)}</td>
+                        <td className="n val">{i.n2(lineAmount(l.qty, l.unitCost))}</td>
                       </tr>
                     ))}
                     <tr className="tot"><td colSpan={4}><b>Total</b></td><td className="n val"><b>{m(B.total)}</b></td></tr>

@@ -12,6 +12,7 @@ import {
   saveCosts, saveLine, saveScenario, saveSolution, saveTerms, waitWithControl,
 } from "../actions";
 import { registerPo } from "../../po/actions";
+import { lineAmount } from "@/lib/money";
 
 export default async function QuotePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; cmp?: string }> }) {
   const user = await requireUser();
@@ -315,7 +316,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
               <tr key={l.id}>
                 <td className="val">{l.qty}</td><td className="mono small">{l.code ?? "—"}</td><td>{l.description}</td>
                 <td className={`n val${Number(l.unitPrice) <= 0 ? " attn-t" : ""}`}>{Number(l.unitPrice) > 0 ? i.n2(l.unitPrice) : t("sin precio", "no price")}</td>
-                <td className="n val">{i.n2(Number(l.unitPrice) * l.qty)}</td>
+                <td className="n val">{i.n2(lineAmount(l.qty, l.unitPrice))}</td>
                 {editable && draft && (
                   <td className="nowrap">
                     <QA label={t("Editar", "Edit")} right>

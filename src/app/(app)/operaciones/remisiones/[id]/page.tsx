@@ -8,6 +8,7 @@ import { invoiceBlockers, invoiceCash } from "@/lib/domain";
 import { blockerLabel } from "@/lib/labels";
 import { updateDelivery } from "../../actions";
 import { issueInvoice } from "../../../administracion/actions";
+import { lineAmount, linesTotal } from "@/lib/money";
 
 export default async function DeliveryPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -25,7 +26,7 @@ export default async function DeliveryPage({ params }: { params: Promise<{ id: s
   if (!d) notFound();
   const editable = canEdit(user, d.deal.ownerId);
   const blockers = invoiceBlockers(d, d.deal, d.deal.account);
-  const amount = d.lines.reduce((s, l) => s + l.qty * Number(l.dealItem.unitPrice), 0);
+  const amount = linesTotal(d.lines, (l) => l.qty, (l) => l.dealItem.unitPrice);
 
   return (
     <>
@@ -52,7 +53,7 @@ export default async function DeliveryPage({ params }: { params: Promise<{ id: s
                       <td className="val">{l.qty} / {l.dealItem.qty}</td>
                       <td><b>{l.dealItem.description}</b><span className="src mono">{l.dealItem.code}</span></td>
                       <td className="mono small">{l.serials ?? "—"}</td>
-                      <td className="n val">{i.n2(l.qty * Number(l.dealItem.unitPrice))}</td>
+                      <td className="n val">{i.n2(lineAmount(l.qty, l.dealItem.unitPrice))}</td>
                     </tr>
                   ))}
                 </tbody>

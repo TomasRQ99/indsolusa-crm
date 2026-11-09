@@ -1479,3 +1479,12 @@ a.loc-chip:hover { background: var(--brand-soft); color: var(--brand); }
 .mh-form input { flex: 1; min-width: 0; max-width: 320px; }
 tr.mh-warn td:first-child { box-shadow: inset 3px 0 0 var(--attn); }
 tr.mh-fail td:first-child { box-shadow: inset 3px 0 0 var(--risk); }
+
+/* #4 Change history */
+.audit-list { list-style: none; margin: 0; padding: 0; }
+.audit-list > li { padding: 10px 0; border-top: 1px solid var(--line); }
+.audit-list > li:first-child { border-top: 0; }
+.audit-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; font-size: 14px; }
+.audit-head > :last-child { margin-left: auto; }
+.audit-ch { margin: 6px 0 0; font-size: 13px; width: auto; max-width: 100%; }
+.audit-ch td { padding: 2px 12px 2px 0; vertical-align: top; overflow-wrap: anywhere; border: 0; }

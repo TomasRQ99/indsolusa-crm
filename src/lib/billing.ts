@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { cmpMoney, linesTotal, subMoney, sumMoney } from "./money";
 import { addDays, daysBetween, invoiceCash, today } from "./domain";
 import type { makeI18n } from "./i18n";
 
@@ -65,9 +66,9 @@ function openRequest(deal: BillingDeal, key: ReqKey, deliveryId: string | null) 
 const units = (d: BDelivery) => d.lines.reduce((s, l) => s + l.qty, 0);
 
 export function deliveryAmount(deal: BillingDeal, d: BDelivery) {
-  if (d.lines.length) return d.lines.reduce((s, l) => s + l.qty * Number(l.dealItem.unitPrice), 0);
-  const invoiced = deal.invoices.reduce((s, x) => s + Number(x.amount), 0);
-  return Math.max(0, Number(deal.amount) - invoiced);
+  if (d.lines.length) return linesTotal(d.lines, (l) => l.qty, (l) => l.dealItem.unitPrice);
+  const invoiced = sumMoney(deal.invoices.map((x) => x.amount));
+  return Math.max(0, subMoney(deal.amount, invoiced));
 }
 
 /** Whether invoicing this delivery covers only part of the PO, and how much. */
@@ -139,8 +140,8 @@ export function payHistory(invoices: { dueAt: Date; amount: Prisma.Decimal | num
   const delays: number[] = [];
   for (const inv of invoices) {
     const rec = inv.applications.filter((a) => a.payment.reconciledAt);
-    const paid = rec.reduce((s, a) => s + Number(a.amount), 0);
-    if (!rec.length || paid < Number(inv.amount) - 0.005) continue;
+    const paid = sumMoney(rec.map((a) => a.amount));
+    if (!rec.length || cmpMoney(paid, inv.amount) < 0) continue;
     const last = rec.reduce((m, a) => (a.payment.receivedAt > m ? a.payment.receivedAt : m), rec[0].payment.receivedAt);
     delays.push(daysBetween(inv.dueAt, last));
   }
@@ -153,18 +154,18 @@ export type CashView = ReturnType<typeof cashViewOf>;
 export function cashViewOf(inv: BInvoice, hist: { n: number; avg: number }, termsDays: number, i: I, now = today()) {
   const { t } = i;
   const c = invoiceCash(inv);
-  const paid = c.balance <= 0.005;
+  const paid = cmpMoney(c.balance, 0) <= 0;
   const recApps = inv.applications.filter((a) => a.payment.reconciledAt);
   const pendApps = inv.applications.filter((a) => !a.payment.reconciledAt);
   const lastRec = recApps.length ? recApps.reduce((m, a) => (a.payment.receivedAt > m ? a.payment.receivedAt : m), recApps[0].payment.receivedAt) : null;
   const lastPend = pendApps.length ? pendApps.reduce((m, a) => (a.payment.receivedAt > m ? a.payment.receivedAt : m), pendApps[0].payment.receivedAt) : null;
 
   const p = inv.promises[0] ?? null;
-  const promise = p ? { date: p.promisedFor, by: p.promisedBy, source: p.source, broken: !paid && p.promisedFor < now && c.pendingReconcile < c.balance - 0.005 } : null;
+  const promise = p ? { date: p.promisedFor, by: p.promisedBy, source: p.source, broken: !paid && p.promisedFor < now && cmpMoney(c.pendingReconcile, c.balance) < 0 } : null;
 
   // SOLU expected cash
   let expected: { date: Date | null; basis: string };
-  const coveredByPending = !paid && c.pendingReconcile >= c.balance - 0.005;
+  const coveredByPending = !paid && cmpMoney(c.pendingReconcile, c.balance) >= 0;
   if (paid) expected = { date: lastRec, basis: t("cobrada y conciliada", "collected and reconciled") };
   else if (coveredByPending) expected = { date: lastPend, basis: t("el dinero ya está en el banco; falta conciliar", "the cash is already in the bank; reconciliation pending") };
   else if (promise && !promise.broken) expected = { date: promise.date, basis: t(`promesa de ${promise.by}`, `promise from ${promise.by}`) };
@@ -197,7 +198,7 @@ export function cashViewOf(inv: BInvoice, hist: { n: number; avg: number }, term
   if (paid) status = { label: t("Pagada · conciliada", "Paid · reconciled"), tone: "ok" };
   else if (coveredByPending) status = { label: t("Dinero recibido · conciliación pendiente", "Cash received · reconciliation pending"), tone: "info" };
   else if (shortPay) status = { label: t(`Pago corto · USD ${i.n2(shortPay.amount)} abiertos`, `Short payment · USD ${i.n2(shortPay.amount)} open`), tone: "attn" };
-  else if (c.reconciled > 0.005 || c.pendingReconcile > 0.005) status = { label: t(`Cobro parcial · USD ${i.n2(c.balance - c.pendingReconcile)} abiertos`, `Partly collected · USD ${i.n2(c.balance - c.pendingReconcile)} open`), tone: "wait" };
+  else if (c.reconciled > 0.005 || c.pendingReconcile > 0.005) status = { label: t(`Cobro parcial · USD ${i.n2(subMoney(c.balance, c.pendingReconcile))} abiertos`, `Partly collected · USD ${i.n2(subMoney(c.balance, c.pendingReconcile))} open`), tone: "wait" };
   else if (promise?.broken) status = { label: t("Promesa incumplida", "Promise broken"), tone: "risk" };
   else if (!expected.date) status = { label: t("Sin fecha de cobro creíble", "No credible cash date"), tone: "risk" };
   else status = { label: t(`Esperado ${i.dateShort(expected.date)}`, `Expected ${i.dateShort(expected.date)}`), tone: "wait" };
@@ -223,8 +224,8 @@ export function unallocatedOf(
 ) {
   return payments
     .map((p) => {
-      const applied = p.applications.reduce((s, a) => s + Number(a.amount), 0);
-      const rest = Number(p.amount) - applied;
+      const applied = sumMoney(p.applications.map((a) => a.amount));
+      const rest = subMoney(p.amount, applied);
       // With open invoices it can still be allocated; with none, it's money the customer overpaid.
       const kind: "ALLOCATION_PENDING" | "OVERPAYMENT" = openCapacity > 0.005 ? "ALLOCATION_PENDING" : "OVERPAYMENT";
       return { p, applied, rest, kind };

@@ -10,6 +10,7 @@ import type { SessionUser } from "./auth";
 import type { RfqItem } from "./rfq";
 import { journeyUrgency } from "./urgency";
 import { deliveryMail, followUpMail, negotiateMail, offerMail, paymentMail, type Mail, type MailLang, type TemplateKey } from "./email-templates";
+import { linesTotal } from "./money";
 
 export type ComposeCtx = { tpl: TemplateKey; id: string; lang?: MailLang | null };
 export type Composed = {
@@ -72,7 +73,7 @@ export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: stri
     const lang = pickLang(ctx.lang, q.lang === "ES" ? "ES" : "EN");
     const c = q.deal.contact?.email ? q.deal.contact : q.deal.account.contacts[0] ?? null;
     const items = q.lines.map((l) => ({ qty: l.qty, code: l.code ?? "", description: l.description.slice(0, 160), unitPrice: Number(l.unitPrice) }));
-    const total = items.reduce((a, l) => a + l.qty * (l.unitPrice ?? 0), 0);
+    const total = linesTotal(items, (l) => l.qty, (l) => l.unitPrice ?? 0);
     const validUntil = addDays(q.presentedAt ?? q.issuedAt ?? q.createdAt, q.validityDays);
     const lead = q.leadMinDays != null && q.leadMaxDays != null ? (lang === "EN" ? `${q.leadMinDays}–${q.leadMaxDays} days after your P.O.` : `${q.leadMinDays}–${q.leadMaxDays} días después de su orden de compra`) : null;
     const number = quoteNo(q);

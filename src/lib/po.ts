@@ -3,6 +3,7 @@ import { addDays, daysBetween, today } from "./domain";
 import { quoteNo, saleOf, validUntil } from "./quote";
 import { termDays } from "./pdf-docs";
 import type { makeI18n } from "./i18n";
+import { lineAmount, sameMoney, subMoney } from "./money";
 
 // A received customer PO is compared with the quote it answers BEFORE anything is promised.
 // A material difference blocks the "Accept PO" command until a resolution is confirmed.
@@ -79,7 +80,7 @@ export function buildPo(po: PoFull, i: I, floorPct: number | null) {
     }
     diffs.push({ key: `qty-${n}`, label: t(`Cantidad · ${ref}`, `Quantity · ${ref}`), quote: String(m.qty), po: String(l.qty), state: m.qty === l.qty ? "match" : "material", note: m.qty !== l.qty ? t("Cambia costo, stock y plazo", "Changes cost, stock and lead time") : undefined });
     const pq = Number(m.unitPrice), pp = Number(l.unitPrice);
-    diffs.push({ key: `price-${n}`, label: t(`Precio unitario · ${ref}`, `Unit price · ${ref}`), quote: money(pq), po: money(pp), state: Math.abs(pq - pp) < 0.005 ? "match" : "material", note: Math.abs(pq - pp) >= 0.005 ? t(`Diferencia de ${money((pp - pq) * l.qty)} en la línea`, `Difference of ${money((pp - pq) * l.qty)} on the line`) : undefined });
+    diffs.push({ key: `price-${n}`, label: t(`Precio unitario · ${ref}`, `Unit price · ${ref}`), quote: money(pq), po: money(pp), state: sameMoney(pq, pp) ? "match" : "material", note: !sameMoney(pq, pp) ? t(`Diferencia de ${money(lineAmount(l.qty, subMoney(pp, pq)))} en la línea`, `Difference of ${money(lineAmount(l.qty, subMoney(pp, pq)))} on the line`) : undefined });
     if (norm(m.description) !== norm(l.description)) diffs.push({ key: `desc-${n}`, label: t(`Descripción · ${ref}`, `Description · ${ref}`), quote: m.description, po: l.description, state: "minor", note: t("Mismo código: es la redacción del cliente, no cambia lo que se entrega", "Same code: it's the customer's wording, it doesn't change what is delivered") });
   });
   qLines.filter((x) => !used.has(x.id)).forEach((x) => diffs.push({ key: `miss-${x.id}`, label: t(`Línea ${x.code ?? x.description}`, `Line ${x.code ?? x.description}`), quote: `${x.qty} × ${x.description}`, po: t("No viene en la PO", "Not in the PO"), state: "material", note: t("Entrega parcial no acordada", "Partial delivery not agreed") }));

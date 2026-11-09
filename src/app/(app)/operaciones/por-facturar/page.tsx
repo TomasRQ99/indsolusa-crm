@@ -6,6 +6,7 @@ import { canEdit } from "@/lib/permissions";
 import { invoiceBlockers } from "@/lib/domain";
 import { blockerLabel } from "@/lib/labels";
 import { issueInvoice } from "../../administracion/actions";
+import { linesTotal } from "@/lib/money";
 
 export default async function DeliveredNotInvoicedPage() {
   const user = await requireUser();
@@ -21,7 +22,7 @@ export default async function DeliveredNotInvoicedPage() {
   });
   const rows = deliveries.map((d) => {
     const amount = d.lines.length
-      ? d.lines.reduce((s, l) => s + l.qty * Number(l.dealItem.unitPrice), 0)
+      ? linesTotal(d.lines, (l) => l.qty, (l) => l.dealItem.unitPrice)
       : Math.max(0, Number(d.deal.amount) - d.deal.invoices.reduce((s, x) => s + Number(x.amount), 0));
     return { d, amount, blockers: invoiceBlockers(d, d.deal, d.deal.account) };
   });

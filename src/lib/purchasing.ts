@@ -1,4 +1,5 @@
 import type { Prisma, Role } from "@prisma/client";
+import { cmpMoney, lineAmount, linesTotal, money2, percentOf, subMoney, sumMoney } from "./money";
 import { addDays, bankDiscrepancies, daysBetween, paymentState, today, type PaymentState } from "./domain";
 import { db } from "./db";
 import type { makeI18n } from "./i18n";
@@ -55,7 +56,7 @@ export const isDomestic = (s: { country: string | null } | null | undefined) => 
 /** Purchase Requirement: derived from the Deal (accepted quote + customer promise). Nobody types it. */
 export function purchaseRequirement(deal: DealForPr, domestic = false) {
   const quote = deal.quotes.find((q) => q.status === "ACCEPTED") ?? deal.quotes[0] ?? null;
-  const lines = quote ? quote.lines.map((l) => ({ qty: l.qty, code: l.code, description: l.description, sale: Number(l.unitPrice) * l.qty })) : deal.items.map((l) => ({ qty: l.qty, code: l.code, description: l.description, sale: 0 }));
+  const lines = quote ? quote.lines.map((l) => ({ qty: l.qty, code: l.code, description: l.description, sale: lineAmount(l.qty, l.unitPrice) })) : deal.items.map((l) => ({ qty: l.qty, code: l.code, description: l.description, sale: 0 }));
   const clearance = domestic ? 0 : CLEARANCE_DAYS;
   const atDestinationBy = deal.promisedDate ? addDays(deal.promisedDate, -(clearance + LAST_MILE_DAYS)) : null;
   return {
@@ -63,7 +64,7 @@ export function purchaseRequirement(deal: DealForPr, domestic = false) {
     lines,
     supply: quote?.supplyPrimary ?? null,
     supplyAlt: quote?.supplyAlt ?? null,
-    targetCost: quote ? Number(quote.supplierCost) : null,
+    targetCost: quote ? money2(quote.supplierCost) : null,
     currency: quote?.costCurrency ?? "USD",
     costSource: quote?.supplierSrc ?? null,
     promise: deal.promisedDate,
@@ -92,15 +93,15 @@ export function matchSupplier<T extends { name: string }>(supply: string | null,
 /** Payment milestones from the supplier's terms: advance % at release, rest against dispatch notice. */
 export function milestones(total: number, advancePct: number, releaseDay: Date, shipBy: Date | null) {
   const a = Math.max(0, Math.min(100, advancePct));
-  const advance = Math.round(total * a) / 100;
+  const advance = percentOf(total, a);
   const out = [] as { label: string; percent: number; amount: number; trigger: string; dueBy: Date | null }[];
   if (a > 0) out.push({ label: a === 100 ? "Pago total antes de despacho" : `Anticipo ${a} %`, percent: a, amount: advance, trigger: a === 100 ? "El proveedor despacha contra pago" : "Al liberar la Supplier PO", dueBy: a === 100 && shipBy ? addDays(shipBy, -1) : addDays(releaseDay, 2) });
-  if (a < 100) out.push({ label: `Saldo ${100 - a} %`, percent: 100 - a, amount: Math.round((total - advance) * 100) / 100, trigger: "Contra aviso de despacho", dueBy: shipBy });
+  if (a < 100) out.push({ label: `Saldo ${100 - a} %`, percent: 100 - a, amount: subMoney(total, advance), trigger: "Contra aviso de despacho", dueBy: shipBy });
   return out;
 }
 
 export function spoTotal(lines: { qty: number; unitCost: Prisma.Decimal | number }[]) {
-  return lines.reduce((s, l) => s + l.qty * Number(l.unitCost), 0);
+  return linesTotal(lines, (l) => l.qty, (l) => l.unitCost);
 }
 
 type Check = { ok: boolean; text: string; fix?: string; info?: boolean };
@@ -110,10 +111,10 @@ export function buildSpo(spo: SpoFull, i: I) {
   const { t } = i;
   const now = today();
   const pr = purchaseRequirement(spo.deal, isDomestic(spo.supplier));
-  const total = spo.lines.length ? spoTotal(spo.lines) : Number(spo.amount);
+  const total = spo.lines.length ? spoTotal(spo.lines) : money2(spo.amount);
   const released = !!spo.releasedAt;
   const fx = pr.quote?.fxRate ? Number(pr.quote.fxRate) : 1;
-  const costDiff = pr.targetCost != null ? total - pr.targetCost : 0;
+  const costDiff = pr.targetCost != null ? subMoney(total, pr.targetCost) : 0;
   const s = spo.supplier;
   const arrival = spo.shipBy && s.transitDays != null ? addDays(spo.shipBy, s.transitDays) : null;
   const reqPct = spo.requirements.reduce((a, r) => a + r.percent, 0);
@@ -134,11 +135,11 @@ export function buildSpo(spo: SpoFull, i: I) {
     const pays = r.payments;
     const live = pays[pays.length - 1] ?? null;
     const st: PaymentState | "REQUIRED" = live ? paymentState({ ...live, discrepancies: bankDiscrepancies(s, live).length, executions: live.executions }) : "REQUIRED";
-    const paid = pays.filter((p) => p.executedAt).reduce((a, p) => a + Number(p.amount), 0);
+    const paid = sumMoney(pays.filter((p) => p.executedAt).map((p) => p.amount));
     return { r, live, st, paid, due: r.dueBy, late: !!r.dueBy && r.dueBy < now && st !== "DONE" };
   });
-  const paidTotal = plan.reduce((a, p) => a + p.paid, 0);
-  const committed = spo.payments.reduce((a, p) => a + Number(p.amount), 0);
+  const paidTotal = sumMoney(plan.map((p) => p.paid));
+  const committed = sumMoney(spo.payments.map((p) => p.amount));
 
   return { pr, total, released, costDiff, arrival, ready, blocking, plan, paidTotal, committed, fx, now };
 }
@@ -150,7 +151,7 @@ export async function treasuryChecks(
   i: I,
 ) {
   const { t } = i;
-  const amt = Number(p.amount);
+  const amt = money2(p.amount);
   const since = addDays(today(), -120);
   const others = await db.supplierPayment.findMany({
     where: { id: { not: p.id }, supplierPo: { supplierId: spo.supplierId }, createdAt: { gte: since } },
@@ -160,8 +161,8 @@ export async function treasuryChecks(
   const sameAmount = alive.filter((o) => Math.abs(Number(o.amount) - amt) <= amt * 0.01);
   const sameDoc = p.docSource ? alive.filter((o) => o.docSource && o.docSource.trim().toLowerCase() === p.docSource!.trim().toLowerCase()) : [];
   const sameReq = p.requirementId ? alive.filter((o) => o.requirementId === p.requirementId) : [];
-  const onPo = alive.filter((o) => o.supplierPoId === spo.id).reduce((a, o) => a + Number(o.amount), 0) + amt;
-  const over = onPo - Number(spo.amount) > 0.5;
+  const onPo = sumMoney([...alive.filter((o) => o.supplierPoId === spo.id).map((o) => o.amount), amt]);
+  const over = subMoney(onPo, spo.amount) > 0.5;
   const hits = [
     ...sameDoc.map((o) => ({ id: o.id, text: t(`Mismo documento (${o.docSource}) · ${o.supplierPo.code}`, `Same document (${o.docSource}) · ${o.supplierPo.code}`), paid: !!o.executedAt, hard: true })),
     ...sameReq.filter((o) => !sameDoc.includes(o)).map((o) => ({ id: o.id, text: t(`Ya hay una solicitud para este mismo hito · ${o.supplierPo.code}`, `There's already a request for this milestone · ${o.supplierPo.code}`), paid: !!o.executedAt, hard: true })),
@@ -174,7 +175,7 @@ export async function treasuryChecks(
     hard: over || hits.some((h) => h.hard),
     text: over ? t(`Lo solicitado para esta PO (${p.currency} ${i.n2(onPo)}) supera su valor (${i.n2(spo.amount)})`, `Requested on this PO (${p.currency} ${i.n2(onPo)}) exceeds its value (${i.n2(spo.amount)})`) : hits.length ? t(`${hits.length} posible(s) duplicado(s)`, `${hits.length} possible duplicate(s)`) : t("Sin duplicados: ni mismo documento, ni mismo hito, ni mismo monto en 120 días", "No duplicates: same document, milestone or amount in 120 days"),
   };
-  const usd = p.currency === "USD" ? amt : p.amountUsd != null ? Number(p.amountUsd) : null;
+  const usd = p.currency === "USD" ? amt : p.amountUsd != null ? money2(p.amountUsd) : null;
   return { dup, usd };
 }
 

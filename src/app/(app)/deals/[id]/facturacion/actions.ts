@@ -7,6 +7,7 @@ import { assertCanEdit, canManageAll } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { addDays, esagra, invoiceCash, nextDocNumber, today } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
+import { cmpMoney, money2, mulMoney, subMoney, sumMoney } from "@/lib/money";
 import { billingInclude, DEAL_LEVEL, deliveryAmount, partialOf, readinessOf, REQ_KEYS, reqLabel, type ReqKey } from "@/lib/billing";
 
 const dayOf = (s: FormDataEntryValue | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(`${String(s)}T00:00:00Z`) : null);
@@ -109,7 +110,7 @@ export async function issueFromReadiness(dealId: string, deliveryId: string) {
       data: {
         number, dealId, deliveryId: d!.id, accountId: deal.accountId, issuedAt,
         dueAt: addDays(issuedAt, deal.account.paymentTermsDays), amount,
-        esagraAtIssue: eg.pct == null ? 0 : Math.round(amount * eg.pct) / 100,
+        esagraAtIssue: eg.pct == null ? 0 : mulMoney(amount, eg.pct / 100),
         issuedById: user.id, quoteId: quote?.id ?? null, docLang: quote?.lang ?? deal.account.docLang,
         partial: partialOf(deal, d!).partial,
       },
@@ -168,17 +169,17 @@ export async function allocateCash(dealId: string, paymentId: string, fd: FormDa
   const apps: { invoiceId: string; amount: number }[] = [];
   for (const [k, v] of fd.entries()) {
     if (!k.startsWith("apply_")) continue;
-    const amount = Math.round(Number(v || 0) * 100) / 100;
+    const amount = money2(String(v || 0).trim().replace(",", "."));
     if (amount > 0) apps.push({ invoiceId: k.slice(6), amount });
   }
-  const used = p.applications.reduce((s, a) => s + Number(a.amount), 0);
-  if (used + apps.reduce((s, a) => s + a.amount, 0) > Number(p.amount) + 0.005) back(dealId, "err=excede");
+  const used = sumMoney(p.applications.map((a) => a.amount));
+  if (cmpMoney(sumMoney([used, ...apps.map((a) => a.amount)]), p.amount) > 0) back(dealId, "err=excede");
   const invoices = await db.invoice.findMany({ where: { id: { in: apps.map((a) => a.invoiceId) }, accountId: p.accountId }, include: { applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } } } });
   for (const a of apps) {
     const inv = invoices.find((x) => x.id === a.invoiceId);
     if (!inv) back(dealId, "err=otro-cliente");
     const c = invoiceCash(inv!);
-    if (a.amount > c.balance - c.pendingReconcile + 0.005) back(dealId, `err=tope&n=${inv!.number}`);
+    if (cmpMoney(a.amount, subMoney(c.balance, c.pendingReconcile)) > 0) back(dealId, `err=tope&n=${inv!.number}`);
   }
   const residualNote = txt(fd, "residualNote", 300);
   if (!apps.length && !residualNote) back(dealId, "err=nada");
@@ -195,8 +196,8 @@ export async function reconcileCash(dealId: string, paymentId: string) {
   if (!canManageAll(user)) back(dealId, "err=gerencia");
   const p = await db.customerPayment.findUniqueOrThrow({ where: { id: paymentId }, include: { applications: true } });
   if (!p.applications.length) back(dealId, "err=sin-asignar");
-  const rest = Number(p.amount) - p.applications.reduce((s, a) => s + Number(a.amount), 0);
-  if (rest > 0.005 && !p.residualNote) back(dealId, "err=residuo-pendiente");
+  const rest = subMoney(p.amount, sumMoney(p.applications.map((a) => a.amount)));
+  if (rest > 0 && !p.residualNote) back(dealId, "err=residuo-pendiente");
   await db.customerPayment.updateMany({ where: { id: paymentId, reconciledAt: null }, data: { reconciledAt: new Date(), reconciledById: user.id } });
   back(dealId, "ok=conciliado");
 }

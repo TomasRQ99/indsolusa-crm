@@ -8,6 +8,7 @@ import { refreshApp } from "@/lib/revalidate";
 import { nextDocNumber, today } from "@/lib/domain";
 import { buildQuote, costOf, policyFloor, quoteInclude, quoteNo, saleOf, validUntil } from "@/lib/quote";
 import { makeI18n } from "@/lib/i18n";
+import { money2, mulMoney } from "@/lib/money";
 
 const dayOf = (s: FormDataEntryValue | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(`${String(s)}T00:00:00Z`) : null);
 const txt = (fd: FormData, k: string, max = 2000) => {
@@ -219,7 +220,7 @@ export async function presentQuote(id: string, fd: FormData) {
       where: { id: q.dealId },
       data: {
         amount: sale,
-        supplierCost: Number(q.supplierCost) * (q.fxRate ? Number(q.fxRate) : 1),
+        supplierCost: q.fxRate ? mulMoney(q.supplierCost, q.fxRate) : money2(q.supplierCost),
         freightCost: q.freightCost,
         otherCosts: q.otherCosts,
         incoterm: q.incoterm,

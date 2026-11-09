@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "./db";
+import { money2, subMoney, sumMoney } from "./money";
 
 // ---------- Calendar days ----------
 // Dates that are "days" (due dates, promises, deliveries) are stored as UTC midnight.
@@ -73,8 +74,8 @@ type Costed = {
 };
 
 export function esagra(d: Costed) {
-  const sale = Number(d.amount);
-  const value = sale - Number(d.supplierCost) - Number(d.freightCost) - Number(d.otherCosts);
+  const sale = money2(d.amount);
+  const value = subMoney(sale, d.supplierCost, d.freightCost, d.otherCosts);
   const pct = sale > 0 ? (value / sale) * 100 : null;
   return { value, pct };
 }
@@ -88,14 +89,10 @@ type InvoiceWithCash = {
 
 /** Paid only counts reconciled cash. Received-but-unreconciled is shown apart. */
 export function invoiceCash(inv: InvoiceWithCash) {
-  let reconciled = 0;
-  let pending = 0;
-  for (const a of inv.applications) {
-    if (a.payment.reconciledAt) reconciled += Number(a.amount);
-    else pending += Number(a.amount);
-  }
-  const amount = Number(inv.amount);
-  return { amount, reconciled, pendingReconcile: pending, balance: Math.max(0, amount - reconciled) };
+  const reconciled = sumMoney(inv.applications.filter((a) => a.payment.reconciledAt).map((a) => a.amount));
+  const pending = sumMoney(inv.applications.filter((a) => !a.payment.reconciledAt).map((a) => a.amount));
+  const amount = money2(inv.amount);
+  return { amount, reconciled, pendingReconcile: pending, balance: Math.max(0, subMoney(amount, reconciled)) };
 }
 
 export const invoiceCashInclude = {

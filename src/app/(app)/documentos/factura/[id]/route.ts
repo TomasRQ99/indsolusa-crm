@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { invoiceCash } from "@/lib/domain";
 import { renderDoc, type DocLang, type DocLine } from "@/lib/pdf-docs";
+import { linesTotal, money2, sameMoney } from "@/lib/money";
 
 // Printable Commercial Invoice (PDF). Born from the accepted quote + the customer's PO.
 // Lines: what was delivered (delivery note) or, if none, the accepted quote's lines.
@@ -30,8 +31,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       ? inv.quote.lines.map((l) => ({ qty: l.qty, code: l.code, description: l.description, unitPrice: Number(l.unitPrice) }))
       : inv.deal.items.map((l) => ({ qty: l.qty, code: l.code, description: l.description, unitPrice: Number(l.unitPrice) }));
   // A partial invoice without line detail: one line for the invoiced amount, never an invented breakdown.
-  const linesTotal = lines.reduce((s, l) => s + l.qty * l.unitPrice, 0);
-  if (Math.abs(linesTotal - Number(inv.amount)) > 0.01) lines = [{ qty: 1, code: null, description: lang === "EN" ? "Partial invoice per customer P.O." : "Factura parcial según orden de compra", unitPrice: Number(inv.amount) }];
+  const fromLines = linesTotal(lines, (l) => l.qty, (l) => l.unitPrice);
+  if (!sameMoney(fromLines, inv.amount)) lines = [{ qty: 1, code: null, description: lang === "EN" ? "Partial invoice per customer P.O." : "Factura parcial según orden de compra", unitPrice: money2(inv.amount) }];
 
   const addr = [inv.account.name, inv.account.address].filter(Boolean).join("\n");
   const cash = invoiceCash(inv);

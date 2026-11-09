@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "./db";
+import { linesTotal, money2, mulMoney, subMoney, sumMoney } from "./money";
 import { addDays, daysBetween, today } from "./domain";
 import type { makeI18n } from "./i18n";
 
@@ -37,12 +38,11 @@ export async function policyFloor() {
 }
 
 export function saleOf(lines: { qty: number; unitPrice: Prisma.Decimal | number }[]) {
-  return lines.reduce((s, l) => s + l.qty * Number(l.unitPrice), 0);
+  return linesTotal(lines, (l) => l.qty, (l) => l.unitPrice);
 }
 
 export function costOf(q: { supplierCost: Prisma.Decimal | number; freightCost: Prisma.Decimal | number; otherCosts: Prisma.Decimal | number; fxRate?: Prisma.Decimal | number | null }) {
-  const fx = q.fxRate ? Number(q.fxRate) : 1;
-  return Number(q.supplierCost) * fx + Number(q.freightCost) + Number(q.otherCosts);
+  return sumMoney([q.fxRate ? mulMoney(q.supplierCost, q.fxRate) : q.supplierCost, q.freightCost, q.otherCosts]);
 }
 
 /** Lead time as printed: "12 - 15 days (17 - 20 November)". Calculated, never typed. */
@@ -74,26 +74,26 @@ export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null;
   const a = d.account;
   const sale = saleOf(q.lines);
   const cost = costOf(q);
-  const esagra = sale - cost;
+  const esagra = subMoney(sale, cost);
   const pct = sale > 0 ? (esagra / sale) * 100 : null;
   const presented = q.status !== "DRAFT";
   const offerUntil = validUntil(q);
   const belowFloor = policy.floorPct != null && pct != null && pct < policy.floorPct;
 
   // Current expected economics: the latest known costs on the Journey (they can move after presenting).
-  const dealCost = Number(d.supplierCost) + Number(d.freightCost) + Number(d.otherCosts);
+  const dealCost = sumMoney([d.supplierCost, d.freightCost, d.otherCosts]);
   const currentCost = presented && dealCost > 0 ? dealCost : cost;
-  const protSale = q.protSale != null ? Number(q.protSale) : null;
+  const protSale = q.protSale != null ? money2(q.protSale) : null;
   const curSale = protSale ?? sale;
-  const curEsagra = curSale - currentCost;
+  const curEsagra = subMoney(curSale, currentCost);
   const curPct = curSale > 0 ? (curEsagra / curSale) * 100 : null;
-  const econChanged = presented && q.protCost != null && Math.abs(Number(q.protCost) - currentCost) > 0.5;
+  const econChanged = presented && q.protCost != null && Math.abs(subMoney(q.protCost, currentCost)) > 0.5;
   const econAlert = presented && policy.floorPct != null && curPct != null && curPct < policy.floorPct;
 
   // Versions of the landed cost (one column per version of this number).
   const versions = d.quotes
     .filter((x) => x.number === q.number)
-    .map((x) => ({ id: x.id, rev: x.rev, status: x.status, supplier: Number(x.supplierCost) * (x.fxRate ? Number(x.fxRate) : 1), freight: Number(x.freightCost), other: Number(x.otherCosts), sale: saleOf(x.lines), note: x.changeNote, current: x.id === q.id }));
+    .map((x) => ({ id: x.id, rev: x.rev, status: x.status, supplier: x.fxRate ? mulMoney(x.supplierCost, x.fxRate) : money2(x.supplierCost), freight: money2(x.freightCost), other: money2(x.otherCosts), sale: saleOf(x.lines), note: x.changeNote, current: x.id === q.id }));
 
   // ---------- Ready to Present (blocks) and Ready If Customer Says Yes (doesn't block) ----------
   const ready: Check[] = [

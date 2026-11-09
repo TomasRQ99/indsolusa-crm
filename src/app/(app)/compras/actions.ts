@@ -8,6 +8,7 @@ import { assertCanEdit } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { addDays, nextCode, today } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
+import { money2, mulMoney, sumMoney } from "@/lib/money";
 import { buildSpo, isDomestic, matchSupplier, milestones, purchaseRequirement, spoInclude, spoTotal } from "@/lib/purchasing";
 
 const dayOf = (s: FormDataEntryValue | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(`${String(s)}T00:00:00Z`) : null);
@@ -36,11 +37,11 @@ export async function prepareSpo(dealId: string) {
   const supplier = matchSupplier(purchaseRequirement(deal).supply, suppliers);
   if (!supplier) redirect(`/deals/${dealId}?tab=execute&ok=sin-proveedor`);
   const pr = purchaseRequirement(deal, isDomestic(supplier));
-  const saleTotal = pr.lines.reduce((s, l) => s + l.sale, 0);
+  const saleTotal = sumMoney(pr.lines.map((l) => l.sale));
   const target = pr.targetCost ?? 0;
   const lines = pr.lines.map((l, n) => {
     const share = saleTotal > 0 ? l.sale / saleTotal : 1 / pr.lines.length;
-    return { position: n, qty: l.qty, code: l.code, description: l.description, unitCost: Math.round(((target * share) / l.qty) * 100) / 100 };
+    return { position: n, qty: l.qty, code: l.code, description: l.description, unitCost: mulMoney(target, share / l.qty) };
   });
   const total = spoTotal(lines);
   const shipBy = pr.atDestinationBy && supplier!.transitDays != null ? addDays(pr.atDestinationBy, -supplier!.transitDays) : pr.atDestinationBy;
@@ -64,7 +65,7 @@ export async function saveDraft(id: string, fd: FormData) {
   const { spo } = await loadSpo(id);
   if (spo.releasedAt) back(id, "err=liberada");
   const shipBy = dayOf(fd.get("shipBy")) ?? spo.shipBy;
-  const lines = spo.lines.map((l, n) => ({ id: l.id, unitCost: Number(String(fd.get(`cost_${n}`) ?? l.unitCost).replace(",", ".")) || 0, qty: l.qty }));
+  const lines = spo.lines.map((l, n) => ({ id: l.id, unitCost: Math.max(0, money2(String(fd.get(`cost_${n}`) ?? l.unitCost).trim().replace(",", "."))), qty: l.qty }));
   const total = spoTotal(lines);
   const plan = milestones(total, spo.supplier.advancePct, today(), shipBy);
   await db.$transaction([
@@ -108,7 +109,7 @@ export async function newVersion(id: string, fd: FormData) {
   if (!spo.releasedAt) back(id, "err=borrador");
   const reason = txt(fd, "reason");
   if (!reason) back(id, "err=motivo");
-  const snap = { version: spo.version, releasedAt: spo.releasedAt, releasedBy: spo.releasedByName, amount: Number(spo.amount), shipBy: spo.shipBy, lines: spo.lines.map((l) => ({ qty: l.qty, code: l.code, description: l.description, unitCost: Number(l.unitCost) })), reason };
+  const snap = { version: spo.version, releasedAt: spo.releasedAt, releasedBy: spo.releasedByName, amount: money2(spo.amount), shipBy: spo.shipBy, lines: spo.lines.map((l) => ({ qty: l.qty, code: l.code, description: l.description, unitCost: money2(l.unitCost) })), reason };
   const history = [...(((spo.history as unknown[]) ?? []) as object[]), snap];
   await db.supplierPO.update({ where: { id }, data: { version: spo.version + 1, releasedAt: null, releasedByName: null, history: history as Prisma.InputJsonValue } });
   await db.activity.create({ data: { type: "NOTE", subject: `Supplier PO ${spo.code}: versión ${spo.version + 1} en preparación · ${reason}`.slice(0, 200), userId: user.id, accountId: spo.deal.accountId, dealId: spo.dealId, phase: "execute", source: user.name } });
@@ -131,7 +132,7 @@ export async function requestPayment(requirementId: string, fd: FormData) {
   const other = fd.get("otherBank") === "1";
   const promise = spo.deal.promisedDate ? new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", timeZone: "UTC" }).format(spo.deal.promisedDate) : null;
   const reason = `${r.label}: ${s.name.replace(/ \(ejemplo\)$/, "")} — ${r.trigger.toLowerCase()}. Sin este pago no avanza ${spo.code} y se arriesga la promesa a ${spo.deal.account.name.replace(/ \(ejemplo\)$/, "")}${spo.deal.promiseText ? ` (${spo.deal.promiseText}${promise ? ` · ${promise}` : ""})` : ""}.`;
-  const amountUsd = spo.currency === "USD" ? Number(r.amount) : Number(String(fd.get("amountUsd") ?? "").replace(",", ".")) || null;
+  const amountUsd = spo.currency === "USD" ? money2(r.amount) : money2(String(fd.get("amountUsd") ?? "").trim().replace(",", ".")) || null;
   const p = await db.supplierPayment.create({
     data: {
       supplierPoId: spo.id, requirementId: r.id, amount: r.amount, currency: spo.currency, amountUsd,

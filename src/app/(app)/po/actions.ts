@@ -8,6 +8,7 @@ import { assertCanEdit } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { today } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
+import { money2, sumMoney } from "@/lib/money";
 import { policyFloor, quoteNo } from "@/lib/quote";
 import { buildPo, poInclude } from "@/lib/po";
 
@@ -40,7 +41,7 @@ export async function registerPo(quoteId: string, fd: FormData) {
     qty: Math.max(0, Math.round(Number(fd.get(`qty_${n}`) ?? l.qty) || 0)),
     code: txt(fd, `code_${n}`, 60) ?? l.code,
     description: txt(fd, `desc_${n}`, 300) ?? l.description,
-    unitPrice: Number(String(fd.get(`price_${n}`) ?? l.unitPrice).replace(",", ".")) || 0,
+    unitPrice: Math.max(0, money2(String(fd.get(`price_${n}`) ?? l.unitPrice).trim().replace(",", "."))),
   })).filter((l) => l.qty > 0);
   const po = await db.customerPO.create({
     data: {
@@ -104,8 +105,8 @@ export async function acceptPo(id: string) {
   const B = buildPo(po, i, policy.floorPct);
   if (!B.canAccept || !po.quote || !B.promiseDate) back(id, "err=precondicion");
   const r = B.chosen?.state === "CONFIRMED" ? B.chosen : null;
-  const costDelta = r ? Number(r.costDelta) : 0;
-  const priceDelta = r && r.option === "EXPEDITE_CHARGE" ? Number(r.priceDelta) : 0;
+  const costDelta = r ? money2(r.costDelta) : 0;
+  const priceDelta = r && r.option === "EXPEDITE_CHARGE" ? money2(r.priceDelta) : 0;
   const deal = po.deal;
   const effects = [
     `Cotización ${quoteNo(po.quote!)} aceptada`,
@@ -139,8 +140,8 @@ export async function acceptPo(id: string) {
           waitingFor: null, waitingUntil: null,
           nextMove: `Colocar la compra al proveedor${r?.scenarioLabel ? ` (${r.scenarioLabel})` : ""} para cumplir el ${i.date(B.promiseDate)}`.slice(0, 200),
           nextMoveDate: today(),
-          ...(costDelta ? { freightCost: Number(deal.freightCost) + costDelta } : {}),
-          ...(priceDelta ? { amount: Number(deal.amount) + priceDelta } : {}),
+          ...(costDelta ? { freightCost: sumMoney([deal.freightCost, costDelta]) } : {}),
+          ...(priceDelta ? { amount: sumMoney([deal.amount, priceDelta]) } : {}),
         },
       });
       await tx.activity.create({ data: { type: "NOTE", subject: `PO ${po.number} aceptada · promesa ${i.date(B.promiseDate)}`.slice(0, 200), body: effects.join("\n"), userId: user.id, accountId: deal.accountId, dealId: deal.id, phase: "execute", source: r?.evidence ?? "Comparación PO vs cotización sin diferencias materiales" } });

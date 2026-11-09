@@ -9,6 +9,7 @@ import { policyFloor, quoteNo } from "@/lib/quote";
 import { buildPo, poInclude } from "@/lib/po";
 import { Popovers } from "@/components/Popovers";
 import { acceptPo, chooseResolution, confirmResolution, rejectPo, withdrawResolution } from "../actions";
+import { lineAmount } from "@/lib/money";
 
 export default async function PoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string }> }) {
   const user = await requireUser();
@@ -199,7 +200,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
             <div className="tscroll">
               <table>
                 <thead><tr><th>{t("Cant.", "Qty")}</th><th>{t("Código", "Code")}</th><th>{t("Descripción", "Description")}</th><th className="n">{t("Precio unit.", "Unit price")}</th><th className="n">Total</th></tr></thead>
-                <tbody>{po.lines.map((l) => <tr key={l.id}><td className="val">{l.qty}</td><td className="mono small">{l.code ?? "—"}</td><td>{l.description}</td><td className="n val">{i.n2(l.unitPrice)}</td><td className="n val">{i.n2(Number(l.unitPrice) * l.qty)}</td></tr>)}</tbody>
+                <tbody>{po.lines.map((l) => <tr key={l.id}><td className="val">{l.qty}</td><td className="mono small">{l.code ?? "—"}</td><td>{l.description}</td><td className="n val">{i.n2(l.unitPrice)}</td><td className="n val">{i.n2(lineAmount(l.qty, l.unitPrice))}</td></tr>)}</tbody>
               </table>
             </div>
             <dl className="qv-dl" style={{ marginTop: 10 }}>

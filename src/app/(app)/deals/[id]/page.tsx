@@ -34,6 +34,7 @@ import { createQuote } from "../../cotizaciones/actions";
 import { prepareSpo } from "../../compras/actions";
 import { recordShipment } from "../../logistica/actions";
 import { forwardOf, fwdLabel } from "@/lib/logistics";
+import { lineAmount, linesTotal } from "@/lib/money";
 
 const TAB_ORDER: TabKey[] = ["resumen", "need", "source", "quote", "execute", "finance", "file", "result"];
 
@@ -625,7 +626,7 @@ export default async function JourneyPage({
       {quotes.length === 0 ? <p className="quiet-p">{t("Aún no hay cotización. Se prepara con solución, economía y promesa; los productos y costos del Journey se copian.", "No quote yet. It's prepared with solution, economics and promise; the Journey's products and costs are copied.")}</p> : (
         <ul className="plain">
           {quotes.map((x) => {
-            const total = x.lines.reduce((s, l) => s + l.qty * Number(l.unitPrice), 0);
+            const total = linesTotal(x.lines, (l) => l.qty, (l) => l.unitPrice);
             const st = { DRAFT: ["dash", t("Borrador", "Draft")], PRESENTED: ["info", t("Presentada", "Presented")], SUPERSEDED: ["wait", t("Reemplazada", "Replaced")], ACCEPTED: ["ok", t("Aceptada", "Accepted")], DECLINED: ["wait", t("No aceptada", "Declined")] }[x.status];
             return (
               <li key={x.id} className="qa-row">
@@ -657,7 +658,7 @@ export default async function JourneyPage({
                   return (
                     <tr key={it.id}>
                       <td className="val">{it.qty}</td><td className="mono small">{it.code ?? "—"}</td><td>{it.description}</td>
-                      <td className="n val">{i.n2(it.unitPrice)}</td><td className="n val">{i.n2(Number(it.unitPrice) * it.qty)}</td>
+                      <td className="n val">{i.n2(it.unitPrice)}</td><td className="n val">{i.n2(lineAmount(it.qty, it.unitPrice))}</td>
                       <td>{editable && d === 0 && <form action={removeItem.bind(null, deal.id, it.id)}><button className="link small" type="submit">{t("Quitar", "Remove")}</button></form>}</td>
                     </tr>
                   );

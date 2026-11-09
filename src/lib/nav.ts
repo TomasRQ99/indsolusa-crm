@@ -54,6 +54,7 @@ export const MODULES: NavModule[] = [
       { href: "/administracion/pagos-proveedores", es: "Pagos a proveedores", en: "Supplier payments" },
       { href: "/administracion/pagos-exterior", es: "Pagos al exterior", en: "Foreign payments" },
       { href: "/administracion/cupos", es: "Cupos de crédito", en: "Credit limits" },
+      { href: "/administracion/historial", es: "Historial de cambios", en: "Change history", managerOnly: true },
     ],
   },
   { key: "proyectos", es: "PROYECTOS", en: "PROJECTS", match: ["/proyectos"], tabs: [{ href: "/proyectos", es: "Proyectos", en: "Projects" }] },

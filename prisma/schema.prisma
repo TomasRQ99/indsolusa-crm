@@ -1424,3 +1424,20 @@ model OutboundMail {
   @@index([sentAt])
   @@index([status])
 }
+
+/// #4 Audit trail (constitution No Debt Zone): every material change — money, bank data, authority,
+/// states and document versions — with who, when, before and after. Written automatically by db.ts.
+/// Rows are never edited or deleted by the app.
+model AuditEvent {
+  id        String   @id @default(cuid())
+  at        DateTime @default(now())
+  actorId   String?
+  actorName String
+  model     String
+  entityId  String
+  action    String // CREATE | UPDATE | DELETE
+  changes   Json // { field: [before, after] }; bank account numbers are stored masked
+
+  @@index([model, entityId])
+  @@index([at])
+}

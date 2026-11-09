@@ -1,4 +1,5 @@
 import type { CommissionPolicy } from "@prisma/client";
+import { cmpMoney, money2, mulMoney, percentOf, subMoney, sumMoney } from "./money";
 import { db } from "./db";
 import { addDays, esagra, invoiceCash, today } from "./domain";
 
@@ -66,7 +67,7 @@ function policyAt(policies: CommissionPolicy[], when: Date) {
   return sorted.find((p) => p.effectiveFrom <= when) ?? sorted[sorted.length - 1] ?? null;
 }
 
-const r2 = (v: number) => Math.round(v * 100) / 100;
+const r2 = (v: number) => money2(v);
 const f = (v: number) => r2(v).toFixed(2);
 
 export async function computeCommissions(opts: { userId?: string } = {}) {
@@ -98,17 +99,17 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
     for (const inv of d.invoices) {
       const cash = invoiceCash(inv);
       const amount = cash.amount;
-      const eAtIssue = Number(inv.esagraAtIssue);
+      const eAtIssue = money2(inv.esagraAtIssue);
       const pctIssue = amount > 0 ? (eAtIssue / amount) * 100 : null;
-      const finalE = eg.pct == null ? 0 : (amount * eg.pct) / 100;
+      const finalE = eg.pct == null ? 0 : mulMoney(amount, eg.pct / 100);
       const newClient = isNew(inv.issuedAt);
       const rIssue = rateFor(policy, pctIssue, newClient);
       const rFinal = rateFor(policy, eg.pct, newClient);
-      const saleAmt = r2((eAtIssue * rIssue * salePct) / 100 / 100);
-      const totalFinal = r2((finalE * rFinal) / 100);
-      const collAmt = r2(totalFinal - saleAmt);
+      const saleAmt = mulMoney(eAtIssue, (rIssue * salePct) / 10000);
+      const totalFinal = percentOf(finalE, rFinal);
+      const collAmt = subMoney(totalFinal, saleAmt);
       const received = inv.applications.length > 0;
-      const fully = cash.balance <= 0.005;
+      const fully = cmpMoney(cash.balance, 0) <= 0;
       const overdue = now > inv.dueAt && !fully;
       const lost = !fully && policy != null && now > addDays(inv.dueAt, policy.lossDays);
 
@@ -116,7 +117,7 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
       const fromEntry = (h: "SALE" | "COLLECTION", fallback: Half): Half => {
         const e = entry(h);
         if (!e) return fallback;
-        return { state: e.paidAt ? "PAID" : "APPROVED", amount: Number(e.amount), calc: e.calculation, entryId: e.id };
+        return { state: e.paidAt ? "PAID" : "APPROVED", amount: money2(e.amount), calc: e.calculation, entryId: e.id };
       };
 
       const saleHalf = fromEntry("SALE", {
@@ -164,13 +165,13 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
     }
 
     // Part of the Deal not invoiced yet: both halves are estimates.
-    const invoiced = d.invoices.reduce((s, i) => s + Number(i.amount), 0);
-    const pending = Number(d.amount) - invoiced;
+    const invoiced = sumMoney(d.invoices.map((i) => i.amount));
+    const pending = subMoney(d.amount, invoiced);
     if (pending > 0.5) {
-      const e = eg.pct == null ? 0 : (pending * eg.pct) / 100;
+      const e = eg.pct == null ? 0 : mulMoney(pending, eg.pct / 100);
       const newClient = isNew(now);
       const rate = rateFor(policy, eg.pct, newClient);
-      const half = r2((e * rate * salePct) / 100 / 100);
+      const half = mulMoney(e, (rate * salePct) / 10000);
       rows.push({
         key: `${d.id}-pending`,
         dealId: d.id,
@@ -193,7 +194,7 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
         trace: { delivered: d.deliveries.length > 0, invoiced: false, collected: false, reconciled: false, problem: false },
         dueAt: null,
         saleHalf: { state: "ESTIMATED", amount: half, calc: `≈ ${f(e)} × ${rate} % × ${salePct} %` },
-        collectionHalf: { state: "ESTIMATED", amount: r2(e * rate / 100 - half), calc: "" },
+        collectionHalf: { state: "ESTIMATED", amount: subMoney(percentOf(e, rate), half), calc: "" },
         projected: true,
       });
     }
