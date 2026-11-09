@@ -14,6 +14,8 @@ export type ComposeCtx = { tpl: TemplateKey; id: string; lang?: MailLang | null 
 export type Composed = {
   mail: Mail; lang: MailLang; to: string | null; toName: string; about: string;
   dealId: string | null; accountId: string | null; back: string; warn: string | null; canSend: boolean;
+  /** E2: what this email is about, to match its reply later. */
+  ref: { kind: "RFQR" | "OFFER" | "SPO" | "QUOTE" | "INVOICE"; id: string; code: string | null; party: "SUPPLIER" | "CUSTOMER"; supplierId: string | null };
 };
 
 const workingDaysAhead = (n: number) => { const d = today(); while (n > 0) { d.setUTCDate(d.getUTCDate() + 1); if (d.getUTCDay() % 6 !== 0) n--; } return d; };
@@ -33,7 +35,7 @@ export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: stri
     return {
       mail: followUpMail({ lang, code: r.rfq.code, items, sentAt: r.sentAt, replyBy, sender, from }), lang,
       to: r.supplier.email ?? r.email, toName: r.supplier.name, about: `${r.rfq.code} · ${r.supplier.name}`,
-      dealId: r.rfq.dealId, accountId: r.rfq.deal?.accountId ?? null, back: `/localizar/rfq/${r.rfq.id}`,
+      dealId: r.rfq.dealId, accountId: r.rfq.deal?.accountId ?? null, back: `/localizar/rfq/${r.rfq.id}`, ref: { kind: "RFQR", id: r.id, code: r.rfq.code, party: "SUPPLIER", supplierId: r.supplierId },
       warn: r.status === "ANSWERED" ? (ui ? "This supplier already answered." : "Este proveedor ya respondió.") : null, canSend: true,
     };
   }
@@ -46,7 +48,7 @@ export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: stri
     return {
       mail: negotiateMail({ lang, theirRef: o.doc?.reference ?? null, items, currency: o.currency, asks: { price: true, lead: true, payment: false }, target: null, replyBy, sender, from }), lang,
       to: o.supplier.email, toName: o.supplier.name, about: `${o.codeAsQuoted} · ${o.supplier.name}`,
-      dealId: null, accountId: null, back: `/localizar/${o.part.id}`, warn: null, canSend: true,
+      dealId: null, accountId: null, back: `/localizar/${o.part.id}`, ref: { kind: "OFFER", id: o.id, code: o.doc?.reference ?? o.codeAsQuoted, party: "SUPPLIER", supplierId: o.supplierId }, warn: null, canSend: true,
     };
   }
 
@@ -58,7 +60,7 @@ export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: stri
     return {
       mail: deliveryMail({ lang, poCode: p.code, proformaRef: p.proformaRef, items: items.length ? items : [{ qty: 1, code: p.code, description: "—" }], promised: p.shipBy ?? p.eta, issue: null, replyBy, sender, from }), lang,
       to: p.supplier.email, toName: p.supplier.name, about: `${p.code} · ${p.supplier.name}`,
-      dealId: p.deal.id, accountId: p.deal.accountId, back: `/compras/${p.id}`,
+      dealId: p.deal.id, accountId: p.deal.accountId, back: `/compras/${p.id}`, ref: { kind: "SPO", id: p.id, code: p.code, party: "SUPPLIER", supplierId: p.supplierId },
       warn: p.shippedAt ? (ui ? "This order is already marked as shipped." : "Esta orden ya está marcada como despachada.") : null, canSend: true,
     };
   }
@@ -76,7 +78,7 @@ export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: stri
     return {
       mail: offerMail({ lang, quoteNumber: number, contactName: c ? c.firstName : null, items: items.length ? items : [{ qty: 1, code: "—", description: "—", unitPrice: 0 }], currency: "USD", total, leadText: lead, validUntil, incoterm: q.incoterm, paymentTerms: q.paymentTerms, condition: q.condition, sender, from }), lang,
       to: c?.email ?? null, toName: c ? `${c.firstName} ${c.lastName}`.trim() : q.deal.account.name, about: `${number} · ${q.deal.account.name}`,
-      dealId: q.deal.id, accountId: q.deal.accountId, back: `/cotizaciones/${q.id}`,
+      dealId: q.deal.id, accountId: q.deal.accountId, back: `/cotizaciones/${q.id}`, ref: { kind: "QUOTE", id: q.id, code: q.number, party: "CUSTOMER", supplierId: null },
       warn: !q.lines.length ? (ui ? "This quote has no product lines yet: add them before sending." : "Esta cotización aún no tiene productos: agrégalos antes de enviarla.") : q.status === "DRAFT" ? (ui ? "This quote is still a draft: present it first so its price is protected." : "Esta cotización aún es borrador: preséntala primero para proteger su precio.") : validUntil < today() ? (ui ? "This quote's validity has expired." : "La validez de esta cotización ya venció.") : null,
       canSend: q.lines.length > 0 && canEdit(user, q.deal.ownerId),
     };
@@ -94,7 +96,7 @@ export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: stri
     return {
       mail: paymentMail({ lang, invoiceNumber: inv.number, contactName: billing ? null : c?.firstName ?? null, amountDue: due, currency: "USD", dueAt: inv.dueAt, customerPo: inv.deal.customerPo, promisedFor: inv.promises[0] && inv.promises[0].promisedFor < today() ? inv.promises[0].promisedFor : null, sender, from }), lang,
       to: billing ?? c?.email ?? null, toName: billing ? inv.account.name : c ? `${c.firstName} ${c.lastName}`.trim() : inv.account.name, about: `${inv.number} · ${inv.account.name}`,
-      dealId: inv.deal.id, accountId: inv.accountId, back: `/administracion/cobrar?f=${inv.id}`,
+      dealId: inv.deal.id, accountId: inv.accountId, back: `/administracion/cobrar?f=${inv.id}`, ref: { kind: "INVOICE", id: inv.id, code: inv.number, party: "CUSTOMER", supplierId: null },
       warn: due <= 0 ? (ui ? "This invoice has no open balance." : "Esta factura no tiene saldo pendiente.") : null,
       canSend: canEdit(user, inv.deal.ownerId) || user.role === "ADMIN",
     };

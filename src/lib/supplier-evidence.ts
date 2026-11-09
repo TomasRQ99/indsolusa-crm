@@ -36,7 +36,7 @@ export async function supplierEvidence(ids: string[], opts: { partKeys?: string[
         shipments: { select: { rtsAt: true, pickedUpAt: true } },
         lines: opts.partKeys?.length ? { select: { code: true } } : false },
     }),
-    db.rfqRecipient.findMany({ where: { supplierId: { in: uniq } }, select: { supplierId: true, status: true, sentAt: true, answeredAt: true, rfq: { select: { createdAt: true } } } }),
+    db.rfqRecipient.findMany({ where: { supplierId: { in: uniq } }, select: { supplierId: true, status: true, sentAt: true, answeredAt: true, repliedAt: true, rfq: { select: { createdAt: true } } } }),
     db.supplierDoc.findMany({ where: { supplierId: { in: uniq } }, select: { supplierId: true, createdAt: true, bankWarning: true } }),
     db.supplierOffer.findMany({ where: { supplierId: { in: uniq } }, select: { supplierId: true, validUntil: true } }),
   ]);
@@ -64,7 +64,9 @@ export async function supplierEvidence(ids: string[], opts: { partKeys?: string[
       if (actual && (!last || actual > last)) last = actual;
     }
     const rs = recips.filter((r) => r.supplierId === s.id);
-    const replies = rs.filter((r) => r.status === "ANSWERED" && r.answeredAt && r.sentAt).map((r) => (r.answeredAt!.getTime() - r.sentAt!.getTime()) / 3_600_000);
+    // Reply time = first email reply seen in sales@ (E2), else when their quote was registered.
+    const firstReply = (r: (typeof rs)[number]) => (r.repliedAt && (!r.answeredAt || r.repliedAt < r.answeredAt) ? r.repliedAt : r.status === "ANSWERED" ? r.answeredAt : null);
+    const replies = rs.filter((r) => r.sentAt && firstReply(r)).map((r) => (firstReply(r)!.getTime() - r.sentAt!.getTime()) / 3_600_000);
     const ds = docs.filter((d) => d.supplierId === s.id);
     const os = offers.filter((o) => o.supplierId === s.id);
     const myDeals = new Set(mine.map((p) => p.dealId));
@@ -74,8 +76,8 @@ export async function supplierEvidence(ids: string[], opts: { partKeys?: string[
       supplierId: s.id,
       rts: { measured: deltas.length, onTime, medianDelta: median(deltas), openLate, last },
       rfq: {
-        asked: rs.length, answered: rs.filter((r) => r.status === "ANSWERED").length, declined: rs.filter((r) => r.status === "DECLINED").length,
-        waiting: rs.filter((r) => r.status === "SENT").length, failed: rs.filter((r) => r.status === "FAILED").length,
+        asked: rs.length, answered: rs.filter((r) => r.status === "ANSWERED" || (r.repliedAt && r.status !== "DECLINED")).length, declined: rs.filter((r) => r.status === "DECLINED").length,
+        waiting: rs.filter((r) => r.status === "SENT" && !r.repliedAt).length, failed: rs.filter((r) => r.status === "FAILED").length,
         medianReplyHours: median(replies), last: lastDate(rs.map((r) => r.sentAt ?? r.rfq.createdAt)),
       },
       docs: { count: ds.length, last: lastDate(ds.map((d) => d.createdAt)), bankDifferent: ds.filter((d) => d.bankWarning === "DIFFERENT").length },

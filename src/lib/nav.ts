@@ -9,13 +9,14 @@ export type NavModule = { key: ModuleKey; es: string; en: string; match: string[
 
 export const MODULES: NavModule[] = [
   {
-    key: "midia", es: "MI DÍA", en: "MY DAY", match: ["/mi-dia", "/mi-plan", "/tasks", "/comunicacion", "/email"],
+    key: "midia", es: "MI DÍA", en: "MY DAY", match: ["/mi-dia", "/mi-plan", "/tasks", "/comunicacion", "/email", "/correo"],
     tabs: [
       { href: "/mi-dia", es: "Hoy", en: "Today" },
       { href: "/mi-plan", es: "Mi Plan", en: "My Plan" },
       { href: "/tasks", es: "Pendientes", en: "To-dos" },
       { href: "/comunicacion", es: "Comunicación", en: "Communication" },
       { href: "/email", es: "Correo", en: "Email" },
+      { href: "/correo/respuestas", es: "Respuestas", en: "Replies" },
     ],
   },
   {

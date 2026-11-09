@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { refreshApp } from "@/lib/revalidate";
 import { describeMailError, mailConfig, sendMail } from "@/lib/mail";
 import { composeFrom } from "@/lib/email-compose";
+import { recordOutbound, syncReplies } from "@/lib/mail-replies";
 import { TEMPLATES, textToHtml, type MailLang, type TemplateKey } from "@/lib/email-templates";
 
 const PHASE: Record<TemplateKey, string> = { RFQ: "source", FOLLOWUP: "source", NEGOTIATE: "source", DELIVERY: "execute", OFFER: "quote", PAYMENT: "finance" };
@@ -43,9 +44,19 @@ export async function sendComposed(fd: FormData) {
   } catch (e) {
     redirect(qs(`err=envio&msg=${encodeURIComponent(describeMailError(e).slice(0, 200))}`));
   }
+  await recordOutbound({ template: tpl, refKind: c.ref.kind, refId: c.ref.id, refCode: c.ref.code, partyKind: c.ref.party, supplierId: c.ref.supplierId, accountId: c.ref.party === "CUSTOMER" ? c.accountId : null, dealId: c.dealId, toAddr: to, subject });
   if (c.dealId || c.accountId) {
     await db.activity.create({ data: { type: "EMAIL", subject: `${TEMPLATES[tpl].es}: ${subject}`.slice(0, 200), body: body.slice(0, 4000), userId: user.id, accountId: c.accountId, dealId: c.dealId, phase: PHASE[tpl], source: "Plantillas de correo" } });
   }
   refreshApp();
   redirect(`${c.back}${c.back.includes("?") ? "&" : "?"}ok=correo`);
+}
+
+/** "Check the mailbox now" on the replies page. Errors are shown by the page from the last check. */
+export async function checkReplies() {
+  await requireUser();
+  let n = 0;
+  try { n = (await syncReplies({ force: true })).found; } catch { redirect("/correo/respuestas?err=1"); }
+  refreshApp();
+  redirect(`/correo/respuestas?ok=revisado&n=${n}`);
 }

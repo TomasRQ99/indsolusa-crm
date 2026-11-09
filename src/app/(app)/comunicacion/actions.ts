@@ -8,6 +8,7 @@ import { refreshApp } from "@/lib/revalidate";
 import { nextCode, today } from "@/lib/domain";
 import { refreshUnderstanding } from "@/lib/comm-store";
 import { syncCustomerEmails, CommMailError } from "@/lib/comm-mail";
+import { syncReplies } from "@/lib/mail-replies";
 import { sendMail } from "@/lib/mail";
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -215,6 +216,7 @@ export async function syncEmails(fd: FormData) {
   const t = String(fd.get("t") ?? "") || null;
   try {
     const r = await syncCustomerEmails({ force: true });
+    await syncReplies({ force: true }).catch(() => null); // E2: replies to our emails (errors shown on /correo/respuestas)
     go(t, `ok=sync&n=${r.imported}`);
   } catch (e) {
     if (e instanceof CommMailError) go(t, `mail=${e.code}`);

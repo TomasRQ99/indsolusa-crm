@@ -1452,3 +1452,11 @@ a.loc-chip:hover { background: var(--brand-soft); color: var(--brand); }
 .mail-subjects input[name="customSubject"] { flex: 1; min-width: 0; }
 .mail-body { width: 100%; font-family: var(--mono, Consolas, monospace); font-size: 13px; line-height: 1.45; }
 .mail-preview { background: #fff; color: #1f2933; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; overflow-x: auto; }
+/* E2 · replies */
+.rp-list { list-style: none; margin: 0; padding: 0; }
+.rp-list li { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--line); min-width: 0; }
+.rp-list li:first-child { border-top: 0; }
+.rp-list li > span { min-width: 0; overflow-wrap: anywhere; }
+.rp-list li > a { flex: none; }
+.rp-chip { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 600; color: var(--ok); background: var(--ok-soft); border-radius: 10px; padding: 1px 8px; }.tscroll { overflow-x: auto; max-width: 100%; }
+.rp-warn { color: var(--attn); }

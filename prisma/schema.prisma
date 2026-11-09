@@ -115,6 +115,7 @@ model Account {
   billingContact        String?
 
   contacts   Contact[]
+  outboundMails OutboundMail[]
   deals      Deal[]
   tasks      Task[]
   activities Activity[]
@@ -462,6 +463,8 @@ model RfqRecipient {
   sentAt     DateTime?
   error      String?
   answeredAt DateTime?
+  /// E2: first reply seen in the sales@ inbox (not the same as a registered quote).
+  repliedAt  DateTime?
   doc        SupplierDoc?
 
   @@index([rfqId])
@@ -652,6 +655,7 @@ model Supplier {
   docs          SupplierDoc[]
   offers        SupplierOffer[]
   rfqRecipients RfqRecipient[]
+  outboundMails OutboundMail[]
 }
 
 model SupplierPO {
@@ -1376,4 +1380,37 @@ model ShipmentDecision {
   newExpected   DateTime?
   decidedByName String
   decidedAt     DateTime  @default(now())
+}
+
+// E2: every email SOLU sends from sales@, so replies can be matched (read-only, Mail.Read).
+// Reply facts are per template and per supplier only: no sender/user field on purpose
+// (no per-person metrics). The text of the reply is not stored, only a short preview.
+model OutboundMail {
+  id             String    @id @default(cuid())
+  template       String // RFQ | FOLLOWUP | NEGOTIATE | DELIVERY | OFFER | PAYMENT
+  refKind        String // RFQR | OFFER | SPO | QUOTE | INVOICE
+  refId          String
+  refCode        String?
+  partyKind      String // SUPPLIER | CUSTOMER
+  supplierId     String?
+  supplier       Supplier? @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  accountId      String?
+  account        Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  dealId         String?
+  toAddr         String
+  subject        String
+  sentAt         DateTime  @default(now())
+  conversationId String?
+  repliedAt      DateTime?
+  replyFrom      String?
+  replySubject   String?
+  replyPreview   String?
+  autoReplyAt    DateTime?
+  bouncedAt      DateTime?
+
+  @@index([conversationId])
+  @@index([supplierId])
+  @@index([template])
+  @@index([refKind, refId])
+  @@index([sentAt])
 }

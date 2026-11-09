@@ -12,6 +12,7 @@ import { partKey } from "@/lib/parts";
 import { MAX_SUPPLIER_DOC_BYTES, bankCheck, parseLead, parseMoney, readSupplierDoc } from "@/lib/supplier-doc";
 import { isUsCountry, rfqEmail, type RfqItem } from "@/lib/rfq";
 import { spanishCountry } from "@/lib/company";
+import { recordOutbound } from "@/lib/mail-replies";
 
 const txt = (fd: FormData, k: string, max = 300) => {
   const v = String(fd.get(k) ?? "").trim().slice(0, max);
@@ -201,7 +202,8 @@ export async function createRfq(fd: FormData) {
     let status = "SENT", error: string | null = null;
     try { await sendMail({ to: { address: s.email!, name: s.name }, subject: mail.subject, text: mail.text, html: mail.html, senderName: user.name }); }
     catch (e) { status = "FAILED"; error = describeMailError(e).slice(0, 300); }
-    await db.rfqRecipient.create({ data: { rfqId: rfq.id, supplierId: s.id, email: s.email!, status, sentAt: status === "SENT" ? new Date() : null, error } });
+    const rr = await db.rfqRecipient.create({ data: { rfqId: rfq.id, supplierId: s.id, email: s.email!, status, sentAt: status === "SENT" ? new Date() : null, error } });
+    if (status === "SENT") await recordOutbound({ template: "RFQ", refKind: "RFQR", refId: rr.id, refCode: rfq.code, partyKind: "SUPPLIER", supplierId: s.id, dealId: deal?.id ?? null, toAddr: s.email!, subject: mail.subject });
   }
   const sent = await db.rfqRecipient.count({ where: { rfqId: rfq.id, status: "SENT" } });
   if (sent) {
@@ -229,6 +231,7 @@ export async function resendRecipient(recipientId: string) {
   try {
     await sendMail({ to: { address: email, name: r.supplier.name }, subject: mail.subject, text: mail.text, html: mail.html, senderName: user.name });
     await db.rfqRecipient.update({ where: { id: r.id }, data: { status: "SENT", sentAt: new Date(), error: null, email } });
+    await recordOutbound({ template: "RFQ", refKind: "RFQR", refId: r.id, refCode: r.rfq.code, partyKind: "SUPPLIER", supplierId: r.supplierId, dealId: r.rfq.dealId, toAddr: email, subject: mail.subject });
   } catch (e) {
     await db.rfqRecipient.update({ where: { id: r.id }, data: { status: "FAILED", error: describeMailError(e).slice(0, 300) } });
   }
