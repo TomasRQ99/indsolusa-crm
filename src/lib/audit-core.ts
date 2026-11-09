@@ -10,7 +10,7 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   Account: ["creditLimit", "paymentTermsDays", "allowsPartialBilling", "taxId", "requiresReceptionCode", "requiresPortal", "ownerId"],
   Deal: ["amount", "supplierCost", "freightCost", "otherCosts", "stage", "ownerId", "promisedDate", "poAcceptedAt", "creditExceptionById", "creditExceptionAt", "creditExceptionNote", "closedAt"],
   DealItem: ["qty", "unitPrice", "code", "description"],
-  Supplier: ["bankBeneficiary", "bankName", "bankAccount", "bankSwift", "bankVerifiedAt", "bankVerifiedById", "paymentTerms", "advancePct", "currency"],
+  Supplier: ["bankBeneficiary", "bankName", "bankAccount", "bankSwift", "bankVerifiedAt", "bankVerifiedById", "paymentTerms", "advancePct", "currency", "taxId"],
   Quote: ["status", "rev", "supplierCost", "freightCost", "otherCosts", "fxRate", "protSale", "protCost", "protEsagra", "presentedAt", "decidedAt", "validityDays", "paymentTerms", "incoterm"],
   QuoteLine: ["qty", "unitPrice", "code", "description"],
   CustomerPO: "all",
@@ -26,6 +26,13 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   PaymentApplication: "all",
   CommissionPolicy: "all",
   CommissionEntry: "all",
+  // Mercado (Módulo 09): material changes to explorations and to what we hold as true about the market.
+  Exploration: ["name", "purpose", "hypothesis", "scope", "ownerId", "lifecycle", "resultSummary", "closedAt"],
+  MarketSignal: ["kind", "what", "accountId", "status", "dismissedNote", "confidence", "sourceType", "observedAt"],
+  KnowledgeGap: ["question", "status", "answer", "answerSource"],
+  WhiteSpace: ["kind", "what", "status", "note"],
+  Plant: ["name", "accountId", "city", "country", "operationType", "confidence", "sourceType"],
+  FutureOpportunity: ["kind", "description", "accountId", "expectedAt", "status", "closedNote", "dealId", "confidence", "valueBasis"],
 };
 const MASK = new Set(["bankAccount", "docAccount"]);
 const SKIP = new Set(["id", "createdAt", "updatedAt"]);

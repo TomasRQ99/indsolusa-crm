@@ -20,8 +20,9 @@ export const MODULES: NavModule[] = [
     ],
   },
   {
-    key: "mercado", es: "MERCADO", en: "MARKET", match: ["/accounts", "/contacts", "/suppliers", "/localizar", "/productos"],
+    key: "mercado", es: "MERCADO", en: "MARKET", match: ["/mercado", "/accounts", "/contacts", "/suppliers", "/localizar", "/productos"],
     tabs: [
+      { href: "/mercado", es: "Explorar", en: "Explore" },
       { href: "/accounts", es: "Clientes", en: "Customers" },
       { href: "/contacts", es: "Contactos", en: "Contacts" },
       { href: "/suppliers", es: "Proveedores", en: "Suppliers" },

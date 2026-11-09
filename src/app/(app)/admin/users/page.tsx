@@ -19,6 +19,7 @@ export default async function UsersPage() {
   const roleOptions = (
     <>
       <option value="REP">{t("Comercial", "Rep")}</option>
+      <option value="MARKETING">{t("Mercadeo", "Marketing")}</option>
       <option value="MANAGER">{t("Gerencia", "Manager")}</option>
       <option value="ADMIN">{t("Administración", "Admin")}</option>
     </>

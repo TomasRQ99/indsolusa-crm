@@ -32,6 +32,12 @@ const MODELS: Record<string, { es: string; en: string; href?: (id: string) => st
   User: { es: "Persona (rol y acceso)", en: "Person (role and access)" },
   CommissionPolicy: { es: "Política de comisiones", en: "Commission policy" },
   CommissionEntry: { es: "Comisión", en: "Commission" },
+  Exploration: { es: "Exploración de mercado", en: "Market exploration", href: (id) => `/mercado/exploraciones/${id}` },
+  MarketSignal: { es: "Señal de mercado", en: "Market signal" },
+  KnowledgeGap: { es: "Pregunta abierta", en: "Open question" },
+  WhiteSpace: { es: "Espacio sin explorar", en: "White space" },
+  Plant: { es: "Planta", en: "Plant" },
+  FutureOpportunity: { es: "Oportunidad futura", en: "Future opportunity" },
 };
 const GROUPS: { key: string; es: string; en: string; models: string[] }[] = [
   { key: "cobro", es: "Facturas y cobros", en: "Invoices and collections", models: ["Invoice", "CustomerPayment", "PaymentApplication"] },
@@ -40,6 +46,7 @@ const GROUPS: { key: string; es: string; en: string; models: string[] }[] = [
   { key: "venta", es: "Cotizaciones, OC y Journeys", en: "Quotes, POs and Journeys", models: ["Quote", "QuoteLine", "CustomerPO", "PoAcceptance", "PoResolution", "Deal", "DealItem"] },
   { key: "credito", es: "Crédito de clientes", en: "Customer credit", models: ["Account"] },
   { key: "acceso", es: "Roles, accesos y comisiones", en: "Roles, access and commissions", models: ["User", "CommissionPolicy", "CommissionEntry"] },
+  { key: "mercado", es: "Mercado", en: "Market", models: ["Exploration", "MarketSignal", "KnowledgeGap", "WhiteSpace", "Plant", "FutureOpportunity"] },
 ];
 const FIELDS: Record<string, [string, string]> = {
   amount: ["Monto", "Amount"], amountUsd: ["Monto USD", "Amount USD"], currency: ["Moneda", "Currency"], status: ["Estado", "Status"], state: ["Estado", "State"], stage: ["Etapa", "Stage"],

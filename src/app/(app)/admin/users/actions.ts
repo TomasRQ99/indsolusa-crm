@@ -8,7 +8,7 @@ import { parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
 import { loadDemo, removeDemo } from "@/lib/demo";
 
-const role = z.enum(["ADMIN", "MANAGER", "REP"]);
+const role = z.enum(["ADMIN", "MANAGER", "REP", "MARKETING"]);
 
 const createSchema = z.object({
   name: requiredText,

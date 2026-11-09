@@ -14,6 +14,7 @@ enum Role {
   ADMIN
   MANAGER
   REP
+  MARKETING
 }
 
 enum Lang {
@@ -68,23 +69,25 @@ model User {
   tasks      Task[]
   activities Activity[]
 
-  paymentsRequested   SupplierPayment[] @relation("PaymentRequester")
-  paymentsVerified    SupplierPayment[] @relation("PaymentVerifier")
-  paymentsApproved    SupplierPayment[] @relation("PaymentApprover")
-  paymentsExecuted    SupplierPayment[] @relation("PaymentExecutor")
+  paymentsRequested   SupplierPayment[]   @relation("PaymentRequester")
+  paymentsVerified    SupplierPayment[]   @relation("PaymentVerifier")
+  paymentsApproved    SupplierPayment[]   @relation("PaymentApprover")
+  paymentsExecuted    SupplierPayment[]   @relation("PaymentExecutor")
   invoicesIssued      Invoice[]
   promisesRecorded    PaymentPromise[]
-  cashRecorded        CustomerPayment[] @relation("CashRecorder")
+  cashRecorded        CustomerPayment[]   @relation("CashRecorder")
   billingRequests     BillingRequest[]
-  cashReconciled      CustomerPayment[] @relation("CashReconciler")
-  commissionsEarned   CommissionEntry[] @relation("CommissionOwner")
-  commissionsApproved CommissionEntry[] @relation("CommissionApprover")
-  creditExceptions    Deal[]            @relation("CreditException")
+  cashReconciled      CustomerPayment[]   @relation("CashReconciler")
+  commissionsEarned   CommissionEntry[]   @relation("CommissionOwner")
+  commissionsApproved CommissionEntry[]   @relation("CommissionApprover")
+  creditExceptions    Deal[]              @relation("CreditException")
   suppliersVerified   Supplier[]
   journeyViews        JourneyView[]
   commMessages        CommMessage[]
   commDecisions       CommItem[]
   quotesCreated       Quote[]
+  explorations        Exploration[]       @relation("ExplorationOwner")
+  futuresOwned        FutureOpportunity[] @relation("FutureOwner")
 }
 
 model Account {
@@ -114,15 +117,20 @@ model Account {
   allowsPartialBilling  Boolean   @default(true)
   billingContact        String?
 
-  contacts   Contact[]
+  contacts      Contact[]
   outboundMails OutboundMail[]
-  deals      Deal[]
-  tasks      Task[]
-  activities Activity[]
-  invoices   Invoice[]
-  payments   CustomerPayment[]
-  threads    CommThread[]
-  documents  AccountDocument[]
+  deals         Deal[]
+  tasks         Task[]
+  activities    Activity[]
+  invoices      Invoice[]
+  payments      CustomerPayment[]
+  threads       CommThread[]
+  documents     AccountDocument[]
+  plants        Plant[]
+  marketSignals MarketSignal[]
+  gaps          KnowledgeGap[]
+  whiteSpaces   WhiteSpace[]
+  futures       FutureOpportunity[]
 
   @@index([ownerId])
   @@index([name])
@@ -399,17 +407,17 @@ model SupplierOffer {
 // A public web page or distributor API result found for a part (L5). Evidence only: never a price
 // we committed to. Kept with the date it was read, so stale data shows as stale.
 model WebSource {
-  id           String    @id @default(cuid())
+  id           String   @id @default(cuid())
   partId       String
-  part         Part      @relation(fields: [partId], references: [id], onDelete: Cascade)
+  part         Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
   kind         String // PAGE | MOUSER | DIGIKEY | SITEMAP
   url          String
   host         String
   title        String?
   mpnSeen      String?
   brand        String?
-  matched      Boolean   @default(false) // the page/API shows this exact part number
-  price        Decimal?  @db.Decimal(14, 4)
+  matched      Boolean  @default(false) // the page/API shows this exact part number
+  price        Decimal? @db.Decimal(14, 4)
   currency     String?
   priceBreaks  Json? // [{qty, price}]
   stock        Int?
@@ -417,9 +425,9 @@ model WebSource {
   leadText     String?
   lifecycle    String?
   datasheetUrl String?
-  fetchedAt    DateTime  @default(now())
+  fetchedAt    DateTime @default(now())
   savedByName  String?
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime @default(now())
 
   @@unique([partId, url])
   @@index([partId])
@@ -437,7 +445,7 @@ model WebCache {
 // A request for quotation sent from sales@ to several suppliers (one separate email each).
 model Rfq {
   /// One key per RFQ form: a double click never creates two RFQs.
-  idemKey    String?  @unique
+  idemKey       String?        @unique
   id            String         @id @default(cuid())
   code          String         @unique
   dealId        String?
@@ -583,24 +591,26 @@ model JourneyView {
 }
 
 model Task {
-  id              String     @id @default(cuid())
+  id              String       @id @default(cuid())
   title           String
   dueDate         DateTime?
-  status          TaskStatus @default(OPEN)
+  status          TaskStatus   @default(OPEN)
   completedAt     DateTime?
   estimateMinutes Int?
   plannedFor      DateTime?
   scheduledAt     DateTime?
   outlookEventId  String?
   assigneeId      String
-  assignee        User       @relation(fields: [assigneeId], references: [id])
+  assignee        User         @relation(fields: [assigneeId], references: [id])
   accountId       String?
-  account         Account?   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account         Account?     @relation(fields: [accountId], references: [id], onDelete: Cascade)
   contactId       String?
-  contact         Contact?   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contact         Contact?     @relation(fields: [contactId], references: [id], onDelete: Cascade)
   dealId          String?
-  deal            Deal?      @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  createdAt       DateTime   @default(now())
+  deal            Deal?        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  explorationId   String?
+  exploration     Exploration? @relation(fields: [explorationId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
 
   @@index([assigneeId, status])
 }
@@ -654,6 +664,8 @@ model Supplier {
   transitDays      Int?
   // Public website, used to look for part pages via its sitemap (robots.txt is always obeyed).
   website          String?
+  /// NIT / tax ID. Same NIT as a customer = the same organization with both roles (Mercado §4.3).
+  taxId            String?
 
   pos           SupplierPO[]
   docs          SupplierDoc[]
@@ -1440,4 +1452,196 @@ model AuditEvent {
 
   @@index([model, entityId])
   @@index([at])
+}
+
+// ===================== MERCADO (Módulo 09 · Mercadeo Exploratorio) =====================
+// Provenance on every material fact: sourceType · sourceRef · observedAt · confidence · capturedBy.
+// confidence: VERIFIED | REPORTED | INFERRED | UNKNOWN. INFERRED never becomes VERIFIED without new evidence.
+
+/// A deliberate investigation with a purpose. Not a lead and not a Journey.
+model Exploration {
+  id                  String    @id @default(cuid())
+  name                String
+  purpose             String
+  hypothesis          String?
+  /// TERRITORY | INDUSTRY | COMPANY | PLANT | TECHNOLOGY | APPLICATION
+  scope               String    @default("INDUSTRY")
+  scopeText           String?
+  ownerId             String
+  owner               User      @relation("ExplorationOwner", fields: [ownerId], references: [id])
+  startedAt           DateTime  @default(now())
+  nextReviewAt        DateTime?
+  /// MOVE | WAIT | TRIGGER | CLARITY_NEEDED (always one of them)
+  movement            String    @default("CLARITY_NEEDED")
+  nextMove            String?
+  nextMoveAt          DateTime?
+  waitingFor          String?
+  waitingUntil        DateTime?
+  triggerOn           DateTime?
+  triggerEvent        String?
+  /// ACTIVE | DORMANT | CLOSED
+  lifecycle           String    @default("ACTIVE")
+  resultSummary       String?
+  closedAt            DateTime?
+  createdFromSignalId String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  links       ExplorationLink[]
+  signals     MarketSignal[]
+  gaps        KnowledgeGap[]
+  whiteSpaces WhiteSpace[]
+  futures     FutureOpportunity[]
+  tasks       Task[]
+
+  @@index([lifecycle, movement])
+}
+
+/// What an exploration is about: companies, plants, suppliers, brands, product codes.
+model ExplorationLink {
+  id            String      @id @default(cuid())
+  explorationId String
+  exploration   Exploration @relation(fields: [explorationId], references: [id], onDelete: Cascade)
+  /// ACCOUNT | PLANT | SUPPLIER | CONTACT | BRAND | PART_CODE
+  kind          String
+  refId         String
+  label         String
+  why           String?
+  createdAt     DateTime    @default(now())
+
+  @@unique([explorationId, kind, refId])
+}
+
+/// An observed change that deserves understanding. Signal ≠ Need ≠ Opportunity.
+model MarketSignal {
+  id             String       @id @default(cuid())
+  /// EXPANSION | NEW_PLANT | INVESTMENT | ACQUISITION | NEW_TECHNOLOGY | DISCONTINUATION | REGULATORY | ECONOMIC | SHUTDOWN | ROLE_CHANGE | OTHER
+  kind           String
+  what           String
+  whyMatters     String?
+  accountId      String?
+  account        Account?     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  plantId        String?
+  plant          Plant?       @relation(fields: [plantId], references: [id], onDelete: SetNull)
+  explorationId  String?
+  exploration    Exploration? @relation(fields: [explorationId], references: [id], onDelete: SetNull)
+  /// NEW | EXPLORING | DISMISSED
+  status         String       @default("NEW")
+  dismissedNote  String?
+  sourceType     String
+  sourceRef      String?
+  observedAt     DateTime
+  confidence     String       @default("REPORTED")
+  capturedById   String?
+  capturedByName String
+  createdAt      DateTime     @default(now())
+
+  @@index([status])
+}
+
+/// Something worth learning that we don't know yet. Can become a Next Movement.
+model KnowledgeGap {
+  id             String       @id @default(cuid())
+  question       String
+  why            String?
+  explorationId  String?
+  exploration    Exploration? @relation(fields: [explorationId], references: [id], onDelete: Cascade)
+  accountId      String?
+  account        Account?     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  plantId        String?
+  plant          Plant?       @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  /// OPEN | RESOLVED
+  status         String       @default("OPEN")
+  answer         String?
+  answerSource   String?
+  resolvedAt     DateTime?
+  resolvedByName String?
+  createdByName  String
+  createdAt      DateTime     @default(now())
+
+  @@index([status])
+}
+
+/// A part of a company or market we haven't explored or served yet.
+model WhiteSpace {
+  id            String       @id @default(cuid())
+  /// PLANT | AREA | COUNTRY | TECHNOLOGY | PERSON | APPLICATION | GROUP_COMPANY | CATEGORY
+  kind          String
+  what          String
+  why           String?
+  accountId     String?
+  account       Account?     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  explorationId String?
+  exploration   Exploration? @relation(fields: [explorationId], references: [id], onDelete: Cascade)
+  /// OPEN | EXPLORING | RESOLVED | NOT_RELEVANT
+  status        String       @default("OPEN")
+  note          String?
+  createdByName String
+  createdAt     DateTime     @default(now())
+  resolvedAt    DateTime?
+
+  @@index([status])
+}
+
+/// An operating site of a company (not just an address).
+model Plant {
+  id             String   @id @default(cuid())
+  accountId      String
+  account        Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  name           String
+  city           String?
+  country        String?
+  operationType  String?
+  notes          String?
+  sourceType     String
+  sourceRef      String?
+  observedAt     DateTime
+  confidence     String   @default("REPORTED")
+  capturedByName String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  signals MarketSignal[]
+  gaps    KnowledgeGap[]
+  futures FutureOpportunity[]
+
+  @@index([accountId])
+}
+
+/// Future that is not a Need or a quote yet (Mercado v2.2 §41). No invented probabilities.
+model FutureOpportunity {
+  id             String       @id @default(cuid())
+  /// CAPEX | SHUTDOWN | NEW_PLANT | RETROFIT | TECH_CHANGE | REGULATORY | STRATEGIC
+  kind           String
+  description    String
+  accountId      String?
+  account        Account?     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  plantId        String?
+  plant          Plant?       @relation(fields: [plantId], references: [id], onDelete: SetNull)
+  process        String?
+  explorationId  String?
+  exploration    Exploration? @relation(fields: [explorationId], references: [id], onDelete: SetNull)
+  /// When it is expected to happen (drives the 0–30 / 31–90 / 91–365 / >365 day horizon).
+  expectedAt     DateTime?
+  triggerOn      DateTime?
+  triggerEvent   String?
+  ownerId        String?
+  owner          User?        @relation("FutureOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  impact         String?
+  valueBasis     String?
+  gaps           String?
+  nextMove       String?
+  nextMoveAt     DateTime?
+  /// OPEN | CONVERTED | CLOSED
+  status         String       @default("OPEN")
+  closedNote     String?
+  dealId         String?
+  sourceType     String
+  sourceRef      String?
+  observedAt     DateTime
+  confidence     String       @default("REPORTED")
+  capturedByName String
+  createdAt      DateTime     @default(now())
+
+  @@index([status, expectedAt])
 }

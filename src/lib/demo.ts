@@ -32,7 +32,7 @@ export async function ensureDefaultPolicy() {
 }
 
 export async function loadDemo(adminId: string) {
-  if (await demoLoaded()) return;
+  if (await demoLoaded()) return topUpMarketDemo();
   await ensureDefaultPolicy();
   const T = today();
   const d = (n: number) => addDays(T, n);
@@ -641,6 +641,8 @@ export async function loadDemo(adminId: string) {
           { h: 20, kind: "NOTE", text: "El cliente disputa el recibo: almacén no tiene registro de la caja", material: true, source: "Llamada de Almacén Lácteos" },
         ]);
 
+      await seedMarketDemo(tx, d, paola, lacteos, pacifico);
+
       await tx.task.createMany({
         data: [
           { title: "Preparar visita técnica a Química Andina", assigneeId: adminId, accountId: quimica.id, dealId: q1.id, dueDate: d(3), estimateMinutes: 90 },
@@ -657,6 +659,55 @@ export async function loadDemo(adminId: string) {
   for (const th of await db.commThread.findMany({ where: { account: { isDemo: true } }, select: { id: true } })) await refreshUnderstanding(th.id);
 }
 
+
+// Mercado (Módulo 09): golden exploration "Mercado lácteo colombiano — Alfa Laval, Siemens, SKF".
+async function seedMarketDemo(tx: Prisma.TransactionClient, d: (n: number) => Date, paola: { id: string; name: string }, lacteos: { id: string; name: string }, pacifico: { id: string; name: string }) {
+  const by = paola.name;
+  const tulua = await tx.plant.create({ data: { accountId: lacteos.id, name: "Planta Tuluá", city: "Tuluá", country: "Colombia", operationType: "Pasteurización, UHT y limpieza CIP", sourceType: "VISIT", sourceRef: "Visita técnica con Jorge Pérez", observedAt: d(-90), confidence: "VERIFIED", capturedByName: by, createdAt: d(-90) } });
+  const ex = await tx.exploration.create({
+    data: {
+      name: "Mercado lácteo colombiano — Alfa Laval, Siemens, SKF", ownerId: paola.id, scope: "INDUSTRY", scopeText: "Lácteos · Colombia · Alfa Laval, Siemens, SKF",
+      purpose: "Entender dónde las plantas lácteas de Colombia dependen de Alfa Laval, Siemens y SKF, y dónde podemos ser útiles antes de que lo necesiten con urgencia.",
+      hypothesis: "Las plantas que amplían UHT van a necesitar bombas sanitarias, instrumentación y rodamientos en los próximos 6 meses.",
+      startedAt: d(-12), createdAt: d(-12), movement: "MOVE", lifecycle: "ACTIVE",
+      nextMove: "Llamar a Jorge Pérez para entender el alcance de la segunda línea UHT", nextMoveAt: d(2), nextReviewAt: d(2),
+      links: { create: [
+        { kind: "ACCOUNT", refId: lacteos.id, label: lacteos.name, why: "Cliente actual con planta láctea en Tuluá" },
+        { kind: "ACCOUNT", refId: pacifico.id, label: pacifico.name, why: "Cliente nuevo de alimentos; no sabemos si procesa lácteos" },
+        { kind: "BRAND", refId: "alfa-laval", label: "Alfa Laval", why: "Tecnología nombrada en el propósito" },
+        { kind: "BRAND", refId: "siemens", label: "Siemens", why: "Tecnología nombrada en el propósito" },
+        { kind: "BRAND", refId: "skf", label: "SKF", why: "Tecnología nombrada en el propósito" },
+      ] },
+    },
+  });
+  await tx.task.create({ data: { title: "Mercado: Llamar a Jorge Pérez para entender el alcance de la segunda línea UHT", assigneeId: paola.id, explorationId: ex.id, dueDate: d(2) } });
+  await tx.marketSignal.create({ data: { kind: "EXPANSION", what: "Lácteos del Valle anunció una segunda línea UHT en Tuluá", whyMatters: "Una línea nueva suele traer bombas sanitarias, intercambiadores e instrumentación; quizás también repuestos para la línea actual.", accountId: lacteos.id, plantId: tulua.id, explorationId: ex.id, status: "EXPLORING", sourceType: "CONVERSATION", sourceRef: "Jorge Pérez (Mantenimiento), llamada", observedAt: d(-12), confidence: "REPORTED", capturedById: paola.id, capturedByName: by, createdAt: d(-12) } });
+  // A new signal waiting on the Home (not explored yet).
+  await tx.marketSignal.create({ data: { kind: "NEW_PLANT", what: "Alimentos del Pacífico abrirá una planta de bebidas lácteas en Buenaventura", whyMatters: "Si procesan leche, podrían necesitar homogeneizadores y bombas sanitarias desde el arranque.", accountId: pacifico.id, sourceType: "NEWS", sourceRef: "Nota en prensa regional (Valle)", observedAt: d(-3), confidence: "REPORTED", capturedById: paola.id, capturedByName: by, createdAt: d(-3) } });
+  await tx.knowledgeGap.createMany({ data: [
+    { explorationId: ex.id, accountId: lacteos.id, question: "¿Quién decide las compras de la segunda línea UHT: mantenimiento o proyectos?", why: "Sin saberlo podemos hablar con la persona equivocada.", createdByName: by, createdAt: d(-12) },
+    { explorationId: ex.id, accountId: lacteos.id, question: "¿Qué marca de intercambiador de placas usa la línea actual?", why: "Define si los empaques y placas que podemos ofrecer aplican.", createdByName: by, createdAt: d(-10) },
+    { explorationId: ex.id, accountId: pacifico.id, question: "¿Alimentos del Pacífico procesa leche o solo bebidas vegetales?", createdByName: by, createdAt: d(-3) },
+    { explorationId: ex.id, accountId: lacteos.id, question: "¿Cuándo arranca el montaje de la segunda línea?", status: "RESOLVED", answer: "El montaje empieza en marzo de 2027; las compras de equipos se cierran en enero.", answerSource: "Jorge Pérez, llamada", resolvedAt: d(-6), resolvedByName: by, createdByName: by, createdAt: d(-12) },
+  ] });
+  await tx.whiteSpace.createMany({ data: [
+    { explorationId: ex.id, accountId: lacteos.id, kind: "PLANT", what: "Planta de quesos de Lácteos del Valle en Cartago", why: "Jorge la mencionó; nunca les hemos vendido allá.", createdByName: by, createdAt: d(-9) },
+    { explorationId: ex.id, accountId: lacteos.id, kind: "TECHNOLOGY", what: "Rodamientos SKF de los homogeneizadores", why: "Solo les vendemos bombas e instrumentación; los rodamientos los compran a otro distribuidor.", createdByName: by, createdAt: d(-8) },
+  ] });
+  await tx.futureOpportunity.create({ data: { kind: "SHUTDOWN", description: "Parada anual de la línea UHT 1 en enero", accountId: lacteos.id, plantId: tulua.id, process: "UHT 1", explorationId: ex.id, expectedAt: d(70), impact: "Cambian sellos, rodamientos y empaques de la línea en 5 días", valueBasis: "Sin precio aún: depende de la lista de repuestos", nextMove: "Pedir la lista de repuestos de la parada en diciembre", ownerId: paola.id, sourceType: "CONVERSATION", sourceRef: "Jorge Pérez", observedAt: d(-10), confidence: "REPORTED", capturedByName: by, createdAt: d(-10) } });
+  await tx.futureOpportunity.create({ data: { kind: "CAPEX", description: "Compra de equipos para la segunda línea UHT", accountId: lacteos.id, plantId: tulua.id, process: "UHT 2", explorationId: ex.id, expectedAt: d(60), impact: "Equipos nuevos: bombas sanitarias, instrumentación Siemens", valueBasis: "Desconocido", ownerId: paola.id, sourceType: "CONVERSATION", sourceRef: "Jorge Pérez, llamada", observedAt: d(-6), confidence: "REPORTED", capturedByName: by, createdAt: d(-6) } });
+}
+
+/** Environments loaded before Mercado existed get only the Mercado sample, nothing else is touched. */
+async function topUpMarketDemo() {
+  const paola = await db.user.findUnique({ where: { email: `paola${DEMO_DOMAIN}` }, select: { id: true, name: true } });
+  if (!paola || (await db.exploration.count({ where: { ownerId: paola.id } }))) return;
+  const [lacteos, pacifico] = await Promise.all(["Lácteos del Valle", "Alimentos del Pacífico"].map((n) => db.account.findFirst({ where: { isDemo: true, name: n + TAG }, select: { id: true, name: true } })));
+  if (!lacteos || !pacifico) return;
+  const T = today();
+  await db.$transaction((tx) => seedMarketDemo(tx, (n) => addDays(T, n), paola, lacteos, pacifico), { timeout: 30000 });
+}
+
 const NAMEPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320"><rect width="520" height="320" fill="#8a9097"/><rect x="20" y="20" width="480" height="280" rx="10" fill="#d9dde1" stroke="#5c636a" stroke-width="3"/><circle cx="42" cy="42" r="7" fill="#9aa1a8"/><circle cx="478" cy="42" r="7" fill="#9aa1a8"/><circle cx="42" cy="278" r="7" fill="#9aa1a8"/><circle cx="478" cy="278" r="7" fill="#9aa1a8"/><text x="60" y="78" font-family="Arial" font-weight="700" font-size="30" fill="#0f9d9a">SIEMENS</text><text x="60" y="112" font-family="Arial" font-size="20" fill="#222">SINAMICS G120C</text><text x="60" y="150" font-family="Courier New" font-size="18" fill="#222">6SL3210-1KE21-7UF1</text><text x="60" y="184" font-family="Arial" font-size="16" fill="#222">IN: 3AC 380-480V 50/60Hz 18,5A</text><text x="60" y="210" font-family="Arial" font-size="16" fill="#222">OUT: 3AC 0-480V 16,5A 7,5kW</text><text x="60" y="236" font-family="Arial" font-size="14" fill="#444">S/N: XAJ2-7781-0042  IP20</text><text x="60" y="262" font-family="Arial" font-size="12" fill="#666">Made in Germany</text></svg>`;
 
 export async function removeDemo() {
@@ -669,6 +720,13 @@ export async function removeDemo() {
       await tx.supplier.deleteMany({ where: { isDemo: true } });
       await tx.productFact.deleteMany({ where: { recordedByName: { endsWith: TAG } } });
       await tx.productSignal.deleteMany({ where: { reportedByName: { endsWith: TAG } } });
+      // Mercado sample data (explorations cascade to links, gaps and tasks).
+      await tx.marketSignal.deleteMany({ where: { capturedByName: { endsWith: TAG } } });
+      await tx.knowledgeGap.deleteMany({ where: { createdByName: { endsWith: TAG } } });
+      await tx.whiteSpace.deleteMany({ where: { createdByName: { endsWith: TAG } } });
+      await tx.futureOpportunity.deleteMany({ where: { capturedByName: { endsWith: TAG } } });
+      await tx.plant.deleteMany({ where: { capturedByName: { endsWith: TAG } } });
+      if (ids.length) await tx.exploration.deleteMany({ where: { ownerId: { in: ids } } });
       if (ids.length) {
         await tx.task.deleteMany({ where: { assigneeId: { in: ids } } });
         await tx.commissionEntry.deleteMany({ where: { OR: [{ userId: { in: ids } }, { approvedById: { in: ids } }] } });

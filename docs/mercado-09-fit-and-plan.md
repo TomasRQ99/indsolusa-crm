@@ -42,6 +42,11 @@ This file is the Sprint 0 deliverable that §31 asks for: how the module fits th
 | Allowed web sources and refresh cadence | Partly covered by `web-fetch.ts` (robots.txt, blocked hosts). |
 | Initial Discovery Playbook catalog | Open. V1 seeds the examples from §6.2 as editable rows. |
 | Access to financial detail by role | Proposal: summary for REP, detail for ADMIN/MANAGER (§18). |
+| Markets | **Decided (2026-11-09):** Colombia and USA. Each company keeps its own currency; no silent conversion. |
+| Customer vs supplier company | **Decided:** keep `Account` and `Supplier` separate and link them by NIT (`Supplier.taxId`, first 9 digits). The workspace shows "También proveedor". |
+| Marketing role | **Decided:** new role `MARKETING` ("Mercadeo"). Same access as REP: explores and adds facts, never sees bank or credit detail. |
+
+**Status:** M0 + M1 delivered (2026-11-09). Not in M0 yet: `Employment` and company aliases (moved to M2 with the Company/Plant views).
 
 ## 4. Build plan by waves (contract §29, adapted to current constraints)
 

@@ -29,6 +29,7 @@ export default async function SuppliersPage() {
             <label style={{ flex: 1 }}>{t("Nombre", "Name")}<input name="name" required /></label>
             <label>{t("País", "Country")}<input name="country" /></label>
             <label>{t("Moneda", "Currency")}<input name="currency" defaultValue="USD" style={{ width: 70 }} /></label>
+            <label>{t("NIT / Tax ID", "Tax ID / NIT")}<input name="taxId" style={{ width: 150 }} /></label>
           </div>
           <div className="row">
             <label style={{ flex: 1 }}>{t("Correo", "Email")}<input name="email" type="email" /></label>
@@ -70,6 +71,7 @@ export default async function SuppliersPage() {
                       <label>{t("Nombre", "Name")}<input name="name" defaultValue={s.name} required /></label>
                       <label>{t("País", "Country")}<input name="country" defaultValue={s.country ?? ""} /></label>
                       <label>{t("Moneda", "Currency")}<input name="currency" defaultValue={s.currency} /></label>
+                      <label>{t("NIT / Tax ID", "Tax ID / NIT")}<input name="taxId" defaultValue={s.taxId ?? ""} /></label>
                       <label>{t("Correo", "Email")}<input name="email" defaultValue={s.email ?? ""} /></label>
                       <label>{t("Teléfono registrado", "Registered phone")}<input name="phone" defaultValue={s.phone ?? ""} /></label>
                       <label>{t("Sitio web", "Website")}<input name="website" defaultValue={s.website ?? ""} placeholder="www.proveedor.com" /></label>
