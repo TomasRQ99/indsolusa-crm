@@ -33,7 +33,7 @@ export const MODULES: NavModule[] = [
     ],
   },
   {
-    key: "comercial", es: "COMERCIAL", en: "COMMERCIAL", match: ["/deals", "/cotizaciones", "/comercial"],
+    key: "comercial", es: "COMERCIAL", en: "COMMERCIAL", match: ["/deals", "/cotizaciones", "/comercial", "/visitas"],
     tabs: [
       { href: "/deals", es: "Journeys", en: "Journeys" },
       { href: "/cotizaciones", es: "Futuro comercial", en: "Commercial future" },
@@ -41,6 +41,7 @@ export const MODULES: NavModule[] = [
       { href: "/comercial/fugas", es: "Fugas de caja", en: "Cash leakage" },
       { href: "/comercial/esagara", es: "Excepciones de Eságara", en: "Eságara exceptions" },
       { href: "/comercial/valor", es: "Atributos de valor", en: "Value attributes" },
+      { href: "/visitas", es: "Visitas", en: "Visits" },
       { href: "/comercial/metas", es: "Mis metas", en: "My goals" },
     ],
   },

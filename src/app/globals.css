@@ -1652,3 +1652,4 @@ tr.muted td { color: var(--ink-3); }
 .goal-bar > span { display: block; height: 100%; border-radius: 4px; background: var(--brand); }
 .goal-bar > i { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--ink); }
 .goal-kinds { display: flex; flex-wrap: wrap; gap: 6px 16px; list-style: none; padding: 0; margin: 6px 0 0; }
+.qa-row > input[type="date"] { flex: 0 0 170px; }

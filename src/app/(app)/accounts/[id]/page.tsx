@@ -256,6 +256,7 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
           {mail.configured && recipients.length > 0 && (
             <details className="qa"><summary className="qa-btn">{t("Escribir a un contacto", "Email a contact")}</summary><div className="qa-pop wide"><EmailComposer recipients={recipients} from={mail.from!} es={i.es} /></div></details>
           )}
+          <Link className="qa-btn" href={`/visitas?cliente=${a.id}#proximas`}>{t("Planear visita", "Plan visit")}</Link>
           {editable && (
             <div className="x3-edit">
               <details><summary className="small">{t("Registrar interacción", "Log interaction")}</summary>

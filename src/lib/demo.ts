@@ -674,6 +674,7 @@ export async function loadDemo(adminId: string) {
   const pao = await db.user.findUnique({ where: { email: `paola${DEMO_DOMAIN}` }, select: { id: true } });
   if (pao) await seedCreditRequestC3(pao.id);
   if (pao) await seedComercialC7(pao.id);
+  if (pao) await seedComercialC8a(pao.id);
 }
 
 
@@ -978,6 +979,25 @@ async function topUpMarketDemo() {
   await db.$transaction((tx) => seedComercialC6(tx), { timeout: 30000 });
   // Comercial C7 sample if missing.
   await seedComercialC7(paola.id);
+  // Comercial C8a sample if missing.
+  await seedComercialC8a(paola.id);
+}
+
+/** Comercial C8a sample: a mission with one planned visit, and last week's visit with what was learned and two
+ *  commitments (ours still open, the customer's kept). */
+async function seedComercialC8a(userId: string) {
+  if (await db.visitPlan.count({ where: { ownerId: userId } })) return;
+  const accts = await db.account.findMany({ where: { isDemo: true, deals: { some: { stage: { notIn: ["WON", "LOST"] } } } }, orderBy: { name: "asc" }, take: 2, select: { id: true, name: true } });
+  if (accts.length < 1) return;
+  const day = (n: number) => { const x = new Date(); x.setUTCHours(0, 0, 0, 0); return new Date(x.getTime() + n * 864e5); };
+  const by = "Paola Gómez" + TAG;
+  const m = await db.commercialMission.create({ data: { title: "Gira de clientes (ejemplo)", destination: "Cali y Yumbo", startDate: day(2), endDate: day(4), purpose: "Visitar plantas con cotizaciones abiertas y entender paradas de diciembre (ejemplo)", travelNote: "Vuelo Bogotá–Cali, 2 noches (ejemplo)", ownerId: userId, createdByName: by, budgetStatus: "WAITING_MODULE_14", budgetAmount: 650 } });
+  await db.visitPlan.create({ data: { accountId: accts[0].id, ownerId: userId, missionId: m.id, plannedAt: day(2), objectives: [{ cat: "PRESENT_DECIDE", text: "Presentar la solución y saber quién firma (ejemplo)" }, { cat: "FUTURE", text: "Preguntar por la parada de planta de diciembre (ejemplo)" }], meetWith: "Jefe de mantenimiento (ejemplo)", createdByName: by } });
+  const done = await db.visitPlan.create({ data: { accountId: accts[accts.length - 1].id, ownerId: userId, plannedAt: day(-6), happenedAt: day(-6), status: "DONE", objectives: [{ cat: "UNDERSTAND", text: "Entender la falla repetida en la línea 2 (ejemplo)" }], objectivesMet: [true], learned: "La falla viene del arranque directo del motor; el cliente evalúa variadores para 3 líneas en 2027 (ejemplo)", nextMove: "Enviar comparativo de variadores (ejemplo)", nextMoveDate: day(3), createdByName: by } });
+  await db.visitCommitment.createMany({ data: [
+    { visitId: done.id, side: "US", what: "Enviar comparativo de variadores con tiempos de entrega (ejemplo)", dueAt: day(3) },
+    { visitId: done.id, side: "CUSTOMER", what: "Compartir los datos de placa de los motores (ejemplo)", dueAt: day(-2), status: "KEPT", closedAt: day(-2) },
+  ] });
 }
 
 /** Comercial C7 sample: this month's five targets for Paola (set by management, with a reason) and her recent
@@ -1028,6 +1048,8 @@ export async function removeDemo() {
         await tx.creditReviewRequest.updateMany({ where: { decidedById: { in: ids } }, data: { decidedById: null } });
         await tx.commissionEntry.deleteMany({ where: { OR: [{ userId: { in: ids } }, { approvedById: { in: ids } }] } });
         await tx.supplier.updateMany({ where: { bankVerifiedById: { in: ids } }, data: { bankVerifiedById: null } });
+        await tx.visitPlan.deleteMany({ where: { ownerId: { in: ids } } });
+        await tx.commercialMission.deleteMany({ where: { ownerId: { in: ids } } });
         await tx.user.deleteMany({ where: { id: { in: ids } } });
       }
     },

@@ -71,11 +71,13 @@ model User {
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
 
-  accounts   Account[]
-  deals      Deal[]
-  tasks      Task[]
-  activities Activity[]
+  accounts    Account[]
+  deals       Deal[]
+  tasks       Task[]
+  activities  Activity[]
   goalTargets GoalTarget[]
+  visits      VisitPlan[]         @relation("VisitOwner")
+  missions    CommercialMission[] @relation("MissionOwner")
 
   paymentsRequested   SupplierPayment[]   @relation("PaymentRequester")
   paymentsVerified    SupplierPayment[]   @relation("PaymentVerifier")
@@ -148,6 +150,7 @@ model Account {
   creditReviews CreditReviewRequest[]
   openLoops     OpenLoop[]
   prepared      PreparedMessage[]
+  visits        VisitPlan[]
 
   @@index([ownerId])
   @@index([name])
@@ -1227,26 +1230,26 @@ enum ResolutionState {
 }
 
 model CustomerPO {
-  id             String    @id @default(cuid())
-  dealId         String
-  deal           Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  quoteId        String?
-  quote          Quote?    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
-  number         String
-  receivedAt     DateTime
-  requiredBy     DateTime?
-  incoterm       String?
-  paymentTerms   String?
-  shipTo         String?
-  currency       String    @default("USD")
-  quoteRef       String?
-  source         String?
-  createdById    String
-  createdByName  String
-  createdAt      DateTime  @default(now())
-  rejectedAt     DateTime?
-  rejectedByName String?
-  rejectReason   String?
+  id                  String    @id @default(cuid())
+  dealId              String
+  deal                Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  quoteId             String?
+  quote               Quote?    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  number              String
+  receivedAt          DateTime
+  requiredBy          DateTime?
+  incoterm            String?
+  paymentTerms        String?
+  shipTo              String?
+  currency            String    @default("USD")
+  quoteRef            String?
+  source              String?
+  createdById         String
+  createdByName       String
+  createdAt           DateTime  @default(now())
+  rejectedAt          DateTime?
+  rejectedByName      String?
+  rejectReason        String?
   // Comercial C6 §22: what the PO says about who buys, tax and conditions (compared, never assumed).
   legalEntity         String?
   taxIdOnPo           String?
@@ -1269,6 +1272,7 @@ model CustomerPO {
   acceptance  PoAcceptance?
   allocations PoAllocation[]
   dispatches  DispatchInstruction[]
+
   @@index([dealId])
 }
 
@@ -2695,6 +2699,7 @@ model DispatchInstruction {
 
   @@index([dealId])
 }
+
 // ---------- Comercial C7 · Goals & Future Creation (v1.1 §37–42, §50) ----------
 
 /// A monthly target for one person and one core goal, set by Gerencia / Director Comercial. Versioned: a change
@@ -2714,4 +2719,80 @@ model GoalTarget {
   createdAt    DateTime  @default(now())
 
   @@index([userId, period])
+}
+
+// ---------- Comercial C8a · Visits & Commercial Missions (v1.3 §57) ----------
+
+/// A planned or unplanned customer visit. The brief is derived from what SOLU already knows (no re-typing); the
+/// outcome is typed by the person (no AI drafting while L4 is paused) and every confirmation is theirs.
+model VisitPlan {
+  id            String             @id @default(cuid())
+  accountId     String
+  account       Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  plantId       String?
+  ownerId       String
+  owner         User               @relation("VisitOwner", fields: [ownerId], references: [id])
+  missionId     String?
+  mission       CommercialMission? @relation(fields: [missionId], references: [id], onDelete: SetNull)
+  plannedAt     DateTime?
+  unplanned     Boolean            @default(false)
+  /// [{ cat: UNDERSTAND|RELATIONSHIP|SOLVE|PRESENT_DECIDE|ACCOMPANY|FUTURE, text }]
+  objectives    Json               @default("[]")
+  meetWith      String?
+  /// PLANNED | DONE | CANCELLED
+  status        String             @default("PLANNED")
+  happenedAt    DateTime?
+  learned       String?
+  objectivesMet Json?
+  nextMove      String?
+  nextMoveDate  DateTime?
+  cancelReason  String?
+  createdByName String
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  commitments VisitCommitment[]
+
+  @@index([ownerId, status])
+  @@index([accountId])
+}
+
+/// A promise made at a visit, by us or by the customer, tracked until kept or dropped.
+model VisitCommitment {
+  id         String    @id @default(cuid())
+  visitId    String
+  visit      VisitPlan @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  /// US | CUSTOMER
+  side       String
+  what       String
+  dueAt      DateTime?
+  dealId     String?
+  /// OPEN | KEPT | DROPPED
+  status     String    @default("OPEN")
+  closedAt   DateTime?
+  closedNote String?
+  createdAt  DateTime  @default(now())
+
+  @@index([visitId])
+}
+
+/// A trip that groups several visits. The travel budget and expenses belong to Administration (Module 14):
+/// until that module exists the mission only records the request.
+model CommercialMission {
+  id            String   @id @default(cuid())
+  title         String
+  ownerId       String
+  owner         User     @relation("MissionOwner", fields: [ownerId], references: [id])
+  destination   String
+  startDate     DateTime
+  endDate       DateTime
+  purpose       String
+  travelNote    String?
+  /// NOT_REQUESTED | WAITING_MODULE_14 (budget request kept until Administration exists)
+  budgetStatus  String   @default("NOT_REQUESTED")
+  budgetAmount  Decimal? @db.Decimal(14, 2)
+  createdByName String
+  createdAt     DateTime @default(now())
+
+  visits VisitPlan[]
 }
