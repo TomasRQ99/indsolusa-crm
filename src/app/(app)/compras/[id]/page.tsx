@@ -3,6 +3,7 @@ import { readinessForSpo } from "@/lib/pr";
 import { SpoBuying } from "@/components/SpoBuying";
 import { SpoCommitments } from "@/components/SpoCommitments";
 import { SpoFreight } from "@/components/SpoFreight";
+import { SpoReceipt } from "@/components/SpoReceipt";
 import { fullReadiness } from "@/lib/pr-auth";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -49,6 +50,8 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
     fuente: t("Escribe de dónde sale la confirmación.", "Write where the confirmation comes from."), resolucion: t("Escribe cómo se resuelven las diferencias.", "Write how the differences are resolved."),
     cotizacion: t("Indica el valor de la primera cotización.", "Give the first quote amount."),
     tipo: t("Elige el tipo de pedido.", "Choose the kind of order."),
+    "rec-borrador": t("Primero libera la orden.", "Release the order first."), "rec-lugar": t("Elige dónde se recibe.", "Choose where it is received."), "rec-nada": t("Indica cuántas unidades llegaron.", "Give how many units arrived."),
+    "rec-nota": t("Algo no está bien en una línea: escribe qué se vio.", "Something is off on a line: write what was seen."),
     "flete-primero": t("Primero guarda los datos del flete.", "Save the freight data first."), "flete-opcion": t("Una opción necesita transportador, costo y de dónde sale la tarifa.", "An option needs a carrier, a cost and where the rate comes from."),
     "flete-motivo": t("Esa opción no es la más barata o no protege la promesa: escribe por qué se elige.", "That option isn't the cheapest or doesn't protect the promise: write why it is chosen."), compromiso: t("Un compromiso necesita su fecha y de dónde sale.", "A commitment needs its date and where it comes from."),
     evidencia: t("Escribe la evidencia de que ocurrió.", "Write the evidence that it happened."), ocurrido: t("Ese hito ya ocurrió.", "That milestone already happened."),
@@ -206,6 +209,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
           <SpoBuying spoId={spo.id} lang={i.es ? "ES" : "EN"} editable={editable} />
           <SpoCommitments spoId={spo.id} lang={i.es ? "ES" : "EN"} editable={editable} />
           <SpoFreight spoId={spo.id} lang={i.es ? "ES" : "EN"} editable={editable} />
+          <SpoReceipt spoId={spo.id} lang={i.es ? "ES" : "EN"} editable={editable} />
         </div>
 
         <aside className="jrail">

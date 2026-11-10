@@ -319,6 +319,7 @@ model Deal {
   purchaseRequirements PurchaseRequirement[]
   purchaseAllocations  PurchaseAllocation[]
   savings              SavingsEntry[]
+  stockLots            StockLot[]
 
   @@index([stage])
   @@index([ownerId])
@@ -798,6 +799,7 @@ model SupplierPO {
   savings       SavingsEntry[]
   commitments   SupplierCommitment[]
   freight       FreightRequirement?
+  receipts      GoodsReceipt[]
   /// STOCK | MANUFACTURED | SERVICE | REPAIR: which milestones apply (§23)
   orderKind     String?
 
@@ -3351,4 +3353,107 @@ model CarrierIntegrationAttempt {
 
   @@index([shipmentId])
   @@index([state])
+}
+
+// ---------- Operaciones O6 · Goods receipt, stock and evidence (module 11 §34–36) ----------
+
+/// A place where goods are received and stock can sit (decision O-01: Miami and Colombia; editable later).
+model StockLocation {
+  id       String         @id @default(cuid())
+  key      String         @unique
+  name     String
+  country  String?
+  active   Boolean        @default(true)
+  receipts GoodsReceipt[]
+  lots     StockLot[]
+}
+
+/// One arrival of goods against a Supplier PO. A receipt validates identity, condition and completeness, not only
+/// quantity (AC21). Measured weight and dimensions are kept as our own evidence, separate from what was stated.
+model GoodsReceipt {
+  id             String        @id @default(cuid())
+  code           String        @unique
+  supplierPoId   String
+  supplierPo     SupplierPO    @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
+  locationId     String
+  location       StockLocation @relation(fields: [locationId], references: [id])
+  receivedAt     DateTime
+  receivedById   String
+  receivedByName String
+  packages       Int?
+  grossKg        Decimal?      @db.Decimal(10, 2)
+  dims           String?
+  packagingOk    Boolean?
+  notes          String?
+  createdAt      DateTime      @default(now())
+
+  lines  GoodsReceiptLine[]
+  photos GoodsReceiptPhoto[]
+
+  @@index([supplierPoId])
+}
+
+model GoodsReceiptLine {
+  id            String       @id @default(cuid())
+  receiptId     String
+  receipt       GoodsReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  position      Int
+  code          String?
+  description   String
+  qtyExpected   Int
+  qtyReceived   Int
+  identityOk    Boolean
+  conditionOk   Boolean
+  completeOk    Boolean
+  docsOk        Boolean
+  serials       String?
+  /// QUANTITY | IDENTITY | CONDITION | COMPLETENESS | DOCUMENTATION (first that failed; null = clean)
+  exceptionKind String?
+  exceptionNote String?
+
+  lots StockLot[]
+
+  @@index([receiptId])
+}
+
+/// Units physically in a location, in one state. Committed = assigned to a Journey; Available = free to sell;
+/// Quarantine / Damaged / Return pending are physically there but never available (AC22–23).
+model StockLot {
+  id            String           @id @default(cuid())
+  receiptLineId String
+  receiptLine   GoodsReceiptLine @relation(fields: [receiptLineId], references: [id], onDelete: Cascade)
+  locationId    String
+  location      StockLocation    @relation(fields: [locationId], references: [id])
+  code          String?
+  description   String
+  qty           Int
+  /// COMMITTED | AVAILABLE | RESERVED | QUARANTINE | DAMAGED | RETURN_PENDING
+  state         String
+  dealId        String?
+  deal          Deal?            @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  stateNote     String?
+  stateByName   String?
+  stateAt       DateTime?
+  /// Left the location (dispatched to the customer or returned to the supplier): no longer physical stock.
+  outAt         DateTime?
+  outNote       String?
+  createdAt     DateTime         @default(now())
+
+  @@index([locationId, state])
+  @@index([dealId])
+}
+
+/// Photo evidence of a receipt (shrunk in the browser; at most 8 per receipt, decision O-08).
+model GoodsReceiptPhoto {
+  id             String       @id @default(cuid())
+  receiptId      String
+  receipt        GoodsReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  name           String
+  mime           String
+  size           Int
+  data           Bytes
+  uploadedByName String
+  createdAt      DateTime     @default(now())
+
+  @@index([receiptId])
 }
