@@ -3,7 +3,9 @@ import { ShipmentDates } from "@/components/ShipmentDates";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canEditOps } from "@/lib/permissions";
+import { canEditMoney, canEditOps } from "@/lib/permissions";
+import { ShipmentAudit } from "@/components/ShipmentAudit";
+import { ShipmentCustoms } from "@/components/ShipmentCustoms";
 import { makeI18n } from "@/lib/i18n";
 import { dayInput } from "@/lib/domain";
 import { buildShipment, shipInclude } from "@/lib/logistics";
@@ -72,6 +74,9 @@ export default async function ShipmentPage({ params, searchParams }: { params: P
     recibido: t("Recibo confirmado. Se creó la remisión para facturar.", "Receipt confirmed. The delivery note was created for invoicing."),
     disputa: t("Discrepancia registrada. No se factura hasta resolverla.", "Discrepancy recorded. No invoicing until it's resolved."),
     opcion: t("Opción elegida. Quedó como siguiente movimiento del Journey.", "Option chosen. It's now the Journey's next movement."),
+    fac: t("Factura registrada y comparada.", "Invoice recorded and compared."),
+    reclamo: t("Reclamo actualizado.", "Claim updated."),
+    aduana: t("Caso de aduana guardado.", "Customs case saved."),
   };
   const errMsg: Record<string, string> = {
     fecha: t("Elige la fecha que da el transportista.", "Pick the date the carrier gives."),
@@ -79,6 +84,13 @@ export default async function ShipmentPage({ params, searchParams }: { params: P
     nota: t("Escribe qué pasó.", "Write what happened."),
     quien: t("Escribe quién recibió.", "Write who received it."),
     opcion: t("Esa opción ya no aplica.", "That option no longer applies."),
+    "fac-datos": t("Faltan datos de la factura: transportador, número, total y de dónde sale el dato.", "Invoice data missing: carrier, number, total and where the figure comes from."),
+    "fac-repetida": t("Esa factura de ese transportador ya está registrada.", "That invoice from that carrier is already recorded."),
+    "reclamo-datos": t("Indica el valor en disputa (no mayor que la factura), el cálculo esperado y la evidencia.", "Give the disputed amount (not above the invoice), the expected calculation and the evidence."),
+    "reclamo-credito": t("Para marcarlo recuperado se necesita el número de la nota crédito y el valor realmente recibido (no mayor que lo reclamado).", "To mark it recovered, the credit note number and the amount really received are needed (not above what was claimed)."),
+    "reclamo-respuesta": t("Escribe qué respondió el transportador.", "Write what the carrier answered."),
+    permiso: t("Registrar la respuesta de un reclamo corresponde al dueño del Journey, Finanzas, Administración o Gerencia.", "Recording a claim's answer is for the Journey owner, Finance, Administration or Management."),
+    clasificacion: t("Para marcar la clasificación como validada hoy, escribe quién la validó.", "To mark the classification as validated today, write who validated it."),
   };
   const chosen = new Map(s.decisions.map((x) => [x.option, x]));
   const fitsSig = (fits: boolean | null, partial?: boolean) =>
@@ -230,6 +242,8 @@ export default async function ShipmentPage({ params, searchParams }: { params: P
             </section>
           )}
           <ShipmentDates shipmentId={s.id} lang={i.es ? "ES" : "EN"} editable={editable} />
+          <ShipmentCustoms shipmentId={s.id} lang={i.es ? "ES" : "EN"} editable={editable} />
+          <ShipmentAudit shipmentId={s.id} lang={i.es ? "ES" : "EN"} editable={editable} canMoney={canEditMoney(user, d.ownerId)} />
         </div>
 
         <aside className="jrail">

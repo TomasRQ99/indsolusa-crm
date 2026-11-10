@@ -1520,9 +1520,11 @@ model Shipment {
   createdByName          String
   createdAt              DateTime     @default(now())
 
-  lines     ShipmentLine[]
-  events    ShipmentEvent[]
-  decisions ShipmentDecision[]
+  lines           ShipmentLine[]
+  events          ShipmentEvent[]
+  decisions       ShipmentDecision[]
+  carrierInvoices CarrierInvoice[]
+  customsCase     CustomsCase?
 
   @@index([dealId])
 }
@@ -3461,4 +3463,109 @@ model GoodsReceiptPhoto {
   createdAt      DateTime     @default(now())
 
   @@index([receiptId])
+}
+
+// ---------- Operaciones O7 · Freight audit and customs (module 11 §31–33) ----------
+
+/// How one carrier (and optionally one service) turns size into chargeable weight, and how much difference is normal.
+/// Never one formula for everyone (AC19). `confirmed` = checked against our contract; until then it is a starting value.
+model CarrierRatingRule {
+  id            String   @id @default(cuid())
+  carrier       String
+  service       String   @default("")
+  /// volumetric kg = L × W × H (cm) / divisor
+  divisor       Int      @default(5000)
+  roundingKg    Decimal  @default(0.5) @db.Decimal(6, 2)
+  minChargeKg   Decimal? @db.Decimal(8, 2)
+  tolerancePct  Decimal  @default(3) @db.Decimal(6, 2)
+  toleranceUsd  Decimal  @default(10) @db.Decimal(10, 2)
+  claimPct      Decimal  @default(10) @db.Decimal(6, 2)
+  confirmed     Boolean  @default(false)
+  note          String?
+  version       Int      @default(1)
+  updatedByName String?
+  updatedAt     DateTime @updatedAt
+
+  @@unique([carrier, service])
+}
+
+/// What the carrier actually billed for a shipment, compared with the quote, the waybill data and our own measurement.
+model CarrierInvoice {
+  id             String   @id @default(cuid())
+  shipmentId     String
+  shipment       Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  carrier        String
+  service        String?
+  number         String
+  invoiceDate    DateTime
+  currency       String   @default("USD")
+  amount         Decimal  @db.Decimal(14, 2)
+  billedKg       Decimal? @db.Decimal(10, 2)
+  billedPieces   Int?
+  /// [{ name, amount }]
+  surcharges     Json     @default("[]")
+  source         String
+  /// MATCH | WITHIN_TOLERANCE | VARIANCE_REVIEW | CLAIM_RECOMMENDED | CLAIM_OPEN | CREDIT_RECEIVED
+  status         String
+  /// the comparison as it was when recorded (expected vs billed, variances, rule version)
+  audit          Json
+  recordedByName String
+  createdAt      DateTime @default(now())
+
+  claim FreightClaim?
+
+  @@unique([carrier, number])
+  @@index([shipmentId])
+}
+
+/// A dispute with the carrier. It is recovered only when the credit is really received, never on a verbal yes (AC20).
+model FreightClaim {
+  id              String         @id @default(cuid())
+  invoiceId       String         @unique
+  invoice         CarrierInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  disputedAmount  Decimal        @db.Decimal(14, 2)
+  expectedCalc    String
+  billedCalc      String
+  evidence        String
+  claimDate       DateTime
+  /// OPEN | ACCEPTED | REJECTED | RECOVERED
+  status          String         @default("OPEN")
+  response        String?
+  creditNote      String?
+  recoveredAmount Decimal?       @db.Decimal(14, 2)
+  recoveredAt     DateTime?
+  openedByName    String
+  updatedByName   String?
+  createdAt       DateTime       @default(now())
+}
+
+/// Customs for one shipment: documents, classification with where it comes from, duties expected vs actual, holds
+/// and release. A classification used before is history, not a currently validated one.
+model CustomsCase {
+  id                   String    @id @default(cuid())
+  shipmentId           String    @unique
+  shipment             Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  broker               String?
+  consignee            String?
+  declarationNo        String?
+  classification       String?
+  /// PENDING | HISTORICAL | VALIDATED_CURRENT
+  classificationStatus String    @default("PENDING")
+  classificationSource String?
+  origin               String?
+  declaredValue        Decimal?  @db.Decimal(14, 2)
+  hasTransportDoc      Boolean   @default(false)
+  permits              String?
+  dutiesExpected       Decimal?  @db.Decimal(14, 2)
+  dutiesActual         Decimal?  @db.Decimal(14, 2)
+  vatTreatment         String?
+  inspection           String?
+  holdReason           String?
+  correctiveSteps      String?
+  expectedDays         Int?
+  arrivedAt            DateTime?
+  releasedAt           DateTime?
+  updatedByName        String
+  updatedAt            DateTime  @updatedAt
+  createdAt            DateTime  @default(now())
 }
