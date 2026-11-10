@@ -80,7 +80,7 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   VisitPlan: "all",
   VisitCommitment: "all",
   CommercialMission: "all",
-  MissionExpense: ["spentOn", "category", "description", "amount", "originalNote", "receiptName", "noReceiptReason"],
+  MissionExpense: ["spentOn", "category", "description", "amount", "originalNote", "currency", "originalAmount", "fxRate", "fxSource", "receiptName", "noReceiptReason"],
   VisitAttachment: ["name", "mime", "size", "uploadedByName"],
   CoverageAssignment: "all",
   RelationshipBackup: "all",

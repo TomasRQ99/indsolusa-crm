@@ -8,6 +8,7 @@ import { dayInput, today } from "@/lib/domain";
 import { VISIT_STATUS } from "@/lib/visits";
 import { BUDGET_STATUS, EXPENSES_STATUS, EXPENSE_CATS, canDecideBudget, canEditExpenses, canReconcile, canRequestBudget, travelSummary } from "@/lib/travel-rules";
 import { ShrinkFileInput } from "@/components/ShrinkFileInput";
+import { ExpenseMoneyFields } from "@/components/ExpenseMoneyFields";
 import { addExpense, decideBudget, reconcileExpenses, removeExpense, requestBudget, submitExpenses } from "../actions";
 
 // Comercial C8e · one mission: its visits, the travel budget (asked → decided by someone else) and the expenses
@@ -24,7 +25,7 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
     include: {
       owner: { select: { name: true, role: true } },
       visits: { orderBy: { plannedAt: "asc" }, select: { id: true, status: true, plannedAt: true, account: { select: { name: true } } } },
-      expenses: { orderBy: [{ spentOn: "asc" }, { createdAt: "asc" }], select: { id: true, spentOn: true, category: true, description: true, amount: true, originalNote: true, receiptName: true, noReceiptReason: true } },
+      expenses: { orderBy: [{ spentOn: "asc" }, { createdAt: "asc" }], select: { id: true, spentOn: true, category: true, description: true, amount: true, originalNote: true, currency: true, originalAmount: true, fxRate: true, fxSource: true, receiptName: true, noReceiptReason: true } },
     },
   });
   if (!m) notFound();
@@ -57,6 +58,8 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
     "nota-exceso": t("Hay gasto por encima del presupuesto o sin soporte: escribe por qué se acepta.", "There's spending over budget or without a receipt: write why it's accepted."),
     "gastos-estado": t("Los gastos se cargan con el presupuesto aprobado y antes de enviarlos a revisión.", "Expenses are entered once the budget is approved and before sending them for review."),
     gasto: t("Cada gasto necesita fecha, tipo, descripción y monto.", "Each expense needs a date, type, description and amount."),
+    tasa: t("No se pudo consultar la tasa oficial (TRM) en este momento. Intenta de nuevo, o elige escribir cuánto te cobraron en USD.", "Couldn't get the official rate (TRM) right now. Try again, or choose to type what you were charged in USD."),
+    "usd-cobrado": t("Escribe cuánto te cobraron en USD.", "Type what you were charged in USD."),
     soporte: t("Adjunta el soporte, o escribe por qué no lo hay.", "Attach the receipt, or write why there isn't one."),
     "soporte-tipo": t("El soporte debe ser foto (JPG, PNG, WEBP) o PDF de hasta 5 MB.", "The receipt must be a photo (JPG, PNG, WEBP) or PDF up to 5 MB."),
     "sin-gastos": t("Agrega al menos un gasto antes de enviar.", "Add at least one expense before sending."),
@@ -128,7 +131,7 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
                 <tr key={e.id}>
                   <td className="mono small">{i.day(e.spentOn)}</td>
                   <td className="small">{t(EXPENSE_CATS[e.category]?.es ?? e.category, EXPENSE_CATS[e.category]?.en ?? e.category)}</td>
-                  <td>{e.description}{e.originalNote && <span className="muted small"> · {e.originalNote}</span>}</td>
+                  <td>{e.description}{e.originalNote && <span className="muted small"> · {e.originalNote}</span>}{e.currency === "COP" && e.originalAmount != null && <span className="src block">COP {i.n(e.originalAmount)} · {t("tasa", "rate")} {i.n2(e.fxRate)} · {e.fxSource}</span>}</td>
                   <td className="n mono">{i.n2(e.amount)}</td>
                   <td className="small">{e.receiptName ? <a href={`/visitas/soporte/${e.id}`} target="_blank" rel="noreferrer">{t("Ver soporte", "View receipt")}</a> : <span className="risk-t">{t("Sin soporte", "No receipt")}: {e.noReceiptReason}</span>}</td>
                   {editExp && <td><form action={removeExpense.bind(null, e.id)}><button type="submit" className="linkish">{t("Quitar", "Remove")}</button></form></td>}
@@ -140,17 +143,14 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
 
           {editExp && (
             <>
-              <details className="qa" open={m.expenses.length === 0 || ["gasto", "soporte", "soporte-tipo"].includes(sp.err ?? "")} style={{ marginTop: 8 }}><summary className="qa-btn">{t("+ Agregar gasto", "+ Add expense")}</summary>
+              <details className="qa" open={m.expenses.length === 0 || ["gasto", "soporte", "soporte-tipo", "tasa", "usd-cobrado"].includes(sp.err ?? "")} style={{ marginTop: 8 }}><summary className="qa-btn">{t("+ Agregar gasto", "+ Add expense")}</summary>
                 <form action={addExpense.bind(null, m.id)} className="qa-form" style={{ marginTop: 8, maxWidth: 620 }}>
                   <div className="qa-row">
                     <label>{t("Fecha", "Date")}<input name="spentOn" type="date" required defaultValue={dayInput(today())} /></label>
                     <label>{t("Tipo", "Type")}<select name="category" defaultValue="TRANSPORT">{Object.entries(EXPENSE_CATS).map(([k, c]) => <option key={k} value={k}>{t(c.es, c.en)}</option>)}</select></label>
                   </div>
                   <label>{t("Descripción", "Description")}<input name="description" required maxLength={200} placeholder={t("Ej.: taxi aeropuerto – planta", "E.g.: taxi airport – plant")} /></label>
-                  <div className="qa-row">
-                    <label>{t("Monto en USD", "Amount in USD")}<input name="amount" type="number" min={0} step="0.01" required /></label>
-                    <label>{t("Monto original (opcional)", "Original amount (optional)")}<input name="originalNote" maxLength={80} placeholder="COP 180.000" /></label>
-                  </div>
+                  <ExpenseMoneyFields lang={lang} />
                   <label>{t("Soporte (foto o PDF)", "Receipt (photo or PDF)")}<ShrinkFileInput name="receipt" accept="image/jpeg,image/png,image/webp,application/pdf" lang={lang} /></label>
                   <label>{t("Si no hay soporte, por qué", "If there's no receipt, why")}<input name="noReceiptReason" maxLength={200} /></label>
                   <button type="submit">{t("Agregar gasto", "Add expense")}</button>
@@ -171,7 +171,7 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
           ) : <p className="src" style={{ marginTop: 8 }}>{t("En revisión por Finanzas o Gerencia.", "Under review by Finance or Management.")}</p>)}
         </section>
       )}
-      <p className="src">{t("Reglas provisionales de viaje (travel-v1), hasta que llegue el documento oficial de Administración (Módulo 14). Los montos van en USD.", "Interim travel rules (travel-v1), until the official Administration document (Module 14) arrives. Amounts are in USD.")}</p>
+      <p className="src">{t("Reglas provisionales de viaje (travel-v1), hasta que llegue el documento oficial de Administración (Módulo 14). El presupuesto se lleva en USD; un gasto en pesos se convierte con la TRM oficial o con lo que te cobraron.", "Interim travel rules (travel-v1), until the official Administration document (Module 14) arrives. The budget is kept in USD; an expense in pesos is converted with the official TRM or with what you were charged.")}</p>
     </div>
   );
 }

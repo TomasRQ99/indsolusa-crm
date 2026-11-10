@@ -2885,6 +2885,12 @@ model MissionExpense {
   description     String
   amount          Decimal           @db.Decimal(14, 2)
   originalNote    String?
+  /// Currency the expense was paid in (USD | COP). mount is always the USD value used against the budget.
+  currency        String            @default("USD")
+  originalAmount  Decimal?          @db.Decimal(16, 2)
+  /// COP per USD used to convert, and where it came from (official TRM of a date, or the amount actually charged).
+  fxRate          Decimal?          @db.Decimal(12, 2)
+  fxSource        String?
   receiptName     String?
   receiptMime     String?
   receiptSize     Int?

@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { canEdit } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { cmpMoney, money2 } from "@/lib/money";
+import { TRM_SOURCE, copToUsd, impliedRate, trmFor } from "@/lib/fx";
 import { EXPENSE_CATS, MAX_EXPENSES, MAX_RECEIPT_BYTES, RECEIPT_MIMES, canDecideBudget, canEditExpenses, canReconcile, canRequestBudget, travelSummary } from "@/lib/travel-rules";
 
 // Comercial C8e · travel budget and expenses of a mission (interim rules, decision C-17). Nobody approves their own
@@ -58,10 +59,29 @@ export async function addExpense(id: string, fd: FormData) {
   if (!canEditExpenses(m)) go(id, "err=gastos-estado");
   if ((await db.missionExpense.count({ where: { missionId: id } })) >= MAX_EXPENSES) go(id, "err=muchos");
   const spentOn = dayOf(fd, "spentOn");
-  const amount = amountOf(fd, "amount");
+  const paid = amountOf(fd, "amount");
   const description = txt(fd, "description", 200);
   const category = String(fd.get("category") ?? "");
-  if (!spentOn || amount == null || !description || !EXPENSE_CATS[category]) go(id, "err=gasto");
+  if (!spentOn || paid == null || !description || !EXPENSE_CATS[category]) go(id, "err=gasto");
+  // USD stays USD. COP is converted the way the person chose: the official TRM of the expense date, or the USD
+  // amount they were actually charged (card statement). Both keep the original amount, the rate and its source.
+  const cop = fd.get("currency") === "COP";
+  let amount = paid!;
+  let fx: { currency: string; originalAmount: number | null; fxRate: number | null; fxSource: string | null } = { currency: "USD", originalAmount: null, fxRate: null, fxSource: null };
+  if (cop) {
+    if (fd.get("fxMode") === "CHARGED") {
+      const usd = amountOf(fd, "usdCharged");
+      if (usd == null) go(id, "err=usd-cobrado");
+      amount = usd!;
+      fx = { currency: "COP", originalAmount: paid!, fxRate: impliedRate(paid!, usd!), fxSource: `Monto cobrado en USD, escrito por ${user.name}` };
+    } else {
+      const trm = await trmFor(spentOn!.toISOString().slice(0, 10));
+      if (!trm) go(id, "err=tasa");
+      amount = copToUsd(paid!, trm!.rate);
+      if (amount <= 0) go(id, "err=gasto");
+      fx = { currency: "COP", originalAmount: paid!, fxRate: trm!.rate, fxSource: `${TRM_SOURCE} · vigente ${trm!.validFrom}` };
+    }
+  }
   const f = fd.get("receipt");
   const file = f instanceof File && f.size > 0 ? f : null;
   if (file && (file.size > MAX_RECEIPT_BYTES || !RECEIPT_MIMES.includes(file.type))) go(id, "err=soporte-tipo");
@@ -69,7 +89,7 @@ export async function addExpense(id: string, fd: FormData) {
   // A receipt, or the reason there isn't one: never neither.
   if (!file && !noReceiptReason) go(id, "err=soporte");
   await db.missionExpense.create({ data: {
-    missionId: id, spentOn: spentOn!, category, description: description!, amount: amount!, originalNote: txt(fd, "originalNote", 80), noReceiptReason, createdByName: user.name, createdById: user.id,
+    missionId: id, spentOn: spentOn!, category, description: description!, amount, ...fx, noReceiptReason, createdByName: user.name, createdById: user.id,
     ...(file ? { receiptName: file.name.slice(0, 160) || "soporte", receiptMime: file.type, receiptSize: file.size, receiptData: Buffer.from(await file.arrayBuffer()) } : {}),
   } });
   go(id, "ok=gasto#gastos");
@@ -114,4 +134,11 @@ export async function reconcileExpenses(id: string, fd: FormData) {
   if ((s.over || s.withoutReceipt > 0) && !note) go(id, "err=nota-exceso");
   await db.commercialMission.update({ where: { id }, data: { expensesStatus: "RECONCILED", reconcileNote: note, reconciledByName: user.name, reconciledAt: new Date() } });
   go(id, "ok=legalizado");
+}
+
+/** Official rate for a day, shown in the form before saving so the person sees the conversion they are choosing. */
+export async function previewRate(day: string): Promise<{ ok: true; rate: number; validFrom: string } | { ok: false }> {
+  await requireUser();
+  const trm = await trmFor(String(day ?? ""));
+  return trm ? { ok: true, rate: trm.rate, validFrom: trm.validFrom } : { ok: false };
 }
