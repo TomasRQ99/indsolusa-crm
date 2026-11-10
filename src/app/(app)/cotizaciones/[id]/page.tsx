@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SellerLine } from "@/components/SellerLine";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -68,6 +69,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     solucion: t("Solución y promesa guardadas.", "Solution and promise saved."),
     costos: t("Costos guardados. SOLU recalculó la economía esperada.", "Costs saved. SOLU recalculated the expected economics."),
     condiciones: t("Condiciones guardadas.", "Terms saved."),
+    vendedor: t("Empresa que vende actualizada.", "Selling company updated."),
     linea: t("Productos actualizados.", "Products updated."),
     escenario: t("Escenarios actualizados.", "Scenarios updated."),
     recomendado: t("Escenario recomendado: el plazo de la cotización lo sigue.", "Scenario recommended: the quote's lead time follows it."),
@@ -79,6 +81,9 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     ...EXC_OK(t),
   };
   const errMsg: Record<string, string> = {
+    "vendedor-inactivo": t("Esa empresa aún no está activa: Gerencia debe completar sus datos en Comercial → Configuración → Empresas que venden.", "That company isn't active yet: Management must complete its details in Commercial → Setup → Selling companies."),
+    "vendedor-fijo": t("El cliente ya vio una cotización de esta empresa (o hay factura): la empresa que vende ya no cambia en este Journey.", "The customer already saw a quote from this company (or there's an invoice): the seller no longer changes on this Journey."),
+    permiso: t("No tienes permiso para cambiar este Journey.", "You don't have permission to change this Journey."),
     presentada: t("Esta versión ya fue presentada y no cambia. Crea una revisión.", "This version was already presented and doesn't change. Create a revision."),
     bloqueada: t("Todavía hay puntos que impiden presentarla (ver «Lista para presentar»).", "There are still items that block presenting it (see “Ready to Present”)."),
     "sin-oc": t("Escribe el número de OC del cliente.", "Write the customer's PO number."),
@@ -744,6 +749,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
       {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
       <Header />
+      <SellerLine dealId={q.deal.id} sellerKey={q.deal.sellerKey} es={i.es} editable={editable} back={`/cotizaciones/${q.id}`} />
       {draft ? (
         <div className="jbody">
           <div className="jmain">

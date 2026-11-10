@@ -1672,3 +1672,8 @@ button.linkish { background: none; border: 0; padding: 0; color: var(--brand); f
 .tab-groups a:hover { text-decoration: none; color: var(--ink); border-color: var(--line-strong); }
 .tab-groups a.on { background: var(--brand); border-color: var(--brand); color: var(--on-brand, #fff); }
 .tab-groups + .tabs { margin-top: 0; }
+
+.seller-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 10px; font-size: 13.5px; }
+.seller-line .k { text-transform: uppercase; font-size: 11px; letter-spacing: .04em; color: var(--ink-3); }
+.seller-pick { display: inline-flex; gap: 6px; align-items: center; }
+.seller-pick select { width: auto; min-width: 180px; }

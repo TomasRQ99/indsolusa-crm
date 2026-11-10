@@ -8,7 +8,7 @@ import type { PrismaClient } from "@prisma/client";
 export const AUDITED: Record<string, readonly string[] | "all"> = {
   User: ["role", "active", "email", "name"],
   Account: ["creditLimit", "paymentTermsDays", "allowsPartialBilling", "taxId", "requiresReceptionCode", "requiresPortal", "ownerId"],
-  Deal: ["amount", "supplierCost", "freightCost", "otherCosts", "stage", "ownerId", "promisedDate", "poAcceptedAt", "creditExceptionById", "creditExceptionAt", "creditExceptionNote", "closedAt", "explorationId", "plantId", "originRef"],
+  Deal: ["sellerKey", "amount", "supplierCost", "freightCost", "otherCosts", "stage", "ownerId", "promisedDate", "poAcceptedAt", "creditExceptionById", "creditExceptionAt", "creditExceptionNote", "closedAt", "explorationId", "plantId", "originRef"],
   DealItem: ["qty", "unitPrice", "code", "description"],
   Supplier: ["bankBeneficiary", "bankName", "bankAccount", "bankSwift", "bankVerifiedAt", "bankVerifiedById", "paymentTerms", "advancePct", "currency", "taxId"],
   Quote: ["status", "rev", "supplierCost", "freightCost", "otherCosts", "fxRate", "protSale", "protCost", "protEsagra", "presentedAt", "decidedAt", "validityDays", "paymentTerms", "incoterm"],
@@ -80,6 +80,7 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   VisitPlan: "all",
   VisitCommitment: "all",
   CommercialMission: "all",
+  SellingEntity: "all",
   MissionExpense: ["spentOn", "category", "description", "amount", "originalNote", "currency", "originalAmount", "fxRate", "fxSource", "receiptName", "noReceiptReason"],
   VisitAttachment: ["name", "mime", "size", "uploadedByName"],
   CoverageAssignment: "all",

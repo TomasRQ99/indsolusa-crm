@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SellerLine } from "@/components/SellerLine";
 import { ValueKindSelect } from "@/components/ValueKindSelect";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -50,7 +51,7 @@ export default async function JourneyPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; ok?: string; cal?: string; t?: string; d?: string }>;
+  searchParams: Promise<{ tab?: string; ok?: string; err?: string; cal?: string; t?: string; d?: string }>;
 }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
@@ -103,7 +104,14 @@ export default async function JourneyPage({
   const shown = TAB_ORDER.filter((k) => k === "resumen" || J.has[k as Exclude<TabKey, "resumen">] || k === tab);
   const later = TAB_ORDER.filter((k) => !shown.includes(k));
 
+  const sellerErr: Record<string, string> = {
+    "vendedor-inactivo": t("Esa empresa aún no está activa: Gerencia debe completar sus datos en Comercial → Configuración → Empresas que venden.", "That company isn't active yet: Management must complete its details in Commercial → Setup → Selling companies."),
+    "vendedor-fijo": t("El cliente ya vio una cotización de esta empresa (o hay factura): la empresa que vende ya no cambia en este Journey.", "The customer already saw a quote from this company (or there's an invoice): the seller no longer changes on this Journey."),
+    vendedor: t("Empresa no válida.", "Invalid company."),
+    permiso: t("No tienes permiso para cambiar este Journey.", "You don't have permission to change this Journey."),
+  };
   const okMsg: Record<string, string> = {
+    vendedor: t("Empresa que vende actualizada.", "Selling company updated."),
     mercado: t("Journey creado. Ya trae lo que Mercado sabía: no hace falta volver a escribirlo.", "Journey created. It already carries what Mercado knew: no need to retype it."),
     need: t("Necesidad guardada.", "Need saved."),
     promise: t("Promesa al cliente guardada. Queda en «Qué cambió».", "Customer promise saved. It shows in “What changed”."),
@@ -661,6 +669,11 @@ export default async function JourneyPage({
   const Quote = () => (
     <>
       <QuoteDocs />
+      <section className="jblock">
+        <div className="jbh"><b>{t("EMPRESA QUE VENDE", "SELLING COMPANY")}</b></div>
+        <SellerLine dealId={deal.id} sellerKey={deal.sellerKey} es={i.es} editable={editable} back={`${self}?tab=quote`} />
+        {sp.err && sellerErr[sp.err] && <p className="note risk">{sellerErr[sp.err]}</p>}
+      </section>
       <section className="jblock">
         <div className="jbh"><b>{t("CASO DE SOLUCIÓN", "SOLUTION CASE")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/solucion`}>{t("Abrir", "Open")}</Link></div>
         <p className="quiet-p">{t("Por qué esta solución, rutas posibles, valor para el cliente con evidencia, si conviene presentarla y la propuesta para su comité (sin costos internos).", "Why this solution, possible routes, customer value with evidence, whether to present it, and the proposal for their committee (no internal costs).")}</p>

@@ -54,6 +54,7 @@ export const MODULES: NavModule[] = [
       { href: "/comercial/cierres", es: "Cierres", en: "Closes", group: "trabajo" },
       { href: "/comercial/cobertura", es: "Cobertura", en: "Coverage", group: "trabajo" },
       { href: "/comercial/valor", es: "Atributos de valor", en: "Value attributes", group: "ajustes" },
+      { href: "/comercial/empresas", es: "Empresas que venden", en: "Selling companies", group: "ajustes" },
     ],
   },
   {

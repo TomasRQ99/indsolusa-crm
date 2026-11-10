@@ -223,6 +223,8 @@ model Deal {
   updatedAt DateTime  @updatedAt
 
   desiredResult         String?
+  /// C-02: which of our companies sells on this Journey (SellingEntity.key). Fixed once a quote was presented.
+  sellerKey             String       @default("USA")
   customerPo            String?
   poAcceptedAt          DateTime?
   promisedDate          DateTime?
@@ -2901,4 +2903,31 @@ model MissionExpense {
   createdAt       DateTime          @default(now())
 
   @@index([missionId])
+}
+
+// ---------- Selling entities (decision C-02, C-19 to C-21) ----------
+
+/// One of our own companies that can be the seller on a Journey. Public business details only: bank details are
+/// never here (they come from the verified bank profile). Edited by Gerencia; every change is audited.
+model SellingEntity {
+  id            String   @id @default(cuid())
+  /// USA | CO
+  key           String   @unique
+  legalName     String
+  /// "EIN", "NIT"…
+  taxIdLabel    String?
+  taxId         String?
+  addressLines  String?
+  phone         String?
+  country       String
+  /// IVA added to quotes of this company, in percent (0 = none).
+  ivaPct        Decimal  @default(0) @db.Decimal(5, 2)
+  /// May quote in COP as well as USD.
+  allowsCop     Boolean  @default(false)
+  /// SOLU = SOLU prints the commercial invoice; EXTERNAL = the legal invoice is issued elsewhere (DIAN) and recorded here.
+  invoiceMode   String   @default("SOLU")
+  active        Boolean  @default(false)
+  version       Int      @default(1)
+  updatedByName String?
+  updatedAt     DateTime @updatedAt
 }
