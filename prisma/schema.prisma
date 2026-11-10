@@ -19,6 +19,8 @@ enum Role {
   NEGOCIADOR_OPERATIVO
   FINANZAS
   MARKETING
+  /// Administración (decision O-02, 2026-11-10): same powers as Finanzas for now; approves purchases.
+  ADMINISTRACION
 }
 
 enum Lang {
@@ -3041,7 +3043,8 @@ model PurchaseRequirement {
   createdByName      String
   createdAt          DateTime  @default(now())
 
-  lines PurchaseRequirementLine[]
+  lines     PurchaseRequirementLine[]
+  approvals PurchaseApproval[]
 
   @@index([dealId])
 }
@@ -3075,4 +3078,38 @@ model PurchaseAllocation {
 
   @@unique([lineId, dealId])
   @@index([dealId])
+}
+
+// ---------- Operaciones O2 · Purchase authorization (module 11 §7–11) ----------
+
+/// A request to commit resources for a purchase that is not routine. It carries why it needs approval, the amount and
+/// the related commitment total (anti-fragmentation), the level required, the context the approver saw, and the
+/// version of the policy applied (a purchase's history is never re-read with a later policy).
+model PurchaseApproval {
+  id              String              @id @default(cuid())
+  prId            String
+  pr              PurchaseRequirement @relation(fields: [prId], references: [id], onDelete: Cascade)
+  /// [STOCK | COST_ABOVE_PROTECTED | OVER_CREDIT | NEW_SUPPLIER | FULL_ADVANCE]
+  reasons         Json
+  amount          Decimal             @db.Decimal(14, 2)
+  relatedTotal    Decimal             @db.Decimal(14, 2)
+  stockQty        Int                 @default(0)
+  stockAmount     Decimal             @default(0) @db.Decimal(14, 2)
+  level           Int
+  /// REQUESTED | APPROVED | RETURNED | REJECTED
+  status          String              @default("REQUESTED")
+  requestedById   String
+  requestedByName String
+  requestedAt     DateTime            @default(now())
+  requestNote     String?
+  context         Json
+  decidedById     String?
+  decidedByName   String?
+  decidedAt       DateTime?
+  decisionNote    String?
+  escalatedByName String?
+  policyVersion   Int
+
+  @@index([prId])
+  @@index([status])
 }

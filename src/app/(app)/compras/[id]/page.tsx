@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { readinessForSpo } from "@/lib/pr";
+import { fullReadiness } from "@/lib/pr-auth";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -21,7 +22,8 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
   const spo = await db.supplierPO.findUnique({ where: { id }, include: spoInclude });
   if (!spo) notFound();
   const B = buildSpo(spo, i);
-  const prRead = await readinessForSpo(spo.id);
+  const prBase = await readinessForSpo(spo.id);
+  const prRead = prBase ? { pr: prBase.pr, readiness: (await fullReadiness(prBase.pr)).readiness } : null;
   const d = spo.deal;
   const s = spo.supplier;
   const editable = canEditOps(user, d.ownerId);
@@ -40,7 +42,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
   };
   const errMsg: Record<string, string> = {
     precondicion: t("No se liberó: hay condiciones sin cumplir.", "Not released: conditions are not met."),
-    requerimiento: t("No se liberó: el requerimiento de compra tiene puntos por resolver (por ejemplo, unidades sin asignar que piden autorización de stock).", "Not released: the purchase requirement has open points (for example, unassigned units that need stock authorization)."),
+    requerimiento: t("No se liberó: el requerimiento de compra tiene puntos por resolver (por ejemplo, una autorización pendiente).", "Not released: the purchase requirement has open points (for example, a pending authorization)."),
     liberada: t("Está liberada: para cambiarla crea una nueva versión.", "It's released: to change it create a new version."),
     "no-liberada": t("Primero se libera la Supplier PO; después se pide el pago.", "Release the supplier PO first; then request payment."),
     motivo: t("Escribe por qué cambia.", "Write why it changes."),
@@ -79,7 +81,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
           {B.released ? <span className="sig ok">{t(`Liberada v${spo.version} · ${i.day(spo.releasedAt)}`, `Released v${spo.version} · ${i.day(spo.releasedAt)}`)}</span> : <span className="sig dash">{t(`Borrador v${spo.version}`, `Draft v${spo.version}`)}</span>}
         </div>
         <p className="jh-sub">{m(B.total)} · {spo.terms ?? s.paymentTerms ?? "—"}{spo.proformaRef ? ` · ${spo.proformaRef}` : ""}</p>
-        {prRead && <p className="small">{t("Requerimiento", "Requirement")} <Link href={`/compras/requerimientos/${prRead.pr.id}`}>{prRead.pr.code}</Link> · <span className={`sig ${prRead.readiness.result === "NEEDS_RESOLUTION" ? "attn" : "ok"}`}>{prRead.readiness.result === "NEEDS_RESOLUTION" ? t("Falta resolver", "Needs resolution") : prRead.readiness.result === "READY_WITH_APPROVED_EXCEPTION" ? t("Listo, con stock autorizado", "Ready, with authorized stock") : t("Listo para comprar", "Ready to purchase")}</span>{prRead.readiness.blockers[0] && <span className="muted"> · {t(prRead.readiness.blockers[0].blocker.es, prRead.readiness.blockers[0].blocker.en)}</span>}</p>}
+        {prRead && <p className="small">{t("Requerimiento", "Requirement")} <Link href={`/compras/requerimientos/${prRead.pr.id}`}>{prRead.pr.code}</Link> · <span className={`sig ${prRead.readiness.result === "NEEDS_RESOLUTION" ? "attn" : "ok"}`}>{prRead.readiness.result === "NEEDS_RESOLUTION" ? t("Falta resolver", "Needs resolution") : prRead.readiness.result === "READY_WITH_APPROVED_EXCEPTION" ? t("Listo, con autorización", "Ready, with authorization") : t("Listo para comprar", "Ready to purchase")}</span>{prRead.readiness.blockers[0] && <span className="muted"> · {t(prRead.readiness.blockers[0].blocker.es, prRead.readiness.blockers[0].blocker.en)}</span>}</p>}
       </header>
 
       {/* Why this money must move */}

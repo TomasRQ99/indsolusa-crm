@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { isMoneyRole } from "@/lib/permissions";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
@@ -24,7 +25,7 @@ export default async function VisitsPage({ searchParams }: { searchParams: Promi
     db.account.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
   // Travel money waiting for this person: budgets to decide, expenses to check (never their own).
-  const pending = user.role === "GERENCIA" || user.role === "FINANZAS" ? await db.commercialMission.findMany({ where: { ownerId: { not: user.id }, OR: [{ budgetStatus: "REQUESTED" }, { expensesStatus: "SUBMITTED" }] }, orderBy: { startDate: "asc" }, select: { id: true, title: true, destination: true, startDate: true, budgetStatus: true, budgetAmount: true, expensesStatus: true, ownerId: true, owner: { select: { name: true, role: true } } } }) : [];
+  const pending = user.role === "GERENCIA" || isMoneyRole(user.role) ? await db.commercialMission.findMany({ where: { ownerId: { not: user.id }, OR: [{ budgetStatus: "REQUESTED" }, { expensesStatus: "SUBMITTED" }] }, orderBy: { startDate: "asc" }, select: { id: true, title: true, destination: true, startDate: true, budgetStatus: true, budgetAmount: true, expensesStatus: true, ownerId: true, owner: { select: { name: true, role: true } } } }) : [];
   const toDecide = pending.filter((m) => m.budgetStatus === "REQUESTED" && canDecideBudget(user, { ownerId: m.ownerId, ownerRole: m.owner.role }));
   const toCheck = pending.filter((m) => m.expensesStatus === "SUBMITTED" && canReconcile(user, { ownerId: m.ownerId, ownerRole: m.owner.role }));
   const okMsg: Record<string, string> = { mision: t("Misión creada.", "Mission created.") };

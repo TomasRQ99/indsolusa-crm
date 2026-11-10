@@ -35,9 +35,9 @@ export const MAX_EXPENSES = 60;
 type U = { id: string; role: string };
 type M = { ownerId: string; ownerRole: string };
 /** Who decides the budget: Gerencia, never the traveller; Finanzas when the traveller is Gerencia. */
-export const canDecideBudget = (u: U, m: M) => u.id !== m.ownerId && (u.role === "GERENCIA" || (u.role === "FINANZAS" && m.ownerRole === "GERENCIA"));
+export const canDecideBudget = (u: U, m: M) => u.id !== m.ownerId && (u.role === "GERENCIA" || ((u.role === "FINANZAS" || u.role === "ADMINISTRACION") && m.ownerRole === "GERENCIA"));
 /** Who checks the expenses: Finanzas or Gerencia, never the traveller. */
-export const canReconcile = (u: U, m: M) => u.id !== m.ownerId && (u.role === "GERENCIA" || u.role === "FINANZAS");
+export const canReconcile = (u: U, m: M) => u.id !== m.ownerId && (u.role === "GERENCIA" || u.role === "FINANZAS" || u.role === "ADMINISTRACION");
 export const canRequestBudget = (s: string) => s === "NOT_REQUESTED" || s === "REJECTED";
 /** Expenses are listed only against an approved budget, and not while under review or once reconciled. */
 export const canEditExpenses = (m: { budgetStatus: string; expensesStatus: string }) => m.budgetStatus === "APPROVED" && (m.expensesStatus === "OPEN" || m.expensesStatus === "RETURNED");

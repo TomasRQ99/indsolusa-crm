@@ -4,8 +4,10 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { prView } from "@/lib/pr";
-import { PURPOSES, STOCK_STATUS, canDecideStock, exposureOf, lineSplit, prTotals } from "@/lib/pr-rules";
-import { decideStock, requestStock, saveHeader, setAllocation, setLineQty } from "../actions";
+import { PURPOSES, exposureOf, lineSplit, prTotals } from "@/lib/pr-rules";
+import { decideApproval, requestApproval, saveHeader, setAllocation, setLineQty } from "../actions";
+import { fullReadiness } from "@/lib/pr-auth";
+import { REASON_TEXT, canApprovePurchase } from "@/lib/purchase-auth";
 
 // Operaciones O1 · one Purchase Requirement: bought vs assigned per Journey, what is left as inventory exposure,
 // the readiness reading with each blocker's way out, and the stock authorization.
@@ -18,7 +20,11 @@ export default async function PrPage({ params, searchParams }: { params: Promise
   const sp = await searchParams;
   const v = await prView(id);
   if (!v) notFound();
-  const { pr, readiness: r } = v;
+  const { pr } = v;
+  const F = await fullReadiness(pr);
+  const r = F.readiness;
+  const C = F.last?.status === "REQUESTED" ? (F.last.context as unknown as typeof F.auth.context) : F.auth.context;
+  const canDecide = !!F.last && canApprovePurchase(user, F.last, F.policy.value);
   const [spo, deals, suppliers] = await Promise.all([
     pr.supplierPoId ? db.supplierPO.findUnique({ where: { id: pr.supplierPoId }, select: { id: true, code: true, releasedAt: true, version: true } }) : null,
     db.deal.findMany({ where: { poAcceptedAt: { not: null }, resultAchievedAt: null, stage: { not: "LOST" } }, orderBy: { poAcceptedAt: "desc" }, take: 80, select: { id: true, code: true, title: true, account: { select: { name: true } } } }),
@@ -27,13 +33,11 @@ export default async function PrPage({ params, searchParams }: { params: Promise
   const locked = !!spo?.releasedAt || !!pr.cancelledAt;
   const tot = prTotals(pr.lines);
   const ex = exposureOf(pr);
-  const decider = canDecideStock(user, pr);
   const money = (n: unknown) => `${pr.currency} ${i.n2(n)}`;
-  const res = { READY_TO_PURCHASE: [t("Listo para comprar", "Ready to purchase"), "ok"], READY_WITH_APPROVED_EXCEPTION: [t("Listo, con stock autorizado", "Ready, with authorized stock"), "ok"], NEEDS_RESOLUTION: [t("Falta resolver", "Needs resolution"), "attn"] } as const;
-  const ss = STOCK_STATUS[pr.stockStatus] ?? STOCK_STATUS.NONE;
+  const res = { READY_TO_PURCHASE: [t("Listo para comprar", "Ready to purchase"), "ok"], READY_WITH_APPROVED_EXCEPTION: [t("Listo, con autorización", "Ready, with authorization"), "ok"], NEEDS_RESOLUTION: [t("Falta resolver", "Needs resolution"), "attn"] } as const;
   const okMsg: Record<string, string> = {
     creado: t("Requerimiento creado.", "Requirement created."), guardado: t("Guardado.", "Saved."), cantidad: t("Cantidad actualizada (también en la orden en borrador).", "Quantity updated (also on the draft order)."),
-    asignacion: t("Asignación actualizada.", "Assignment updated."), "stock-pedido": t("Autorización de stock pedida a Finanzas o Gerencia.", "Stock authorization requested from Finance or Management."),
+    asignacion: t("Asignación actualizada.", "Assignment updated."), pedida: t("Autorización pedida. La decide otra persona.", "Authorization requested. Someone else decides it."), "ya-pedida": t("Ya estaba pedida.", "It was already requested."), aprobada: t("Compra autorizada por el valor y las unidades mostradas.", "Purchase authorized for the value and units shown."), devuelta: t("Devuelta con tu pregunta.", "Returned with your question."), rechazada: t("Compra no autorizada.", "Purchase not authorized."), escalada: t("Enviada a Gerencia.", "Sent to Management."),
     "stock-aprobado": t("Stock autorizado por la cantidad y el valor mostrados.", "Stock authorized for the quantity and value shown."), "stock-rechazado": t("Stock no autorizado.", "Stock not authorized."),
   };
   const errMsg: Record<string, string> = {
@@ -41,9 +45,9 @@ export default async function PrPage({ params, searchParams }: { params: Promise
     liberada: t("La orden al proveedor ya fue liberada: un cambio se hace con una nueva versión de la orden.", "The supplier order was already released: a change is made with a new version of the order."),
     cantidad: t("La cantidad debe ser mayor que cero.", "The quantity must be above zero."),
     asignacion: t("Elige un Journey con PO del cliente aceptada y una cantidad.", "Choose a Journey with an accepted customer PO and a quantity."),
-    "sin-stock": t("Todo está asignado: no hay stock que autorizar.", "Everything is assigned: there's no stock to authorize."),
+    "sin-motivo": t("Esta compra es de rutina: no necesita autorización.", "This purchase is routine: it needs no authorization."),
     justificacion: t("Escribe por qué conviene este stock.", "Write why this stock makes sense."),
-    autoridad: t("Esta autorización la da Finanzas o Gerencia, nunca quien la pidió.", "Finance or Management gives this authorization, never the requester."),
+    autoridad: t("No puedes decidir esta autorización: no es de tu nivel, o la pediste tú.", "You can't decide this authorization: it isn't at your level, or you requested it."),
     estado: t("Ya no está esperando decisión.", "It's no longer awaiting a decision."), nota: t("Para no autorizar, escribe el motivo.", "To decline, write the reason."),
   };
 
@@ -104,30 +108,56 @@ export default async function PrPage({ params, searchParams }: { params: Promise
         {!locked && <p className="src">{t("Para quitar una asignación, asigna 0 unidades a ese Journey. Solo se asigna a Journeys con PO del cliente aceptada.", "To remove an assignment, assign 0 units to that Journey. Units are assigned only to Journeys with an accepted customer PO.")}</p>}
       </section>
 
-      {(ex.qty > 0 || pr.stockStatus !== "NONE") && (
-        <section className="jblock" id="stock">
-          <div className="jbh"><b>{t("INVENTARIO QUE QUEDARÍA", "INVENTORY THAT WOULD REMAIN")}</b><span className="grow" /><span className={`sig ${ss.tone}`}>{t(ss.es, ss.en)}</span></div>
-          <p className="small">{t(`${ex.qty} unidades por ${money(ex.amount)} no tienen un Journey esperándolas. Es capital sin recuperación asegurada: lo autoriza Finanzas o Gerencia, nunca quien lo pide.`, `${ex.qty} units worth ${money(ex.amount)} have no Journey waiting for them. That is capital with no assured recovery: Finance or Management authorizes it, never the requester.`)}</p>
-          {pr.justification && <p className="small"><b>{t("Por qué", "Why")}:</b> «{pr.justification}»</p>}
-          {pr.stockDecidedAt && <p className="src">{pr.stockStatus === "APPROVED" ? t(`Autorizado por ${pr.stockDecidedByName} el ${i.day(pr.stockDecidedAt)}: hasta ${pr.stockQtyApproved} unidades, ${money(pr.stockAmount)}.`, `Authorized by ${pr.stockDecidedByName} on ${i.day(pr.stockDecidedAt)}: up to ${pr.stockQtyApproved} units, ${money(pr.stockAmount)}.`) : t(`No autorizado por ${pr.stockDecidedByName} el ${i.day(pr.stockDecidedAt)}.`, `Declined by ${pr.stockDecidedByName} on ${i.day(pr.stockDecidedAt)}.`)}{pr.stockNote ? ` «${pr.stockNote}»` : ""}</p>}
-          {ex.qty > 0 && pr.stockStatus !== "REQUESTED" && !pr.cancelledAt && !(pr.stockStatus === "APPROVED" && r.blockers.every((b) => b.key !== "stock")) && (
-            <form action={requestStock.bind(null, pr.id)} className="qa-form" style={{ maxWidth: 620 }}>
-              <label>{t("Por qué conviene comprar estas unidades de más", "Why buying these extra units makes sense")}<textarea name="justification" rows={2} maxLength={500} defaultValue={pr.justification ?? ""} placeholder={t("Ej.: el proveedor solo vende en cajas de 5", "E.g.: the supplier only sells in boxes of 5")} /></label>
-              <button type="submit">{t("Pedir autorización de stock", "Request stock authorization")}</button>
+      {(F.auth.reasons.length > 0 || F.last) && (
+        <section className="jblock" id="autorizacion">
+          <div className="jbh"><b>{t("AUTORIZACIÓN DE LA COMPRA", "PURCHASE AUTHORIZATION")}</b><span className="grow" />{F.covered ? <span className="sig ok">{t("Autorizada", "Authorized")}</span> : F.last?.status === "REQUESTED" ? <span className="sig attn">{t(`Esperando · nivel ${F.last.level}`, `Awaiting · level ${F.last.level}`)}</span> : F.last?.status === "RETURNED" ? <span className="sig attn">{t("Devuelta", "Returned")}</span> : F.last?.status === "REJECTED" ? <span className="sig risk">{t("No autorizada", "Not authorized")}</span> : F.auth.reasons.length > 0 ? <span className="sig wait">{t("Sin pedir", "Not requested")}</span> : null}</div>
+          {F.auth.reasons.length === 0 ? <p className="small muted">{t("Hoy esta compra ya no necesita autorización.", "This purchase no longer needs authorization.")}</p> : (
+            <>
+              <p className="small"><b>{t("Por qué no es de rutina", "Why it isn't routine")}:</b></p>
+              <ul className="mk-ul small">{F.auth.reasons.map((x) => <li key={x}>{t(REASON_TEXT[x].es, REASON_TEXT[x].en)}{x === "STOCK" ? ` · ${ex.qty} ${t("unidades", "units")} · ${money(ex.amount)}` : x === "COST_ABOVE_PROTECTED" ? ` · +${money(F.auth.facts.costOver)}` : ""}</li>)}</ul>
+              <p className="src">{t(`Compromiso relacionado ${money(C.purchase.relatedTotal)}${C.purchase.relatedCodes.length ? ` (con ${C.purchase.relatedCodes.join(", ")})` : ""} · límite de nivel 1 USD ${i.n2(F.policy.value.level1LimitUsd)} · decide ${F.auth.level === 2 ? "Gerencia" : "Finanzas, Administración o Gerencia"} · política v${F.policy.version}`, `Related commitment ${money(C.purchase.relatedTotal)}${C.purchase.relatedCodes.length ? ` (with ${C.purchase.relatedCodes.join(", ")})` : ""} · level-1 limit USD ${i.n2(F.policy.value.level1LimitUsd)} · decided by ${F.auth.level === 2 ? "Management" : "Finance, Administration or Management"} · policy v${F.policy.version}`)}</p>
+            </>
+          )}
+          <div className="exc-grid">
+            {C.customer && (
+              <dl className="qv-dl tight">
+                <dt>{t("Cliente", "Customer")}</dt><dd>{C.customer.name}</dd>
+                <dt>{t("Venta", "Sale")}</dt><dd className="mono">{C.customer.sale != null ? `USD ${i.n2(C.customer.sale)}` : "—"}</dd>
+                <dt>Eságara</dt><dd className="mono">{C.customer.esagara != null ? <><b>USD {i.n2(C.customer.esagara)}</b> · {i.pct(C.customer.pct)}</> : "—"}{C.customer.costOver > 0 && <span className="risk-t block">{t(`bajaría USD ${i.n2(C.customer.costOver)} con este costo`, `would drop USD ${i.n2(C.customer.costOver)} at this cost`)}</span>}</dd>
+                <dt>{t("Cupo", "Credit limit")}</dt><dd className="mono">{C.customer.creditLimit != null ? `USD ${i.n2(C.customer.creditLimit)}` : t("Sin cupo definido", "No limit set")}</dd>
+                <dt>{t("Cartera abierta", "Open receivables")}</dt><dd className="mono">USD {i.n2(C.customer.openAR)}{C.customer.overdue > 0 && <span className="risk-t"> · {t(`${i.n2(C.customer.overdue)} vencida`, `${i.n2(C.customer.overdue)} overdue`)}</span>}</dd>
+                <dt>{t("Ganado sin facturar", "Won, not invoiced")}</dt><dd className="mono">USD {i.n2(C.customer.committed)}</dd>
+              </dl>
+            )}
+            <dl className="qv-dl tight">
+              <dt>{t("Proveedor", "Supplier")}</dt><dd>{C.supplier ? <>{C.supplier.name} · {C.supplier.received === 0 ? <span className="risk-t">{t("nuevo", "new")}</span> : t(`${C.supplier.received} compras recibidas`, `${C.supplier.received} purchases received`)}</> : "—"}</dd>
+              {C.supplier && <><dt>{t("Condición de pago", "Payment terms")}</dt><dd>{C.supplier.terms ?? "—"}{C.supplier.advancePct != null ? ` · ${t("anticipo", "advance")} ${C.supplier.advancePct} %` : ""}</dd>
+              <dt>{t("Ya abierto con él", "Already open with them")}</dt><dd className="mono">USD {i.n2(C.supplier.openPos)}{C.supplier.advanced > 0 && ` · ${t("anticipado", "advanced")} ${i.n2(C.supplier.advanced)}`}</dd></>}
+              <dt>{t("Esta compra", "This purchase")}</dt><dd className="mono">{money(C.purchase.total)}{C.purchase.stockQty > 0 && <span className="block">{t(`${C.purchase.stockQty} unidades a inventario · ${money(C.purchase.stockAmount)}`, `${C.purchase.stockQty} units to inventory · ${money(C.purchase.stockAmount)}`)}</span>}</dd>
+              <dt>{t("Caja, próximos 14 días", "Cash, next 14 days")}</dt><dd className="mono small">{t(`pagos a proveedores USD ${i.n2(C.cash.upcomingPayments)} · cobros que vencen USD ${i.n2(C.cash.expectedCollections)}`, `supplier payments USD ${i.n2(C.cash.upcomingPayments)} · collections falling due USD ${i.n2(C.cash.expectedCollections)}`)}</dd>
+            </dl>
+          </div>
+          <p className="src">{t("Si algo sale mal", "If something goes wrong")}: {[C.purchase.stockQty > 0 ? t(`quedarían ${C.purchase.stockQty} unidades sin venta`, `${C.purchase.stockQty} units would remain unsold`) : null, C.customer ? t("si el cliente paga tarde o cancela, la empresa ya habrá comprometido esta compra", "if the customer pays late or cancels, the company will already have committed this purchase") : null, C.supplier?.advancePct ? t(`si el proveedor se demora, el anticipo (${C.supplier.advancePct} %) ya estará pagado`, `if the supplier is late, the advance (${C.supplier.advancePct} %) will already be paid`) : null].filter(Boolean).join("; ")}. {t("SOLU no conoce los saldos bancarios: la caja muestra solo lo registrado aquí.", "SOLU doesn't know bank balances: cash shows only what is recorded here.")}</p>
+          {F.last && <p className="small">{t(`Pidió ${F.last.requestedByName} el ${i.day(F.last.requestedAt)}`, `Requested by ${F.last.requestedByName} on ${i.day(F.last.requestedAt)}`)}{F.last.requestNote ? ` · «${F.last.requestNote}»` : ""}{F.last.escalatedByName ? t(` · escalada por ${F.last.escalatedByName}`, ` · escalated by ${F.last.escalatedByName}`) : ""}{F.last.decidedAt ? ` · ${F.last.status === "APPROVED" ? t("autorizó", "authorized by") : F.last.status === "RETURNED" ? t("devolvió", "returned by") : t("no autorizó", "declined by")} ${F.last.decidedByName} ${i.day(F.last.decidedAt)}${F.last.decisionNote ? ` «${F.last.decisionNote}»` : ""} · ${t("política", "policy")} v${F.last.policyVersion}` : ""}</p>}
+          {F.auth.reasons.length > 0 && !F.covered && F.last?.status !== "REQUESTED" && !pr.cancelledAt && (
+            <form action={requestApproval.bind(null, pr.id)} className="qa-form" style={{ maxWidth: 620 }}>
+              <label>{t("Contexto para quien autoriza (obligatorio si queda inventario)", "Context for the approver (required when inventory remains)")}<textarea name="note" rows={2} maxLength={500} defaultValue={pr.justification ?? ""} placeholder={t("Ej.: el proveedor solo vende en cajas de 5", "E.g.: the supplier only sells in boxes of 5")} /></label>
+              <button type="submit">{t("Pedir autorización", "Request authorization")}</button>
             </form>
           )}
-          {pr.stockStatus === "REQUESTED" && (decider ? (
-            <form action={decideStock.bind(null, pr.id)} className="qa-form exc-decide" style={{ maxWidth: 620 }}>
-              <label>{t("Nota (obligatoria para no autorizar)", "Note (required to decline)")}<textarea name="note" rows={2} maxLength={400} /></label>
-              <div className="qa-row">
-                <button type="submit" name="action" value="APPROVE">{t(`Autorizar ${ex.qty} unidades · ${money(ex.amount)}`, `Authorize ${ex.qty} units · ${money(ex.amount)}`)}</button>
+          {F.last?.status === "REQUESTED" && (canDecide ? (
+            <form action={decideApproval.bind(null, F.last.id)} className="qa-form exc-decide" style={{ maxWidth: 680 }}>
+              <label>{t("Nota (obligatoria para devolver o no autorizar)", "Note (required to return or decline)")}<textarea name="note" rows={2} maxLength={500} /></label>
+              <div className="qa-row" style={{ flexWrap: "wrap" }}>
+                <button type="submit" name="action" value="APPROVE">{t("Autorizar", "Approve")}</button>
+                <button type="submit" name="action" value="RETURN" className="secondary">{t("Devolver con pregunta", "Return with a question")}</button>
                 <button type="submit" name="action" value="REJECT" className="secondary">{t("No autorizar", "Decline")}</button>
+                {F.last.level === 1 && <button type="submit" name="action" value="ESCALATE" className="secondary">{t("Escalar a Gerencia", "Escalate to Management")}</button>}
               </div>
             </form>
-          ) : <p className="src">{t("Esperando la decisión de Finanzas o Gerencia (otra persona).", "Waiting for Finance or Management's decision (someone else).")}</p>)}
+          ) : <p className="src">{user.id === F.last.requestedById ? t("La pediste tú: la decide otra persona.", "You requested it: someone else decides it.") : t(`La decide ${F.last.level === 2 ? "Gerencia" : "Finanzas, Administración o Gerencia"}.`, `Decided by ${F.last.level === 2 ? "Management" : "Finance, Administration or Management"}.`)}</p>)}
         </section>
       )}
-
       {!locked && (
         <section className="jblock">
           <div className="jbh"><b>{t("DATOS DEL REQUERIMIENTO", "REQUIREMENT DETAILS")}</b></div>

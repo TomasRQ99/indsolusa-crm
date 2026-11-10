@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canManageAll, isGerencia } from "@/lib/permissions";
+import { canManageAll, isGerencia, isMoneyRole } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { computeCommissions, tiersOf, type CommissionRow, type Half } from "@/lib/commission";
 import { halfLabel } from "@/lib/labels";
@@ -14,7 +14,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
   const { t } = i;
   const manager = canManageAll(user);
   // Finanzas pays commissions (user decision 2026-11-09), so it sees every person; approving stays with management.
-  const payer = isGerencia(user) || user.role === "FINANZAS";
+  const payer = isGerencia(user) || isMoneyRole(user.role);
   const seesAll = manager || payer;
   const sp = await searchParams;
   // Each person sees only their own commissions; management can choose.

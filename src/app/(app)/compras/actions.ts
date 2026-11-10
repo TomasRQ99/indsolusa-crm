@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { ensurePrForSpo, readinessForSpo } from "@/lib/pr";
+import { fullReadiness } from "@/lib/pr-auth";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -94,7 +95,7 @@ export async function releaseSpo(id: string) {
   if (B.blocking.length) back(id, "err=precondicion");
   // O1: unassigned quantity (inventory exposure) and other open points of the requirement stop the release.
   const ready = await readinessForSpo(id);
-  if (ready && ready.readiness.result === "NEEDS_RESOLUTION") back(id, "err=requerimiento");
+  if (ready && (await fullReadiness(ready.pr)).readiness.result === "NEEDS_RESOLUTION") back(id, "err=requerimiento");
   const now = new Date();
   const plan = milestones(B.total, spo.supplier.advancePct, today(), spo.shipBy);
   await db.$transaction(async (tx) => {

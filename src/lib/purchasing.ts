@@ -21,7 +21,7 @@ export const AUTHORITY = {
   version: 1,
   note: "Límites de ejemplo, pendientes de definir por Gerencia",
   // Finanzas approves up to the same limit as Director Comercial (user decision 2026-11-09).
-  approve: { DIRECTOR_COMERCIAL: 25000, FINANZAS: 25000, GERENCIA: Infinity } as Partial<Record<Role, number>>,
+  approve: { DIRECTOR_COMERCIAL: 25000, FINANZAS: 25000, ADMINISTRACION: 25000, GERENCIA: Infinity } as Partial<Record<Role, number>>,
 };
 
 export const spoInclude = {

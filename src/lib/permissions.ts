@@ -9,6 +9,7 @@ import type { SessionUser } from "./auth";
 //                           (the operations side), never the customer quote.
 //   FINANZAS              — money side on any Journey: invoices, collections, cash, bank verification, payment
 //                           execution and reconciliation, commissions paid; approves supplier payments ≤ USD 25k.
+//   ADMINISTRACION        — same as Finanzas for now (decision 2026-11-10); approves purchases with Finanzas.
 //   MARKETING (Mercadeo)  — same as a Negociador Comercial, plus loading market data.
 // Everyone reads all records.
 
@@ -20,12 +21,16 @@ export const ROLE_LABEL: Record<Role, { es: string; en: string }> = {
   NEGOCIADOR_COMERCIAL: { es: "Negociador Comercial", en: "Commercial Negotiator" },
   NEGOCIADOR_OPERATIVO: { es: "Negociador Operativo", en: "Operations Negotiator" },
   FINANZAS: { es: "Finanzas", en: "Finance" },
+  ADMINISTRACION: { es: "Administración", en: "Administration" },
   MARKETING: { es: "Mercadeo", en: "Marketing" },
 };
 export const ROLES = Object.keys(ROLE_LABEL) as Role[];
 
 /** Gerencia only: people & data, commission policy and payouts, unlimited authority. */
 export const isGerencia = (u: U) => u.role === "GERENCIA";
+
+/** Finanzas and Administración share the money side for now (decision 2026-11-10); Module 14 may split them. */
+export const isMoneyRole = (role: string) => role === "FINANZAS" || role === "ADMINISTRACION";
 
 /** Gerencia and Director Comercial: edit everything, management views, policies. */
 export function canManageAll(u: U) {
@@ -43,12 +48,12 @@ export function assertCanEdit(u: U, ownerId: string) {
 
 /** Treasury & cash work (verify bank data, record/reconcile payments): management or Finanzas. */
 export function canFinance(u: U) {
-  return canManageAll(u) || u.role === "FINANZAS";
+  return canManageAll(u) || isMoneyRole(u.role);
 }
 
 /** Money records of a Journey (invoices, collections, promises, short pays): the owner, management or Finanzas. */
 export function canEditMoney(u: U, ownerId: string) {
-  return canEdit(u, ownerId) || u.role === "FINANZAS";
+  return canEdit(u, ownerId) || isMoneyRole(u.role);
 }
 export function assertCanEditMoney(u: U, ownerId: string) {
   if (!canEditMoney(u, ownerId)) throw new Error("No tienes permiso para cambiar este registro. / You do not have permission to change this record.");
@@ -65,7 +70,7 @@ export function assertCanEditOps(u: U, ownerId: string) {
 /** Credit authority (user decision 2026-11-10): credit limits, terms and credit exceptions are decided by
  *  Finanzas or Gerencia, never by the person who asks. Director Comercial sees and supports requests. */
 export function canDecideCredit(u: U) {
-  return u.role === "GERENCIA" || u.role === "FINANZAS";
+  return u.role === "GERENCIA" || isMoneyRole(u.role);
 }
 
 /** Mercado §18: loading economic datasets is for Management and Marketing. */

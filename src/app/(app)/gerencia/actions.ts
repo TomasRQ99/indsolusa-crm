@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canManageAll, isGerencia } from "@/lib/permissions";
+import { canManageAll, isGerencia, isMoneyRole } from "@/lib/permissions";
 import { parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
 import { computeCommissions } from "@/lib/commission";
@@ -38,7 +38,7 @@ export async function approveEarned(userId: string) {
 
 export async function markCommissionsPaid(userId: string, formData: FormData) {
   const user = await requireUser();
-  if (!isGerencia(user) && user.role !== "FINANZAS") throw new Error("Solo Gerencia o Finanzas / Management or Finance only.");
+  if (!isGerencia(user) && !isMoneyRole(user.role)) throw new Error("Solo Gerencia o Finanzas / Management or Finance only.");
   const { payrollRef } = parseForm(z.object({ payrollRef: requiredText }), formData);
   await db.commissionEntry.updateMany({ where: { userId, paidAt: null }, data: { paidAt: today(), payrollRef } });
   refreshApp();
