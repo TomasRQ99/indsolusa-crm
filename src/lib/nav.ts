@@ -41,9 +41,12 @@ export const MODULES: NavModule[] = [
       { href: "/comercial/fugas", es: "Fugas de caja", en: "Cash leakage" },
       { href: "/comercial/esagara", es: "Excepciones de Eságara", en: "Eságara exceptions" },
       { href: "/comercial/valor", es: "Atributos de valor", en: "Value attributes" },
+      { href: "/comercial/foco", es: "Foco de alto valor", en: "High-value focus" },
       { href: "/visitas", es: "Visitas", en: "Visits" },
       { href: "/comercial/metas", es: "Mis metas", en: "My goals" },
       { href: "/comercial/cobertura", es: "Cobertura", en: "Coverage" },
+      { href: "/comercial/mejora", es: "Mi mejora", en: "My improvement" },
+      { href: "/comercial/cierres", es: "Cierres", en: "Closes" },
     ],
   },
   {
