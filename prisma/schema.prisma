@@ -110,6 +110,8 @@ model User {
 model Account {
   id        String   @id @default(cuid())
   name      String
+  /// Our own company as the holder of stock purchases; never a customer.
+  internal  Boolean  @default(false)
   industry  String?
   website   String?
   phone     String?
@@ -229,6 +231,9 @@ model Deal {
   desiredResult         String?
   /// C-02: which of our companies sells on this Journey (SellingEntity.key). Fixed once a quote was presented.
   sellerKey             String       @default("USA")
+  /// Internal holder for a stock-only purchase (no customer behind it). Hidden from sales screens; exists so the
+  /// order, payments, shipment and receipt work exactly like any other purchase.
+  internal              Boolean      @default(false)
   customerPo            String?
   poAcceptedAt          DateTime?
   promisedDate          DateTime?

@@ -19,7 +19,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: Pro
       take: 200,
       include: { account: { select: { id: true, name: true, ownerId: true } } },
     }),
-    db.account.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    db.account.findMany({ where: { internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   return (

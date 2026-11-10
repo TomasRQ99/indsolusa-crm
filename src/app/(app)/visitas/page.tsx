@@ -22,7 +22,7 @@ export default async function VisitsPage({ searchParams }: { searchParams: Promi
     db.visitPlan.findMany({ where: { ownerId: user.id, status: { not: "PLANNED" }, updatedAt: { gte: addDays(now, -60) } }, orderBy: { updatedAt: "desc" }, take: 15, include: { account: { select: { id: true, name: true } } } }),
     db.visitCommitment.findMany({ where: { status: "OPEN", visit: { ownerId: user.id } }, orderBy: { dueAt: "asc" }, include: { visit: { select: { id: true, account: { select: { name: true } } } } } }),
     db.commercialMission.findMany({ where: { ownerId: user.id, endDate: { gte: addDays(now, -30) } }, orderBy: { startDate: "asc" }, include: { visits: { select: { id: true, status: true, account: { select: { name: true } } } } } }),
-    db.account.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    db.account.findMany({ where: { internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
   // Travel money waiting for this person: budgets to decide, expenses to check (never their own).
   const pending = user.role === "GERENCIA" || isMoneyRole(user.role) ? await db.commercialMission.findMany({ where: { ownerId: { not: user.id }, OR: [{ budgetStatus: "REQUESTED" }, { expensesStatus: "SUBMITTED" }] }, orderBy: { startDate: "asc" }, select: { id: true, title: true, destination: true, startDate: true, budgetStatus: true, budgetAmount: true, expensesStatus: true, ownerId: true, owner: { select: { name: true, role: true } } } }) : [];

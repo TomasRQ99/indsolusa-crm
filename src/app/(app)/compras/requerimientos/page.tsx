@@ -95,7 +95,7 @@ export default async function PrListPage({ searchParams }: { searchParams: Promi
                 <td className="n mono">{pr.currency} {i.n2(tot.total)}</td>
                 <td className="n mono">{ex.qty > 0 ? <>{ex.qty}<span className="block small">{pr.currency} {i.n2(ex.amount)}</span></> : "—"}</td>
                 <td><span className={`sig ${res[r.result][1]}`}>{res[r.result][0]}</span>{r.blockers[0] && <span className="src block">{t(r.blockers[0].blocker.es, r.blockers[0].blocker.en)}</span>}</td>
-                <td className="small">{spo ? <><Link href={`/compras/${spo.id}`}>{spo.code}</Link>{spo.releasedAt ? "" : t(" (sin liberar)", " (not released)")}</> : pr.purpose === "INVENTORY" ? t("Llega con inventario", "Arrives with inventory") : "—"}</td>
+                <td className="small">{spo ? <><Link href={`/compras/${spo.id}`}>{spo.code}</Link>{spo.releasedAt ? "" : t(" (sin liberar)", " (not released)")}</> : pr.purpose === "INVENTORY" ? t("Por crear", "To be created") : "—"}</td>
               </tr>
             ))}</tbody>
           </table></div>

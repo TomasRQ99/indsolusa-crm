@@ -30,7 +30,7 @@ const POS: Record<string, Txt> = {
 export async function focusItems(ownerId: string | null, policy: FocusPolicy): Promise<FocusItem[]> {
   const T = today();
   const deals = await db.deal.findMany({
-    where: { stage: { not: "LOST" }, resultAchievedAt: null, ...(ownerId ? { ownerId } : {}) },
+    where: { internal: false, stage: { not: "LOST" }, resultAchievedAt: null, ...(ownerId ? { ownerId } : {}) },
     select: {
       id: true, code: true, title: true, createdAt: true, desiredResult: true, nextMove: true, nextMoveDate: true, promisedDate: true, ownerId: true,
       owner: { select: { name: true } }, account: { select: { id: true, name: true } },

@@ -1,6 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { addDays, nextCode, today } from "@/lib/domain";
+import { milestones, spoTotal } from "@/lib/purchasing";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { ROLES, canEditOps, canManageAll, isGerencia, isMoneyRole } from "@/lib/permissions";
@@ -163,4 +165,35 @@ export async function savePurchasePolicy(fd: FormData) {
   if (JSON.stringify(cur.value) === JSON.stringify(value)) back("ok=pol-igual");
   await db.marketSetting.create({ data: { key: PURCHASE_POLICY_KEY, version: cur.version + 1, value, updatedByName: user.name } });
   back("ok=pol-guardada");
+}
+/**
+ * The Supplier PO for a stock-only requirement. Supplier POs live on a Journey, so a stock purchase gets an internal
+ * holder (flagged `internal`, under our own "Inventario propio" account, hidden from sales screens). From there the
+ * order, its payments, shipment and receipt work like any other; the units received become available stock.
+ */
+export async function createStockOrder(id: string) {
+  const { user, pr } = await load(id);
+  if (!canEditPr(user, pr)) go(id, "err=permiso");
+  if (pr.purpose !== "INVENTORY" || pr.cancelledAt) go(id, "err=estado");
+  if (pr.supplierPoId) redirect(`/compras/${pr.supplierPoId}`);
+  // Only an authorized stock purchase becomes an order.
+  const f = await fullReadiness(pr);
+  if (f.readiness.result === "NEEDS_RESOLUTION") go(id, "err=no-lista#lectura");
+  const supplier = await db.supplier.findUnique({ where: { id: pr.supplierId! }, select: { id: true, advancePct: true, paymentTerms: true } });
+  if (!supplier) go(id, "err=no-lista#lectura");
+  const lines = pr.lines.map((l) => ({ position: l.position, qty: l.qty, code: l.code, description: l.description, unitCost: l.expectedUnitCost }));
+  const total = spoTotal(lines);
+  const shipBy = pr.neededBy ?? addDays(today(), 14);
+  const spo = await db.$transaction(async (tx) => {
+    const holder = (await tx.account.findFirst({ where: { internal: true }, select: { id: true } })) ?? (await tx.account.create({ data: { name: "Inventario propio (interno)", internal: true, ownerId: pr.requesterId }, select: { id: true } }));
+    const deal = await tx.deal.create({ data: { title: `Compra para stock · ${pr.code}`, accountId: holder.id, ownerId: pr.requesterId, stage: "WON", internal: true, sellerKey: pr.sellerKey, amount: 0 } });
+    const made = await tx.supplierPO.create({ data: {
+      code: await nextCode("SPO", "supplierPO", tx), dealId: deal.id, supplierId: supplier!.id, amount: total, currency: pr.currency, terms: supplier!.paymentTerms, shipBy, firstQuoteAmount: total, firstQuoteRef: pr.sourceEvidence,
+      lines: { create: lines }, requirements: { create: milestones(total, supplier!.advancePct, today(), shipBy).map((m, n) => ({ ...m, position: n })) },
+    } });
+    await tx.purchaseRequirement.update({ where: { id }, data: { supplierPoId: made.id } });
+    return made;
+  });
+  refreshApp();
+  redirect(`/compras/${spo.id}?ok=preparada`);
 }

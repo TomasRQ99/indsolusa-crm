@@ -20,14 +20,14 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
   const scope = mine ? { ownerId: user.id } : {};
   const [deals, accounts, closedCount] = await Promise.all([
     db.deal.findMany({
-      where: { ...scope, closedAt: null, OR: [{ stage: { not: "LOST" } }, { updatedAt: { gte: addDays(now, -90) } }] },
+      where: { ...scope, internal: false, closedAt: null, OR: [{ stage: { not: "LOST" } }, { updatedAt: { gte: addDays(now, -90) } }] },
       orderBy: { updatedAt: "desc" },
       select: {
         id: true, code: true, title: true, stage: true, amount: true, supplierCost: true, freightCost: true, otherCosts: true, nextMove: true, nextMoveDate: true, waitingFor: true, ownerId: true,
         account: { select: { id: true, name: true } }, owner: { select: { name: true } },
       },
     }),
-    db.account.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    db.account.findMany({ where: { internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.deal.count({ where: { ...scope, closedAt: { not: null } } }),
   ]);
 

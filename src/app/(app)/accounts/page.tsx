@@ -12,7 +12,7 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
   const dup = err ? await db.account.findUnique({ where: { id: err }, select: { id: true, name: true } }) : null;
 
   const accounts = await db.account.findMany({
-    where: q ? { name: { contains: q, mode: "insensitive" } } : undefined,
+    where: { internal: false, ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}) },
     orderBy: { name: "asc" },
     take: 200,
     include: { owner: { select: { name: true } }, _count: { select: { contacts: true, deals: true } } },

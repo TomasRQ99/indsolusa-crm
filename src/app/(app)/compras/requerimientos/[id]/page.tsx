@@ -5,7 +5,7 @@ import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { prView } from "@/lib/pr";
 import { PURPOSES, exposureOf, lineSplit, prTotals } from "@/lib/pr-rules";
-import { decideApproval, requestApproval, saveHeader, setAllocation, setLineQty } from "../actions";
+import { createStockOrder, decideApproval, requestApproval, saveHeader, setAllocation, setLineQty } from "../actions";
 import { fullReadiness } from "@/lib/pr-auth";
 import { REASON_TEXT, canApprovePurchase } from "@/lib/purchase-auth";
 
@@ -50,7 +50,7 @@ export default async function PrPage({ params, searchParams }: { params: Promise
     "sin-motivo": t("Esta compra es de rutina: no necesita autorización.", "This purchase is routine: it needs no authorization."),
     justificacion: t("Escribe por qué conviene este stock.", "Write why this stock makes sense."),
     autoridad: t("No puedes decidir esta autorización: no es de tu nivel, o la pediste tú.", "You can't decide this authorization: it isn't at your level, or you requested it."),
-    estado: t("Ya no está esperando decisión.", "It's no longer awaiting a decision."), nota: t("Para no autorizar, escribe el motivo.", "To decline, write the reason."),
+    estado: t("Ya no está esperando decisión.", "It's no longer awaiting a decision."), "no-lista": t("Aún falta resolver algo antes de crear la orden (ver «¿Se puede comprar?»).", "Something still needs resolving before the order is created (see “Can it be purchased?”)."), nota: t("Para no autorizar, escribe el motivo.", "To decline, write the reason."),
   };
 
   return (
@@ -169,7 +169,9 @@ export default async function PrPage({ params, searchParams }: { params: Promise
             <label>{t("Próximo paso", "Next step")}<input name="nextMove" maxLength={300} defaultValue={pr.nextMove ?? ""} /></label>
             <button type="submit" className="secondary">{t("Guardar", "Save")}</button>
           </form>
-          {pr.purpose === "INVENTORY" && <p className="src">{t("La orden al proveedor de una compra solo para stock llega con la etapa de inventario; por ahora queda pedida y autorizada aquí.", "The supplier order for a stock-only purchase arrives with the inventory stage; for now it is requested and authorized here.")}</p>}
+          {pr.purpose === "INVENTORY" && !pr.supplierPoId && (r.result === "NEEDS_RESOLUTION" ? <p className="src">{t("Cuando esté autorizada y tenga proveedor, aquí se crea la orden al proveedor.", "Once it is authorized and has a supplier, the supplier order is created here.")}</p> : (
+            <form action={createStockOrder.bind(null, pr.id)} style={{ marginTop: 10 }}><button type="submit">{t("Crear la orden al proveedor", "Create the supplier order")}</button><span className="src block">{t("La compra ya está autorizada. Lo que se reciba entra como inventario disponible.", "The purchase is authorized. What is received enters as available stock.")}</span></form>
+          ))}
         </section>
       )}
     </div>

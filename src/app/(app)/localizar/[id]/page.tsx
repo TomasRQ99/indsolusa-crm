@@ -40,7 +40,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     sp.otro ? db.part.findUnique({ where: { id: sp.otro }, select: { id: true, mpn: true, name: true } }) : null,
     db.productFact.count({ where: { code: { in: [p.mpn.trim().toUpperCase()] } } }),
     sp.deal ? db.deal.findUnique({ where: { id: sp.deal }, select: { id: true, code: true, title: true, ownerId: true, account: { select: { id: true, name: true } } } }) : null,
-    db.account.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true }, take: 500 }),
+    db.account.findMany({ where: { internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true }, take: 500 }),
     db.deal.findMany({ where: { ...mine, stage: { notIn: ["WON", "LOST"] } }, orderBy: { updatedAt: "desc" }, take: 60, select: { id: true, code: true, title: true, account: { select: { name: true } } } }),
     db.quote.findMany({ where: { status: "DRAFT", deal: mine }, orderBy: { createdAt: "desc" }, take: 40, select: { id: true, number: true, rev: true, deal: { select: { code: true, account: { select: { name: true } } } } } }),
     db.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true }, take: 300 }),

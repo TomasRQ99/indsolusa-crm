@@ -25,7 +25,7 @@ export default async function Product360({ params, searchParams }: { params: Pro
     db.supplierPOLine.findMany({ where: byCode, include: { supplierPo: { include: { supplier: { select: { id: true, name: true } }, deal: { select: { id: true, code: true, account: { select: { name: true } } } } } } } }),
     db.quoteLine.findMany({ where: byCode, include: { quote: { select: { id: true, number: true, rev: true, status: true, createdAt: true, deal: { select: { id: true, code: true, stage: true, account: { select: { name: true } } } } } } } }),
     db.productFact.findMany({ where: { code }, orderBy: { observedAt: "desc" } }),
-    db.account.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true }, take: 300 }),
+    db.account.findMany({ where: { internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true }, take: 300 }),
   ]);
   if (!items.length && !buys.length && !qlines.length && !facts.length) notFound();
   const F = ({ f, src }: { f: Fresh; src?: string | null }) => <span className={`fresh${f.stale ? " stale" : ""}`}>{src ? `${src} · ` : ""}{f.label}{f.stale && f.at ? ` · ${t("confirmar", "re-confirm")}` : ""}</span>;

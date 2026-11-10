@@ -93,7 +93,7 @@ export async function addReceiptPhotos(receiptId: string, fd: FormData): Promise
 export async function moveLot(lotId: string, fd: FormData) {
   const user = await requireUser();
   const go = (qs: string): never => { refreshApp(); redirect(`/operaciones/inventario?${qs}`); };
-  const lot = await db.stockLot.findUnique({ where: { id: lotId }, select: { id: true, state: true, outAt: true, dealId: true, receiptLine: { select: { receipt: { select: { supplierPo: { select: { dealId: true, deal: { select: { ownerId: true } } } } } } } } } });
+  const lot = await db.stockLot.findUnique({ where: { id: lotId }, select: { id: true, state: true, outAt: true, dealId: true, receiptLine: { select: { receipt: { select: { supplierPo: { select: { dealId: true, deal: { select: { ownerId: true, internal: true } } } } } } } } } });
   if (!lot) go("err=lote");
   if (!canEditOps(user, lot!.receiptLine.receipt.supplierPo.deal.ownerId)) go("err=permiso");
   const action = String(fd.get("action") ?? "");
@@ -107,7 +107,8 @@ export async function moveLot(lotId: string, fd: FormData) {
     await db.stockLot.update({ where: { id: lotId }, data: { outAt: new Date(), outNote: note } });
   } else if (lot!.state === "QUARANTINE" && action === "RELEASE") {
     // Released units return to the Journey of their purchase.
-    await db.stockLot.update({ where: { id: lotId }, data: { state: "COMMITTED", dealId: lot!.receiptLine.receipt.supplierPo.dealId, ...stamp } });
+    const own = lot!.receiptLine.receipt.supplierPo;
+    await db.stockLot.update({ where: { id: lotId }, data: own.deal.internal ? { state: "AVAILABLE", dealId: null, ...stamp } : { state: "COMMITTED", dealId: own.dealId, ...stamp } });
   } else if (lot!.state === "QUARANTINE" && (action === "DAMAGED" || action === "RETURN_PENDING")) {
     await db.stockLot.update({ where: { id: lotId }, data: { state: action, dealId: null, ...stamp } });
   } else go("err=accion");

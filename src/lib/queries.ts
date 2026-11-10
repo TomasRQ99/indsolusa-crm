@@ -39,7 +39,7 @@ export async function loadReceivables(where: Prisma.InvoiceWhereInput = {}) {
 
 export async function loadCredit(accountWhere: Prisma.AccountWhereInput = {}) {
   const accounts = await db.account.findMany({
-    where: { ...accountWhere, OR: [{ creditLimit: { not: null } }, { deals: { some: { stage: "WON" } } }] },
+    where: { ...accountWhere, internal: false, OR: [{ creditLimit: { not: null } }, { deals: { some: { stage: "WON" } } }] },
     include: {
       owner: { select: { name: true } },
       invoices: { include: { applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } } } },

@@ -29,6 +29,7 @@ export async function loadInsightDeals(f: Filters) {
   const since = addDays(new Date(), -560);
   return db.deal.findMany({
     where: {
+      internal: false,
       ...(f.owner ? { ownerId: f.owner } : {}), ...(f.sector ? { account: { industry: f.sector } } : {}),
       OR: [{ closedAt: null, stage: { not: "LOST" } }, { closedAt: { gte: since } }, { resultConfirmedAt: { gte: since } }, { updatedAt: { gte: since } }],
     },
