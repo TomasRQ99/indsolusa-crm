@@ -136,31 +136,32 @@ model Account {
   allowsPartialBilling  Boolean   @default(true)
   billingContact        String?
 
-  contacts      Contact[]
-  outboundMails OutboundMail[]
-  deals         Deal[]
-  tasks         Task[]
-  activities    Activity[]
-  invoices      Invoice[]
-  payments      CustomerPayment[]
-  threads       CommThread[]
-  documents     AccountDocument[]
-  plants        Plant[]
-  marketSignals MarketSignal[]
-  gaps          KnowledgeGap[]
-  whiteSpaces   WhiteSpace[]
-  futures       FutureOpportunity[]
-  aliases       AccountAlias[]
-  insights      AccountInsight[]
-  employments   Employment[]
-  marketCompany MarketCompany?
-  payBehaviors  PaymentBehaviorSnapshot[]
-  paymentMap    PaymentMap?
-  creditReviews CreditReviewRequest[]
-  openLoops     OpenLoop[]
-  prepared      PreparedMessage[]
-  visits        VisitPlan[]
-  backup        RelationshipBackup?
+  contacts             Contact[]
+  outboundMails        OutboundMail[]
+  deals                Deal[]
+  tasks                Task[]
+  activities           Activity[]
+  invoices             Invoice[]
+  payments             CustomerPayment[]
+  threads              CommThread[]
+  documents            AccountDocument[]
+  plants               Plant[]
+  marketSignals        MarketSignal[]
+  gaps                 KnowledgeGap[]
+  whiteSpaces          WhiteSpace[]
+  futures              FutureOpportunity[]
+  aliases              AccountAlias[]
+  insights             AccountInsight[]
+  employments          Employment[]
+  marketCompany        MarketCompany?
+  payBehaviors         PaymentBehaviorSnapshot[]
+  paymentMap           PaymentMap?
+  creditReviews        CreditReviewRequest[]
+  openLoops            OpenLoop[]
+  prepared             PreparedMessage[]
+  visits               VisitPlan[]
+  backup               RelationshipBackup?
+  deliveryRequirements DeliveryRequirement[]
 
   @@index([ownerId])
   @@index([name])
@@ -325,6 +326,9 @@ model Deal {
   purchaseAllocations  PurchaseAllocation[]
   savings              SavingsEntry[]
   stockLots            StockLot[]
+  dispatchOrders       DispatchOrder[]
+  /// module 11 §40: UPON_ORDER | UPON_DELIVERY | UPON_ACCEPTANCE | MILESTONE | ADVANCE_BALANCE | RECURRING
+  billingBasis         String                 @default("UPON_DELIVERY")
 
   @@index([stage])
   @@index([ownerId])
@@ -875,6 +879,10 @@ model Delivery {
   shipment        Shipment?
   invoice         Invoice?
   billingRequests BillingRequest[]
+  dispatchOrder   DispatchOrder?
+  /// O8 customer entry reference: MIGO | GR | ENTRY | WAREHOUSE | CUSTOM (the number itself is receptionCode)
+  receptionKind   String?
+  receptionAt     DateTime?
 
   @@index([dealId])
 }
@@ -3568,4 +3576,96 @@ model CustomsCase {
   updatedByName        String
   updatedAt            DateTime  @updatedAt
   createdAt            DateTime  @default(now())
+}
+
+// ---------- Operaciones O8 · Dispatch & Delivery (module 11 §38–40, v1.2 §44) ----------
+
+/// The physical execution of one delivery to the customer. Dispatched, Delivered and Invoice Ready are three
+/// different facts and are never collapsed. A partial delivery is simply an order with fewer units.
+model DispatchOrder {
+  id                 String    @id @default(cuid())
+  code               String    @unique
+  dealId             String
+  deal               Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  instructionId      String?
+  /// [{dealItemId, code, description, qty}]
+  lines              Json
+  /// MESSENGER | VEHICLE | NATIONAL_CARRIER | CARRIER_GATEWAY | CUSTOMER_PICKUP | DIRECT_SHIP
+  resourceKind       String
+  resourceName       String?
+  tracking           String?
+  scheduledFor       DateTime?
+  scheduledByName    String?
+  dispatchedAt       DateTime?
+  dispatchedByName   String?
+  deliveredAt        DateTime?
+  deliveryId         String?   @unique
+  delivery           Delivery? @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
+  cost               Decimal?  @db.Decimal(14, 2)
+  costCurrency       String    @default("USD")
+  costNote           String?
+  /// {requirementId: {by, at}}
+  checks             Json      @default("{}")
+  /// A wait the customer controls (not ready to receive, appointment pending): distinct from our own delay.
+  customerHoldReason String?
+  customerHoldSince  DateTime?
+  cancelledAt        DateTime?
+  cancelReason       String?
+  createdByName      String
+  createdAt          DateTime  @default(now())
+
+  attempts DeliveryAttempt[]
+  evidence DeliveryEvidence[]
+
+  @@index([dealId])
+}
+
+/// One attempt to deliver. Never edited or deleted: a failed attempt stays as history.
+model DeliveryAttempt {
+  id             String        @id @default(cuid())
+  orderId        String
+  order          DispatchOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  at             DateTime
+  /// DELIVERED | FAILED
+  outcome        String
+  /// CUSTOMER | COMPANY | CARRIER | OTHER (failed attempts only)
+  cause          String?
+  reason         String?
+  receiverName   String?
+  recordedByName String
+  createdAt      DateTime      @default(now())
+
+  @@index([orderId])
+}
+
+model DeliveryEvidence {
+  id             String        @id @default(cuid())
+  orderId        String
+  order          DispatchOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// SIGNED_REMISSION | POD | PHOTO | PORTAL
+  kind           String
+  name           String
+  mime           String
+  size           Int
+  data           Bytes
+  uploadedByName String
+  createdAt      DateTime      @default(now())
+
+  @@index([orderId])
+}
+
+/// Delivery Profile: what this customer (and optionally one of its sites) requires, by phase.
+model DeliveryRequirement {
+  id            String   @id @default(cuid())
+  accountId     String
+  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  site          String   @default("")
+  /// BEFORE_DISPATCH | AT_DELIVERY | AFTER_DELIVERY | BEFORE_INVOICE
+  phase         String
+  text          String
+  active        Boolean  @default(true)
+  createdByName String
+  createdAt     DateTime @default(now())
+
+  @@index([accountId])
 }

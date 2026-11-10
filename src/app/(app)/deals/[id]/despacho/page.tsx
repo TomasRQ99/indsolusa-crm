@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { canEdit } from "@/lib/permissions";
+import { canEdit, canEditOps } from "@/lib/permissions";
+import { DealDispatchOrders } from "@/components/DealDispatchOrders";
 import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { dayInput, today } from "@/lib/domain";
@@ -42,6 +43,9 @@ export default async function DispatchPage({ params, searchParams }: { params: P
     campos: t("Indica al menos un producto con cantidad y el destino.", "Give at least one product with quantity and the destination."),
     ventana: t("La ventana termina antes de empezar.", "The window ends before it starts."),
     motivo: t("Ya hay una instrucción emitida: escribe por qué cambia.", "An instruction was already issued: write why it changes."),
+    recurso: t("Elige cómo se entrega.", "Choose how it is delivered."),
+    nada: t("Indica cuántas unidades van en este despacho.", "Say how many units go in this dispatch order."),
+    exceso: t("No puedes despachar más unidades de las que faltan por entregar.", "You can't dispatch more units than are still to be delivered."),
   };
   const prefill = po ? {
     items: (current ? (current.items as Item[]) : po.lines.map((l) => ({ code: l.code, description: l.description, qty: l.qty }))),
@@ -131,6 +135,7 @@ export default async function DispatchPage({ params, searchParams }: { params: P
           )}
         </>
       )}
+      <DealDispatchOrders dealId={d.id} lang={i.es ? "ES" : "EN"} canOps={canEditOps(user, d.ownerId)} canOwner={editable} />
     </div>
   );
 }

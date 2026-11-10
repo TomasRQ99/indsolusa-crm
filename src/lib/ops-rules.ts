@@ -8,6 +8,7 @@ export const EXC_KINDS: Record<string, Txt> = {
   DAMAGED: { es: "Empaque o producto dañado", en: "Damaged package or product" },
   WRONG_ITEM: { es: "Producto equivocado", en: "Wrong item" },
   SHORT_SHIPMENT: { es: "Llegó incompleto", en: "Short shipment" },
+  DELIVERY_FAILED: { es: "Entrega fallida", en: "Failed delivery" },
   PAYMENT_NOT_CREDITED: { es: "Pago no acreditado", en: "Payment not credited" },
   FREIGHT_VARIANCE: { es: "Diferencia en el cobro del flete", en: "Freight billing variance" },
   CREDIT_OVEREXPOSURE: { es: "Exposición sobre el cupo", en: "Credit overexposure" },

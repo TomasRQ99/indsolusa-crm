@@ -65,6 +65,7 @@ export const MODULES: NavModule[] = [
       { href: "/compras", es: "Compras", en: "Purchasing" },
       { href: "/logistica", es: "Envíos", en: "Shipments" },
       { href: "/operaciones/inventario", es: "Inventario", en: "Stock" },
+      { href: "/operaciones/despachos", es: "Despachos", en: "Dispatch" },
       { href: "/operaciones/sin-despachar", es: "Sin despachar", en: "Unshipped" },
       { href: "/operaciones/remisiones", es: "Remisiones", en: "Delivery notes" },
       { href: "/operaciones/por-facturar", es: "Entregado sin facturar", en: "Delivered, not invoiced" },
