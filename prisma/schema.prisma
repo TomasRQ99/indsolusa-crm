@@ -999,6 +999,7 @@ model CustomerPayment {
   residualNote   String?
 
   applications PaymentApplication[]
+  bankMatches  BankMatch[]
 
   @@index([accountId])
 }
@@ -1446,6 +1447,7 @@ model PaymentExecution {
   feeUsd         Decimal?        @db.Decimal(14, 2)
   fxRate         Decimal?        @db.Decimal(14, 6)
   createdAt      DateTime        @default(now())
+  bankMatches    BankMatch[]
 
   @@index([paymentId])
 }
@@ -3668,4 +3670,87 @@ model DeliveryRequirement {
   createdAt     DateTime @default(now())
 
   @@index([accountId])
+}
+
+// ---------- Operaciones O9a · Bank statements and matching (module 11 §42) ----------
+
+/// One of the company's own bank accounts. Only a label and the last four digits: never the full number.
+model BankAccount {
+  id            String   @id @default(cuid())
+  label         String
+  bank          String   @default("Bank of America")
+  last4         String?
+  currency      String   @default("USD")
+  sellerKey     String   @default("USA")
+  active        Boolean  @default(true)
+  createdByName String
+  createdAt     DateTime @default(now())
+
+  statements   BankStatement[]
+  transactions BankTransaction[]
+}
+
+/// One uploaded statement file. The file itself is not kept: only what was read from it.
+model BankStatement {
+  id             String      @id @default(cuid())
+  bankAccountId  String
+  bankAccount    BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  fileName       String
+  periodFrom     DateTime?
+  periodTo       DateTime?
+  rowsRead       Int
+  added          Int
+  duplicates     Int
+  skipped        Int
+  uploadedByName String
+  createdAt      DateTime    @default(now())
+
+  transactions BankTransaction[]
+
+  @@index([bankAccountId])
+}
+
+/// A movement as the bank reports it. Positive = money in, negative = money out. Never edited.
+model BankTransaction {
+  id            String         @id @default(cuid())
+  bankAccountId String
+  bankAccount   BankAccount    @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  statementId   String?
+  statement     BankStatement? @relation(fields: [statementId], references: [id], onDelete: SetNull)
+  date          DateTime
+  amount        Decimal        @db.Decimal(14, 2)
+  description   String
+  reference     String?
+  balance       Decimal?       @db.Decimal(14, 2)
+  /// stable identity of the row, so uploading an overlapping statement never duplicates it
+  fingerprint   String
+  /// null | INTERNAL_TRANSFER | BANK_FEE | OTHER: set by a person, with a note, when it is not a customer or supplier payment
+  classifiedAs  String?
+  classNote     String?
+  classByName   String?
+  createdAt     DateTime       @default(now())
+
+  matches BankMatch[]
+
+  @@unique([bankAccountId, fingerprint])
+  @@index([bankAccountId, date])
+}
+
+/// The link between a bank movement and what SOLU already knows. One movement can pay several things and one
+/// payment can arrive in several movements.
+model BankMatch {
+  id                 String            @id @default(cuid())
+  transactionId      String
+  transaction        BankTransaction   @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  customerPaymentId  String?
+  customerPayment    CustomerPayment?  @relation(fields: [customerPaymentId], references: [id], onDelete: Cascade)
+  paymentExecutionId String?
+  paymentExecution   PaymentExecution? @relation(fields: [paymentExecutionId], references: [id], onDelete: Cascade)
+  amount             Decimal           @db.Decimal(14, 2)
+  createdByName      String
+  createdAt          DateTime          @default(now())
+
+  @@index([transactionId])
+  @@index([customerPaymentId])
+  @@index([paymentExecutionId])
 }

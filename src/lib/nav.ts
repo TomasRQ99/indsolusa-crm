@@ -78,6 +78,7 @@ export const MODULES: NavModule[] = [
     tabs: [
       { href: "/administracion/cobrar", es: "Cuentas por cobrar", en: "Receivables" },
       { href: "/administracion/pagos-recibidos", es: "Pagos recibidos", en: "Payments received" },
+      { href: "/administracion/banco", es: "Banco", en: "Bank" },
       { href: "/administracion/pagos-proveedores", es: "Pagos a proveedores", en: "Supplier payments" },
       { href: "/administracion/pagos-exterior", es: "Pagos al exterior", en: "Foreign payments" },
       { href: "/administracion/cupos", es: "Cupos de crédito", en: "Credit limits" },
