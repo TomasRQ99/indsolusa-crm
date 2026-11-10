@@ -25,6 +25,8 @@ export default async function PrPage({ params, searchParams }: { params: Promise
   const r = F.readiness;
   const C = F.last?.status === "REQUESTED" ? (F.last.context as unknown as typeof F.auth.context) : F.auth.context;
   const canDecide = !!F.last && canApprovePurchase(user, F.last, F.policy.value);
+  // A pending request keeps the level it was asked at; otherwise show what today's policy would require.
+  const lvl = F.last?.status === "REQUESTED" ? F.last.level : F.auth.level;
   const [spo, deals, suppliers] = await Promise.all([
     pr.supplierPoId ? db.supplierPO.findUnique({ where: { id: pr.supplierPoId }, select: { id: true, code: true, releasedAt: true, version: true } }) : null,
     db.deal.findMany({ where: { poAcceptedAt: { not: null }, resultAchievedAt: null, stage: { not: "LOST" } }, orderBy: { poAcceptedAt: "desc" }, take: 80, select: { id: true, code: true, title: true, account: { select: { name: true } } } }),
@@ -115,7 +117,7 @@ export default async function PrPage({ params, searchParams }: { params: Promise
             <>
               <p className="small"><b>{t("Por qué no es de rutina", "Why it isn't routine")}:</b></p>
               <ul className="mk-ul small">{F.auth.reasons.map((x) => <li key={x}>{t(REASON_TEXT[x].es, REASON_TEXT[x].en)}{x === "STOCK" ? ` · ${ex.qty} ${t("unidades", "units")} · ${money(ex.amount)}` : x === "COST_ABOVE_PROTECTED" ? ` · +${money(F.auth.facts.costOver)}` : ""}</li>)}</ul>
-              <p className="src">{t(`Compromiso relacionado ${money(C.purchase.relatedTotal)}${C.purchase.relatedCodes.length ? ` (con ${C.purchase.relatedCodes.join(", ")})` : ""} · límite de nivel 1 USD ${i.n2(F.policy.value.level1LimitUsd)} · decide ${F.auth.level === 2 ? "Gerencia" : "Finanzas, Administración o Gerencia"} · política v${F.policy.version}`, `Related commitment ${money(C.purchase.relatedTotal)}${C.purchase.relatedCodes.length ? ` (with ${C.purchase.relatedCodes.join(", ")})` : ""} · level-1 limit USD ${i.n2(F.policy.value.level1LimitUsd)} · decided by ${F.auth.level === 2 ? "Management" : "Finance, Administration or Management"} · policy v${F.policy.version}`)}</p>
+              <p className="src">{t(`Compromiso relacionado ${money(C.purchase.relatedTotal)}${C.purchase.relatedCodes.length ? ` (con ${C.purchase.relatedCodes.join(", ")})` : ""} · límite de nivel 1 USD ${i.n2(F.policy.value.level1LimitUsd)} · decide ${lvl === 2 ? "Gerencia" : "Finanzas, Administración o Gerencia"} · política v${F.policy.version}`, `Related commitment ${money(C.purchase.relatedTotal)}${C.purchase.relatedCodes.length ? ` (with ${C.purchase.relatedCodes.join(", ")})` : ""} · level-1 limit USD ${i.n2(F.policy.value.level1LimitUsd)} · decided by ${lvl === 2 ? "Management" : "Finance, Administration or Management"} · policy v${F.policy.version}`)}</p>
             </>
           )}
           <div className="exc-grid">
