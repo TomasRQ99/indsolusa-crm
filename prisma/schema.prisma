@@ -71,16 +71,17 @@ model User {
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
 
-  accounts    Account[]
-  deals       Deal[]
-  tasks       Task[]
-  activities  Activity[]
-  goalTargets GoalTarget[]
-  visits      VisitPlan[]          @relation("VisitOwner")
-  missions    CommercialMission[]  @relation("MissionOwner")
-  coveredBy   CoverageAssignment[] @relation("CoverageOriginal")
-  covering    CoverageAssignment[] @relation("CoverageActing")
-  backupFor   RelationshipBackup[] @relation("RelationshipBackupUser")
+  accounts      Account[]
+  deals         Deal[]
+  tasks         Task[]
+  activities    Activity[]
+  goalTargets   GoalTarget[]
+  visits        VisitPlan[]            @relation("VisitOwner")
+  missions      CommercialMission[]    @relation("MissionOwner")
+  coveredBy     CoverageAssignment[]   @relation("CoverageOriginal")
+  covering      CoverageAssignment[]   @relation("CoverageActing")
+  backupFor     RelationshipBackup[]   @relation("RelationshipBackupUser")
+  opsExceptions OperationalException[] @relation("ExceptionOwner")
 
   paymentsRequested   SupplierPayment[]   @relation("PaymentRequester")
   paymentsVerified    SupplierPayment[]   @relation("PaymentVerifier")
@@ -311,6 +312,7 @@ model Deal {
   sourcingSearches SourcingSearch[]
   supplyOptions    SupplyOption[]
   supplyBases      SupplyBasis[]
+  opsExceptions    OperationalException[]
 
   @@index([stage])
   @@index([ownerId])
@@ -2950,4 +2952,45 @@ model SellingEntity {
   version       Int      @default(1)
   updatedByName String?
   updatedAt     DateTime @updatedAt
+}
+
+// ---------- Operaciones O0 · Operational Exception (module 11 §50) ----------
+
+/// Reality deviated enough from what was expected to need a decision. Never just an alert: it carries the impact,
+/// the options, the recommended next move, an owner and a deadline (AC35). `impactAreas` drives the Commercial
+/// Impact Gate (§48): Comercial is involved only when promise, scope, price, compliance or relationship are touched.
+model OperationalException {
+  id                String    @id @default(cuid())
+  dealId            String
+  deal              Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  supplierPoId      String?
+  shipmentId        String?
+  /// SUPPLIER_DELAY | MISSING_DOCS | CUSTOMS_HOLD | DAMAGED | WRONG_ITEM | SHORT_SHIPMENT | PAYMENT_NOT_CREDITED |
+  /// FREIGHT_VARIANCE | CREDIT_OVEREXPOSURE | UNEXPECTED_INVENTORY | OTHER
+  kind              String
+  whatHappened      String
+  expected          String
+  actual            String
+  customerImpact    String?
+  economicImpactUsd Decimal?  @db.Decimal(14, 2)
+  evidence          String?
+  rootHypothesis    String?
+  /// [string] resolution options considered
+  options           Json      @default("[]")
+  recommended       String
+  /// [PROMISE | SCOPE | PRICE | COMPLIANCE | RELATIONSHIP]
+  impactAreas       Json      @default("[]")
+  ownerId           String
+  owner             User      @relation("ExceptionOwner", fields: [ownerId], references: [id])
+  deadline          DateTime
+  /// OPEN | RESOLVED
+  status            String    @default("OPEN")
+  resolution        String?
+  resolvedAt        DateTime?
+  resolvedByName    String?
+  createdByName     String
+  createdAt         DateTime  @default(now())
+
+  @@index([status, deadline])
+  @@index([dealId])
 }

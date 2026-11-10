@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { sellerOf } from "@/lib/sellers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -51,6 +52,8 @@ export async function issueInvoice(deliveryId: string) {
   });
   assertCanEditMoney(user, d.deal.ownerId);
   if (d.invoice) redirect(`/administracion/cobrar?f=${d.invoice.id}`);
+  // C-19: when the selling company invoices through DIAN, SOLU issues nothing here: the invoice is recorded on the Journey.
+  if ((await sellerOf(d.deal.sellerKey)).invoiceMode === "EXTERNAL") redirect(`/deals/${d.dealId}/facturacion`);
   const blockers = invoiceBlockers(d, d.deal, d.deal.account);
   if (blockers.length) throw new Error("La remisión aún tiene bloqueos / The delivery note still has blockers.");
   // Partial billing follows the customer's billing profile (see Billing Readiness).

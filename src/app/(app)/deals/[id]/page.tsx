@@ -746,6 +746,10 @@ export default async function JourneyPage({
   const Execute = () => (
     <>
       <section className="jblock">
+        <div className="jbh"><b>{t("ENTREGA A OPERACIONES", "HANDOFF TO OPERATIONS")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/handoff`}>{t("Abrir", "Open")}</Link></div>
+        <p className="quiet-p">{t("Todo lo que Comercial ya resolvió, reunido para quien cumple: promesa, alcance, fuente, economía protegida, crédito y riesgos.", "Everything Commercial already settled, gathered for whoever fulfils it: promise, scope, source, protected economics, credit and risks.")}</p>
+      </section>
+      <section className="jblock">
         <div className="jbh"><b>{t("INSTRUCCIÓN DE DESPACHO", "DISPATCH INSTRUCTION")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/despacho`}>{t("Abrir", "Open")}</Link></div>
         <p className="quiet-p">{t("Lo que prometimos al cliente sobre la entrega (qué, dónde, cuándo, documentos y recepción). Comercial la emite al aceptar la PO; Operaciones la ejecuta.", "What we promised the customer about delivery (what, where, when, documents and reception). Commercial issues it after accepting the PO; Operations executes it.")}</p>
       </section>

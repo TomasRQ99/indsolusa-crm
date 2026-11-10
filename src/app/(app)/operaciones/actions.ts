@@ -4,7 +4,9 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { assertCanEditOps } from "@/lib/permissions";
+import { assertCanEditOps, canEditOps } from "@/lib/permissions";
+import { money2 } from "@/lib/money";
+import { EXC_KINDS, IMPACT_AREAS } from "@/lib/ops-rules";
 import { optionalDate, optionalText, parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
 import { nextCode, today } from "@/lib/domain";
@@ -129,4 +131,57 @@ export async function updateSupplier(id: string, formData: FormData) {
   const data = parseForm(supplierSchema, formData);
   await db.supplier.update({ where: { id }, data });
   refreshApp();
+}
+
+// ---------- O0 · Operational exceptions (module 11 §50, §48) ----------
+
+const exTxt = (fd: FormData, k: string, max = 600) => { const v = String(fd.get(k) ?? "").replace(/\r\n/g, "\n").trim().slice(0, max); return v || null; };
+
+/** Record a deviation that needs a decision. It can't be saved as a bare alert: expected, actual, the recommended
+ *  next move, an owner and a deadline are required (AC35). Touching promise, scope, price, compliance or the
+ *  relationship brings Comercial in once, through the Journey owner (Commercial Impact Gate). */
+export async function openException(fd: FormData) {
+  const user = await requireUser();
+  const back = String(fd.get("back") ?? "/operaciones");
+  const to = back.startsWith("/operaciones") || back.startsWith("/deals/") ? back : "/operaciones";
+  const go = (qs: string): never => { refreshApp(); redirect(`${to}${to.includes("?") ? "&" : "?"}${qs}`); };
+  const dealId = String(fd.get("dealId") ?? "");
+  const deal = dealId ? await db.deal.findUnique({ where: { id: dealId }, select: { id: true, ownerId: true, accountId: true, code: true, title: true } }) : null;
+  if (!deal) go("err=exc-journey");
+  if (!canEditOps(user, deal!.ownerId)) go("err=exc-permiso");
+  const kind = String(fd.get("kind") ?? "");
+  const whatHappened = exTxt(fd, "whatHappened", 300), expected = exTxt(fd, "expected", 300), actual = exTxt(fd, "actual", 300), recommended = exTxt(fd, "recommended", 300);
+  const ownerId = String(fd.get("ownerId") ?? "");
+  const day = String(fd.get("deadline") ?? "");
+  const owner = ownerId ? await db.user.findFirst({ where: { id: ownerId, active: true }, select: { id: true } }) : null;
+  if (!EXC_KINDS[kind] || !whatHappened || !expected || !actual || !recommended || !owner || !/^\d{4}-\d{2}-\d{2}$/.test(day)) go("err=exc-campos#excepcion");
+  const areas = Object.keys(IMPACT_AREAS).filter((a) => fd.get(`area_${a}`) === "1");
+  const econ = Number(String(fd.get("economicImpactUsd") ?? "").replace(",", "."));
+  const options = [0, 1, 2].map((k) => exTxt(fd, `option_${k}`, 200)).filter((x): x is string => !!x);
+  await db.$transaction(async (tx) => {
+    await tx.operationalException.create({ data: {
+      dealId: deal!.id, kind, whatHappened: whatHappened!, expected: expected!, actual: actual!, recommended: recommended!, ownerId: owner!.id, deadline: new Date(`${day}T00:00:00Z`),
+      customerImpact: exTxt(fd, "customerImpact", 300), economicImpactUsd: Number.isFinite(econ) && econ !== 0 ? money2(econ) : null, evidence: exTxt(fd, "evidence", 300), rootHypothesis: exTxt(fd, "rootHypothesis", 300),
+      options, impactAreas: areas, createdByName: user.name,
+    } });
+    await tx.activity.create({ data: { type: "NOTE", subject: `Excepción operativa: ${whatHappened}`.slice(0, 200), body: `Esperado: ${expected}\nReal: ${actual}\nPróximo paso: ${recommended}`, userId: user.id, dealId: deal!.id, accountId: deal!.accountId, phase: "execute", source: "Operaciones" } });
+    // Commercial Impact Gate: one task for the relationship owner, only when the customer side is touched.
+    if (areas.length && deal!.ownerId !== user.id) await tx.task.create({ data: { title: `Operaciones: ${whatHappened} (${deal!.code ?? deal!.title})`.slice(0, 200), assigneeId: deal!.ownerId, dealId: deal!.id, accountId: deal!.accountId, dueDate: new Date(`${day}T00:00:00Z`) } });
+  });
+  go("ok=exc-abierta");
+}
+
+export async function resolveException(id: string, fd: FormData) {
+  const user = await requireUser();
+  const e = await db.operationalException.findUnique({ where: { id }, select: { id: true, status: true, ownerId: true, dealId: true, whatHappened: true, deal: { select: { ownerId: true, accountId: true } } } });
+  const go = (qs: string): never => { refreshApp(); redirect(`/operaciones?${qs}`); };
+  if (!e) go("err=exc-journey");
+  if (!(user.id === e!.ownerId || canEditOps(user, e!.deal.ownerId))) go("err=exc-permiso");
+  const resolution = exTxt(fd, "resolution", 400);
+  if (!resolution) go(`err=exc-resolucion#x-${id}`);
+  if (e!.status === "OPEN") await db.$transaction([
+    db.operationalException.update({ where: { id }, data: { status: "RESOLVED", resolution, resolvedAt: new Date(), resolvedByName: user.name } }),
+    db.activity.create({ data: { type: "NOTE", subject: `Excepción resuelta: ${e!.whatHappened}`.slice(0, 200), body: resolution, userId: user.id, dealId: e!.dealId, accountId: e!.deal.accountId, phase: "execute", source: "Operaciones" } }),
+  ]);
+  go("ok=exc-resuelta");
 }

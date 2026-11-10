@@ -5,7 +5,7 @@ import { addDays, today } from "./domain";
 // Comercial C8b · Absence Coverage (module 10 v1.3 §59). The emergency scan surfaces what can't wait in the absent
 // person's work: promises, visits, presentations, deliveries, collections and decisions. Derived, never re-typed.
 
-export type ScanKind = "PROMISE" | "VISIT" | "PRESENT" | "DELIVERY" | "COLLECT" | "DECISION" | "NEXT_MOVE" | "COMMITMENT";
+export type ScanKind = "PROMISE" | "VISIT" | "PRESENT" | "DELIVERY" | "COLLECT" | "DECISION" | "NEXT_MOVE" | "COMMITMENT" | "PICKUP" | "SUPPLIER_PAYMENT" | "CUSTOMS" | "EXCEPTION";
 export type ScanItem = { kind: ScanKind; at: string | null; label: string; href: string; account: string | null; amount?: number };
 export const SCAN_KINDS: Record<ScanKind, { es: string; en: string }> = {
   PROMISE: { es: "Promesa al cliente", en: "Promise to customer" },
@@ -16,6 +16,11 @@ export const SCAN_KINDS: Record<ScanKind, { es: string; en: string }> = {
   DECISION: { es: "Decisión del cliente", en: "Customer decision" },
   NEXT_MOVE: { es: "Próximo paso vencido o de hoy", en: "Next step due" },
   COMMITMENT: { es: "Compromiso de visita", en: "Visit commitment" },
+  // Operaciones v1.2 §46
+  PICKUP: { es: "Recogida en origen", en: "Pickup at origin" },
+  SUPPLIER_PAYMENT: { es: "Pago a proveedor", en: "Supplier payment" },
+  CUSTOMS: { es: "Aduana", en: "Customs" },
+  EXCEPTION: { es: "Excepción operativa", en: "Operational exception" },
 };
 export const COVERAGE_MAX_DAYS = 60;
 
@@ -39,7 +44,17 @@ export async function coverageScan(userId: string, until: Date): Promise<ScanIte
     db.visitCommitment.findMany({ where: { status: "OPEN", side: "US", visit: { ownerId: userId }, dueAt: { lte: until } }, select: { id: true, what: true, dueAt: true, visit: { select: { id: true, account: { select: { name: true } } } } } }),
   ]);
   const presenting = await db.task.findMany({ where: { assigneeId: userId, status: "OPEN", dueDate: { lte: until } }, select: { id: true, title: true, dueDate: true, dealId: true, account: { select: { name: true } } } });
+  const [pickups, supPays, customs, excs] = await Promise.all([
+    db.shipment.findMany({ where: { deal: { ownerId: userId }, pickedUpAt: null, deliveredAt: null, OR: [{ plannedPickup: { lte: until } }, { rtsAt: { lte: until } }] }, select: { id: true, code: true, plannedPickup: true, rtsAt: true, deal: { select: { account: { select: { name: true } } } } } }),
+    db.supplierPayment.findMany({ where: { executedAt: null, dueBy: { lte: until }, OR: [{ requestedById: userId }, { supplierPo: { deal: { ownerId: userId } } }] }, select: { id: true, amountUsd: true, dueBy: true, supplierPo: { select: { code: true, deal: { select: { account: { select: { name: true } } } } } } } }),
+    db.shipment.findMany({ where: { deal: { ownerId: userId }, deliveredAt: null, customs: "HOLD" }, select: { id: true, code: true, customsNote: true, deal: { select: { account: { select: { name: true } } } } } }),
+    db.operationalException.findMany({ where: { status: "OPEN", deadline: { lte: until }, OR: [{ ownerId: userId }, { deal: { ownerId: userId } }] }, select: { id: true, whatHappened: true, deadline: true, deal: { select: { account: { select: { name: true } } } } } }),
+  ]);
   const out: ScanItem[] = [
+    ...pickups.map((s) => ({ kind: "PICKUP" as const, at: iso(s.plannedPickup ?? s.rtsAt), label: s.code, href: `/logistica/${s.id}`, account: s.deal.account.name })),
+    ...supPays.map((p) => ({ kind: "SUPPLIER_PAYMENT" as const, at: iso(p.dueBy), label: p.supplierPo.code, href: `/administracion/pagos-proveedores/${p.id}`, account: p.supplierPo.deal.account.name, amount: Number(p.amountUsd) })),
+    ...customs.map((s) => ({ kind: "CUSTOMS" as const, at: null, label: `${s.code}${s.customsNote ? ` · ${s.customsNote}` : ""}`, href: `/logistica/${s.id}`, account: s.deal.account.name })),
+    ...excs.map((e) => ({ kind: "EXCEPTION" as const, at: iso(e.deadline), label: e.whatHappened, href: `/operaciones#x-${e.id}`, account: e.deal.account.name })),
     ...promised.map((d) => ({ kind: "PROMISE" as const, at: iso(d.promisedDate), label: `${d.code ?? d.title}${d.promiseText ? ` · ${d.promiseText}` : ` · ${d.title}`}`, href: `/deals/${d.id}`, account: d.account.name })),
     ...visits.map((v) => ({ kind: "VISIT" as const, at: iso(v.plannedAt), label: v.account.name, href: `/visitas/${v.id}`, account: v.account.name })),
     ...presenting.map((x) => ({ kind: "PRESENT" as const, at: iso(x.dueDate), label: x.title, href: x.dealId ? `/deals/${x.dealId}` : "/mi-dia", account: x.account?.name ?? null })),
