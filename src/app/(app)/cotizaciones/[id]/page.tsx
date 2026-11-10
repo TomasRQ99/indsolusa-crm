@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SellerLine } from "@/components/SellerLine";
+import { QuoteDocMoney } from "@/components/QuoteDocMoney";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -70,6 +71,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     costos: t("Costos guardados. SOLU recalculó la economía esperada.", "Costs saved. SOLU recalculated the expected economics."),
     condiciones: t("Condiciones guardadas.", "Terms saved."),
     vendedor: t("Empresa que vende actualizada.", "Selling company updated."),
+    moneda: t("Moneda e IVA guardados.", "Currency and IVA saved."),
     linea: t("Productos actualizados.", "Products updated."),
     escenario: t("Escenarios actualizados.", "Scenarios updated."),
     recomendado: t("Escenario recomendado: el plazo de la cotización lo sigue.", "Scenario recommended: the quote's lead time follows it."),
@@ -81,6 +83,15 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     ...EXC_OK(t),
   };
   const errMsg: Record<string, string> = {
+    tasa: t("No se pudo consultar la TRM oficial ahora. Intenta de nuevo o escribe la tasa con su motivo.", "Couldn't get the official TRM right now. Try again, or type the rate with its reason."),
+    "tasa-rango": t("Escribe una tasa válida (pesos por dólar).", "Type a valid rate (pesos per dollar)."),
+    "tasa-motivo": t("Si escribes otra tasa, di por qué.", "If you type another rate, say why."),
+    exento: t("Para marcarla exenta de IVA, escribe el motivo.", "To mark it IVA exempt, write the reason."),
+    "doc-seller-inactive": t("La empresa que vende no está activa. Gerencia la activa en Comercial → Configuración → Empresas que venden.", "The selling company isn't active. Management activates it in Commercial → Setup → Selling companies."),
+    "doc-seller-incomplete": t("Faltan datos legales de la empresa que vende; no se puede presentar así.", "The selling company's legal details are incomplete; it can't be presented like this."),
+    "doc-cop-not-allowed": t("Esta empresa no cotiza en pesos: cambia la moneda a USD.", "This company doesn't quote in pesos: change the currency to USD."),
+    "doc-no-rate": t("La cotización está en pesos y no tiene tasa fijada: guárdala en «Moneda e IVA del documento».", "The quote is in pesos and has no fixed rate: save it under “Document currency and IVA”."),
+    "doc-exempt-no-reason": t("Falta el motivo de la exención de IVA.", "The IVA exemption reason is missing."),
     "vendedor-inactivo": t("Esa empresa aún no está activa: Gerencia debe completar sus datos en Comercial → Configuración → Empresas que venden.", "That company isn't active yet: Management must complete its details in Commercial → Setup → Selling companies."),
     "vendedor-fijo": t("El cliente ya vio una cotización de esta empresa (o hay factura): la empresa que vende ya no cambia en este Journey.", "The customer already saw a quote from this company (or there's an invoice): the seller no longer changes on this Journey."),
     permiso: t("No tienes permiso para cambiar este Journey.", "You don't have permission to change this Journey."),
@@ -750,6 +761,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
       <Header />
       <SellerLine dealId={q.deal.id} sellerKey={q.deal.sellerKey} es={i.es} editable={editable} back={`/cotizaciones/${q.id}`} />
+      <QuoteDocMoney q={q} sellerKey={q.deal.sellerKey} es={i.es} editable={editable} />
       {draft ? (
         <div className="jbody">
           <div className="jmain">

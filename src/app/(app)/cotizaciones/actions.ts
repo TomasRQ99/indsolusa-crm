@@ -13,6 +13,9 @@ import { costDrops } from "@/lib/esagara-rules";
 import { makeI18n } from "@/lib/i18n";
 import { money2, mulMoney } from "@/lib/money";
 import { COST_STATUS } from "@/lib/proposal-rules";
+import { sellerMissing, sellerOf } from "@/lib/sellers";
+import { RATE_MAX, RATE_MIN, docBlockers, effectiveIvaPct, type SellerSnap } from "@/lib/quote-doc";
+import { TRM_SOURCE, trmFor } from "@/lib/fx";
 
 const dayOf = (s: FormDataEntryValue | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(`${String(s)}T00:00:00Z`) : null);
 const txt = (fd: FormData, k: string, max = 2000) => {
@@ -223,6 +226,11 @@ export async function presentQuote(id: string, fd: FormData) {
   const scope = await scopeState(q.dealId, q.lines.map((l) => ({ code: l.code, description: l.description })), q);
   const b = buildQuote(q, makeI18n(user.lang), policy, scope);
   if (b.blocking.length > 0) back(id, "err=bloqueada");
+  // Seller, currency and IVA must be settled before the customer sees the document; they are frozen with it.
+  const seller = await sellerOf(q.deal.sellerKey);
+  const docIssues = docBlockers(q, { active: seller.active, allowsCop: seller.allowsCop, missing: sellerMissing(seller) });
+  if (docIssues.length) back(id, `err=doc-${docIssues[0].toLowerCase().replace(/_/g, "-")}`);
+  const sellerSnap: SellerSnap = { key: seller.key, legalName: seller.legalName, taxIdLabel: seller.taxIdLabel, taxId: seller.taxId, addressLines: seller.addressLines, phone: seller.phone };
   const on = dayOf(fd.get("presentedOn")) ?? today();
   const sale = saleOf(q.lines);
   const cost = costOf(q);
@@ -230,7 +238,7 @@ export async function presentQuote(id: string, fd: FormData) {
   await db.$transaction(async (tx) => {
     await tx.quote.update({
       where: { id },
-      data: { status: "PRESENTED", issuedAt: on, presentedAt: on, protSale: sale, protCost: cost, protEsagra: sale - cost, protPolicy: policy.version },
+      data: { status: "PRESENTED", issuedAt: on, presentedAt: on, protSale: sale, protCost: cost, protEsagra: sale - cost, protPolicy: policy.version, sellerSnap, ivaPct: effectiveIvaPct(seller.ivaPct, q.ivaExempt) },
     });
     await tx.quote.updateMany({ where: { number: q.number, id: { not: id }, status: "PRESENTED" }, data: { status: "SUPERSEDED" } });
     const offerUntil = validUntil({ issuedAt: on, presentedAt: on, validityDays: q.validityDays });
@@ -265,7 +273,7 @@ export async function createRevision(id: string) {
   if (existing) back(existing.id, "ok=abierta");
   const src = await db.quote.findUniqueOrThrow({ where: { id }, include: { lines: true, scenarios: true } });
   const top = await db.quote.aggregate({ where: { number: q.number }, _max: { rev: true } });
-  const { id: _i, createdAt: _c, issuedAt: _is, presentedAt: _p, decidedAt: _d, protSale: _ps, protCost: _pc, protEsagra: _pe, protPolicy: _pp, status: _s, rev: _r, createdById: _cb, changeNote: _cn, lines, scenarios, ...rest } = src;
+  const { id: _i, createdAt: _c, issuedAt: _is, presentedAt: _p, decidedAt: _d, protSale: _ps, protCost: _pc, protEsagra: _pe, protPolicy: _pp, status: _s, rev: _r, createdById: _cb, changeNote: _cn, sellerSnap: _ss, ivaPct: _ip, lines, scenarios, ...rest } = src;
   const nq = await db.quote.create({
     data: {
       ...rest,
@@ -300,4 +308,34 @@ export async function waitWithControl(id: string, fd: FormData) {
   if (!what || !until) back(id, "err=espera");
   await db.deal.update({ where: { id: q.dealId }, data: { waitingFor: what, waitingUntil: until, nextMove: null, nextMoveDate: null } });
   back(id, "ok=espera");
+}
+
+/** Currency, exchange rate and IVA of the document (C-20, C-21). Draft only: presenting freezes them. */
+export async function saveDocMoney(id: string, fd: FormData) {
+  const { user, q } = await draftOnly(id);
+  const deal = await db.deal.findUniqueOrThrow({ where: { id: q.deal.id }, select: { sellerKey: true } });
+  const seller = await sellerOf(deal.sellerKey);
+  const currency = fd.get("currency") === "COP" && seller.allowsCop ? "COP" : "USD";
+  let rate: { docFxRate: number | null; docFxSource: string | null } = { docFxRate: null, docFxSource: null };
+  if (currency === "COP") {
+    if (fd.get("rateMode") === "MANUAL") {
+      const r = num(fd, "manualRate");
+      const why = txt(fd, "rateReason", 200);
+      if (r == null || r < RATE_MIN || r > RATE_MAX) back(id, "err=tasa-rango#moneda");
+      const typed = Math.round(r! * 100) / 100;
+      // Same typed rate as already saved: its reason stands; a new or changed rate needs one.
+      const kept = !why && q.docFxSource && !q.docFxSource.startsWith("TRM") && Number(q.docFxRate ?? 0) === typed ? q.docFxSource : null;
+      if (!why && !kept) back(id, "err=tasa-motivo#moneda");
+      rate = { docFxRate: typed, docFxSource: kept ?? `Tasa escrita por ${user.name}: ${why}` };
+    } else {
+      const trm = await trmFor(today().toISOString().slice(0, 10));
+      if (!trm) back(id, "err=tasa#moneda");
+      rate = { docFxRate: trm!.rate, docFxSource: `${TRM_SOURCE} · vigente ${trm!.validFrom}` };
+    }
+  }
+  const ivaExempt = Number(seller.ivaPct) > 0 && fd.get("ivaExempt") === "1";
+  const ivaExemptReason = ivaExempt ? txt(fd, "ivaExemptReason", 200) : null;
+  if (ivaExempt && !ivaExemptReason) back(id, "err=exento#moneda");
+  await db.quote.update({ where: { id }, data: { currency, ...rate, ivaExempt, ivaExemptReason } });
+  back(id, "ok=moneda#moneda");
 }

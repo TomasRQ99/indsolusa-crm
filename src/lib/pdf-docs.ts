@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import type { DocMoney } from "./quote-doc";
 import path from "node:path";
 import PDFDocument from "pdfkit";
 import { addDays, daysBetween } from "./domain";
@@ -25,6 +26,7 @@ const L = {
     payText: (days: number, by: string) => `Net ${days} days from invoice date (by ${by})`,
     instrPending: "Please confirm payment instructions by phone at (305) 307 0050 before paying. Industry Solutions USA never changes bank details by email.",
     ref: (n: string) => `Reference: Invoice Nº ${n}`,
+    subtotal: "Subtotal", iva: (p: number) => `IVA ${p} %`, ivaExempt: "IVA: exempt", noIva: "IVA not applicable",
     page: (a: number, b: number) => `Page ${a} of ${b}`,
   },
   ES: {
@@ -36,6 +38,7 @@ const L = {
     payText: (days: number, by: string) => `${days} días desde la fecha de factura (a más tardar ${by})`,
     instrPending: "Confirme las instrucciones de pago por teléfono al (305) 307 0050 antes de pagar. Industry Solutions USA nunca cambia sus datos bancarios por correo.",
     ref: (n: string) => `Referencia: Factura Nº ${n}`,
+    subtotal: "Subtotal", iva: (p: number) => `IVA ${p} %`, ivaExempt: "IVA: exento", noIva: "No aplica IVA",
     page: (a: number, b: number) => `Página ${a} de ${b}`,
   },
 };
@@ -45,7 +48,9 @@ export const docDate = (d: Date, lang: DocLang) => {
   const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
   return lang === "EN" ? `${mm}/${dd}/${d.getUTCFullYear()}` : `${dd}/${mm}/${d.getUTCFullYear()}`;
 };
-export const docMoney = (v: number, lang: DocLang) =>
+/** Amounts as printed. COP has no decimals: "COP 180,000" (EN) / "COP 180.000" (ES). */
+export const docMoney = (v: number, lang: DocLang, currency: "USD" | "COP" = "USD") =>
+  currency === "COP" ? `COP ${new Intl.NumberFormat(lang === "EN" ? "en-US" : "de-DE", { maximumFractionDigits: 0 }).format(v)}` :
   lang === "EN"
     ? `$${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}`
     : `USD ${new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}`;
@@ -90,6 +95,10 @@ export type QuoteDoc = Common & {
   paymentTerms: string | null;
   validityDays: number;
   condition: string;
+  /** Selling company printed in the header (default: the USA company). */
+  issuer?: { name: string; lines: string[] };
+  /** Document currency, IVA and totals (quote-doc.ts). Absent = USD, no IVA, as before. */
+  money?: DocMoney;
 };
 export type InvoiceDoc = Common & {
   kind: "invoice";
@@ -126,9 +135,10 @@ export async function renderDoc(doc: QuoteDoc | InvoiceDoc): Promise<Buffer> {
     font(true).fontSize(17).fillColor(BRAND).text("INDUSTRY SOLUTIONS", left, 48, { lineBreak: false });
     font(false).fontSize(8.5).fillColor(MUTED).text("USA LLC", left, 68);
   }
-  font(true).fontSize(9).fillColor(INK).text(ISSUER.name, left, 86);
+  const issuer = (doc.kind === "quote" && doc.issuer) || ISSUER;
+  font(true).fontSize(9).fillColor(INK).text(issuer.name, left, 86);
   font(false).fontSize(9).fillColor(INK);
-  ISSUER.lines.forEach((l, n) => pdf.text(l, left, 98 + n * 11.5));
+  issuer.lines.slice(0, 4).forEach((l, n) => pdf.text(l, left, 98 + n * 11.5));
 
   // ---- Title + key box (top-right) ----
   const title = doc.kind === "quote" ? T.quote : T.invoice;
@@ -185,11 +195,14 @@ export async function renderDoc(doc: QuoteDoc | InvoiceDoc): Promise<Buffer> {
   header();
   const bottom = pdf.page.height - 64;
   let sum = 0;
-  for (const l of doc.lines) {
-    const total = lineAmount(l.qty, l.unitPrice);
+  const dm = doc.kind === "quote" ? doc.money : undefined;
+  const cur = dm?.currency ?? "USD";
+  for (const [n, l] of doc.lines.entries()) {
+    const unit = dm ? dm.lines[n].unit : l.unitPrice;
+    const total = dm ? dm.lines[n].total : lineAmount(l.qty, l.unitPrice);
     sum = sumMoney([sum, total]);
     font(false).fontSize(9);
-    const cells = [String(l.qty), l.code ?? "", l.description, docMoney(l.unitPrice, doc.lang), docMoney(total, doc.lang)];
+    const cells = [String(l.qty), l.code ?? "", l.description, docMoney(unit, doc.lang, cur), docMoney(total, doc.lang, cur)];
     const h = Math.max(...cells.map((c, n) => pdf.heightOfString(c || " ", { width: cols[n].w - 10 }))) + 10;
     if (y + h > bottom - 120) { pdf.addPage(); y = 48; header(); font(false).fontSize(9); }
     let x = left;
@@ -208,7 +221,11 @@ export async function renderDoc(doc: QuoteDoc | InvoiceDoc): Promise<Buffer> {
     y += strong ? 18 : 15;
   };
   const docTotal = doc.kind === "invoice" ? doc.total : sum;
-  totalRow(T.totalUsd, docMoney(docTotal, doc.lang), true);
+  if (dm && (dm.ivaPct > 0 || dm.ivaExempt)) {
+    totalRow(T.subtotal, docMoney(dm.subtotal, doc.lang, cur));
+    totalRow(dm.ivaExempt ? T.ivaExempt : T.iva(dm.ivaPct), dm.ivaExempt ? "—" : docMoney(dm.iva, doc.lang, cur));
+  }
+  totalRow(dm ? `Total ${cur}` : T.totalUsd, docMoney(dm ? dm.total : docTotal, doc.lang, cur), true);
   if (doc.kind === "invoice") totalRow(T.balance, docMoney(doc.balance, doc.lang), true);
   y += 10;
 

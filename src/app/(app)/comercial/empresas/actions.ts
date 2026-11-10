@@ -50,6 +50,8 @@ export async function setDealSeller(dealId: string, fd: FormData) {
   if (await sellerLocked(dealId)) go("err=vendedor-fijo");
   await db.$transaction([
     db.deal.update({ where: { id: dealId }, data: { sellerKey: key } }),
+    // Draft quotes start over on currency and IVA: those depend on the company that sells.
+    db.quote.updateMany({ where: { dealId, status: "DRAFT" }, data: { currency: "USD", docFxRate: null, docFxSource: null, ivaExempt: false, ivaExemptReason: null } }),
     db.activity.create({ data: { type: "NOTE", subject: `Vende: ${s!.legalName} (antes ${deal!.sellerKey})`.slice(0, 200), userId: user.id, dealId, phase: "quote", source: "Empresa que vende" } }),
   ]);
   go("ok=vendedor");

@@ -11,7 +11,7 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   Deal: ["sellerKey", "amount", "supplierCost", "freightCost", "otherCosts", "stage", "ownerId", "promisedDate", "poAcceptedAt", "creditExceptionById", "creditExceptionAt", "creditExceptionNote", "closedAt", "explorationId", "plantId", "originRef"],
   DealItem: ["qty", "unitPrice", "code", "description"],
   Supplier: ["bankBeneficiary", "bankName", "bankAccount", "bankSwift", "bankVerifiedAt", "bankVerifiedById", "paymentTerms", "advancePct", "currency", "taxId"],
-  Quote: ["status", "rev", "supplierCost", "freightCost", "otherCosts", "fxRate", "protSale", "protCost", "protEsagra", "presentedAt", "decidedAt", "validityDays", "paymentTerms", "incoterm"],
+  Quote: ["currency", "docFxRate", "docFxSource", "ivaExempt", "ivaExemptReason", "ivaPct", "status", "rev", "supplierCost", "freightCost", "otherCosts", "fxRate", "protSale", "protCost", "protEsagra", "presentedAt", "decidedAt", "validityDays", "paymentTerms", "incoterm"],
   QuoteLine: ["qty", "unitPrice", "code", "description"],
   CustomerPO: "all",
   PoAcceptance: "all",

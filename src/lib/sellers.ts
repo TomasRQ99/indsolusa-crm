@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { ISSUER } from "./pdf-docs";
+import { docMoneyOf, effectiveIvaPct, type SellerSnap } from "./quote-doc";
 
 // Selling entities (decisions C-02, C-19, C-20, C-21): which of our companies sells on a Journey. The USA company is
 // preloaded from the details already printed on documents. The Colombian company starts as an empty, inactive
@@ -41,4 +42,16 @@ export async function sellerLocked(dealId: string) {
     db.invoice.count({ where: { dealId } }),
   ]);
   return quotes > 0 || invoices > 0;
+}
+
+/** Seller and money of a quote as the customer sees them: frozen values once presented, live ones while a draft. */
+export async function quoteDocView(q: { status: string; currency: string; docFxRate: unknown; ivaExempt: boolean; ivaPct: unknown; sellerSnap: unknown; lines: { qty: number; unitPrice: unknown }[] }, sellerKey: string) {
+  const live = await sellerOf(sellerKey);
+  const snap = q.status !== "DRAFT" && q.sellerSnap && typeof q.sellerSnap === "object" ? (q.sellerSnap as SellerSnap) : null;
+  const s = snap ?? { key: live.key, legalName: live.legalName, taxIdLabel: live.taxIdLabel, taxId: live.taxId, addressLines: live.addressLines, phone: live.phone };
+  // Quotes presented before this feature have no snapshot: they were all from the USA company, no IVA.
+  const ivaPct = q.status !== "DRAFT" ? Number(q.ivaPct ?? 0) : effectiveIvaPct(live.ivaPct as never, q.ivaExempt);
+  const money = docMoneyOf(q.lines as never, { currency: q.currency, fxRate: q.docFxRate as never, ivaPct, ivaExempt: q.ivaExempt });
+  const issuer = { name: s.legalName, lines: [...(s.addressLines ?? "").split("\n").map((x) => x.trim()).filter(Boolean), ...(s.taxId ? [`${s.taxIdLabel ?? "ID"} ${s.taxId}`] : []), ...(s.phone ? [s.phone] : [])] };
+  return { seller: live, snap: s, issuer, money };
 }

@@ -1172,6 +1172,17 @@ model Quote {
   paymentTerms       String?
   validityDays       Int       @default(30)
   condition          String    @default("New & original")
+  // Seller, currency and tax of the document (C-19 to C-21). Internal economics stay in USD before IVA.
+  /// USD | COP: the currency the customer sees. Lines are kept in USD; a COP document converts them at docFxRate.
+  currency           String    @default("USD")
+  /// COP per USD fixed for this document, and where it came from (official TRM of a date, or typed with a reason).
+  docFxRate          Decimal?  @db.Decimal(12, 2)
+  docFxSource        String?
+  ivaExempt          Boolean   @default(false)
+  ivaExemptReason    String?
+  /// Frozen when presented: the IVA % applied and the selling company as it was that day.
+  ivaPct             Decimal?  @db.Decimal(5, 2)
+  sellerSnap         Json?
   // Customer decision future
   supplierValidUntil DateTime?
   supplyConfirmed    Boolean   @default(false)
