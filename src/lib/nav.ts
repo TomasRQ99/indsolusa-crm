@@ -61,6 +61,7 @@ export const MODULES: NavModule[] = [
     key: "operaciones", es: "OPERACIONES", en: "OPERATIONS", match: ["/operaciones", "/compras", "/logistica"],
     tabs: [
       { href: "/operaciones", es: "Inicio", en: "Home" },
+      { href: "/operaciones/compromisos", es: "Alto valor", en: "High value" },
       { href: "/compras/requerimientos", es: "Requerimientos", en: "Requirements" },
       { href: "/compras", es: "Compras", en: "Purchasing" },
       { href: "/logistica", es: "Envíos", en: "Shipments" },
