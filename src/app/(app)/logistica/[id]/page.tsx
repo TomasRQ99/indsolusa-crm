@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShipmentDates } from "@/components/ShipmentDates";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -228,6 +229,7 @@ export default async function ShipmentPage({ params, searchParams }: { params: P
               <RouteMap pts={B.pts} dest={{ lat: s.destLat!, lng: s.destLng! }} destLabel={s.destination ?? ""} title={t("Ruta del envío", "Shipment route")} />
             </section>
           )}
+          <ShipmentDates shipmentId={s.id} lang={i.es ? "ES" : "EN"} editable={editable} />
         </div>
 
         <aside className="jrail">

@@ -178,3 +178,11 @@ export async function chooseOption(id: string, key: OptKey, fd: FormData) {
   await fact(user.id, s, `${s.code}: opción elegida · ${o!.title}`, txt(fd, "note", 300));
   back(id, "ok=opcion");
 }
+
+/** O5a §30: the dates that complete the set (planned and actual departure, expected customs release). */
+export async function saveShipmentDates(id: string, fd: FormData) {
+  await load(id);
+  const d = (k: string) => { const v = String(fd.get(k) ?? ""); return /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T00:00:00Z`) : null; };
+  await db.shipment.update({ where: { id }, data: { plannedDeparture: d("plannedDeparture"), departedAt: d("departedAt"), customsExpectedRelease: d("customsExpectedRelease") } });
+  back(id, "ok=fechas");
+}

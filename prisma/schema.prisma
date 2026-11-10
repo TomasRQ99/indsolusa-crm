@@ -797,6 +797,7 @@ model SupplierPO {
   confirmations SupplierConfirmation[]
   savings       SavingsEntry[]
   commitments   SupplierCommitment[]
+  freight       FreightRequirement?
   /// STOCK | MANUFACTURED | SERVICE | REPAIR: which milestones apply (§23)
   orderKind     String?
 
@@ -1467,46 +1468,50 @@ enum ShipEventKind {
 }
 
 model Shipment {
-  id               String       @id @default(cuid())
-  code             String       @unique
-  dealId           String
-  deal             Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  supplierPoId     String?
-  supplierPo       SupplierPO?  @relation(fields: [supplierPoId], references: [id], onDelete: SetNull)
-  carrierName      String
-  tracking         String?
-  mode             ShipmentMode @default(AIR)
-  origin           String?
-  destination      String?
-  destLat          Float?
-  destLng          Float?
-  international    Boolean      @default(true)
+  id                     String       @id @default(cuid())
+  code                   String       @unique
+  dealId                 String
+  deal                   Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  supplierPoId           String?
+  supplierPo             SupplierPO?  @relation(fields: [supplierPoId], references: [id], onDelete: SetNull)
+  carrierName            String
+  tracking               String?
+  mode                   ShipmentMode @default(AIR)
+  origin                 String?
+  destination            String?
+  destLat                Float?
+  destLng                Float?
+  international          Boolean      @default(true)
   // true = the carrier hands it to the customer; false = it arrives to us/our broker first
-  toCustomer       Boolean      @default(false)
+  toCustomer             Boolean      @default(false)
   // Baseline (what we planned when it was recorded) vs actual
-  plannedRts       DateTime?
-  rtsAt            DateTime?
-  plannedPickup    DateTime?
-  pickedUpAt       DateTime?
-  plannedDelivery  DateTime?
-  carrierEta       DateTime?
-  carrierEtaAt     DateTime?
-  carrierEtaSource String?
-  deliveredAt      DateTime?
-  deliveredNote    String?
-  customs          CustomsState @default(NOT_REQUIRED)
-  customsNote      String?
-  docs             Json?
-  receipt          ReceiptState @default(PENDING)
-  receivedAt       DateTime?
-  receivedByName   String?
-  receiptNote      String?
-  disputedAt       DateTime?
-  disputeNote      String?
-  deliveryId       String?      @unique
-  delivery         Delivery?    @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
-  createdByName    String
-  createdAt        DateTime     @default(now())
+  plannedRts             DateTime?
+  rtsAt                  DateTime?
+  plannedPickup          DateTime?
+  pickedUpAt             DateTime?
+  plannedDelivery        DateTime?
+  carrierEta             DateTime?
+  carrierEtaAt           DateTime?
+  carrierEtaSource       String?
+  // O5a §30: the dates that were missing from the set (each is its own fact, never one "ETA").
+  plannedDeparture       DateTime?
+  departedAt             DateTime?
+  customsExpectedRelease DateTime?
+  deliveredAt            DateTime?
+  deliveredNote          String?
+  customs                CustomsState @default(NOT_REQUIRED)
+  customsNote            String?
+  docs                   Json?
+  receipt                ReceiptState @default(PENDING)
+  receivedAt             DateTime?
+  receivedByName         String?
+  receiptNote            String?
+  disputedAt             DateTime?
+  disputeNote            String?
+  deliveryId             String?      @unique
+  delivery               Delivery?    @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
+  createdByName          String
+  createdAt              DateTime     @default(now())
 
   lines     ShipmentLine[]
   events    ShipmentEvent[]
@@ -3226,4 +3231,75 @@ model SupplierCommitment {
   createdAt       DateTime   @default(now())
 
   @@index([supplierPoId])
+}
+
+// ---------- Operaciones O5a · Freight requirement and options (module 11 §25–28) ----------
+
+/// What must be moved for one Supplier PO and everything needed before booking transport. Prefilled from the supply
+/// basis; each figure keeps who stated it. Logistics Readiness is derived from it, not ticked by hand.
+model FreightRequirement {
+  id             String     @id @default(cuid())
+  supplierPoId   String     @unique
+  supplierPo     SupplierPO @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
+  origin         String?
+  pickupAddress  String?
+  pickupContact  String?
+  pickupHours    String?
+  destination    String?
+  readyDate      DateTime?
+  packages       Int?
+  netKg          Decimal?   @db.Decimal(10, 2)
+  grossKg        Decimal?   @db.Decimal(10, 2)
+  dims           String?
+  packagingType  String?
+  stackable      Boolean?
+  fragile        Boolean?
+  hazardous      Boolean?
+  temperature    String?
+  incoterm       String?
+  hasInvoice     Boolean    @default(false)
+  hasPackingList Boolean    @default(false)
+  exportNote     String?
+  handling       String?
+  insurance      String?
+  urgent         Boolean    @default(false)
+  /// who stated weight and measures: SUPPLIER_STATED | HISTORICAL_MEASURED | WAREHOUSE_MEASURED | CARRIER_MEASURED | ESTIMATED
+  weightSource   String     @default("SUPPLIER_STATED")
+  reconfirmedAt  DateTime?
+  reconfirmNote  String?
+  updatedByName  String
+  updatedAt      DateTime   @updatedAt
+
+  quotes FreightQuote[]
+}
+
+/// One freight option for a requirement. The measure is cost to fulfil, not the cheapest freight: each option is
+/// read against the customer promise. Choosing is a recorded human decision with its reason.
+model FreightQuote {
+  id             String             @id @default(cuid())
+  requirementId  String
+  requirement    FreightRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  /// adapter that produced it: MANUAL (typed from a quote) | DHL_EXPRESS …
+  adapter        String             @default("MANUAL")
+  carrier        String
+  service        String?
+  mode           String?
+  cost           Decimal            @db.Decimal(14, 2)
+  currency       String             @default("USD")
+  transitDays    Int?
+  pickupDate     DateTime?
+  cutoff         String?
+  insurance      String?
+  customsNote    String?
+  reliability    String?
+  validUntil     DateTime?
+  source         String
+  chosen         Boolean            @default(false)
+  chosenReason   String?
+  chosenByName   String?
+  chosenAt       DateTime?
+  recordedByName String
+  createdAt      DateTime           @default(now())
+
+  @@index([requirementId])
 }
