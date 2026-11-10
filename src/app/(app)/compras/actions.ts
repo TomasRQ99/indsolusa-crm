@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { ensurePrForSpo, readinessForSpo } from "@/lib/pr";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -48,7 +49,7 @@ export async function prepareSpo(dealId: string) {
   const plan = milestones(total, supplier!.advancePct, today(), shipBy);
   const spo = await db.$transaction(async (tx) => {
     const code = await nextCode("SPO", "supplierPO", tx);
-    return tx.supplierPO.create({
+    const made = await tx.supplierPO.create({
       data: {
         code, dealId, supplierId: supplier!.id, amount: total, currency: pr.currency,
         terms: supplier!.paymentTerms, proformaRef: pr.costSource, shipBy,
@@ -56,6 +57,9 @@ export async function prepareSpo(dealId: string) {
         requirements: { create: plan.map((m, n) => ({ ...m, position: n })) },
       },
     });
+    // O1: every customer purchase has its Purchase Requirement, derived here (100 % assigned to this Journey).
+    await ensurePrForSpo(tx, { id: made.id, dealId, supplierId: supplier!.id, currency: pr.currency, shipBy, lines }, user, deal.sellerKey);
+    return made;
   });
   back(spo.id, "ok=preparada");
 }
@@ -88,6 +92,9 @@ export async function releaseSpo(id: string) {
   if (spo.releasedAt) back(id, "ok=ya-liberada");
   const B = buildSpo(spo, makeI18n("ES"));
   if (B.blocking.length) back(id, "err=precondicion");
+  // O1: unassigned quantity (inventory exposure) and other open points of the requirement stop the release.
+  const ready = await readinessForSpo(id);
+  if (ready && ready.readiness.result === "NEEDS_RESOLUTION") back(id, "err=requerimiento");
   const now = new Date();
   const plan = milestones(B.total, spo.supplier.advancePct, today(), spo.shipBy);
   await db.$transaction(async (tx) => {

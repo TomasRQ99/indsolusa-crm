@@ -71,17 +71,18 @@ model User {
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
 
-  accounts      Account[]
-  deals         Deal[]
-  tasks         Task[]
-  activities    Activity[]
-  goalTargets   GoalTarget[]
-  visits        VisitPlan[]            @relation("VisitOwner")
-  missions      CommercialMission[]    @relation("MissionOwner")
-  coveredBy     CoverageAssignment[]   @relation("CoverageOriginal")
-  covering      CoverageAssignment[]   @relation("CoverageActing")
-  backupFor     RelationshipBackup[]   @relation("RelationshipBackupUser")
-  opsExceptions OperationalException[] @relation("ExceptionOwner")
+  accounts         Account[]
+  deals            Deal[]
+  tasks            Task[]
+  activities       Activity[]
+  goalTargets      GoalTarget[]
+  visits           VisitPlan[]            @relation("VisitOwner")
+  missions         CommercialMission[]    @relation("MissionOwner")
+  coveredBy        CoverageAssignment[]   @relation("CoverageOriginal")
+  covering         CoverageAssignment[]   @relation("CoverageActing")
+  backupFor        RelationshipBackup[]   @relation("RelationshipBackupUser")
+  opsExceptions    OperationalException[] @relation("ExceptionOwner")
+  purchaseRequests PurchaseRequirement[]  @relation("PrRequester")
 
   paymentsRequested   SupplierPayment[]   @relation("PaymentRequester")
   paymentsVerified    SupplierPayment[]   @relation("PaymentVerifier")
@@ -285,34 +286,36 @@ model Deal {
   technicalFacts     TechnicalFact[]
   scopeConfirmations ScopeConfirmation[]
 
-  resultEvidence   ResultEvidence[]
-  recoveries       Recovery[]
-  continuity       ContinuitySignal[]
-  tasks            Task[]
-  views            JourneyView[]
-  threads          CommThread[]
-  quotes           Quote[]
-  customerPos      CustomerPO[]
-  activities       Activity[]
-  items            DealItem[]
-  supplierPos      SupplierPO[]
-  rfqs             Rfq[]
-  shipments        Shipment[]
-  deliveries       Delivery[]
-  invoices         Invoice[]
-  billingRequests  BillingRequest[]
-  cashBlockers     CashBlocker[]
-  creditReviews    CreditReviewRequest[]
+  resultEvidence       ResultEvidence[]
+  recoveries           Recovery[]
+  continuity           ContinuitySignal[]
+  tasks                Task[]
+  views                JourneyView[]
+  threads              CommThread[]
+  quotes               Quote[]
+  customerPos          CustomerPO[]
+  activities           Activity[]
+  items                DealItem[]
+  supplierPos          SupplierPO[]
+  rfqs                 Rfq[]
+  shipments            Shipment[]
+  deliveries           Delivery[]
+  invoices             Invoice[]
+  billingRequests      BillingRequest[]
+  cashBlockers         CashBlocker[]
+  creditReviews        CreditReviewRequest[]
   // Comercial C5 · Solution Case & Proposal
-  solutionCase     SolutionCase?
+  solutionCase         SolutionCase?
   // Comercial C6 · PO allocations and dispatch
-  poAllocations    PoAllocation[]
-  dispatches       DispatchInstruction[]
+  poAllocations        PoAllocation[]
+  dispatches           DispatchInstruction[]
   // Comercial C4 · Sourcing & Supply
-  sourcingSearches SourcingSearch[]
-  supplyOptions    SupplyOption[]
-  supplyBases      SupplyBasis[]
-  opsExceptions    OperationalException[]
+  sourcingSearches     SourcingSearch[]
+  supplyOptions        SupplyOption[]
+  supplyBases          SupplyBasis[]
+  opsExceptions        OperationalException[]
+  purchaseRequirements PurchaseRequirement[]
+  purchaseAllocations  PurchaseAllocation[]
 
   @@index([stage])
   @@index([ownerId])
@@ -733,13 +736,14 @@ model Supplier {
   /// NIT / tax ID. Same NIT as a customer = the same organization with both roles (Mercado §4.3).
   taxId            String?
 
-  pos           SupplierPO[]
-  docs          SupplierDoc[]
-  offers        SupplierOffer[]
-  rfqRecipients RfqRecipient[]
-  outboundMails OutboundMail[]
-  supplyOptions SupplyOption[]
-  logisticsObs  LogisticsObservation[]
+  pos                  SupplierPO[]
+  docs                 SupplierDoc[]
+  offers               SupplierOffer[]
+  rfqRecipients        RfqRecipient[]
+  outboundMails        OutboundMail[]
+  supplyOptions        SupplyOption[]
+  logisticsObs         LogisticsObservation[]
+  purchaseRequirements PurchaseRequirement[]
 }
 
 model SupplierPO {
@@ -2992,5 +2996,83 @@ model OperationalException {
   createdAt         DateTime  @default(now())
 
   @@index([status, deadline])
+  @@index([dealId])
+}
+
+// ---------- Operaciones O1 · Purchase Requirement (module 11 §4–6) ----------
+
+/// What the organisation needs to buy and why; not yet an order to a supplier. Purposes built now (decision O-05):
+/// CUSTOMER_FULFILLMENT (must have a Journey, AC1) and INVENTORY. Internal, asset and project purchases wait for
+/// Module 14. Quantity bought beyond what is allocated to Journeys is Inventory Exposure and needs its own approval.
+model PurchaseRequirement {
+  id                 String    @id @default(cuid())
+  code               String    @unique
+  /// CUSTOMER_FULFILLMENT | INVENTORY
+  purpose            String
+  /// PRODUCT | SERVICE | MIXED
+  itemType           String    @default("PRODUCT")
+  /// DIRECT_COST (resale and stock); other natures arrive with Module 14
+  economicNature     String    @default("DIRECT_COST")
+  sellerKey          String    @default("USA")
+  requesterId        String
+  requester          User      @relation("PrRequester", fields: [requesterId], references: [id])
+  /// Home Journey of a customer purchase (the Supplier PO belongs to it). Null only for INVENTORY.
+  dealId             String?
+  deal               Deal?     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  supplierId         String?
+  supplier           Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  neededBy           DateTime?
+  urgent             Boolean   @default(false)
+  currency           String    @default("USD")
+  justification      String?
+  sourceEvidence     String?
+  nextMove           String?
+  /// Inventory Exposure approval: NONE | REQUESTED | APPROVED | REJECTED, for the unallocated quantity it was asked for.
+  stockStatus        String    @default("NONE")
+  stockQtyApproved   Int?
+  stockAmount        Decimal?  @db.Decimal(14, 2)
+  stockRequestedAt   DateTime?
+  stockDecidedAt     DateTime?
+  stockDecidedByName String?
+  stockNote          String?
+  supplierPoId       String?   @unique
+  cancelledAt        DateTime?
+  cancelReason       String?
+  createdByName      String
+  createdAt          DateTime  @default(now())
+
+  lines PurchaseRequirementLine[]
+
+  @@index([dealId])
+}
+
+model PurchaseRequirementLine {
+  id               String              @id @default(cuid())
+  prId             String
+  pr               PurchaseRequirement @relation(fields: [prId], references: [id], onDelete: Cascade)
+  position         Int                 @default(0)
+  manufacturer     String?
+  code             String?
+  description      String
+  qty              Int
+  unit             String              @default("un")
+  spec             String?
+  expectedUnitCost Decimal             @default(0) @db.Decimal(14, 2)
+
+  allocations PurchaseAllocation[]
+
+  @@index([prId])
+}
+
+/// §5.1: every unit bought for resale is assigned to a Journey. What isn't assigned is inventory, never hidden.
+model PurchaseAllocation {
+  id     String                  @id @default(cuid())
+  lineId String
+  line   PurchaseRequirementLine @relation(fields: [lineId], references: [id], onDelete: Cascade)
+  dealId String
+  deal   Deal                    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  qty    Int
+
+  @@unique([lineId, dealId])
   @@index([dealId])
 }
