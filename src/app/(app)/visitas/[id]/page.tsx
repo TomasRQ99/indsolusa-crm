@@ -6,8 +6,11 @@ import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { dayInput, today } from "@/lib/domain";
 import { OBJECTIVE_CATS, VISIT_STATUS, readObjectives, visitBrief } from "@/lib/visits";
-import { ValueKindSelect } from "@/components/ValueKindSelect";
-import { cancelVisit, closeCommitment, recordOutcome } from "../actions";
+import { cancelVisit, closeCommitment, removeVisitFile } from "../actions";
+import { VisitFilesAdd, VisitOutcomeForm } from "@/components/VisitOutcomeForm";
+import { VALUE_KINDS } from "@/lib/goal-rules";
+import { MAX_VISIT_FILES } from "@/lib/visit-draft";
+import { aiConfigured, aiSpentThisMonth, monthlyCap } from "@/lib/ai";
 
 // Comercial C8a · one visit: the brief (derived, nothing re-typed), the objectives, and the outcome the person confirms.
 
@@ -22,6 +25,8 @@ export default async function VisitPage({ params, searchParams }: { params: Prom
   const editable = canEdit(user, v.ownerId);
   const b = await visitBrief(v.accountId, v.id);
   const objs = readObjectives(v.objectives);
+  const files = await db.visitAttachment.findMany({ where: { visitId: v.id }, orderBy: { createdAt: "asc" }, select: { id: true, name: true, mime: true, size: true, uploadedByName: true } });
+  const aiState = !aiConfigured() ? "OFF" : (await aiSpentThisMonth()).usd + 0.1 > monthlyCap() ? "CAP" : "ON";
   const met = Array.isArray(v.objectivesMet) ? (v.objectivesMet as boolean[]) : [];
   const money = (x: unknown) => i.money(x);
   const now = today();
@@ -32,7 +37,7 @@ export default async function VisitPage({ params, searchParams }: { params: Prom
     "sin-plan": t("Visita registrada. Cuenta lo que pasó en «Cómo fue».", "Visit recorded. Tell what happened in «How it went»."),
     hecha: t("Visita cerrada. Quedó en el historial del cliente.", "Visit closed. It's in the customer's history."),
     "hecha-need": t("Visita cerrada y la necesidad nueva quedó como Journey.", "Visit closed and the new need is now a Journey."),
-    cancelada: t("Visita cancelada.", "Visit cancelled."), compromiso: t("Compromiso actualizado.", "Commitment updated."),
+    cancelada: t("Visita cancelada.", "Visit cancelled."), archivo: t("Archivo quitado.", "File removed."), compromiso: t("Compromiso actualizado.", "Commitment updated."),
   };
   const errMsg: Record<string, string> = {
     permiso: t("Solo quien hace la visita o la dirección la actualizan.", "Only whoever makes the visit or management update it."),
@@ -114,33 +119,26 @@ export default async function VisitPage({ params, searchParams }: { params: Prom
         </section>
       )}
 
+      {v.status !== "CANCELLED" && (files.length > 0 || editable) && (
+        <section className="jblock" id="archivos">
+          <div className="jbh"><b>{t("FOTOS Y DOCUMENTOS", "PHOTOS AND DOCUMENTS")}</b><span className="grow" /><span className="src">{t(`${files.length} de ${MAX_VISIT_FILES}`, `${files.length} of ${MAX_VISIT_FILES}`)}</span></div>
+          {files.length === 0 ? <p className="quiet-p">{t("Fotos de la planta, de una placa, de un tablero, o un documento que te dieron. Las fotos se reducen solas antes de subir.", "Photos of the plant, a nameplate, a whiteboard, or a document you were given. Photos are shrunk automatically before uploading.")}</p> : (
+            <div className="vf-grid">{files.map((f) => (
+              <figure key={f.id} className="vf-item">
+                <a href={`/visitas/archivo/${f.id}`} target="_blank" rel="noreferrer">{f.mime.startsWith("image/") ? <img src={`/visitas/archivo/${f.id}`} alt={f.name} loading="lazy" /> : <span className="vf-doc">PDF</span>}</a>
+                <figcaption className="small"><span className="vf-name">{f.name}</span><span className="muted"> · {Math.max(1, Math.round(f.size / 1024))} KB · {f.uploadedByName}</span>
+                  {editable && <form action={removeVisitFile.bind(null, f.id)}><button type="submit" className="linkish">{t("Quitar", "Remove")}</button></form>}
+                </figcaption>
+              </figure>
+            ))}</div>
+          )}
+          {editable && <VisitFilesAdd visitId={v.id} lang={i.es ? "ES" : "EN"} room={MAX_VISIT_FILES - files.length} />}
+        </section>
+      )}
       {v.status === "PLANNED" && editable && (
         <section className="jblock" id="resultado">
           <div className="jbh"><b>{t("CÓMO FUE · CERRAR LA VISITA", "HOW IT WENT · CLOSE THE VISIT")}</b></div>
-          <form action={recordOutcome.bind(null, v.id)} className="qa-form">
-            <div className="qa-row"><label>{t("Fecha en que ocurrió", "Date it happened")}<input name="happenedAt" type="date" defaultValue={dayInput(v.plannedAt && v.plannedAt < now ? v.plannedAt : now)} /></label></div>
-            <label>{t("¿Qué aprendiste?", "What did you learn?")}<textarea name="learned" rows={3} required maxLength={2000} /></label>
-            {objs.length > 0 && <div className="qa-row" style={{ flexWrap: "wrap" }}>{objs.map((o, k) => <label key={k} className="chk"><input type="checkbox" name={`met_${k}`} value="1" /> {t("Logrado", "Met")}: {t(OBJECTIVE_CATS[o.cat].es, OBJECTIVE_CATS[o.cat].en)}</label>)}</div>}
-            <ValueKindSelect es={i.es} />
-            <b className="small">{t("Compromisos (de los dos lados)", "Commitments (both sides)")}</b>
-            {[0, 1, 2, 3].map((k) => (
-              <div key={k} className="qa-row">
-                <select name={`side_${k}`} defaultValue={k % 2 ? "CUSTOMER" : "US"} style={{ flex: "0 0 120px" }} aria-label={t("Quién", "Who")}><option value="US">{t("Nosotros", "Us")}</option><option value="CUSTOMER">{t("Cliente", "Customer")}</option></select>
-                <input name={`what_${k}`} maxLength={300} placeholder={t("Qué se comprometió", "What was committed")} aria-label={t("Compromiso", "Commitment")} />
-                <input name={`due_${k}`} type="date" aria-label={t("Para cuándo", "By when")} />
-              </div>
-            ))}
-            <details><summary className="small">{t("¿Apareció una necesidad nueva?", "Did a new need come up?")}</summary>
-              <label>{t("Nombre corto", "Short name")}<input name="needTitle" maxLength={200} placeholder={t("Ej.: Variadores para la línea 3", "E.g.: Drives for line 3")} /></label>
-              <label>{t("Resultado que busca el cliente", "Result the customer is after")}<input name="needResult" maxLength={600} /></label>
-              <span className="src block">{t("Se crea como Journey a tu nombre solo si lo escribes aquí.", "It's created as a Journey in your name only if you write it here.")}</span>
-            </details>
-            <div className="qa-row">
-              <label>{t("Próximo paso", "Next step")}<input name="nextMove" maxLength={300} /></label>
-              <label style={{ flex: "0 0 auto" }}>{t("Fecha", "Date")}<input name="nextMoveDate" type="date" /></label>
-            </div>
-            <button type="submit">{t("Cerrar la visita", "Close the visit")}</button>
-          </form>
+          <VisitOutcomeForm visitId={v.id} lang={i.es ? "ES" : "EN"} aiState={aiState} objectives={objs.map((o) => t(OBJECTIVE_CATS[o.cat].es, OBJECTIVE_CATS[o.cat].en))} kinds={Object.entries(VALUE_KINDS).map(([key, k]) => ({ key, label: t(k.es, k.en) }))} defaultDate={dayInput(v.plannedAt && v.plannedAt < now ? v.plannedAt : now)} canAttach={files.length < MAX_VISIT_FILES} />
           <details style={{ marginTop: 10 }}><summary className="small">{t("Cancelar la visita", "Cancel the visit")}</summary>
             <form action={cancelVisit.bind(null, v.id)} className="qa-form"><input name="cancelReason" required maxLength={300} placeholder={t("Motivo", "Reason")} /><button type="submit" className="secondary">{t("Cancelar visita", "Cancel visit")}</button></form>
           </details>

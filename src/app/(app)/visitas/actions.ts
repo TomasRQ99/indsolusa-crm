@@ -10,6 +10,8 @@ import { nextCode, today } from "@/lib/domain";
 import { money2 } from "@/lib/money";
 import { valueKindOf } from "@/lib/goal-rules";
 import { OBJECTIVE_CATS, readObjectives } from "@/lib/visits";
+import { AiError } from "@/lib/ai";
+import { MAX_DRAFT_IMAGES, MAX_VISIT_FILES, MAX_VISIT_FILE_BYTES, VISIT_FILE_MIMES, VISIT_IMAGE_MIMES, draftVisit, type VisitDraft } from "@/lib/visit-draft";
 
 // Comercial C8a · Visits & Commercial Missions (v1.3 §57). The person plans, visits and confirms what came out of
 // it; nothing is created behind their back (a new Need or commitment exists only when they write it).
@@ -108,4 +110,55 @@ export async function createMission(fd: FormData) {
     budgetStatus: wantsBudget ? "WAITING_MODULE_14" : "NOT_REQUESTED", budgetAmount: wantsBudget && Number.isFinite(amount) && amount > 0 ? money2(amount) : null,
   } });
   back("/visitas", "ok=mision");
+}
+
+// ---------- C8d · attachments and the AI draft ----------
+
+/** Photos (already shrunk in the browser) and documents for a visit: at most MAX_VISIT_FILES in total. */
+export async function addVisitFiles(id: string, fd: FormData): Promise<{ ok: true; saved: number; skipped: number } | { ok: false; error: "PERMISO" | "CERRADA" | "LLENO" | "NADA" }> {
+  const user = await requireUser();
+  const v = await db.visitPlan.findUnique({ where: { id }, select: { ownerId: true, status: true, _count: { select: { attachments: true } } } });
+  if (!v || !canEdit(user, v.ownerId)) return { ok: false, error: "PERMISO" };
+  if (v.status === "CANCELLED") return { ok: false, error: "CERRADA" };
+  const room = MAX_VISIT_FILES - v._count.attachments;
+  if (room <= 0) return { ok: false, error: "LLENO" };
+  const files = fd.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+  const good = files.filter((f) => f.size <= MAX_VISIT_FILE_BYTES && VISIT_FILE_MIMES.includes(f.type));
+  if (!good.length) return { ok: false, error: "NADA" };
+  const take = good.slice(0, room);
+  for (const f of take) await db.visitAttachment.create({ data: { visitId: id, name: f.name.slice(0, 160) || "archivo", mime: f.type, size: f.size, data: Buffer.from(await f.arrayBuffer()), uploadedByName: user.name } });
+  refreshApp();
+  return { ok: true, saved: take.length, skipped: files.length - take.length };
+}
+
+export async function removeVisitFile(fileId: string) {
+  const user = await requireUser();
+  const a = await db.visitAttachment.findUnique({ where: { id: fileId }, select: { id: true, visit: { select: { id: true, ownerId: true } } } });
+  if (!a) back("/visitas", "err=visita");
+  if (!canEdit(user, a!.visit.ownerId)) back(`/visitas/${a!.visit.id}`, "err=permiso");
+  await db.visitAttachment.delete({ where: { id: fileId } });
+  back(`/visitas/${a!.visit.id}`, "ok=archivo#archivos");
+}
+
+/** AI draft of the outcome from the person's raw notes and the visit's photos. Fills the form only; the person
+ *  reviews and submits. Off (no cost) until an API key exists; pauses at the monthly cap. */
+export async function draftVisitOutcome(id: string, notes: string): Promise<{ ok: true; draft: VisitDraft } | { ok: false; error: string }> {
+  const user = await requireUser();
+  const v = await db.visitPlan.findUnique({ where: { id }, select: { ownerId: true, status: true, objectives: true, account: { select: { name: true } }, attachments: { where: { mime: { in: [...VISIT_IMAGE_MIMES] } }, orderBy: { createdAt: "asc" }, take: MAX_DRAFT_IMAGES, select: { mime: true, data: true } } } });
+  if (!v || !canEdit(user, v.ownerId)) return { ok: false, error: "PERMISO" };
+  if (v.status !== "PLANNED") return { ok: false, error: "CERRADA" };
+  const text = String(notes ?? "").trim();
+  if (text.length < 20 && v.attachments.length === 0) return { ok: false, error: "CORTO" };
+  try {
+    const draft = await draftVisit({
+      notes: text, customer: v.account.name, lang: user.lang === "EN" ? "EN" : "ES", userName: user.name,
+      objectives: readObjectives(v.objectives).map((o) => `${OBJECTIVE_CATS[o.cat].en}${o.text ? `: ${o.text}` : ""}`),
+      images: v.attachments.map((a) => ({ mime: a.mime as (typeof VISIT_IMAGE_MIMES)[number], data: Buffer.from(a.data) })),
+    });
+    return { ok: true, draft };
+  } catch (e) {
+    const code = e instanceof AiError ? e.code : "API";
+    if (!(e instanceof AiError) || code === "API" || code === "AUTH") console.error("[visitas/draft]", e instanceof Error ? e.message : e);
+    return { ok: false, error: code };
+  }
 }

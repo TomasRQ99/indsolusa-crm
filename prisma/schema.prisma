@@ -2756,6 +2756,7 @@ model VisitPlan {
   updatedAt     DateTime           @updatedAt
 
   commitments VisitCommitment[]
+  attachments VisitAttachment[]
 
   @@index([ownerId, status])
   @@index([accountId])
@@ -2839,4 +2840,22 @@ model RelationshipBackup {
   note         String?
   setByName    String
   updatedAt    DateTime @updatedAt
+}
+
+// ---------- Comercial C8d · Visit attachments (v1.3 §57 post-visit photo/document) ----------
+
+/// A photo (shrunk in the browser) or a document attached to a visit. At most 5 per visit. Audio is never stored:
+/// voice is turned into text in the person's browser and only the text is kept (decision 2026-11-10).
+model VisitAttachment {
+  id             String    @id @default(cuid())
+  visitId        String
+  visit          VisitPlan @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  name           String
+  mime           String
+  size           Int
+  data           Bytes
+  uploadedByName String
+  createdAt      DateTime  @default(now())
+
+  @@index([visitId])
 }

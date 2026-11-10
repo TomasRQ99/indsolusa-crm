@@ -80,6 +80,7 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   VisitPlan: "all",
   VisitCommitment: "all",
   CommercialMission: "all",
+  VisitAttachment: ["name", "mime", "size", "uploadedByName"],
   CoverageAssignment: "all",
   RelationshipBackup: "all",
 };
