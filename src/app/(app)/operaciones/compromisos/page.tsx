@@ -32,7 +32,7 @@ export default async function HighValuePage() {
         <dt>{t("Siguiente hito", "Next milestone")}</dt><dd><b>{t(r.milestone.text.es, r.milestone.text.en)}</b>{r.milestone.due && <span className="mono small"> · {i.day(r.milestone.due)}</span>}</dd>
       </dl>
       {r.risks.length > 0 && <ul className="plain small">{r.risks.map((x, k) => <li key={k} className="risk-t">• {t(x.es, x.en)}</li>)}</ul>}
-      <p className="small"><Link href={`/deals/${r.deal.id}/handoff`}>{t("Ver entrega a Operaciones", "See the handoff to Operations")}</Link> · <Link href={`/deals/${r.deal.id}/despacho#operaciones`}>{t("Despachos", "Dispatch")}</Link> · <Link href={`/deals/${r.deal.id}/facturacion`}>{t("Facturación", "Billing")}</Link></p>
+      <p className="small"><Link href={`/deals/${r.deal.id}/handoff`}>{t("Ver entrega a Operaciones", "See the handoff to Operations")}</Link> · <Link href={`/deals/${r.deal.id}/despacho#operaciones`}>{t("Despachos", "Dispatch")}</Link> · <Link href={`/deals/${r.deal.id}/facturacion`}>{t("Facturación", "Billing")}</Link> · <Link href={`/deals/${r.deal.id}/economia`}>{t("Eságara real", "Real Eságara")}</Link></p>
     </article>
   );
 

@@ -327,6 +327,14 @@ model Deal {
   savings              SavingsEntry[]
   stockLots            StockLot[]
   dispatchOrders       DispatchOrder[]
+  costs                DealCost[]
+  /// module 11 §44.2: OPEN | SUBSTANTIAL | FINAL
+  economicsState       String                 @default("OPEN")
+  economicsNote        String?
+  economicsByName      String?
+  economicsAt          DateTime?
+  /// the three views and the bridge as they were when marked FINAL
+  economicsFinal       Json?
   /// module 11 §40: UPON_ORDER | UPON_DELIVERY | UPON_ACCEPTANCE | MILESTONE | ADVANCE_BALANCE | RECURRING
   billingBasis         String                 @default("UPON_DELIVERY")
 
@@ -3759,4 +3767,32 @@ model BankMatch {
   @@index([transactionId])
   @@index([customerPaymentId])
   @@index([paymentExecutionId])
+}
+
+// ---------- Operaciones O9c · Cost ledger (module 11 §43.1, §44) ----------
+
+/// A real cost of a Journey that no other record already holds (broker, storage, travel, an extra charge), or one
+/// Journey's share of a cost shared between several. Costs already recorded elsewhere (supplier orders, carrier
+/// invoices, duties, delivery, bank fees) are read from there and never typed again here.
+model DealCost {
+  id            String   @id @default(cuid())
+  dealId        String
+  deal          Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  /// SUPPLIER | FREIGHT | DUTY | DELIVERY | BANK_FEE | TRAVEL | OTHER
+  category      String
+  amount        Decimal  @db.Decimal(14, 2)
+  description   String
+  evidence      String?
+  spentOn       DateTime
+  /// same value on every share of one shared cost
+  sharedId      String?
+  sharedTotal   Decimal? @db.Decimal(14, 2)
+  /// VALUE | UNITS | MANUAL: the method is always kept with the split
+  splitMethod   String?
+  splitNote     String?
+  createdByName String
+  createdAt     DateTime @default(now())
+
+  @@index([dealId])
+  @@index([sharedId])
 }
