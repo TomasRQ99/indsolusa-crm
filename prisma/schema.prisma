@@ -2793,13 +2793,26 @@ model CommercialMission {
   endDate       DateTime
   purpose       String
   travelNote    String?
-  /// NOT_REQUESTED | WAITING_MODULE_14 (budget request kept until Administration exists)
+  /// NOT_REQUESTED | REQUESTED | APPROVED | REJECTED (interim rules until the official Module 14 document, C-17)
   budgetStatus  String   @default("NOT_REQUESTED")
   budgetAmount  Decimal? @db.Decimal(14, 2)
   createdByName String
   createdAt     DateTime @default(now())
 
-  visits VisitPlan[]
+  budgetRequestedAt   DateTime?
+  budgetApproved      Decimal?  @db.Decimal(14, 2)
+  budgetDecidedAt     DateTime?
+  budgetDecidedByName String?
+  budgetNote          String?
+  /// OPEN | SUBMITTED | RETURNED | RECONCILED
+  expensesStatus      String    @default("OPEN")
+  expensesSubmittedAt DateTime?
+  reconciledAt        DateTime?
+  reconciledByName    String?
+  reconcileNote       String?
+
+  expenses MissionExpense[]
+  visits   VisitPlan[]
 }
 
 // ---------- Comercial C8b · Absence Coverage (v1.3 §59) ----------
@@ -2858,4 +2871,28 @@ model VisitAttachment {
   createdAt      DateTime  @default(now())
 
   @@index([visitId])
+}
+
+/// One travel expense of a mission, with its receipt (photo shrunk in the browser, or PDF) or the reason there is none.
+/// Amounts are in USD. Checked against the approved budget by Finanzas or Gerencia, never by the traveller.
+model MissionExpense {
+  id              String            @id @default(cuid())
+  missionId       String
+  mission         CommercialMission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  spentOn         DateTime
+  /// TRANSPORT | LODGING | MEALS | LOCAL | OTHER
+  category        String
+  description     String
+  amount          Decimal           @db.Decimal(14, 2)
+  originalNote    String?
+  receiptName     String?
+  receiptMime     String?
+  receiptSize     Int?
+  receiptData     Bytes?
+  noReceiptReason String?
+  createdByName   String
+  createdById     String?
+  createdAt       DateTime          @default(now())
+
+  @@index([missionId])
 }

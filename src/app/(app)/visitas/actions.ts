@@ -105,11 +105,12 @@ export async function createMission(fd: FormData) {
   if (endDate! < startDate!) back("/visitas", "err=fechas");
   const wantsBudget = fd.get("requestBudget") === "1";
   const amount = Number(fd.get("budgetAmount") ?? 0);
-  await db.commercialMission.create({ data: {
+  if (wantsBudget && !(Number.isFinite(amount) && amount > 0)) back("/visitas", "err=monto");
+  const m = await db.commercialMission.create({ data: {
     title: title!, destination: destination!, purpose: purpose!, startDate: startDate!, endDate: endDate!, travelNote: txt(fd, "travelNote", 600), ownerId: user.id, createdByName: user.name,
-    budgetStatus: wantsBudget ? "WAITING_MODULE_14" : "NOT_REQUESTED", budgetAmount: wantsBudget && Number.isFinite(amount) && amount > 0 ? money2(amount) : null,
+    budgetStatus: wantsBudget ? "REQUESTED" : "NOT_REQUESTED", budgetAmount: wantsBudget ? money2(amount) : null, budgetRequestedAt: wantsBudget ? new Date() : null,
   } });
-  back("/visitas", "ok=mision");
+  back(`/visitas/mision/${m.id}`, wantsBudget ? "ok=pedido" : "ok=creada");
 }
 
 // ---------- C8d · attachments and the AI draft ----------

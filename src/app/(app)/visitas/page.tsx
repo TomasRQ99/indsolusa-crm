@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { dayInput, today, addDays } from "@/lib/domain";
 import { OBJECTIVE_CATS, VISIT_STATUS, readObjectives } from "@/lib/visits";
 import { createMission, createVisit } from "./actions";
+import { BUDGET_STATUS, EXPENSES_STATUS, canDecideBudget, canReconcile } from "@/lib/travel-rules";
 
 // Comercial C8a · Visits & Commercial Missions (v1.3 §57): my upcoming visits, what's still owed from past visits,
 // and missions (trips grouping several visits). Travel budget and expenses wait for Administration (Module 14).
@@ -22,12 +23,16 @@ export default async function VisitsPage({ searchParams }: { searchParams: Promi
     db.commercialMission.findMany({ where: { ownerId: user.id, endDate: { gte: addDays(now, -30) } }, orderBy: { startDate: "asc" }, include: { visits: { select: { id: true, status: true, account: { select: { name: true } } } } } }),
     db.account.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
+  // Travel money waiting for this person: budgets to decide, expenses to check (never their own).
+  const pending = user.role === "GERENCIA" || user.role === "FINANZAS" ? await db.commercialMission.findMany({ where: { ownerId: { not: user.id }, OR: [{ budgetStatus: "REQUESTED" }, { expensesStatus: "SUBMITTED" }] }, orderBy: { startDate: "asc" }, select: { id: true, title: true, destination: true, startDate: true, budgetStatus: true, budgetAmount: true, expensesStatus: true, ownerId: true, owner: { select: { name: true, role: true } } } }) : [];
+  const toDecide = pending.filter((m) => m.budgetStatus === "REQUESTED" && canDecideBudget(user, { ownerId: m.ownerId, ownerRole: m.owner.role }));
+  const toCheck = pending.filter((m) => m.expensesStatus === "SUBMITTED" && canReconcile(user, { ownerId: m.ownerId, ownerRole: m.owner.role }));
   const okMsg: Record<string, string> = { mision: t("Misión creada.", "Mission created.") };
   const errMsg: Record<string, string> = {
     cliente: t("Elige el cliente.", "Pick the customer."), fecha: t("Indica la fecha de la visita.", "Give the visit date."),
     objetivo: t("Marca al menos un objetivo: una visita sin objetivo es solo un viaje.", "Tick at least one objective: a visit without one is just a trip."),
     mision: t("La misión necesita título, destino, propósito y fechas.", "The mission needs a title, destination, purpose and dates."), fechas: t("La misión termina antes de empezar.", "The mission ends before it starts."),
-    visita: t("Esa visita no existe.", "That visit doesn't exist."), compromiso: t("Ese compromiso no existe.", "That commitment doesn't exist."),
+    visita: t("Esa visita no existe.", "That visit doesn't exist."), "mision-no": t("Esa misión no existe.", "That mission doesn't exist."), monto: t("Para pedir presupuesto, indica el monto estimado.", "To request a budget, give the estimated amount."), compromiso: t("Ese compromiso no existe.", "That commitment doesn't exist."),
   };
   const late = (d: Date | null) => !!d && d < now;
 
@@ -42,6 +47,16 @@ export default async function VisitsPage({ searchParams }: { searchParams: Promi
       </div>
       {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
+
+      {(toDecide.length > 0 || toCheck.length > 0) && (
+        <section className="card" id="viajes">
+          <b>{t("Dinero de viajes esperando tu decisión", "Travel money waiting for your decision")}</b>
+          <ul className="mk-ul">
+            {toDecide.map((m) => <li key={`d-${m.id}`}><span className="sig attn">{t("Presupuesto", "Budget")}</span> <Link href={`/visitas/mision/${m.id}#presupuesto`}>{m.title}</Link> · {m.owner.name} · {m.destination} · <span className="mono">{m.budgetAmount != null ? i.money2(m.budgetAmount) : "—"}</span> · {i.day(m.startDate)}</li>)}
+            {toCheck.map((m) => <li key={`c-${m.id}`}><span className="sig attn">{t("Gastos", "Expenses")}</span> <Link href={`/visitas/mision/${m.id}#gastos`}>{m.title}</Link> · {m.owner.name} · {m.destination}</li>)}
+          </ul>
+        </section>
+      )}
 
       <section className="card" id="proximas">
         <div className="jbh"><b>{t("Próximas visitas", "Upcoming visits")}</b><span className="grow" />
@@ -91,7 +106,7 @@ export default async function VisitsPage({ searchParams }: { searchParams: Promi
 
       <section className="card" id="misiones">
         <div className="jbh"><b>{t("Misiones", "Missions")}</b><span className="grow" />
-          <details className="qa" open={sp.err === "mision" || sp.err === "fechas"}><summary className="qa-btn">{t("+ Nueva misión", "+ New mission")}</summary>
+          <details className="qa" open={sp.err === "mision" || sp.err === "fechas" || sp.err === "monto"}><summary className="qa-btn">{t("+ Nueva misión", "+ New mission")}</summary>
             <div className="qa-pop wide right">
               <form action={createMission} className="qa-form">
                 <label>{t("Título", "Title")}<input name="title" required maxLength={160} placeholder={t("Ej.: Gira Valle del Cauca", "E.g.: Valle del Cauca tour")} /></label>
@@ -106,7 +121,7 @@ export default async function VisitsPage({ searchParams }: { searchParams: Promi
                   <label className="chk"><input type="checkbox" name="requestBudget" value="1" /> {t("Necesito presupuesto de viaje", "I need a travel budget")}</label>
                   <label>{t("Monto estimado (USD)", "Estimated amount (USD)")}<input name="budgetAmount" type="number" min={0} step="0.01" /></label>
                 </div>
-                <span className="src block">{t("El presupuesto y la legalización de gastos los gestiona Administración (Módulo 14). Mientras tanto, la solicitud queda registrada aquí.", "The budget and expense reconciliation are handled by Administration (Module 14). Until then, the request is recorded here.")}</span>
+                <span className="src block">{t("El presupuesto lo aprueba Gerencia (nunca quien viaja). Después del viaje cargas los gastos con soporte y los revisa Finanzas o Gerencia.", "Management approves the budget (never the traveller). After the trip you enter the expenses with receipts and Finance or Management checks them.")}</span>
                 <button type="submit">{t("Crear misión", "Create mission")}</button>
               </form>
             </div>
@@ -114,8 +129,9 @@ export default async function VisitsPage({ searchParams }: { searchParams: Promi
         </div>
         {missions.length === 0 ? <p className="small muted">{t("Sin misiones recientes. Una misión agrupa varias visitas de un mismo viaje.", "No recent missions. A mission groups several visits on one trip.")}</p> : missions.map((m) => (
           <article key={m.id} className="exc-item">
-            <header className="exc-head"><b>{m.title}</b> · {m.destination} · <span className="mono small">{i.day(m.startDate)} – {i.day(m.endDate)}</span><span className="grow" />
-              {m.budgetStatus === "WAITING_MODULE_14" && <span className="sig wait">{t(`Presupuesto pedido${m.budgetAmount ? ` · ${i.money(m.budgetAmount)}` : ""} · espera Módulo 14`, `Budget requested${m.budgetAmount ? ` · ${i.money(m.budgetAmount)}` : ""} · waits for Module 14`)}</span>}
+            <header className="exc-head"><b><Link href={`/visitas/mision/${m.id}`}>{m.title}</Link></b> · {m.destination} · <span className="mono small">{i.day(m.startDate)} – {i.day(m.endDate)}</span><span className="grow" />
+              {m.budgetStatus !== "NOT_REQUESTED" && <span className={`sig ${(BUDGET_STATUS[m.budgetStatus] ?? BUDGET_STATUS.REQUESTED).tone}`}>{t((BUDGET_STATUS[m.budgetStatus] ?? BUDGET_STATUS.REQUESTED).es, (BUDGET_STATUS[m.budgetStatus] ?? BUDGET_STATUS.REQUESTED).en)}{m.budgetAmount ? ` · ${i.money(m.budgetApproved ?? m.budgetAmount)}` : ""}</span>}
+              {m.budgetStatus === "APPROVED" && m.expensesStatus !== "OPEN" && <span className={`sig ${EXPENSES_STATUS[m.expensesStatus]?.tone ?? "wait"}`} style={{ marginLeft: 4 }}>{t(EXPENSES_STATUS[m.expensesStatus]?.es ?? m.expensesStatus, EXPENSES_STATUS[m.expensesStatus]?.en ?? m.expensesStatus)}</span>}
             </header>
             <p className="small">{m.purpose}</p>
             <p className="src">{m.visits.length === 0 ? t("Aún sin visitas: al planear una, elige esta misión.", "No visits yet: when planning one, choose this mission.") : m.visits.map((v) => `${v.account.name} (${t(VISIT_STATUS[v.status].es, VISIT_STATUS[v.status].en).toLowerCase()})`).join(" · ")}</p>
