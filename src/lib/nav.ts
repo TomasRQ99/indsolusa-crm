@@ -43,6 +43,7 @@ export const MODULES: NavModule[] = [
       { href: "/comercial/valor", es: "Atributos de valor", en: "Value attributes" },
       { href: "/visitas", es: "Visitas", en: "Visits" },
       { href: "/comercial/metas", es: "Mis metas", en: "My goals" },
+      { href: "/comercial/cobertura", es: "Cobertura", en: "Coverage" },
     ],
   },
   {

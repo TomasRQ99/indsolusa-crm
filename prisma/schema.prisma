@@ -76,8 +76,11 @@ model User {
   tasks       Task[]
   activities  Activity[]
   goalTargets GoalTarget[]
-  visits      VisitPlan[]         @relation("VisitOwner")
-  missions    CommercialMission[] @relation("MissionOwner")
+  visits      VisitPlan[]          @relation("VisitOwner")
+  missions    CommercialMission[]  @relation("MissionOwner")
+  coveredBy   CoverageAssignment[] @relation("CoverageOriginal")
+  covering    CoverageAssignment[] @relation("CoverageActing")
+  backupFor   RelationshipBackup[] @relation("RelationshipBackupUser")
 
   paymentsRequested   SupplierPayment[]   @relation("PaymentRequester")
   paymentsVerified    SupplierPayment[]   @relation("PaymentVerifier")
@@ -151,6 +154,7 @@ model Account {
   openLoops     OpenLoop[]
   prepared      PreparedMessage[]
   visits        VisitPlan[]
+  backup        RelationshipBackup?
 
   @@index([ownerId])
   @@index([name])
@@ -2795,4 +2799,44 @@ model CommercialMission {
   createdAt     DateTime @default(now())
 
   visits VisitPlan[]
+}
+
+// ---------- Comercial C8b · Absence Coverage (v1.3 §59) ----------
+
+/// Temporary delegated authority: while now is inside [startsAt, endsAt) and it isn't revoked, the acting person
+/// may act on the original owner's Journeys. It expires by itself (checked on every request). The original owner
+/// stays accountable; role approvals (Eságara, credit, payments) are never delegated by coverage.
+/// `handover` keeps the HandoverSnapshot taken when the coverage was created.
+model CoverageAssignment {
+  id             String    @id @default(cuid())
+  originalUserId String
+  originalUser   User      @relation("CoverageOriginal", fields: [originalUserId], references: [id], onDelete: Cascade)
+  actingUserId   String
+  actingUser     User      @relation("CoverageActing", fields: [actingUserId], references: [id], onDelete: Cascade)
+  startsAt       DateTime
+  endsAt         DateTime
+  /// PLANNED | EMERGENCY
+  kind           String    @default("PLANNED")
+  reason         String
+  instructions   String?
+  handover       Json      @default("{}")
+  createdByName  String
+  revokedAt      DateTime?
+  revokedByName  String?
+  createdAt      DateTime  @default(now())
+
+  @@index([actingUserId, endsAt])
+  @@index([originalUserId, endsAt])
+}
+
+/// Who knows this customer well enough to step in when the owner is away.
+model RelationshipBackup {
+  id           String   @id @default(cuid())
+  accountId    String   @unique
+  account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  backupUserId String
+  backupUser   User     @relation("RelationshipBackupUser", fields: [backupUserId], references: [id], onDelete: Cascade)
+  note         String?
+  setByName    String
+  updatedAt    DateTime @updatedAt
 }

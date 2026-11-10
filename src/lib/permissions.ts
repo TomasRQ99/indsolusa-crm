@@ -12,7 +12,7 @@ import type { SessionUser } from "./auth";
 //   MARKETING (Mercadeo)  — same as a Negociador Comercial, plus loading market data.
 // Everyone reads all records.
 
-type U = Pick<SessionUser, "id" | "role">;
+type U = Pick<SessionUser, "id" | "role"> & { covering?: string[] };
 
 export const ROLE_LABEL: Record<Role, { es: string; en: string }> = {
   GERENCIA: { es: "Gerencia", en: "Management" },
@@ -32,8 +32,9 @@ export function canManageAll(u: U) {
   return u.role === "GERENCIA" || u.role === "DIRECTOR_COMERCIAL";
 }
 
+/** Owner, management, or (Comercial C8b) someone covering the owner's absence right now. */
 export function canEdit(u: U, ownerId: string) {
-  return canManageAll(u) || u.id === ownerId;
+  return canManageAll(u) || u.id === ownerId || (u.covering?.includes(ownerId) ?? false);
 }
 
 export function assertCanEdit(u: U, ownerId: string) {

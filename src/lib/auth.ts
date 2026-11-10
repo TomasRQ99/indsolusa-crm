@@ -3,9 +3,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Lang, Role } from "@prisma/client";
 import { db } from "./db";
+import { coveringNow } from "./coverage";
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, signSessionToken, verifySessionToken } from "./session-token";
 
-export type SessionUser = { id: string; name: string; email: string; role: Role; lang: Lang; workdayMinutes: number; outlookConnectedAt: Date | null };
+export type SessionUser = { id: string; name: string; email: string; role: Role; lang: Lang; workdayMinutes: number; outlookConnectedAt: Date | null; covering: string[] };
 
 export async function createSession(userId: string) {
   const token = await signSessionToken(userId);
@@ -32,7 +33,10 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
     select: { id: true, name: true, email: true, role: true, active: true, lang: true, workdayMinutes: true, outlookConnectedAt: true },
   });
   if (!user || !user.active) return null;
+  // Comercial C8b: whose Journeys this person covers right now. Read on every request, so delegated authority
+  // ends by itself when the window closes or the coverage is revoked.
   return {
+    covering: await coveringNow(user.id),
     id: user.id,
     name: user.name,
     email: user.email,

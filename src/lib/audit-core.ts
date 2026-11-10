@@ -80,6 +80,8 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   VisitPlan: "all",
   VisitCommitment: "all",
   CommercialMission: "all",
+  CoverageAssignment: "all",
+  RelationshipBackup: "all",
 };
 const MASK = new Set(["bankAccount", "docAccount"]);
 const SKIP = new Set(["id", "createdAt", "updatedAt"]);

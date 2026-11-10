@@ -36,7 +36,7 @@ export async function ensureDefaultPolicy() {
 }
 
 export async function loadDemo(adminId: string) {
-  if (await demoLoaded()) return topUpMarketDemo();
+  if (await demoLoaded()) return topUpMarketDemo(adminId);
   await ensureDefaultPolicy();
   const T = today();
   const d = (n: number) => addDays(T, n);
@@ -675,6 +675,7 @@ export async function loadDemo(adminId: string) {
   if (pao) await seedCreditRequestC3(pao.id);
   if (pao) await seedComercialC7(pao.id);
   if (pao) await seedComercialC8a(pao.id);
+  if (pao) await seedComercialC8b(pao.id, adminId);
 }
 
 
@@ -941,7 +942,7 @@ async function seedCreditRequestC3(paolaId: string) {
 }
 
 /** Environments loaded before Mercado existed get only the Mercado sample, nothing else is touched. */
-async function topUpMarketDemo() {
+async function topUpMarketDemo(adminId: string) {
   const paola = await db.user.findUnique({ where: { email: `paola${DEMO_DOMAIN}` }, select: { id: true, name: true } });
   if (!paola) return;
   const [lacteos, pacifico] = await Promise.all(["Lácteos del Valle", "Alimentos del Pacífico"].map((n) => db.account.findFirst({ where: { isDemo: true, name: n + TAG }, select: { id: true, name: true } })));
@@ -981,6 +982,19 @@ async function topUpMarketDemo() {
   await seedComercialC7(paola.id);
   // Comercial C8a sample if missing.
   await seedComercialC8a(paola.id);
+  // Comercial C8b sample if missing.
+  await seedComercialC8b(paola.id, adminId);
+}
+
+/** Comercial C8b sample: Paola's planned vacation next week, covered by the person who loaded the demo, with the
+ *  handover snapshot SOLU takes at creation; and a relationship backup on her customers. */
+async function seedComercialC8b(userId: string, coverId: string) {
+  if (userId === coverId || (await db.coverageAssignment.count({ where: { originalUserId: userId } }))) return;
+  const { handoverSnapshot, coverageWindow } = await import("./coverage");
+  const base = new Date(); base.setUTCHours(0, 0, 0, 0);
+  const { startsAt, endsAt } = coverageWindow(new Date(base.getTime() + 7 * 864e5), new Date(base.getTime() + 11 * 864e5));
+  await db.coverageAssignment.create({ data: { originalUserId: userId, actingUserId: coverId, startsAt, endsAt, reason: "Vacaciones (ejemplo)", instructions: "Prioriza la decisión de la cotización de variadores y el cobro vencido (ejemplo)", handover: (await handoverSnapshot(userId, endsAt)) as unknown as Prisma.InputJsonValue, createdByName: "Paola Gómez" + TAG } });
+  for (const a of await db.account.findMany({ where: { isDemo: true, ownerId: userId, backup: null }, take: 3, select: { id: true } })) await db.relationshipBackup.create({ data: { accountId: a.id, backupUserId: coverId, note: "Conoce al jefe de compras (ejemplo)", setByName: "Paola Gómez" + TAG } });
 }
 
 /** Comercial C8a sample: a mission with one planned visit, and last week's visit with what was learned and two
