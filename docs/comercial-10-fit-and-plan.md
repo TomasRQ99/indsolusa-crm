@@ -45,20 +45,24 @@ Note on numbering: v1.3 reuses section numbers 57–63 already used by v1.2. In 
 | C-01 | Personal goals: who sees them, no ranking | **Decided 2026-11-09:** only the person and their manager. No team ranking, no activity counts. |
 | C-02 | Selling/importing entity per market (USA, Colombia) | **Decided 2026-11-09:** both, depending on the deal — each Journey states which entity sells (built in a later wave). |
 | C-03 | Role mapping (Negociador Comercial/Operativo, Finanzas, Director) | **Decided & built 2026-11-09:** the spec names are the real roles. ADMIN → GERENCIA (all powers), MANAGER → DIRECTOR_COMERCIAL, REP → NEGOCIADOR_COMERCIAL; new NEGOCIADOR_OPERATIVO (own Journeys + purchasing/shipments/delivery notes on any Journey, never the customer quote) and FINANZAS (money side on any Journey + payments ≤ USD 25k); MARKETING unchanged. Rules in `src/lib/permissions.ts`. |
-| C-04 | One Journey = one Need, or several Needs per Journey | Proposal: one Need per Journey (as today). |
+| C-04 | One Journey = one Need, or several Needs per Journey | Kept as built: one Need per Journey. Never contested; revisit only if a real case needs several. |
 | C-05 | Eságara gate threshold | **Frozen by spec:** 20.00 % on net sale, strictly below triggers; stored as versioned policy (`MarketSetting` key `comPolicy`). **Built in C2.** |
 | C-06 | Who approves a low-Eságara exception, amount bands | **Decided 2026-11-09:** MANAGER or ADMIN, never the requester. No amount bands yet. **Built in C2.** |
 | C-07 | Tolerance before re-approval after a change ("no loops for cents") | **Built in C2 as editable policy:** approval holds while Eságara drops < 1 point AND sale moves ≤ 5 %. |
 | C-08 | Cost of capital, day base, FX valuation, IVA treatment | Cost of capital decided 2026-11-10 (one company rate, 365-day base, simple interest). FX valuation and IVA still open. |
 | C-09 | Aging buckets | Proposal (spec default): current, 1–30, 31–60, 61–90, >90 — configurable. |
 | C-10 | Delivery blocker / delivered-not-invoiced rules (days before alert) | **Decided 2026-11-10:** ready > 3 calendar days; delivered (and invoice with no submission recorded) > 2 working days (Mon–Fri, no holidays yet); submitted not accepted > 5 working days; aging 30/60/90. Stored versioned as MarketSetting `cashPolicy`, editable by Finanzas/Gerencia on `/comercial/fugas`. |
-| C-11 | Daily close time | Spec default 17:00, configurable. |
+| C-11 | Daily close time | **Built in C8c:** 17:00 Bogotá, editable in the focus policy. |
 | C-12 | Stock / offer revalidation age before accepting (AC15) | **Decided 2026-11-10:** stock/price confirmation older than 7 days must be revalidated; when the offer states its own validity date, that date wins. Editable later. Shown on the supply basis since C4; enforced at acceptance in C6. |
 | C-13 | Mandatory presentation criteria | **Decided 2026-11-10:** only recommend (SEND_DIRECTLY / PRESENT_RECOMMENDED / PRESENT_BEFORE_SENDING) with reasons; never force. |
 | C-14 | Industry Solutions value attributes catalog with evidence (§17) | **Decided 2026-11-10:** pre-load the 8 spec attributes as drafts; a claim reaches a proposal only with evidence attached for that case. |
 | C-15 | Personal goals (C7) | **Decided 2026-11-10:** Gerencia/Director set monthly targets per person for 5 core goals — Eságara $, useful contacts, new Needs, solutions presented, customer decisions moved. Visible only to the person and their manager; no ranking. |
 | C-16 | Visit notes: AI draft, audio, photos (C8d) | **Decided 2026-11-10:** build the AI draft now, off (no cost) until an API key exists, cap USD 20/month unchanged. Photos (shrunk in the browser) and documents are stored, max 5 per visit, 5 MB each. Audio is never stored: voice becomes text in the browser and only the text is kept. |
 | C-17 | Travel budget and expenses before Module 14 (C8e) | **Decided 2026-11-10:** simple interim version. Gerencia approves or rejects the budget, never the person who asked. After the trip the traveller lists expenses with receipts; Finanzas or Gerencia checks them against the budget. To be aligned with the official Module 14 document when it arrives. |
+| C-18 | Working days | **Decided 2026-11-10:** Monday to Friday, skipping Colombia's official holidays (calculated by rule, Ley 51 de 1983; `holidays.ts`). Applies to goal pace, cash alerts, follow-up dates, Mi Plan capacity and Outlook placement. |
+| C-19 | Invoice when the Colombian company sells | **Decided 2026-11-10:** SOLU makes the quote under the Colombian company; the legal invoice is the DIAN electronic invoice issued in the accounting system, and SOLU records its number, date and amount. SOLU prints no invoice for that company. |
+| C-20 | IVA on quotes | **Decided 2026-11-10:** by seller, as a separate line. Colombian company: IVA 19 % added under the subtotal (rate editable by Gerencia; a quote can be marked exempt with a reason). USA company: no IVA. Eságara is always calculated before IVA. |
+| C-21 | Quote currency and exchange rate | **Decided 2026-11-10:** the Colombian company quotes in USD or COP, chosen per quote; SOLU proposes the official TRM of the day and a different rate can be typed with a reason. Eságara is always shown in USD too. The USA company stays in USD. |
 
 ## 4. Build plan by waves
 

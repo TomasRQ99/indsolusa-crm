@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { canManageAll, isGerencia, ROLE_LABEL } from "@/lib/permissions";
-import { MODULES } from "@/lib/nav";
+import { MODULES, NAV_GROUPS } from "@/lib/nav";
 import { ShellClient, type ShellModule } from "@/components/shell/ShellClient";
 
 // SOLU global shell: exactly 8 modules (MI DÍA … GERENCIA/INSIGHTS), universal search and
@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const modules: ShellModule[] = MODULES.map((m) => {
     const tabs = m.tabs
       .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || isGerencia(user)) && (!tab.roles || tab.roles.includes(user.role)))
-      .map((tab) => ({ href: tab.href, label: es ? tab.es : tab.en }));
+      .map((tab) => ({ href: tab.href, label: es ? tab.es : tab.en, ...(tab.group ? { group: es ? NAV_GROUPS[tab.group].es : NAV_GROUPS[tab.group].en } : {}) }));
     return { key: m.key, label: es ? m.es : m.en, href: tabs[0]?.href ?? m.match[0], match: m.match, tabs };
   });
 

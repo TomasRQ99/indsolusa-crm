@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { isWorkingDay } from "./holidays";
 import type { SessionUser } from "./auth";
 import { db } from "./db";
 import { addDays, today } from "./domain";
@@ -21,7 +22,7 @@ export async function appBaseUrl() {
   return `${proto}://${host}`;
 }
 
-const isWorkday = (d: Date) => d.getUTCDay() !== 0 && d.getUTCDay() !== 6;
+const isWorkday = (d: Date) => isWorkingDay(d);
 
 /**
  * Put open tasks into the person's Outlook calendar, each in the first free gap of its

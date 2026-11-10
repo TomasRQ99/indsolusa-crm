@@ -1,4 +1,5 @@
 import { cmpMoney, subMoney, sumMoney } from "./money";
+import { workingDaysBetween as wdBetween } from "./holidays";
 import { daysBetween } from "./domain";
 
 // Comercial C3 · Commercial Cash Journey (v1.2 §54–75). Pure rules, no database.
@@ -97,13 +98,9 @@ export const reasonOf = (stage: CashStage, code: string) => REASONS[stage].find(
 
 // ---------- Days ----------
 
-/** Working days (Mon–Fri, holidays not counted) after `a` up to and including `b`. */
+/** Working days (Mon–Fri, skipping Colombian holidays — decision C-18) after `a` up to and including `b`. */
 export function workingDaysBetween(a: Date, b: Date) {
-  const n = daysBetween(a, b);
-  if (n <= 0) return 0;
-  let w = 0;
-  for (let k = 1; k <= n; k++) { const d = new Date(a.getTime() + k * 864e5).getUTCDay(); if (d !== 0 && d !== 6) w++; }
-  return w;
+  return daysBetween(a, b) <= 0 ? 0 : wdBetween(a, b);
 }
 
 export type AgingKey = "CURRENT" | `B${number}`;

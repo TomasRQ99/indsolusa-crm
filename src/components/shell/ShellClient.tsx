@@ -16,7 +16,7 @@ export type ShellModule = {
   label: string;
   href: string;
   match: string[];
-  tabs: { href: string; label: string }[];
+  tabs: { href: string; label: string; group?: string }[];
   counter?: Counter;
 };
 
@@ -57,6 +57,10 @@ export function ShellClient({ lang, user, modules: baseModules, children }: Shel
   const activeTab = current?.tabs
     .filter((tab) => path === tab.href || path.startsWith(tab.href + "/"))
     .sort((a, b) => b.href.length - a.href.length)[0];
+  // Modules with many sections show one group of tabs at a time.
+  const groups = [...new Set((current?.tabs ?? []).map((x) => x.group).filter((g): g is string => !!g))];
+  const activeGroup = groups.length > 1 ? activeTab?.group ?? groups[0] : null;
+  const shownTabs = (current?.tabs ?? []).filter((x) => !activeGroup || x.group === activeGroup);
 
   const [side, setSide] = useState<Side>("");
   const [drawer, setDrawer] = useState(false);
@@ -228,9 +232,16 @@ export function ShellClient({ lang, user, modules: baseModules, children }: Shel
       </aside>
 
       <main className="main" id="contenido">
-        {current && current.tabs.length > 1 && (
-          <nav className="tabs" aria-label={current.label}>
-            {current.tabs.map((tab) => (
+        {groups.length > 1 && (
+          <nav className="tab-groups" aria-label={current!.label}>
+            {groups.map((g) => (
+              <Link key={g} href={current!.tabs.find((x) => x.group === g)!.href} className={g === activeGroup ? "on" : undefined} aria-current={g === activeGroup ? "true" : undefined}>{g}</Link>
+            ))}
+          </nav>
+        )}
+        {current && shownTabs.length > 1 && (
+          <nav className="tabs" aria-label={activeGroup ?? current.label}>
+            {shownTabs.map((tab) => (
               <Link key={tab.href} href={tab.href} className={activeTab?.href === tab.href ? "on" : undefined} aria-current={activeTab?.href === tab.href ? "page" : undefined}>
                 {tab.label}
               </Link>

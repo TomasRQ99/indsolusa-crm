@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { isWorkingDay } from "./holidays";
 import { addDays, today } from "./domain";
 
 // Mi Plan: blocks derived from known commitments (to-dos and Journey next movements),
@@ -48,8 +49,7 @@ export async function buildPlan(user: { id: string; workdayMinutes: number }, ho
   const days: PlanDay[] = [];
   for (let k = 0; k < horizon; k++) {
     const date = addDays(start, k);
-    const dow = date.getUTCDay();
-    const workday = dow === 0 || dow === 6 ? 0 : user.workdayMinutes;
+    const workday = isWorkingDay(date) ? user.workdayMinutes : 0;
     days.push({ date, workday, capacity: Math.round(workday * (1 - URGENCY_BUFFER)), planned: [], proposed: [] });
   }
   const dayOf = (d: Date) => days.find((x) => x.date.getTime() === d.getTime());

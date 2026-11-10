@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { addWorkingDays } from "@/lib/holidays";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { canEdit, canManageAll } from "@/lib/permissions";
@@ -126,9 +127,7 @@ const priceOf = (fd: FormData) => {
 const dayOf = (s: FormDataEntryValue | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(`${String(s)}T00:00:00Z`) : null);
 /** Two working days from today (the usual time to get a supplier's answer). */
 function inWorkingDays(n: number) {
-  const d = today();
-  while (n > 0) { d.setUTCDate(d.getUTCDate() + 1); if (d.getUTCDay() !== 0 && d.getUTCDay() !== 6) n--; }
-  return d;
+  return addWorkingDays(today(), n);
 }
 const partLabel = (p: { mpn: string; name: string; brand: string | null }) => `${p.mpn} · ${p.name}${p.brand && !p.name.toLowerCase().includes(p.brand.toLowerCase()) ? ` (${p.brand})` : ""}`;
 

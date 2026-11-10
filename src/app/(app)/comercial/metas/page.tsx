@@ -112,7 +112,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
           </form>
         )}
       </div>
-      {!future && <p className="src">{t(`Día hábil ${b.paces.VALUE_CONTACTS.elapsedDays} de ${b.paces.VALUE_CONTACTS.totalDays} (lunes a viernes). La proyección aparece desde el día hábil ${GOAL_RULES.projectionMinDays}.`, `Working day ${b.paces.VALUE_CONTACTS.elapsedDays} of ${b.paces.VALUE_CONTACTS.totalDays} (Monday to Friday). The projection shows from working day ${GOAL_RULES.projectionMinDays}.`)}</p>}
+      {!future && <p className="src">{t(`Día hábil ${b.paces.VALUE_CONTACTS.elapsedDays} de ${b.paces.VALUE_CONTACTS.totalDays} (lunes a viernes, sin festivos de Colombia). La proyección aparece desde el día hábil ${GOAL_RULES.projectionMinDays}.`, `Working day ${b.paces.VALUE_CONTACTS.elapsedDays} of ${b.paces.VALUE_CONTACTS.totalDays} (Monday to Friday, skipping Colombian holidays). The projection shows from working day ${GOAL_RULES.projectionMinDays}.`)}</p>}
 
       <div className="goal-grid">{METRIC_KEYS.map((k) => <Card key={k} k={k} p={b.paces[k]} />)}</div>
 

@@ -1,6 +1,7 @@
 // #5 (constitution: no artificial pressure). A supplier email says URGENT only when the Journey
 // really is urgent. SOLU suggests it from facts; the person confirms it on the RFQ form.
 import { db } from "./db";
+import { isWorkingDay } from "./holidays";
 import { today } from "./domain";
 
 export const URGENT_WORKING_DAYS = 3;
@@ -9,7 +10,7 @@ const workingDaysUntil = (d: Date) => {
   const a = today(); const b = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   if (b <= a) return 0;
   let n = 0; const c = new Date(a);
-  while (c < b) { c.setUTCDate(c.getUTCDate() + 1); if (c.getUTCDay() % 6 !== 0) n++; }
+  while (c < b) { c.setUTCDate(c.getUTCDate() + 1); if (isWorkingDay(c)) n++; }
   return n;
 };
 

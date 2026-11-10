@@ -4,7 +4,14 @@
 
 export type ModuleKey = "midia" | "mercado" | "comercial" | "operaciones" | "administracion" | "proyectos" | "equipo" | "gerencia";
 
-export type NavTab = { href: string; es: string; en: string; managerOnly?: boolean; adminOnly?: boolean; roles?: string[] };
+/** `group`: when a module has many sections, tabs are shown one group at a time (group row on top, its tabs below). */
+export type NavTab = { href: string; es: string; en: string; managerOnly?: boolean; adminOnly?: boolean; roles?: string[]; group?: keyof typeof NAV_GROUPS };
+export const NAV_GROUPS = {
+  negocios: { es: "Negocios", en: "Business" },
+  dinero: { es: "Dinero", en: "Money" },
+  trabajo: { es: "Mi trabajo", en: "My work" },
+  ajustes: { es: "Configuración", en: "Setup" },
+} as const;
 export type NavModule = { key: ModuleKey; es: string; en: string; match: string[]; tabs: NavTab[] };
 
 export const MODULES: NavModule[] = [
@@ -35,18 +42,18 @@ export const MODULES: NavModule[] = [
   {
     key: "comercial", es: "COMERCIAL", en: "COMMERCIAL", match: ["/deals", "/cotizaciones", "/comercial", "/visitas"],
     tabs: [
-      { href: "/deals", es: "Journeys", en: "Journeys" },
-      { href: "/cotizaciones", es: "Futuro comercial", en: "Commercial future" },
-      { href: "/comercial/dinero", es: "Dinero por mover", en: "Money to move" },
-      { href: "/comercial/fugas", es: "Fugas de caja", en: "Cash leakage" },
-      { href: "/comercial/esagara", es: "Excepciones de Eságara", en: "Eságara exceptions" },
-      { href: "/comercial/valor", es: "Atributos de valor", en: "Value attributes" },
-      { href: "/comercial/foco", es: "Foco de alto valor", en: "High-value focus" },
-      { href: "/visitas", es: "Visitas", en: "Visits" },
-      { href: "/comercial/metas", es: "Mis metas", en: "My goals" },
-      { href: "/comercial/cobertura", es: "Cobertura", en: "Coverage" },
-      { href: "/comercial/mejora", es: "Mi mejora", en: "My improvement" },
-      { href: "/comercial/cierres", es: "Cierres", en: "Closes" },
+      { href: "/deals", es: "Journeys", en: "Journeys", group: "negocios" },
+      { href: "/cotizaciones", es: "Futuro comercial", en: "Commercial future", group: "negocios" },
+      { href: "/comercial/foco", es: "Foco de alto valor", en: "High-value focus", group: "negocios" },
+      { href: "/visitas", es: "Visitas", en: "Visits", group: "negocios" },
+      { href: "/comercial/dinero", es: "Dinero por mover", en: "Money to move", group: "dinero" },
+      { href: "/comercial/fugas", es: "Fugas de caja", en: "Cash leakage", group: "dinero" },
+      { href: "/comercial/esagara", es: "Excepciones de Eságara", en: "Eságara exceptions", group: "dinero" },
+      { href: "/comercial/metas", es: "Mis metas", en: "My goals", group: "trabajo" },
+      { href: "/comercial/mejora", es: "Mi mejora", en: "My improvement", group: "trabajo" },
+      { href: "/comercial/cierres", es: "Cierres", en: "Closes", group: "trabajo" },
+      { href: "/comercial/cobertura", es: "Cobertura", en: "Coverage", group: "trabajo" },
+      { href: "/comercial/valor", es: "Atributos de valor", en: "Value attributes", group: "ajustes" },
     ],
   },
   {

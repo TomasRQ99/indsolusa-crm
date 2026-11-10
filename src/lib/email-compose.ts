@@ -2,6 +2,7 @@
 // (to show it) and by the send action (to rebuild it on the server: what is sent is never taken
 // from the browser except the text the person edited).
 import { db } from "./db";
+import { addWorkingDays } from "./holidays";
 import { addDays, today } from "./domain";
 import { spanishCountry } from "./company";
 import { canEdit, canEditMoney } from "./permissions";
@@ -20,7 +21,7 @@ export type Composed = {
   ref: { kind: "RFQR" | "OFFER" | "SPO" | "QUOTE" | "INVOICE"; id: string; code: string | null; party: "SUPPLIER" | "CUSTOMER"; supplierId: string | null };
 };
 
-const workingDaysAhead = (n: number) => { const d = today(); while (n > 0) { d.setUTCDate(d.getUTCDate() + 1); if (d.getUTCDay() % 6 !== 0) n--; } return d; };
+const workingDaysAhead = (n: number) => addWorkingDays(today(), n);
 const emailOk = (s: string | null | undefined) => !!s && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
 const pickLang = (forced: MailLang | null | undefined, auto: MailLang): MailLang => forced ?? auto;
 
