@@ -8,7 +8,7 @@ import { assertCanEdit } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { today } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
-import { money2, sumMoney } from "@/lib/money";
+import { money2, mulMoney, sumMoney } from "@/lib/money";
 import { quoteNo } from "@/lib/quote";
 import { quoteFloor } from "@/lib/esagara-gate";
 import { ACKABLE, buildPo, poInclude, type Ack } from "@/lib/po";
@@ -43,13 +43,21 @@ export async function registerPo(quoteId: string, fd: FormData) {
   // AC17: the same PO arriving twice (resend, second tab) is the same PO, never a second Deal.
   const dup = await db.customerPO.findFirst({ where: { dealId: q.deal.id, number: { equals: number!, mode: "insensitive" }, rejectedAt: null }, select: { id: true } });
   if (dup) back(dup.id, "ok=duplicada");
-  const lines = q.lines.map((l, n) => ({
-    position: n,
-    qty: Math.max(0, Math.round(Number(fd.get(`qty_${n}`) ?? l.qty) || 0)),
-    code: txt(fd, `code_${n}`, 60) ?? l.code,
-    description: txt(fd, `desc_${n}`, 300) ?? l.description,
-    unitPrice: Math.max(0, money2(String(fd.get(`price_${n}`) ?? l.unitPrice).trim().replace(",", "."))),
-  })).filter((l) => l.qty > 0);
+  // A quote shown in pesos gets its PO in pesos: each price is kept as written and compared in USD at the quote's
+  // fixed rate (an unchanged peso price converts back to exactly the quoted USD price).
+  const rate = q.currency === "COP" && Number(q.docFxRate ?? 0) > 0 ? Number(q.docFxRate) : null;
+  const lines = q.lines.map((l, n) => {
+    const raw = fd.get(`price_${n}`);
+    const typed = raw == null ? null : Math.max(0, Number(String(raw).trim().replace(",", ".")) || 0);
+    return {
+      position: n,
+      qty: Math.max(0, Math.round(Number(fd.get(`qty_${n}`) ?? l.qty) || 0)),
+      code: txt(fd, `code_${n}`, 60) ?? l.code,
+      description: txt(fd, `desc_${n}`, 300) ?? l.description,
+      unitPrice: typed == null ? money2(l.unitPrice) : rate ? mulMoney(typed, 1 / rate) : money2(typed),
+      ...(rate && typed != null ? { docUnitPrice: Math.round(typed) } : {}),
+    };
+  }).filter((l) => l.qty > 0);
   const po = await db.customerPO.create({
     data: {
       dealId: q.deal.id, quoteId, number,
@@ -58,6 +66,7 @@ export async function registerPo(quoteId: string, fd: FormData) {
       incoterm: txt(fd, "incoterm", 80), paymentTerms: txt(fd, "paymentTerms", 120), shipTo: txt(fd, "shipTo", 200),
       quoteRef: txt(fd, "quoteRef", 80), source: txt(fd, "source", 200),
       ...poTerms(fd),
+      ...(rate ? { currency: "COP", docFxRate: rate } : {}),
       createdById: user.id, createdByName: user.name,
       lines: { create: lines },
     },

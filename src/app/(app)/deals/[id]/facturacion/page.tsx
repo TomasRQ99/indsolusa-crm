@@ -4,11 +4,12 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { canEditMoney, canFinance } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
-import { addDays, invoiceCash, today } from "@/lib/domain";
+import { addDays, dayInput, invoiceCash, today } from "@/lib/domain";
 import { getPayRules } from "@/lib/pay-behavior";
 import { billingInclude, DEAL_LEVEL, cashTimeline, cashViewOf, deliveryAmount, partialOf, payHistory, pendingDeliveries, readinessOf, syncLabel, unallocatedOf, type Req } from "@/lib/billing";
 import { Popovers } from "@/components/Popovers";
-import { accountingBridge, allocateCash, issueFromReadiness, markShortPay, recordEvidence, recordPayPromise, reconcileCash, requestEvidence } from "./actions";
+import { sellerOf } from "@/lib/sellers";
+import { accountingBridge, allocateCash, recordExternalInvoice, issueFromReadiness, markShortPay, recordEvidence, recordPayPromise, reconcileCash, requestEvidence } from "./actions";
 
 export default async function BillingReadinessPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; n?: string }> }) {
   const user = await requireUser();
@@ -22,6 +23,7 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
   const manager = canFinance(user);
   const now = today();
   const a = deal.account;
+  const seller = await sellerOf(deal.sellerKey);
 
   const [acctInvoices, openPayments, payRules] = await Promise.all([
     db.invoice.findMany({
@@ -60,6 +62,7 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
         : { cls: "attn", text: t(`Aún no · faltan ${pending.reduce((s, p) => s + p.missing.length, 0)} requisitos`, `Not yet · ${pending.reduce((s, p) => s + p.missing.length, 0)} requirements missing`) };
 
   const okMsg: Record<string, string> = {
+    dian: t("Factura DIAN registrada. El cobro ya corre desde su fecha.", "DIAN invoice recorded. Collection now runs from its date."),
     solicitado: t("Solicitud registrada. El requisito sigue faltando hasta que llegue la evidencia.", "Request recorded. The requirement stays missing until the evidence arrives."),
     evidencia: t("Evidencia registrada. SOLU recalculó si está listo para facturar.", "Evidence recorded. SOLU recalculated whether it's ready to bill."),
     emitida: t("Factura emitida en SOLU. Contabilidad: no enviada todavía.", "Invoice issued in SOLU. Accounting: not sent yet."),
@@ -74,6 +77,10 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
     corto: t("Motivo del pago corto registrado. El saldo sigue abierto.", "Short-payment reason recorded. The balance stays open."),
   };
   const errMsg: Record<string, string> = {
+    "dian-datos": t("Escribe el número y la fecha de la factura electrónica.", "Type the electronic invoice number and date."),
+    "dian-fecha": t("La fecha de la factura no puede ser futura.", "The invoice date can't be in the future."),
+    "dian-repetida": t("Ya hay una factura con ese número en SOLU.", "There's already an invoice with that number in SOLU."),
+    "dian-total": t("Escribe el total de la factura con IVA.", "Type the invoice total including IVA."),
     dato: t("Falta el dato.", "The value is missing."),
     fecha: t("Elige una fecha de vigencia futura.", "Pick a future validity date."),
     "no-listo": t("Aún faltan requisitos: no se emite la factura.", "Requirements are still missing: the invoice isn't issued."),
@@ -169,10 +176,26 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
               <div className="bil-issue">
                 {missing.length === 0 ? (
                   editable ? (
+                    seller.invoiceMode === "EXTERNAL" ? (
+                      <form action={recordExternalInvoice.bind(null, deal.id, d.id)} className="qa-form" style={{ maxWidth: 620 }}>
+                        <b className="small">{t(`Vende ${seller.legalName}: la factura legal se emite por DIAN en el sistema contable. Regístrala aquí.`, `${seller.legalName} sells: the legal invoice is issued through DIAN in the accounting system. Record it here.`)}</b>
+                        <div className="qa-row">
+                          <label>{t("Número de la factura electrónica", "Electronic invoice number")}<input name="number" required maxLength={40} placeholder="FE-1234" /></label>
+                          <label style={{ flex: "0 0 auto" }}>{t("Fecha", "Date")}<input name="issuedAt" type="date" required defaultValue={dayInput(today())} /></label>
+                        </div>
+                        <div className="qa-row">
+                          <label style={{ flex: "0 0 130px" }}>{t("Moneda", "Currency")}<select name="docCurrency" defaultValue="COP"><option value="COP">COP</option><option value="USD">USD</option></select></label>
+                          <label>{t("Total de la factura, con IVA", "Invoice total, with IVA")}<input name="docTotal" type="number" min={0} step="0.01" required /></label>
+                        </div>
+                        <button type="submit">{t(`Registrar factura · USD ${i.n2(amount)} antes de IVA`, `Record invoice · USD ${i.n2(amount)} before IVA`)}</button>
+                        <span className="src">{t(`Vence a ${a.paymentTermsDays} días desde esa fecha. En SOLU el cobro y la Eságara se llevan en USD antes de IVA; el total legal queda como referencia.`, `Due in ${a.paymentTermsDays} days from that date. In SOLU collection and Eságara are kept in USD before IVA; the legal total is kept for reference.`)}</span>
+                      </form>
+                    ) : (
                     <form action={issueFromReadiness.bind(null, deal.id, d.id)} className="qa-row">
                       <button type="submit">{t(`Emitir factura · USD ${i.n2(amount)}`, `Issue invoice · USD ${i.n2(amount)}`)}</button>
                       <span className="src">{t(`Vence a ${a.paymentTermsDays} días. Se crea en SOLU; el envío a contabilidad es un paso aparte y confirmado.`, `Due in ${a.paymentTermsDays} days. Created in SOLU; sending it to accounting is a separate, confirmed step.`)}</span>
                     </form>
+                    )
                   ) : <span className="src">{t("Listo. Lo emite el responsable del Journey.", "Ready. The Journey owner issues it.")}</span>
                 ) : (
                   <span className="src">{t(`La factura se habilita cuando estén los ${missing.length} requisitos que faltan: ${missing.map((m) => m.label).join(", ")}.`, `The invoice unlocks once the ${missing.length} missing requirements are on file: ${missing.map((m) => m.label).join(", ")}.`)}</span>
@@ -233,7 +256,7 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
                         <b className="mono">{v.inv.number}</b>
                         <span className="src">USD {i.n2(v.c.amount)}{v.inv.delivery ? ` · ${v.inv.delivery.code}` : ""} · {t("emitida", "issued")} {i.day(v.inv.issuedAt)}</span>
                         {v.inv.partial && <span className="sig info">{t("Parcial", "Partial")}</span>}
-                        <a className="small" href={`/documentos/factura/${v.inv.id}`} target="_blank" rel="noopener">PDF</a>
+                        {v.inv.external ? <span className="sig info">{t(`Factura DIAN${v.inv.docTotal != null ? ` · ${v.inv.docCurrency} ${v.inv.docCurrency === "COP" ? i.n(v.inv.docTotal) : i.n2(v.inv.docTotal)} con IVA` : ""}`, `DIAN invoice${v.inv.docTotal != null ? ` · ${v.inv.docCurrency} ${v.inv.docCurrency === "COP" ? i.n(v.inv.docTotal) : i.n2(v.inv.docTotal)} with IVA` : ""}`)}</span> : <a className="small" href={`/documentos/factura/${v.inv.id}`} target="_blank" rel="noopener">PDF</a>}
                         <span className="grow" />
                         <span className={`sig ${v.status.tone}`}>{v.status.label}</span>
                       </div>

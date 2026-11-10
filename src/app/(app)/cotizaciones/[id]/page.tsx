@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SellerLine } from "@/components/SellerLine";
 import { QuoteDocMoney } from "@/components/QuoteDocMoney";
+import { quoteDocView } from "@/lib/sellers";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -50,6 +51,8 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const d = q.deal;
   const editable = canEdit(user, d.ownerId);
   const draft = q.status === "DRAFT";
+  const docView = await quoteDocView(q, q.deal.sellerKey);
+  const poCop = docView.money.currency === "COP";
   const siblings = d.quotes.filter((x) => x.number === q.number);
   const latest = siblings[siblings.length - 1];
   const todayStr = dayInput(B.now);
@@ -590,12 +593,13 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
               <QA label={t("Llegó la PO · registrarla", "PO arrived · record it")} wide>
                 <form action={registerPo.bind(null, q.id)} className="qa-form">
                   <b>{t("Tal como viene en la PO del cliente", "Exactly as on the customer's PO")}</b>
+                  {poCop && <span className="src block">{t("La cotización salió en pesos: escribe los precios de la PO en pesos, antes de IVA. SOLU los compara con la tasa fijada en la cotización.", "The quote went out in pesos: type the PO prices in pesos, before IVA. SOLU compares them at the rate fixed on the quote.")}</span>}
                   <div className="qa-row"><label>{t("Número de PO", "PO number")}<input name="number" required maxLength={80} /></label><label>{t("Recibida", "Received")}<input name="receivedAt" type="date" defaultValue={todayStr} /></label></div>
                   <label>{t("Fecha de entrega que exige", "Delivery date it demands")}<input name="requiredBy" type="date" /></label>
                   {q.lines.map((l, n) => (
                     <div key={l.id} className="qa-row">
                       <label style={{ flex: "0 0 64px" }}>{t("Cant.", "Qty")}<input name={`qty_${n}`} type="number" min="0" defaultValue={l.qty} /></label>
-                      <label>{l.code ?? t("Precio", "Price")}<input name={`price_${n}`} type="number" min="0" step="0.01" defaultValue={Number(l.unitPrice)} /></label>
+                      <label>{l.code ?? t("Precio", "Price")}{poCop ? " · COP" : ""}<input name={`price_${n}`} type="number" min="0" step={poCop ? "1" : "0.01"} defaultValue={poCop ? docView.money.lines[n]?.unit ?? 0 : Number(l.unitPrice)} /></label>
                     </div>
                   ))}
                   <div className="qa-row"><label>Incoterm<input name="incoterm" defaultValue={q.incoterm ?? ""} /></label><label>{t("Pago", "Payment")}<input name="paymentTerms" defaultValue={q.paymentTerms ?? ""} /></label></div>

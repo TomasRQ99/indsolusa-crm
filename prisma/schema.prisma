@@ -920,6 +920,11 @@ model Invoice {
   syncNote          String?
   // Why the customer paid less (withholding, deduction, bank fee). The balance stays open until resolved.
   shortPayNote      String?
+  // C-19: the legal invoice was issued outside SOLU (DIAN electronic invoice). `number` is that invoice's number;
+  // `amount` stays the USD value before IVA used for Eságara and collection; docTotal is the legal total as issued.
+  external          Boolean              @default(false)
+  docCurrency       String?
+  docTotal          Decimal?             @db.Decimal(16, 2)
 
   @@index([accountId])
   @@index([dueAt])
@@ -1273,6 +1278,8 @@ model CustomerPO {
   billTo              String?
   /// INCLUDED (price includes IVA) | ADDED (IVA on top) | EXEMPT | NOT_STATED
   ivaMode             String?
+  /// When the PO is in pesos: the quote's fixed rate used to compare it (`currency` says COP).
+  docFxRate           Decimal?  @db.Decimal(12, 2)
   warranty            String?
   documents           String?
   penalties           String?
@@ -1294,14 +1301,16 @@ model CustomerPO {
 }
 
 model CustomerPOLine {
-  id          String     @id @default(cuid())
-  poId        String
-  po          CustomerPO @relation(fields: [poId], references: [id], onDelete: Cascade)
-  position    Int        @default(0)
-  qty         Int
-  code        String?
-  description String
-  unitPrice   Decimal    @db.Decimal(14, 2)
+  id           String     @id @default(cuid())
+  poId         String
+  po           CustomerPO @relation(fields: [poId], references: [id], onDelete: Cascade)
+  position     Int        @default(0)
+  qty          Int
+  code         String?
+  description  String
+  unitPrice    Decimal    @db.Decimal(14, 2)
+  /// Unit price as written on the PO when it came in pesos (unitPrice is its USD value at the quote's rate).
+  docUnitPrice Decimal?   @db.Decimal(16, 2)
 }
 
 model PoResolution {

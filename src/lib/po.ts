@@ -134,6 +134,13 @@ export function buildPo(po: PoFull, i: I, floorPct: number | null, ctx?: AcceptC
       else diffs.push({ key: "entity-name", label: t("Razón social", "Legal entity"), quote: ctx.accountName, po: t("No indica", "Not stated"), state: "minor" });
     }
     const iva = po.ivaMode ?? "NOT_STATED";
+    const qPct = q ? Number(q.ivaPct ?? 0) : 0;
+    const qExempt = !!q?.ivaExempt;
+    if (qPct > 0 || qExempt) {
+      // The quote itself settled IVA (C-20): the PO must say the same.
+      const same = qExempt ? iva === "EXEMPT" : iva === "ADDED";
+      diffs.push(acked("iva", { key: "iva", label: "IVA", quote: qExempt ? t("Exento de IVA", "IVA exempt") : t(`IVA ${qPct} % aparte`, `IVA ${qPct} % on top`), po: iva === "INCLUDED" ? t("Precio con IVA incluido", "Price includes VAT") : iva === "ADDED" ? t("IVA se suma", "VAT added on top") : iva === "EXEMPT" ? t("Exento", "Exempt") : t("No indica", "Not stated"), state: same ? "match" : iva === "NOT_STATED" ? "minor" : "material", note: same || iva === "NOT_STATED" ? undefined : t("El IVA de la PO no coincide con el de la cotización: confirma con el cliente", "The PO's IVA doesn't match the quote's: confirm with the customer") }));
+    } else
     diffs.push(acked("iva", { key: "iva", label: "IVA", quote: t("Precios sin IVA", "Prices before VAT"), po: iva === "INCLUDED" ? t("Precio con IVA incluido", "Price includes VAT") : iva === "ADDED" ? t("IVA se suma", "VAT added on top") : iva === "EXEMPT" ? t("Exento", "Exempt") : t("No indica", "Not stated"), state: iva === "INCLUDED" ? "material" : iva === "NOT_STATED" ? "minor" : "match", note: iva === "INCLUDED" ? t("Si el IVA está dentro del precio, la venta neta baja: confirma con el cliente", "If VAT is inside the price, the net sale drops: confirm with the customer") : undefined }));
     const conds: [string, string | null, string][] = [["warranty", po.warranty, t("Garantía exigida", "Warranty required")], ["documents", po.documents, t("Documentos exigidos", "Documents required")], ["penalties", po.penalties, t("Penalidades", "Penalties")], ["other", po.otherConditions, t("Otras condiciones", "Other conditions")]];
     for (const [key, val, label] of conds) {

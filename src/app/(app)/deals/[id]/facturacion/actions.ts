@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { sellerOf } from "@/lib/sellers";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { assertCanEditMoney, canFinance } from "@/lib/permissions";
@@ -121,6 +122,46 @@ export async function issueFromReadiness(dealId: string, deliveryId: string) {
   back(dealId, "ok=emitida", `#inv-${inv.id}`);
 }
 
+/**
+ * C-19: when the Colombian company sells, the legal invoice is the DIAN electronic invoice issued in the accounting
+ * system. Here its number, date and legal total are recorded so collection, Eságara and commission keep working.
+ * SOLU's amount stays the USD value before IVA; no SOLU invoice number is consumed and no PDF is printed.
+ */
+export async function recordExternalInvoice(dealId: string, deliveryId: string, fd: FormData) {
+  const { user, deal, i } = await loadDeal(dealId);
+  const seller = await sellerOf(deal.sellerKey);
+  if (seller.invoiceMode !== "EXTERNAL") back(dealId, "err=dato");
+  const d = deal.deliveries.find((x) => x.id === deliveryId);
+  if (!d) back(dealId, "err=dato");
+  if (d!.invoice) back(dealId, "ok=ya-emitida");
+  if (readinessOf(deal, d!, i).some((r) => r.state === "missing")) back(dealId, "err=no-listo");
+  const number = String(fd.get("number") ?? "").trim().slice(0, 40);
+  const day = String(fd.get("issuedAt") ?? "");
+  if (!number || !/^\d{4}-\d{2}-\d{2}$/.test(day)) back(dealId, "err=dian-datos");
+  const issuedAt = new Date(`${day}T00:00:00Z`);
+  if (issuedAt > addDays(today(), 1)) back(dealId, "err=dian-fecha");
+  if (await db.invoice.findUnique({ where: { number }, select: { id: true } })) back(dealId, "err=dian-repetida");
+  const amount = deliveryAmount(deal, d!);
+  if (amount <= 0) back(dealId, "err=monto");
+  const total = Number(String(fd.get("docTotal") ?? "").replace(",", "."));
+  const docCurrency = fd.get("docCurrency") === "COP" ? "COP" : "USD";
+  if (!Number.isFinite(total) || total <= 0) back(dealId, "err=dian-total");
+  const eg = esagra(deal);
+  const quote = await db.quote.findFirst({ where: { dealId, status: "ACCEPTED" }, orderBy: { decidedAt: "desc" }, select: { id: true, lang: true } });
+  const inv = await db.invoice.create({
+    data: {
+      number, dealId, deliveryId: d!.id, accountId: deal.accountId, issuedAt,
+      dueAt: addDays(issuedAt, deal.account.paymentTermsDays), amount,
+      esagraAtIssue: eg.pct == null ? 0 : mulMoney(amount, eg.pct / 100),
+      issuedById: user.id, quoteId: quote?.id ?? null, docLang: quote?.lang ?? deal.account.docLang,
+      partial: partialOf(deal, d!).partial,
+      external: true, docCurrency, docTotal: docCurrency === "COP" ? Math.round(total) : Math.round(total * 100) / 100,
+      externalSystem: "DIAN", externalId: number, syncState: "CONFIRMED", syncAt: new Date(), syncNote: `Factura electrónica registrada por ${user.name}`,
+    },
+  });
+  await fact(user.id, deal, i.t(`Factura DIAN ${inv.number} registrada (USD ${i.n2(amount)} antes de IVA)`, `DIAN invoice ${inv.number} recorded (USD ${i.n2(amount)} before IVA)`), d!.code);
+  back(dealId, "ok=dian", `#inv-${inv.id}`);
+}
 /**
  * Record what the accounting system did with the invoice. SENT = handed over, waiting for its ID;
  * CONFIRMED = the accounting system returned its ID; UNCERTAIN = we don't know if it was created

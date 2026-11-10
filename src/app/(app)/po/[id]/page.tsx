@@ -117,6 +117,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
             : <span className="sig attn">{t("Sin aceptar", "Not accepted yet")}</span>}
         </div>
         <p className="jh-sub">{t("Recibida", "Received")} {i.date(B.base)}{po.source ? ` · ${po.source}` : ""} · {t("comparada con", "compared with")} {q ? `Quote Nº ${quoteNo(q)}` : t("ninguna cotización", "no quote")}{q?.presentedAt ? ` (${t("presentada", "presented")} ${i.day(q.presentedAt)})` : ""}</p>
+        {po.currency === "COP" && po.docFxRate && <p className="src">{t(`PO en pesos colombianos. Se compara en USD con la tasa fijada en la cotización: ${i.n2(po.docFxRate)} COP por USD. Total de la PO: COP ${i.n(po.lines.reduce((s, l) => s + Number(l.docUnitPrice ?? 0) * l.qty, 0))} antes de IVA.`, `PO in Colombian pesos. Compared in USD at the rate fixed on the quote: ${i.n2(po.docFxRate)} COP per USD. PO total: COP ${i.n(po.lines.reduce((s, l) => s + Number(l.docUnitPrice ?? 0) * l.qty, 0))} before IVA.`)}</p>}
       </header>
 
       {/* Impact first: what accepting would do today */}
