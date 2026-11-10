@@ -659,6 +659,10 @@ export default async function JourneyPage({
     <>
       <QuoteDocs />
       <section className="jblock">
+        <div className="jbh"><b>{t("CASO DE SOLUCIÓN", "SOLUTION CASE")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/solucion`}>{t("Abrir", "Open")}</Link></div>
+        <p className="quiet-p">{t("Por qué esta solución, rutas posibles, valor para el cliente con evidencia, si conviene presentarla y la propuesta para su comité (sin costos internos).", "Why this solution, possible routes, customer value with evidence, whether to present it, and the proposal for their committee (no internal costs).")}</p>
+      </section>
+      <section className="jblock">
         <div className="jbh"><b>{t("PRODUCTOS", "PRODUCTS")}</b><span className="grow" /><span className="src">{t("Entregado", "Delivered")} {J.delivered} / {J.ordered}</span></div>
         {deal.items.length === 0 ? <p className="quiet-p">{t("Sin productos todavía.", "No products yet.")}</p> : (
           <div className="tscroll">

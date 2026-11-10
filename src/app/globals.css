@@ -1620,3 +1620,19 @@ tr.muted td { color: var(--ink-3); }
 .sup-pay .scp-mx { margin: 4px 0; }
 .rfq-asks { display: grid; gap: 6px; margin-top: 6px; }
 .rfq-asks .loc-chip { margin-left: 4px; }
+
+/* Comercial C5 · Solution Case & Proposal */
+.sol-adv { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 2px 0 6px; }
+.sol-claim { border-left: 3px solid var(--line, #d9e0e8); padding: 6px 10px; margin: 8px 0; }
+.sol-claim.in { border-left-color: var(--ok, #2f7d4f); }
+.sol-claim.out { border-left-style: dashed; }
+.sol-claim-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sol-claim p { margin: 3px 0; overflow-wrap: anywhere; }
+.sol-brief > summary { cursor: pointer; list-style: none; }
+.sol-brief > summary::-webkit-details-marker { display: none; }
+.sol-steps { margin: 8px 0 0 18px; padding: 0; display: grid; gap: 8px; }
+.sol-steps p { margin: 2px 0; overflow-wrap: anywhere; }
+.sol-pres { padding: 6px 0; border-bottom: 1px solid var(--line, #e3e8ee); }
+.val-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+@media (max-width: 420px) { .val-grid { grid-template-columns: 1fr; } }
+.qv-diff td { vertical-align: top; overflow-wrap: anywhere; }

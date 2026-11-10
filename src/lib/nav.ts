@@ -40,6 +40,7 @@ export const MODULES: NavModule[] = [
       { href: "/comercial/dinero", es: "Dinero por mover", en: "Money to move" },
       { href: "/comercial/fugas", es: "Fugas de caja", en: "Cash leakage" },
       { href: "/comercial/esagara", es: "Excepciones de Eságara", en: "Eságara exceptions" },
+      { href: "/comercial/valor", es: "Atributos de valor", en: "Value attributes" },
     ],
   },
   {

@@ -18,7 +18,8 @@ import {
   saveCosts, saveLine, saveScenario, saveSolution, saveTerms, waitWithControl,
 } from "../actions";
 import { registerPo } from "../../po/actions";
-import { lineAmount } from "@/lib/money";
+import { lineAmount, sumMoney } from "@/lib/money";
+import { COST_STATUS, costStatusOf, quoteDiff, weakest, type QV } from "@/lib/proposal-rules";
 
 export default async function QuotePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; cmp?: string }> }) {
   const user = await requireUser();
@@ -36,7 +37,14 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const scope = q.status === "DRAFT" ? await scopeState(q.dealId, q.lines.map((l) => ({ code: l.code, description: l.description })), q) : null;
   const B = buildQuote(q, i, { ...policy, approvedBy: policy.exception?.status === "APPROVED" && !policy.outside ? policy.exception.decidedByName : null }, scope);
   const gate = gateOf(saleOf(q.lines), costOf(q), policy.policy);
-  const [pay, rate] = await Promise.all([expectedPaymentDays(q.deal.accountId), getFinanceRate()]);
+  const [pay, rate, prevQ, paidRows, spoAgg] = await Promise.all([
+    expectedPaymentDays(q.deal.accountId), getFinanceRate(),
+    // C5 §20: the version right before this one, to show what changed (the older one is never rewritten).
+    q.rev > 0 ? db.quote.findFirst({ where: { number: q.number, rev: { lt: q.rev } }, orderBy: { rev: "desc" }, include: { lines: { orderBy: { position: "asc" } } } }) : null,
+    // C5 §15: Final = real money to the supplier (executed payments), once accepted.
+    q.status === "ACCEPTED" ? db.supplierPayment.findMany({ where: { supplierPo: { dealId: q.dealId }, executedAt: { not: null } }, select: { amount: true, currency: true, amountUsd: true } }) : [],
+    q.status === "ACCEPTED" ? db.supplierPO.findMany({ where: { dealId: q.dealId }, select: { amount: true, currency: true } }) : [],
+  ]);
   const d = q.deal;
   const editable = canEdit(user, d.ownerId);
   const draft = q.status === "DRAFT";
@@ -105,6 +113,8 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
         <div className="jh-act">
           <a className="qa-btn" href={pdf(q.lang)} target="_blank" rel="noopener">{t("Ver PDF", "View PDF")} ({q.lang})</a>
           <a className="qa-btn" href={pdf(q.lang === "EN" ? "ES" : "EN")} target="_blank" rel="noopener">{q.lang === "EN" ? "ES" : "EN"}</a>
+          <Link className="qa-btn" href={`/deals/${d.id}/solucion`}>{t("Caso de solución", "Solution Case")}</Link>
+          <a className="qa-btn" href={`/documentos/propuesta/${q.id}?lang=${q.lang}`} target="_blank" rel="noopener">{t("Propuesta", "Proposal")}</a>
           {editable && !draft && q.status !== "SUPERSEDED" && <Link className="qa-btn" href={`/correo/nuevo?tpl=OFFER&id=${q.id}`}>{t("Enviar al cliente por correo", "Email to customer")}</Link>}
           {editable && !draft && q.status !== "SUPERSEDED" && q.status !== "ACCEPTED" && (
             <form action={createRevision.bind(null, q.id)}><button type="submit" className="qa-btn">{t("Crear revisión", "Create revision")}</button></form>
@@ -182,8 +192,16 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     const rows: { k: string; label: string; src: string | null; get: (x: (typeof v)[number]) => number }[] = [
       { k: "supplier", label: t("Proveedor", "Supplier"), src: q.supplierSrc, get: (x) => x.supplier },
       { k: "freight", label: t("Fletes", "Freight"), src: q.freightSrc, get: (x) => x.freight },
-      { k: "other", label: t("Otros (aduana, seguro…)", "Other (customs, insurance…)"), src: q.otherSrc, get: (x) => x.other },
+      { k: "other", label: t("Otros (aduana, logística local, seguro, contingencia)", "Other (customs, local logistics, insurance, contingency)"), src: q.otherSrc, get: (x) => x.other },
     ];
+    const cur = v.find((x) => x.current) ?? v[0];
+    const st: Record<string, string> = {
+      supplier: costStatusOf(q.supplierStatus, cur.supplier, q.supplierSrc, q.supplyConfirmed),
+      freight: costStatusOf(q.freightStatus, cur.freight, q.freightSrc),
+      other: costStatusOf(q.otherStatus, cur.other, q.otherSrc),
+    };
+    const weak = weakest(Object.values(st));
+    const StatusSel = ({ name, value }: { name: string; value: string | null }) => <label>{t("Estado", "Status")}<select name={name} defaultValue={value ?? ""}><option value="">{t("Automático", "Automatic")}</option>{Object.entries(COST_STATUS).map(([k, x]) => <option key={k} value={k}>{t(x.es, x.en)}</option>)}</select></label>;
     const prev = v.length > 1 ? v[v.findIndex((x) => x.current) - 1] : undefined;
     const why = q.changeNote;
     return (
@@ -197,9 +215,9 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
                   <label>{t("Tasa a USD", "Rate to USD")}<input name="fxRate" type="number" step="0.000001" min="0" defaultValue={q.fxRate ? Number(q.fxRate) : ""} /></label>
                 </div>
                 <label>{t("Fuente de la tasa", "Rate source")}<input name="fxSource" maxLength={200} defaultValue={q.fxSource ?? ""} placeholder={t("Ej.: banco, 5 nov 10:00", "E.g.: bank, Nov 5 10:00")} /></label>
-                <div className="qa-row"><label>{t("Proveedor", "Supplier")}<input name="supplierCost" type="number" step="0.01" min="0" defaultValue={Number(q.supplierCost)} /></label><label>{t("Fuente", "Source")}<input name="supplierSrc" maxLength={200} defaultValue={q.supplierSrc ?? ""} placeholder="Proforma…" /></label></div>
-                <div className="qa-row"><label>{t("Fletes USD", "Freight USD")}<input name="freightCost" type="number" step="0.01" min="0" defaultValue={Number(q.freightCost)} /></label><label>{t("Fuente", "Source")}<input name="freightSrc" maxLength={200} defaultValue={q.freightSrc ?? ""} /></label></div>
-                <div className="qa-row"><label>{t("Otros USD", "Other USD")}<input name="otherCosts" type="number" step="0.01" min="0" defaultValue={Number(q.otherCosts)} /></label><label>{t("Fuente", "Source")}<input name="otherSrc" maxLength={200} defaultValue={q.otherSrc ?? ""} /></label></div>
+                <div className="qa-row"><label>{t("Proveedor", "Supplier")}<input name="supplierCost" type="number" step="0.01" min="0" defaultValue={Number(q.supplierCost)} /></label><label>{t("Fuente", "Source")}<input name="supplierSrc" maxLength={200} defaultValue={q.supplierSrc ?? ""} placeholder="Proforma…" /></label><StatusSel name="supplierStatus" value={q.supplierStatus} /></div>
+                <div className="qa-row"><label>{t("Fletes USD", "Freight USD")}<input name="freightCost" type="number" step="0.01" min="0" defaultValue={Number(q.freightCost)} /></label><label>{t("Fuente", "Source")}<input name="freightSrc" maxLength={200} defaultValue={q.freightSrc ?? ""} /></label><StatusSel name="freightStatus" value={q.freightStatus} /></div>
+                <div className="qa-row"><label>{t("Otros USD", "Other USD")}<input name="otherCosts" type="number" step="0.01" min="0" defaultValue={Number(q.otherCosts)} /></label><label>{t("Fuente", "Source")}<input name="otherSrc" maxLength={200} defaultValue={q.otherSrc ?? ""} /></label><StatusSel name="otherStatus" value={q.otherStatus} /></div>
                 <label>{t("¿Por qué cambió respecto a la versión anterior?", "Why did it change from the previous version?")}<input name="changeNote" maxLength={300} defaultValue={q.changeNote ?? ""} /></label>
                 <button type="submit">{t("Guardar costos", "Save costs")}</button>
               </form>
@@ -240,6 +258,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
                 <th>{t("Costo puesto en destino", "Landed cost")}</th>
                 {showVersions ? v.map((x) => <th key={x.id} className={`n${x.current ? " cur" : ""}`}>{x.rev === 0 ? t("Original", "Original") : `Rev. ${x.rev}`}</th>) : <th className="n">USD</th>}
                 <th>{t("Fuente", "Source")}</th>
+                <th>{t("Firmeza", "Firmness")}</th>
               </tr>
             </thead>
             <tbody>
@@ -252,26 +271,28 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
                     return <td key={x.id} className={`n val${x.current ? " cur" : ""}${changed ? " chg" : ""}`}>{i.n2(r.get(x))}{changed && <span className="delta">{r.get(x) > p! ? "▲" : "▼"} {i.n2(Math.abs(r.get(x) - p!))}</span>}</td>;
                   })}
                   <td className="src">{r.src ?? (r.get(v.find((x) => x.current) ?? v[0]) > 0 ? <span className="attn-t">{t("sin fuente", "no source")}</span> : "—")}</td>
+                  <td><span className={`sig ${COST_STATUS[st[r.k]].tone}`}>{t(COST_STATUS[st[r.k]].es, COST_STATUS[st[r.k]].en)}</span></td>
                 </tr>
               ))}
               <tr className="tot">
                 <td>{t("Total costo", "Total cost")}</td>
                 {(showVersions ? v : v.filter((x) => x.current)).map((x) => <td key={x.id} className={`n val${x.current ? " cur" : ""}`}>{i.n2(x.supplier + x.freight + x.other)}</td>)}
-                <td />
+                <td /><td><span className={`sig ${COST_STATUS[weak].tone}`}>{t(COST_STATUS[weak].es, COST_STATUS[weak].en)}</span></td>
               </tr>
               <tr>
                 <td>{t("Venta", "Sale")}</td>
                 {(showVersions ? v : v.filter((x) => x.current)).map((x) => <td key={x.id} className={`n val${x.current ? " cur" : ""}`}>{i.n2(x.sale)}</td>)}
-                <td />
+                <td /><td />
               </tr>
               <tr className="tot">
                 <td>Eságara</td>
                 {(showVersions ? v : v.filter((x) => x.current)).map((x) => { const e = x.sale - x.supplier - x.freight - x.other; return <td key={x.id} className={`n val${x.current ? " cur" : ""}`}>{i.n2(e)}<span className="src block">{x.sale > 0 ? i.pct((e / x.sale) * 100) : "—"}</span></td>; })}
-                <td />
+                <td /><td />
               </tr>
             </tbody>
           </table>
         </div>
+        <p className="src" style={{ marginTop: 6 }}>{t(`La Eságara es tan firme como su costo menos firme: ${COST_STATUS[weak].es.toLowerCase()}. La financiación se muestra aparte y no entra en el umbral.`, `Eságara is only as firm as its least firm cost: ${COST_STATUS[weak].en.toLowerCase()}. Financing is shown separately and isn't part of the threshold.`)}</p>
         {why && <p className="qv-why"><b>{t("Por qué cambió", "Why it changed")}:</b> {why}</p>}
         <p className="src" style={{ marginTop: 8 }}>
           {q.costCurrency === "USD" || !q.fxRate
@@ -628,14 +649,68 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const EconCompact = () => (
     <section className="jblock">
       <div className="jbh"><b>ECONOMICS</b><span className="grow" />{B.econAlert ? <span className="sig risk">{t("Cruzó el umbral de la política", "Crossed the policy threshold")}</span> : <span className="sig ok">{t("Dentro de la política", "Within policy")}</span>}</div>
-      <div className="qv-econ two">
+      <div className={`qv-econ${q.status === "ACCEPTED" ? "" : " two"}`}>
         <div className="qv-box prot"><span className="k">{t("Protegida al presentar", "Protected at presenting")}</span><b className="tv">{money(Number(q.protEsagra ?? 0))}</b><span className="tsub">{i.pct(q.protSale ? (Number(q.protEsagra) / Number(q.protSale)) * 100 : null)}</span><span className="src">{t(`Política v${q.protPolicy ?? "—"} · ${i.day(q.presentedAt)}`, `Policy v${q.protPolicy ?? "—"} · ${i.day(q.presentedAt)}`)}</span></div>
-        <div className={`qv-box cur${B.econAlert ? " alert" : ""}`}><span className="k">{t("Esperada hoy", "Expected today")}</span><b className="tv">{money(B.curEsagra)}</b><span className="tsub">{i.pct(B.curPct)}</span><span className="src">{B.econChanged ? t("Los costos cambiaron después de presentar.", "Costs changed after presenting.") : t("Sin cambios de costo.", "No cost changes.")}</span></div>
+        <div className={`qv-box cur${B.econAlert ? " alert" : ""}`}><span className="k">{t("Esperada hoy", "Expected today")}</span><b className="tv">{money(B.curEsagra)}</b><span className="tsub">{i.pct(B.curPct)}</span><span className="src">{B.econChanged ? t("Los costos cambiaron después de presentar.", "Costs changed after presenting.") : t("Sin cambios de costo.", "No cost changes.")}{q.protEsagra != null && Math.abs(B.curEsagra - Number(q.protEsagra)) > 0.5 && <> · Δ {money(B.curEsagra - Number(q.protEsagra))}</>}</span></div>
+        {q.status === "ACCEPTED" && <FinalBox />}
       </div>
       <PayLine />
       <FinLine />
       <p className="src" style={{ marginTop: 8 }}>{t("SOLU solo avisa si se cruza el piso de la política o si cambia la promesa.", "SOLU only warns if the policy floor is crossed or the promise changes.")}</p>
     </section>
+  );
+
+  // ---------- C5 §20: what changed since the previous version (the older version is never rewritten) ----------
+  const qvOf = (x: NonNullable<typeof prevQ> | typeof q): QV => ({
+    lines: x.lines.map((l) => ({ code: l.code, description: l.description, qty: l.qty, unitPrice: Number(l.unitPrice) })),
+    leadMinDays: x.leadMinDays, leadMaxDays: x.leadMaxDays, incoterm: x.incoterm, paymentTerms: x.paymentTerms, validityDays: x.validityDays,
+    condition: x.condition, promiseText: x.promiseText, promiseCondition: x.promiseCondition, solution: x.solution, supplyPrimary: x.supplyPrimary,
+  });
+  const diff = prevQ ? quoteDiff(qvOf(prevQ), qvOf(q)) : null;
+  const DiffBlock = () => (!diff || !prevQ ? null : (
+    <section className="jblock" id="cambios">
+      <div className="jbh"><b>{t(`QUÉ CAMBIÓ DESDE ${quoteNo(prevQ)}`, `WHAT CHANGED SINCE ${quoteNo(prevQ)}`)}</b><span className="grow" /><Link className="src" href={`/cotizaciones/${prevQ.id}`}>{t("ver esa versión", "open that version")}</Link></div>
+      {diff.empty ? <p className="quiet-p">{t("Todavía igual a la versión anterior.", "Still the same as the previous version.")}</p> : (
+        <>
+          <div className="tscroll">
+            <table className="qv-diff">
+              <thead><tr><th>{t("Qué", "What")}</th><th>{t("Antes", "Before")}</th><th>{t("Ahora", "Now")}</th></tr></thead>
+              <tbody>
+                {diff.lines.map((l, k) => (
+                  <tr key={`l${k}`}>
+                    <td><span className="mono small">{l.key}</span> <span className={`sig ${l.kind === "ADDED" ? "ok" : l.kind === "REMOVED" ? "risk" : "info"}`}>{l.kind === "ADDED" ? t("agregada", "added") : l.kind === "REMOVED" ? t("quitada", "removed") : t("cambió", "changed")}</span></td>
+                    <td className="mono small">{l.from ? `${l.from.qty} × ${i.n2(l.from.unitPrice)}` : "—"}</td>
+                    <td className="mono small">{l.to ? `${l.to.qty} × ${i.n2(l.to.unitPrice)}` : "—"}</td>
+                  </tr>
+                ))}
+                {diff.fields.map((f) => <tr key={f.field}><td>{t(f.label.es, f.label.en)}</td><td className="small">{f.from || "—"}</td><td className="small"><b>{f.to || "—"}</b></td></tr>)}
+                {diff.totalFrom !== diff.totalTo && <tr className="tot"><td>Total USD</td><td className="mono">{i.n2(diff.totalFrom)}</td><td className="mono">{i.n2(diff.totalTo)}</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <p className="small" style={{ marginTop: 6 }}>{t("Motivo", "Reason")}: {q.changeNote ? q.changeNote : <span className="attn-t">{t("sin escribir — anótalo en «Editar costos» para que quede con la versión", "not written — note it in “Edit costs” so it stays with the version")}</span>}</p>
+        </>
+      )}
+    </section>
+  ));
+
+  // ---------- C5 §15: Final economics = real money paid to the supplier (+ freight/other still expected) ----------
+  const paidUsd = paidRows.map((p) => (p.currency === "USD" ? Number(p.amount) : p.amountUsd != null ? Number(p.amountUsd) : null));
+  const committedUsd = spoAgg.map((p) => (p.currency === "USD" ? Number(p.amount) : null));
+  const paidTotal = sumMoney(paidUsd.filter((x): x is number => x != null));
+  const fxUnknown = paidUsd.some((x) => x == null) || committedUsd.some((x) => x == null);
+  const committedTotal = sumMoney(committedUsd.filter((x): x is number => x != null));
+  const fullyPaid = !fxUnknown && committedTotal > 0 && paidTotal >= committedTotal - 0.5;
+  const restCost = sumMoney([Number(d.freightCost) > 0 ? d.freightCost : q.freightCost, Number(d.otherCosts) > 0 ? d.otherCosts : q.otherCosts]);
+  const finalEsagra = paidRows.length ? (B.curSale - paidTotal - restCost) : null;
+  const FinalBox = () => (
+    <div className={`qv-box${fullyPaid ? " prot" : " pending"}`}>
+      <span className="k">{t("Final (real)", "Final (actual)")}</span>
+      {finalEsagra == null ? <><b className="tv muted">—</b><span className="src">{t("Se completa al pagar al proveedor. No reescribe lo protegido.", "Fills in as the supplier is paid. It never rewrites what was protected.")}</span></> : (
+        <><b className="tv">{money(finalEsagra)}</b><span className="tsub">{i.pct(B.curSale > 0 ? (finalEsagra / B.curSale) * 100 : null)}</span>
+          <span className="src">{t(`Proveedor pagado ${money(paidTotal)}${committedTotal ? ` de ${money(committedTotal)} comprometido` : ""}; fletes y otros ${money(restCost)} todavía esperados.`, `Supplier paid ${money(paidTotal)}${committedTotal ? ` of ${money(committedTotal)} committed` : ""}; freight and other ${money(restCost)} still expected.`)}{fxUnknown ? ` ${t("Hay pagos en otra moneda sin valor en USD.", "Some payments in another currency have no USD value.")}` : ""}{q.protEsagra != null && <> · Δ {t("vs protegida", "vs protected")} {money(finalEsagra - Number(q.protEsagra))}</>}</span></>
+      )}
+    </div>
   );
 
   // ---------- Focus strip (top) for presented quotes ----------
@@ -665,6 +740,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
       {draft ? (
         <div className="jbody">
           <div className="jmain">
+            <DiffBlock />
             <Solution />
             <Economics />
             <Scenarios />
@@ -681,6 +757,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
               {q.status === "PRESENTED" && <Clocks />}
               <EconCompact />
               <Presented />
+              <DiffBlock />
             </div>
             <DecisionRail />
           </div>

@@ -7,6 +7,7 @@ import { refreshPaymentBehaviorSafe } from "./pay-behavior";
 import { addDays, nextCode, nextDocNumber, today } from "./domain";
 import { subMoney } from "./money";
 import { loadCredit } from "./queries";
+import { VALUE_SEED } from "./proposal-rules";
 
 // Sample data so every SOLU screen can be seen working. Every record is marked
 // "(ejemplo)" and can be removed in one step without touching real data.
@@ -650,6 +651,7 @@ export async function loadDemo(adminId: string) {
       await seedMarketM6(tx, d, paola.name, lacteos.id);
       await seedComercialC1(tx, d, paola.name);
       await seedComercialC4(tx, d, paola.name);
+      await seedComercialC5(tx, d, paola.name);
       await seedComercialC3(tx, d, { paolaId: paola.id, paolaName: paola.name });
 
       await tx.task.createMany({
@@ -843,6 +845,33 @@ async function seedComercialC3(tx: Prisma.TransactionClient, d: (n: number) => D
   } });
 }
 
+/** Comercial C5 sample: the Papeles del Sur dosing-pump Journey gets a Solution Case decided by a committee, two routes,
+ *  two claims with evidence for this case and one hypothesis without evidence (it stays out of the proposal, AC12). */
+async function seedComercialC5(tx: Prisma.TransactionClient, d: (n: number) => Date, by: string) {
+  const deal = await tx.deal.findFirst({ where: { title: C1_TITLE, account: { isDemo: true } }, select: { id: true } });
+  if (!deal || (await tx.solutionCase.count({ where: { dealId: deal.id } }))) return;
+  if (!(await tx.valueAttribute.count())) await tx.valueAttribute.createMany({ data: VALUE_SEED.map((v) => ({ ...v, status: "DRAFT", updatedByName: "SOLU (borrador inicial del spec)" })), skipDuplicates: true });
+  const attr = async (key: string) => (await tx.valueAttribute.findUnique({ where: { key }, select: { id: true } }))!.id;
+  await tx.solutionCase.create({ data: {
+    dealId: deal.id,
+    understood: "La máquina 2 dosifica químicos a mano y la concentración varía entre turnos; quieren dosificación estable controlada por la señal 4–20 mA del DCS (ejemplo).",
+    operationalImpact: "Reprocesos de papel fuera de especificación cuando la dosificación se desvía (ejemplo).",
+    routes: [
+      { kind: "OEM", label: "3 bombas DDA-30 + controlador 4–20 mA, conjunto completo", note: "Funciona con la señal del DCS desde el primer día" },
+      { kind: "PARTIAL", label: "Solo las 3 bombas; el controlador lo pone la planta", note: "Más rápido y menor inversión, si la planta ya tiene el controlador" },
+    ],
+    risks: "No está confirmado si la planta ya tiene el controlador 4–20 mA (ejemplo).",
+    recommendation: "Conjunto completo: evita que la dosificación dependa de un componente que no sabemos si existe (ejemplo).",
+    decisionNeeded: "Que el comité elija conjunto completo o solo bombas antes del próximo comité de compras (ejemplo).",
+    helpToBuy: "Sí: Marta pidió ayuda para presentarlo al comité (ejemplo).",
+    committee: true, updatedByName: by,
+    claims: { create: [
+      { attributeId: await attr("SPEED"), need: "Dosificación estable en la máquina 2", impact: "Reprocesos mientras sigan dosificando a mano", advantage: "Bombas en stock con el distribuidor: 5–7 días después del pago, frente a 6 semanas del fabricante", benefit: "La máquina 2 deja de depender de la dosificación manual este mes", evidence: "Correo del distribuidor con stock de 3 unidades y cotización del fabricante a 6 semanas (ejemplo)", evidenceAt: d(-2), audience: "MAINTENANCE", createdByName: by },
+      { attributeId: await attr("WARRANTY_SUPPORT"), need: "Respaldo si una bomba falla", advantage: "24 meses de garantía confirmados en la proforma del conjunto completo", benefit: "Compras no asume el riesgo de una falla temprana", evidence: "Proforma PF-2611 del proveedor del conjunto: 24 meses de garantía (ejemplo)", evidenceAt: d(-1), audience: "PURCHASING", createdByName: by },
+      { attributeId: await attr("EXPERIENCE"), need: "Confianza en la instalación", advantage: "Siempre resolvemos este tipo de dosificación", benefit: "Menos riesgo de arranque", audience: "MANAGEMENT", createdByName: by },
+    ] },
+  } });
+}
 /** Comercial C4 sample: on the Papeles del Sur dosing-pump draft, two supplier options that are NOT equivalent in scope
  *  (pumps only vs pumps + 4–20 mA controller), card vs wire, a saved search, and the DDA-30 logistics passport with a
  *  measured-vs-reported learning and a dated import precedent. No supply basis: choosing is left to the person. */
@@ -934,6 +963,8 @@ async function topUpMarketDemo() {
   await seedCreditRequestC3(paola.id);
   // Comercial C4 sample if missing.
   if (!(await db.supplyOption.count({ where: { deal: { account: { isDemo: true } } } }))) await db.$transaction((tx) => seedComercialC4(tx, d, paola.name), { timeout: 30000 });
+  // Comercial C5 sample if missing.
+  if (!(await db.solutionCase.count({ where: { deal: { account: { isDemo: true } } } }))) await db.$transaction((tx) => seedComercialC5(tx, d, paola.name), { timeout: 30000 });
 }
 
 const NAMEPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320"><rect width="520" height="320" fill="#8a9097"/><rect x="20" y="20" width="480" height="280" rx="10" fill="#d9dde1" stroke="#5c636a" stroke-width="3"/><circle cx="42" cy="42" r="7" fill="#9aa1a8"/><circle cx="478" cy="42" r="7" fill="#9aa1a8"/><circle cx="42" cy="278" r="7" fill="#9aa1a8"/><circle cx="478" cy="278" r="7" fill="#9aa1a8"/><text x="60" y="78" font-family="Arial" font-weight="700" font-size="30" fill="#0f9d9a">SIEMENS</text><text x="60" y="112" font-family="Arial" font-size="20" fill="#222">SINAMICS G120C</text><text x="60" y="150" font-family="Courier New" font-size="18" fill="#222">6SL3210-1KE21-7UF1</text><text x="60" y="184" font-family="Arial" font-size="16" fill="#222">IN: 3AC 380-480V 50/60Hz 18,5A</text><text x="60" y="210" font-family="Arial" font-size="16" fill="#222">OUT: 3AC 0-480V 16,5A 7,5kW</text><text x="60" y="236" font-family="Arial" font-size="14" fill="#444">S/N: XAJ2-7781-0042  IP20</text><text x="60" y="262" font-family="Arial" font-size="12" fill="#666">Made in Germany</text></svg>`;

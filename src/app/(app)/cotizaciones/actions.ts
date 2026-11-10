@@ -12,6 +12,7 @@ import { scopeState } from "@/lib/scope";
 import { costDrops } from "@/lib/esagara-rules";
 import { makeI18n } from "@/lib/i18n";
 import { money2, mulMoney } from "@/lib/money";
+import { COST_STATUS } from "@/lib/proposal-rules";
 
 const dayOf = (s: FormDataEntryValue | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(`${String(s)}T00:00:00Z`) : null);
 const txt = (fd: FormData, k: string, max = 2000) => {
@@ -94,6 +95,8 @@ export async function saveSolution(id: string, fd: FormData) {
 }
 
 /** Landed cost: each component keeps its source; a change records why. */
+const costStatus = (fd: FormData, k: string) => { const v = String(fd.get(k) ?? ""); return COST_STATUS[v] ? v : null; };
+
 export async function saveCosts(id: string, fd: FormData) {
   const { q } = await draftOnly(id);
   const cur = String(fd.get("costCurrency") ?? "USD").trim().toUpperCase().slice(0, 3) || "USD";
@@ -115,6 +118,10 @@ export async function saveCosts(id: string, fd: FormData) {
       freightSrc: txt(fd, "freightSrc", 200),
       otherCosts: num(fd, "otherCosts") ?? 0,
       otherSrc: txt(fd, "otherSrc", 200),
+      // C5 §15: how firm each cost is (empty = SOLU derives it from amount, source and supplier confirmation).
+      supplierStatus: costStatus(fd, "supplierStatus"),
+      freightStatus: costStatus(fd, "freightStatus"),
+      otherStatus: costStatus(fd, "otherStatus"),
       changeNote: txt(fd, "changeNote", 300),
     },
   });

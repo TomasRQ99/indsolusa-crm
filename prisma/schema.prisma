@@ -292,6 +292,8 @@ model Deal {
   billingRequests  BillingRequest[]
   cashBlockers     CashBlocker[]
   creditReviews    CreditReviewRequest[]
+  // Comercial C5 · Solution Case & Proposal
+  solutionCase     SolutionCase?
   // Comercial C4 · Sourcing & Supply
   sourcingSearches SourcingSearch[]
   supplyOptions    SupplyOption[]
@@ -1135,6 +1137,10 @@ model Quote {
   freightSrc         String?
   otherCosts         Decimal   @default(0) @db.Decimal(14, 2)
   otherSrc           String?
+  /// C5 §15: CONFIRMED | QUOTED | HISTORICAL | ESTIMATED | PENDING per cost bucket (null = derived)
+  supplierStatus     String?
+  freightStatus      String?
+  otherStatus        String?
   changeNote         String?
   // Protected economics: fixed when presented, never changed afterwards
   protSale           Decimal?  @db.Decimal(14, 2)
@@ -1164,6 +1170,7 @@ model Quote {
   invoices          Invoice[]
   customerPos       CustomerPO[]
   esagaraExceptions EsagaraException[]
+  presentations     PresentationRecord[]
 
   @@unique([number, rev])
   @@index([dealId])
@@ -2520,4 +2527,99 @@ model ImportExperience {
   createdAt      DateTime @default(now())
 
   @@index([partId])
+}
+
+// ---------- Comercial C5 · Solution Case & Proposal (§14–20) ----------
+
+/// §17: Industry Solutions value attributes. The 8 from the spec are pre-loaded as DRAFT (decision C-14);
+/// Gerencia / Director Comercial review and activate them. Never shown to a customer by themselves.
+model ValueAttribute {
+  id            String       @id @default(cuid())
+  key           String       @unique
+  nameEs        String
+  nameEn        String
+  definitionEs  String
+  definitionEn  String
+  appliesWhen   String?
+  restrictions  String?
+  evidenceHint  String?
+  /// DRAFT | ACTIVE | RETIRED
+  status        String       @default("DRAFT")
+  version       Int          @default(1)
+  updatedByName String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  claims        ValueClaim[]
+}
+
+/// §14: the shared reasoning of a Journey. Not a copy of the Quote: it says why, which routes, what's at stake
+/// and what decision is needed.
+model SolutionCase {
+  id                String               @id @default(cuid())
+  dealId            String               @unique
+  deal              Deal                 @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  understood        String?
+  /// [{kind, label, note}] — OEM | ALTERNATIVE | REPAIR | REFURBISHED | EXPEDITE | PARTIAL
+  routes            Json?
+  operationalImpact String?
+  risks             String?
+  recommendation    String?
+  decisionNeeded    String?
+  helpToBuy         String?
+  committee         Boolean              @default(false)
+  /// QUICK | PROPOSAL chosen by the person; null = follow SOLU's recommendation
+  mode              String?
+  updatedByName     String
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  claims            ValueClaim[]
+  presentations     PresentationRecord[]
+}
+
+/// §17 chain NEED → IMPACT → SOLUTION → ATTRIBUTE → ADVANTAGE → BENEFIT → PROOF for this case.
+/// Reaches a proposal only with evidence for this case (AC12); without it, it stays an internal hypothesis.
+model ValueClaim {
+  id            String         @id @default(cuid())
+  caseId        String
+  case          SolutionCase   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  attributeId   String
+  attribute     ValueAttribute @relation(fields: [attributeId], references: [id])
+  need          String
+  impact        String?
+  advantage     String
+  benefit       String
+  evidence      String?
+  evidenceAt    DateTime?
+  /// MAINTENANCE | PURCHASING | MANAGEMENT | FINANCE | ALL
+  audience      String         @default("ALL")
+  validUntil    DateTime?
+  hidden        Boolean        @default(false)
+  createdByName String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([caseId])
+}
+
+/// §19: what happened when the solution was presented (optional; never required for a simple purchase).
+model PresentationRecord {
+  id             String       @id @default(cuid())
+  caseId         String
+  case           SolutionCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  quoteId        String?
+  quote          Quote?       @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  at             DateTime
+  channel        String
+  audience       String?
+  changed        String?
+  valued         String?
+  objections     String?
+  whoDecides     String?
+  window         String?
+  nextMove       String?
+  nextMoveDate   DateTime?
+  recordedByName String
+  createdAt      DateTime     @default(now())
+
+  @@index([caseId])
 }
