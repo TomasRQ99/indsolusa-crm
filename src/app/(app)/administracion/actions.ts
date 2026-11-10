@@ -1,11 +1,12 @@
 "use server";
 
 import { z } from "zod";
+import { getPurchasePolicy } from "@/lib/pr-auth";
 import { sellerOf } from "@/lib/sellers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { assertCanEditMoney, assertCanEditOps, canDecideCredit, canFinance, canManageAll } from "@/lib/permissions";
+import { assertCanEditMoney, assertCanEditOps, canDecideCredit, canEditOps, canFinance, canManageAll } from "@/lib/permissions";
 import { optionalDate, optionalText, parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
 import { addDays, bankDiscrepancies, esagra, invoiceBlockers, invoiceCash, nextDocNumber, paymentState, today } from "@/lib/domain";
@@ -306,7 +307,7 @@ export async function approveSupplierPayment(id: string, formData: FormData) {
   const { dup, usd } = await treasuryChecks(p, p.supplierPo, i);
   if (dup.hard) payBack(id, "err=duplicado");
   if (dup.hits.length && formData.get("dupChecked") !== "1") payBack(id, "err=revisar-duplicados");
-  const auth = authorityFor(user, p, usd, i);
+  const auth = authorityFor(user, p, usd, i, await getPurchasePolicy());
   if (!auth.can) payBack(id, "err=autoridad");
   await db.supplierPayment.updateMany({
     where: { id, approvedAt: null },
@@ -319,6 +320,25 @@ export async function approveSupplierPayment(id: string, formData: FormData) {
  * Record external payment execution (done in the bank's portal, outside SOLU).
  * If the bank already shows the debit, it is confirmed (= paid). Otherwise it stays "sent, not confirmed".
  */
+const execNum = (fd: FormData, k: string) => { const raw = String(fd.get(k) ?? "").trim().replace(",", "."); const n = Number(raw); return raw && Number.isFinite(n) && n >= 0 && n < 1e9 ? n : null; };
+
+/** O4 §21: after the bank debit, the supplier having the money and the supplier releasing the order are separate
+ *  facts, each with how we know. Recorded by whoever follows the purchase or by Finance. */
+export async function markPaymentFact(id: string, fact: "received" | "released", formData: FormData) {
+  const user = await requireUser();
+  const p = await db.supplierPayment.findUniqueOrThrow({ where: { id }, include: { executions: true, supplierPo: { select: { deal: { select: { ownerId: true } } } } } });
+  if (!(canFinance(user) || canEditOps(user, p.supplierPo.deal.ownerId))) payBack(id, "err=permiso");
+  const note = String(formData.get("note") ?? "").trim().slice(0, 200);
+  const day = String(formData.get("at") ?? "");
+  const at = /^\d{4}-\d{2}-\d{2}$/.test(day) ? new Date(`${day}T00:00:00Z`) : new Date();
+  if (!note) payBack(id, "err=hecho-nota");
+  // Order matters: money confirmed by the bank → supplier received → order released.
+  if (!p.executions.some((e) => e.state === "CONFIRMED")) payBack(id, "err=hecho-orden");
+  if (fact === "released" && !p.supplierReceivedAt) payBack(id, "err=hecho-orden");
+  await db.supplierPayment.update({ where: { id }, data: fact === "received" ? { supplierReceivedAt: at, supplierReceivedNote: note } : { orderReleasedAt: at, orderReleasedNote: note } });
+  payBack(id, "ok=hecho");
+}
+
 export async function recordExecution(id: string, formData: FormData) {
   const user = await requireFinance();
   const p = await db.supplierPayment.findUniqueOrThrow({ where: { id }, include: { executions: true, supplierPo: { include: { supplier: true } } } });
@@ -332,6 +352,8 @@ export async function recordExecution(id: string, formData: FormData) {
     await tx.paymentExecution.create({
       data: {
         paymentId: id, amount: p.amount, sentAt: now, bankRef, state: confirmed ? "CONFIRMED" : "SENT",
+        method: ["WIRE", "ACH", "CARD", "OTHER"].includes(String(formData.get("method"))) ? String(formData.get("method")) : null,
+        feeUsd: execNum(formData, "feeUsd"), fxRate: execNum(formData, "fxRate"),
         recordedById: user.id, recordedByName: user.name,
         ...(confirmed ? { resolvedAt: now, resolvedByName: user.name, evidence: `Débito visible en el banco · ref. ${bankRef}` } : {}),
       },

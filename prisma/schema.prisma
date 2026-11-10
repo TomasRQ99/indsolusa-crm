@@ -801,40 +801,45 @@ model SupplierPO {
 }
 
 model SupplierPayment {
-  id               String              @id @default(cuid())
-  supplierPoId     String
-  supplierPo       SupplierPO          @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
-  amount           Decimal             @db.Decimal(14, 2)
-  currency         String              @default("USD")
-  amountUsd        Decimal?            @db.Decimal(14, 2)
-  reason           String
-  dueBy            DateTime?
+  id                   String              @id @default(cuid())
+  supplierPoId         String
+  supplierPo           SupplierPO          @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
+  amount               Decimal             @db.Decimal(14, 2)
+  currency             String              @default("USD")
+  amountUsd            Decimal?            @db.Decimal(14, 2)
+  reason               String
+  dueBy                DateTime?
   // Bank data as it appears on the supplier's proforma / invoice / instruction.
-  docBeneficiary   String?
-  docBankName      String?
-  docAccount       String?
-  docSwift         String?
-  docSource        String?
-  requestedById    String
-  requestedBy      User                @relation("PaymentRequester", fields: [requestedById], references: [id])
-  verifiedById     String?
-  verifiedBy       User?               @relation("PaymentVerifier", fields: [verifiedById], references: [id])
-  verifiedAt       DateTime?
-  verificationNote String?
-  approvedById     String?
-  approvedBy       User?               @relation("PaymentApprover", fields: [approvedById], references: [id])
-  approvedAt       DateTime?
-  executedById     String?
-  executedBy       User?               @relation("PaymentExecutor", fields: [executedById], references: [id])
-  executedAt       DateTime?
-  executedRef      String?
-  createdAt        DateTime            @default(now())
+  docBeneficiary       String?
+  docBankName          String?
+  docAccount           String?
+  docSwift             String?
+  docSource            String?
+  requestedById        String
+  requestedBy          User                @relation("PaymentRequester", fields: [requestedById], references: [id])
+  verifiedById         String?
+  verifiedBy           User?               @relation("PaymentVerifier", fields: [verifiedById], references: [id])
+  verifiedAt           DateTime?
+  verificationNote     String?
+  approvedById         String?
+  approvedBy           User?               @relation("PaymentApprover", fields: [approvedById], references: [id])
+  approvedAt           DateTime?
+  executedById         String?
+  executedBy           User?               @relation("PaymentExecutor", fields: [executedById], references: [id])
+  executedAt           DateTime?
+  executedRef          String?
+  createdAt            DateTime            @default(now())
   // Payment Requirement this request pays (milestone), and the separate execution attempts.
-  requirementId    String?
-  requirement      PaymentRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
-  dupCheckedByName String?
-  dupCheckNote     String?
-  executions       PaymentExecution[]
+  requirementId        String?
+  requirement          PaymentRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  dupCheckedByName     String?
+  dupCheckNote         String?
+  // O4 §21: after the bank debit, two more separate facts: the supplier has the money, and the supplier released the order.
+  supplierReceivedAt   DateTime?
+  supplierReceivedNote String?
+  orderReleasedAt      DateTime?
+  orderReleasedNote    String?
+  executions           PaymentExecution[]
 
   @@index([supplierPoId])
 }
@@ -1417,6 +1422,10 @@ model PaymentExecution {
   resolvedAt     DateTime?
   resolvedByName String?
   evidence       String?
+  // O4 §21: how it was paid and what it really cost.
+  method         String?
+  feeUsd         Decimal?        @db.Decimal(14, 2)
+  fxRate         Decimal?        @db.Decimal(14, 6)
   createdAt      DateTime        @default(now())
 
   @@index([paymentId])

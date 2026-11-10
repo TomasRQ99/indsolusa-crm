@@ -1,4 +1,6 @@
 import type { Prisma, Role } from "@prisma/client";
+import { ROLE_LABEL as ROLE_NAMES_SRC } from "./permissions";
+const ROLE_NAMES: Record<string, { es: string; en: string }> = ROLE_NAMES_SRC;
 import { cmpMoney, lineAmount, linesTotal, money2, percentOf, subMoney, sumMoney } from "./money";
 import { addDays, bankDiscrepancies, daysBetween, paymentState, today, type PaymentState } from "./domain";
 import { db } from "./db";
@@ -16,13 +18,7 @@ type I = ReturnType<typeof makeI18n>;
 export const CLEARANCE_DAYS = 3;
 export const LAST_MILE_DAYS = 1;
 
-/** Approval authority (example limits until the real treasury policy is decided). */
-export const AUTHORITY = {
-  version: 1,
-  note: "Límites de ejemplo, pendientes de definir por Gerencia",
-  // Finanzas approves up to the same limit as Director Comercial (user decision 2026-11-09).
-  approve: { DIRECTOR_COMERCIAL: 25000, FINANZAS: 25000, ADMINISTRACION: 25000, GERENCIA: Infinity } as Partial<Record<Role, number>>,
-};
+
 
 export const spoInclude = {
   supplier: true,
@@ -181,17 +177,20 @@ export async function treasuryChecks(
 }
 
 /** Who may approve this request, and whether this person can. */
-export function authorityFor(user: { id: string; role: Role }, p: { requestedById: string; verifiedById: string | null }, usd: number | null, i: I) {
+/** Payment approval authority. Decided 2026-11-10: payments follow the same versioned policy as purchases
+ *  (level-1 roles up to the limit, level-2 roles above), always someone other than who requested and who verified. */
+export function authorityFor(user: { id: string; role: Role }, p: { requestedById: string; verifiedById: string | null }, usd: number | null, i: I, pol: { value: { level1Roles: string[]; level2Roles: string[]; level1LimitUsd: number }; version: number }) {
   const { t } = i;
-  const limit = AUTHORITY.approve[user.role] ?? 0;
+  const limit = pol.value.level2Roles.includes(user.role) ? Infinity : pol.value.level1Roles.includes(user.role) ? pol.value.level1LimitUsd : 0;
   const reasons: string[] = [];
   if (limit === 0) reasons.push(t("Tu rol no aprueba pagos", "Your role doesn't approve payments"));
   if (usd == null) reasons.push(t("Falta el equivalente en USD para aplicar el límite", "USD equivalent missing to apply the limit"));
   else if (usd > limit) reasons.push(t(`Supera tu límite (USD ${i.n(limit)})`, `Exceeds your limit (USD ${i.n(limit)})`));
   if (p.requestedById === user.id) reasons.push(t("Tú solicitaste este pago", "You requested this payment"));
   if (p.verifiedById === user.id) reasons.push(t("Tú verificaste el banco", "You verified the bank"));
-  const lim = i.n(AUTHORITY.approve.DIRECTOR_COMERCIAL ?? 0);
-  const rule = t(`Aprueban Director Comercial y Finanzas hasta USD ${lim}; Gerencia sin límite. Siempre una persona distinta de quien solicitó y de quien verificó. Política v${AUTHORITY.version} (${AUTHORITY.note.toLowerCase()}).`, `Commercial Director and Finance approve up to USD ${lim}; Management without limit. Always someone other than the requester and the verifier. Policy v${AUTHORITY.version} (example limits).`);
+  const lim = i.n(pol.value.level1LimitUsd);
+  const names = (rs: string[], es: boolean) => rs.map((r) => (ROLE_NAMES[r] ? (es ? ROLE_NAMES[r].es : ROLE_NAMES[r].en) : r)).join(", ");
+  const rule = t(`Aprueban ${names(pol.value.level1Roles, true)} hasta USD ${lim}; ${names(pol.value.level2Roles, true)} sin límite. Siempre una persona distinta de quien solicitó y de quien verificó. Misma política que las compras, v${pol.version}.`, `${names(pol.value.level1Roles, false)} approve up to USD ${lim}; ${names(pol.value.level2Roles, false)} without limit. Always someone other than the requester and the verifier. Same policy as purchases, v${pol.version}.`);
   return { can: reasons.length === 0, reasons, rule, limit };
 }
 

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { PaymentFacts } from "@/components/PaymentFacts";
+import { getPurchasePolicy } from "@/lib/pr-auth";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { canFinance } from "@/lib/permissions";
@@ -25,7 +27,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
   // supplierPo already carries all its own fields (version, releasedAt, amount…): no extra query.
   const spoFull = spo;
   const { dup, usd } = await treasuryChecks(p, spoFull, i);
-  const auth = authorityFor(user, p, usd, i);
+  const auth = authorityFor(user, p, usd, i, await getPurchasePolicy());
   const L = paymentStateLabel(i, p.state);
   const m = (v: unknown) => `${p.currency} ${i.n2(v)}`;
   const differs = new Set(p.discrepancies.map((x) => x.field));
@@ -44,6 +46,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
   ];
 
   const okMsg: Record<string, string> = {
+    hecho: t("Hecho registrado.", "Fact recorded."),
     solicitado: t("Solicitud creada con los datos del hito, del Journey y del perfil verificado.", "Request created from the milestone, the Journey and the verified profile."),
     verificado: t("Verificación independiente registrada.", "Independent verification recorded."),
     aprobado: t("Aprobado. Todavía no está pagado: falta enviarlo desde el banco.", "Approved. It's not paid yet: it still has to be sent from the bank."),
@@ -58,6 +61,9 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
     "revisar-duplicados": t("Marca que revisaste los posibles duplicados.", "Tick that you reviewed the possible duplicates."),
     autoridad: t("No tienes autoridad para aprobar este pago.", "You don't have authority to approve this payment."),
     referencia: t("Para marcarlo pagado escribe la referencia del banco.", "To mark it paid write the bank reference."),
+    "hecho-nota": t("Escribe cómo lo sabemos.", "Write how we know."),
+    "hecho-orden": t("Van en orden: primero el banco confirma el débito, luego el proveedor recibe, luego libera el pedido.", "They go in order: first the bank confirms the debit, then the supplier receives, then it releases the order."),
+    permiso: t("No tienes permiso sobre este pago.", "You don't have permission on this payment."),
     evidencia: t("Escribe la evidencia.", "Write the evidence."),
     nota: t("Escribe qué pasó.", "Write what happened."),
     ruta: t("Completa la ruta de verificación: teléfono registrado y cada dato confirmado.", "Complete the verification route: registered phone and every field confirmed."),
@@ -145,6 +151,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
             </section>
           </div>
 
+          <PaymentFacts paymentId={p.id} lang={i.es ? "ES" : "EN"} editable={manager || user.role === "NEGOCIADOR_OPERATIVO"} />
           {p.executions.length > 0 && (
             <section className="jblock">
               <div className="jbh"><b>{t("EJECUCIONES (FUERA DE SOLU)", "EXECUTIONS (OUTSIDE SOLU)")}</b></div>
@@ -185,6 +192,11 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
               <form action={recordExecution.bind(null, p.id)} className="qa-form">
                 <p className="small">{t("Haz la transferencia en el portal del banco y regístrala aquí.", "Make the transfer in the bank's portal and record it here.")}</p>
                 <label>{t("Referencia del banco", "Bank reference")}<input name="bankRef" maxLength={80} /></label>
+                <div className="qa-row">
+                  <label>{t("Método", "Method")}<select name="method" defaultValue="WIRE"><option value="WIRE">{t("Transferencia", "Wire")}</option><option value="ACH">ACH</option><option value="CARD">{t("Tarjeta", "Card")}</option><option value="OTHER">{t("Otro", "Other")}</option></select></label>
+                  <label>{t("Comisión real (USD)", "Actual fee (USD)")}<input name="feeUsd" type="number" min={0} step="0.01" /></label>
+                  <label>{t("Tasa de cambio (si aplica)", "Exchange rate (if any)")}<input name="fxRate" type="number" min={0} step="0.000001" /></label>
+                </div>
                 <label className="chk"><input type="radio" name="confirmed" value="yes" /> {t("El banco ya muestra el débito", "The bank already shows the debit")}</label>
                 <label className="chk"><input type="radio" name="confirmed" value="no" defaultChecked /> {t("Enviado, aún sin confirmar", "Sent, not confirmed yet")}</label>
                 <button type="submit" className="wide">{t("Registrar ejecución", "Record execution")}</button>
