@@ -584,6 +584,13 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
                   ))}
                   <div className="qa-row"><label>Incoterm<input name="incoterm" defaultValue={q.incoterm ?? ""} /></label><label>{t("Pago", "Payment")}<input name="paymentTerms" defaultValue={q.paymentTerms ?? ""} /></label></div>
                   <label>{t("Cotización que cita", "Quote it cites")}<input name="quoteRef" defaultValue={`${quoteNo(q)}`} /></label>
+                  <details><summary className="small">{t("Razón social, IVA, documentos, penalidades (si la PO los trae)", "Legal entity, VAT, documents, penalties (if the PO has them)")}</summary>
+                    <div className="qa-row"><label>{t("Razón social", "Legal entity")}<input name="legalEntity" maxLength={160} /></label><label>{t("NIT / Tax ID", "Tax ID")}<input name="taxIdOnPo" maxLength={40} /></label></div>
+                    <label>IVA<select name="ivaMode" defaultValue="NOT_STATED"><option value="NOT_STATED">{t("No indica", "Not stated")}</option><option value="ADDED">{t("IVA se suma", "VAT added")}</option><option value="INCLUDED">{t("Precio con IVA incluido", "Price includes VAT")}</option><option value="EXEMPT">{t("Exento", "Exempt")}</option></select></label>
+                    <label>{t("Documentos exigidos", "Documents required")}<input name="documents" maxLength={400} /></label>
+                    <label>{t("Penalidades", "Penalties")}<input name="penalties" maxLength={400} /></label>
+                    <label>{t("Garantía exigida", "Warranty required")}<input name="warranty" maxLength={300} /></label>
+                  </details>
                   <label>{t("Fuente", "Source")}<input name="source" maxLength={200} placeholder={t("Ej.: PDF adjunto en correo de Compras", "E.g.: PDF attached to Purchasing email")} /></label>
                   <button type="submit">{t("Registrar y comparar", "Record and compare")}</button>
                 </form>

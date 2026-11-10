@@ -22,7 +22,30 @@ export const poInclude = {
 export type PoFull = Prisma.CustomerPOGetPayload<{ include: typeof poInclude }>;
 
 export type DiffState = "match" | "minor" | "material";
-export type Diff = { key: string; label: string; quote: string; po: string; state: DiffState; note?: string };
+export type DiffKind = "MATCH" | "DIFFERENCE" | "MISSING" | "NEW_CONDITION";
+export type DiffImpact = "TECHNICAL" | "COMMERCIAL" | "ECONOMIC" | "OPERATIONAL" | "LEGAL";
+export type Diff = { key: string; label: string; quote: string; po: string; state: DiffState; note?: string; kind?: DiffKind; impact?: DiffImpact; ackable?: boolean };
+
+// C6 §23: what must be true again at the moment of accepting (computed by po-accept.ts, never cached).
+export type AcceptCtx = {
+  supply: { ok: boolean; text: { es: string; en: string } } | null;
+  credit: { ok: boolean; text: { es: string; en: string } } | null;
+  importFeas: { ok: boolean; text: { es: string; en: string } } | null;
+  annualPct: number | null;
+  accountTaxId: string | null;
+  accountName: string;
+};
+export type Ack = Record<string, { by: string; at: string; note: string }>;
+export const ACKABLE = new Set(["iva", "warranty", "documents", "penalties", "other", "entity-name"]);
+const IMPACT: Record<string, DiffImpact> = { date: "OPERATIONAL", total: "ECONOMIC", incoterm: "COMMERCIAL", payment: "ECONOMIC", shipto: "OPERATIONAL", ref: "COMMERCIAL", validity: "COMMERCIAL", "entity-tax": "LEGAL", "entity-name": "LEGAL", iva: "ECONOMIC", warranty: "COMMERCIAL", documents: "OPERATIONAL", penalties: "LEGAL", other: "COMMERCIAL" };
+const impactOf = (key: string): DiffImpact => IMPACT[key] ?? (key.startsWith("price") ? "ECONOMIC" : key.startsWith("qty") ? "COMMERCIAL" : "TECHNICAL");
+const digits = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "").replace(/^0+/, "");
+// A Colombian NIT check digit is optional on documents: compare without it when only one side has it.
+export function sameTaxId(a: string | null | undefined, b: string | null | undefined) {
+  const x = digits(a), y = digits(b);
+  if (!x || !y) return null;
+  return x === y || x.slice(0, -1) === y || y.slice(0, -1) === x;
+}
 export type Option = {
   option: "AMEND_DATE" | "EXPEDITE_ABSORB" | "EXPEDITE_CHARGE";
   title: string;
@@ -45,7 +68,7 @@ export type Option = {
 const norm = (s: string | null | undefined) => (s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 const dayOf = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 
-export function buildPo(po: PoFull, i: I, floorPct: number | null) {
+export function buildPo(po: PoFull, i: I, floorPct: number | null, ctx?: AcceptCtx) {
   const { t } = i;
   const q = po.quote;
   const now = today();
@@ -100,9 +123,38 @@ export function buildPo(po: PoFull, i: I, floorPct: number | null) {
     const cites = ref.includes(norm(q.number)) && (q.rev === 0 || ref.includes(`rev ${q.rev}`));
     diffs.push({ key: "ref", label: t("Cotización citada", "Quote cited"), quote: `Nº ${quoteNo(q)}`, po: po.quoteRef ?? t("No cita", "Not cited"), state: !po.quoteRef ? "minor" : cites ? "match" : "material", note: po.quoteRef && !cites ? t("La PO responde a otra versión de la cotización", "The PO answers another quote version") : undefined });
     const offerUntil = validUntil(q);
+    // C6 §22: legal entity, tax, warranty, documents, penalties.
+    const ack = (po.conditionsAck ?? {}) as Ack;
+    const acked = (key: string, d: Diff): Diff => (ack[key] && d.state === "material" ? { ...d, state: "minor", note: t(`Revisada y aceptada por ${ack[key].by}: ${ack[key].note}`, `Reviewed and accepted by ${ack[key].by}: ${ack[key].note}`) } : d);
+    if (ctx) {
+      const same = sameTaxId(po.taxIdOnPo, ctx.accountTaxId);
+      if (po.taxIdOnPo) diffs.push({ key: "entity-tax", label: t("NIT / Tax ID del comprador", "Buyer tax ID"), quote: ctx.accountTaxId ?? "—", po: po.taxIdOnPo, state: same === false ? "material" : "match", note: same === false ? t("La factura saldría a otra razón social: debe corregirse en la PO o en el cliente", "The invoice would go to another legal entity: fix it on the PO or the customer") : undefined });
+      const nm = norm(ctx.accountName.replace(/ \(ejemplo\)$/, "")).split(" ")[0];
+      if (po.legalEntity) diffs.push(acked("entity-name", { key: "entity-name", label: t("Razón social", "Legal entity"), quote: ctx.accountName, po: po.legalEntity, state: norm(po.legalEntity).includes(nm) ? "match" : same === true ? "minor" : "material", note: !norm(po.legalEntity).includes(nm) ? t("Nombre distinto al del cliente: confirma que es la misma empresa", "Different name from the customer: confirm it's the same company") : undefined }));
+      else diffs.push({ key: "entity-name", label: t("Razón social", "Legal entity"), quote: ctx.accountName, po: t("No indica", "Not stated"), state: "minor" });
+    }
+    const iva = po.ivaMode ?? "NOT_STATED";
+    diffs.push(acked("iva", { key: "iva", label: "IVA", quote: t("Precios sin IVA", "Prices before VAT"), po: iva === "INCLUDED" ? t("Precio con IVA incluido", "Price includes VAT") : iva === "ADDED" ? t("IVA se suma", "VAT added on top") : iva === "EXEMPT" ? t("Exento", "Exempt") : t("No indica", "Not stated"), state: iva === "INCLUDED" ? "material" : iva === "NOT_STATED" ? "minor" : "match", note: iva === "INCLUDED" ? t("Si el IVA está dentro del precio, la venta neta baja: confirma con el cliente", "If VAT is inside the price, the net sale drops: confirm with the customer") : undefined }));
+    const conds: [string, string | null, string][] = [["warranty", po.warranty, t("Garantía exigida", "Warranty required")], ["documents", po.documents, t("Documentos exigidos", "Documents required")], ["penalties", po.penalties, t("Penalidades", "Penalties")], ["other", po.otherConditions, t("Otras condiciones", "Other conditions")]];
+    for (const [key, val, label] of conds) {
+      if (val) diffs.push(acked(key, { key, label, quote: t("No estaba en la cotización", "Not in the quote"), po: val, state: "material", kind: "NEW_CONDITION", note: t("Condición nueva: revísala y acéptala con una nota, o pide corregirla", "New condition: review and accept it with a note, or ask to correct it") }));
+    }
     diffs.push({ key: "validity", label: t("Dentro de la vigencia", "Within validity"), quote: t(`Oferta hasta ${i.date(offerUntil)}`, `Offer until ${i.date(offerUntil)}`), po: t(`Recibida ${i.date(base)}`, `Received ${i.date(base)}`), state: base <= offerUntil ? "match" : "material", note: base > offerUntil ? t("La oferta ya había vencido: costos y plazos pueden haber cambiado", "The offer had expired: costs and lead times may have changed") : undefined });
   }
 
+  // AC14: longer payment terms cost money; shown with the company rate (never assumed).
+  const pay = diffs.find((d) => d.key === "payment");
+  if (pay && pay.state === "material" && ctx?.annualPct != null) {
+    const dq0 = termDays(q?.paymentTerms);
+    const extra = termDays(po.paymentTerms, dq0) - dq0;
+    const cost = Math.round(poTotal * (ctx.annualPct / 100) * (extra / 365) * 100) / 100;
+    pay.note = `${pay.note ?? ""} · ${t(`financiar ${extra} días más cuesta ${money(cost)} (${i.pct2(ctx.annualPct)} anual)`, `financing ${extra} more days costs ${money(cost)} (${i.pct2(ctx.annualPct)} a year)`)}`;
+  }
+  for (const d of diffs) {
+    d.impact = impactOf(d.key);
+    d.kind = d.kind ?? (d.state === "match" ? "MATCH" : /^(No indica|Not stated|No viene en la PO|Not in the PO|No cita|Not cited)$/.test(d.po) ? "MISSING" : "DIFFERENCE");
+    d.ackable = ACKABLE.has(d.key) && d.state === "material";
+  }
   const material = diffs.filter((d) => d.state === "material");
   const dateMaterial = material.some((d) => d.key === "date");
 
@@ -175,6 +227,10 @@ export function buildPo(po: PoFull, i: I, floorPct: number | null) {
     { ok: resolvedDate, text: dateMaterial ? t("La diferencia de fecha tiene una resolución confirmada", "The date difference has a confirmed resolution") : t("La fecha de la PO se puede proteger", "The PO date can be protected") },
     { ok: otherMaterial.length === 0, text: otherMaterial.length ? t(`Otras diferencias materiales: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`, `Other material differences: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`) : t("Productos, cantidades, precios y condiciones coinciden", "Products, quantities, prices and terms match") },
     { ok: !chosen || chosen.state !== "CONFIRMED" || !options.find((o) => o.option === chosen.option)?.belowFloor, text: t("La Eságara resultante respeta el umbral de la política (o tiene excepción aprobada)", "Resulting Eságara respects the policy threshold (or has an approved exception)") },
+    // C6 §23 revalidation at the moment of accepting: stock/price (C-12), credit, import.
+    ...(ctx?.supply ? [{ ok: ctx.supply.ok, text: t(ctx.supply.text.es, ctx.supply.text.en) }] : []),
+    ...(ctx?.credit ? [{ ok: ctx.credit.ok, text: t(ctx.credit.text.es, ctx.credit.text.en) }] : []),
+    ...(ctx?.importFeas ? [{ ok: ctx.importFeas.ok, text: t(ctx.importFeas.text.es, ctx.importFeas.text.en) }] : []),
     // Eságara Protection Gate before accepting the Deal (module 10 v1.1 §44): the protected economics of the quote.
     ...(q && q.protSale != null && q.protCost != null && Number(q.protSale) > 0 && floorPct != null
       ? (() => { const p = Math.round(((Number(q.protSale) - Number(q.protCost)) / Number(q.protSale)) * 10000) / 100; return [{ ok: p >= floorPct, text: p >= floorPct ? t(`Eságara protegida ${i.pct2(p)}: dentro de la política`, `Protected Eságara ${i.pct2(p)}: within policy`) : t(`Eságara protegida ${i.pct2(p)} bajo el umbral: necesita una excepción aprobada en la cotización`, `Protected Eságara ${i.pct2(p)} below the threshold: needs an approved exception on the quote`) }]; })()

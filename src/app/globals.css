@@ -1636,3 +1636,5 @@ tr.muted td { color: var(--ink-3); }
 .val-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
 @media (max-width: 420px) { .val-grid { grid-template-columns: 1fr; } }
 .qv-diff td { vertical-align: top; overflow-wrap: anywhere; }
+/* A date input inside a column label must not grow in height (flex-basis is vertical there). */
+.qa-row > label input[type="date"] { flex: 0 0 auto; }

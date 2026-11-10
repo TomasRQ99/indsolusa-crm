@@ -294,6 +294,9 @@ model Deal {
   creditReviews    CreditReviewRequest[]
   // Comercial C5 · Solution Case & Proposal
   solutionCase     SolutionCase?
+  // Comercial C6 · PO allocations and dispatch
+  poAllocations    PoAllocation[]
+  dispatches       DispatchInstruction[]
   // Comercial C4 · Sourcing & Supply
   sourcingSearches SourcingSearch[]
   supplyOptions    SupplyOption[]
@@ -1240,11 +1243,28 @@ model CustomerPO {
   rejectedAt     DateTime?
   rejectedByName String?
   rejectReason   String?
+  // Comercial C6 §22: what the PO says about who buys, tax and conditions (compared, never assumed).
+  legalEntity         String?
+  taxIdOnPo           String?
+  billTo              String?
+  /// INCLUDED (price includes IVA) | ADDED (IVA on top) | EXEMPT | NOT_STATED
+  ivaMode             String?
+  warranty            String?
+  documents           String?
+  penalties           String?
+  otherConditions     String?
+  /// {key: {by, at, note}}: new conditions reviewed and accepted with a note (never silently)
+  conditionsAck       Json?
+  // C6 §23 / C-12: stock and price confirmed again with the supplier before accepting
+  supplyRevalidatedAt DateTime?
+  supplyRevalidation  String?
+  supplyRevalidatedBy String?
 
   lines       CustomerPOLine[]
   resolutions PoResolution[]
   acceptance  PoAcceptance?
-
+  allocations PoAllocation[]
+  dispatches  DispatchInstruction[]
   @@index([dealId])
 }
 
@@ -2622,4 +2642,52 @@ model PresentationRecord {
   createdAt      DateTime     @default(now())
 
   @@index([caseId])
+}
+
+// ---------- Comercial C6 · PO, Acceptance & Dispatch (§22–24, v1.3 §58) ----------
+
+/// §22: one customer PO can cover several Journeys (and a Journey several POs). The PO's own Journey keeps
+/// whatever isn't allocated elsewhere. Allocations are audited, never silently moved.
+model PoAllocation {
+  id            String     @id @default(cuid())
+  poId          String
+  po            CustomerPO @relation(fields: [poId], references: [id], onDelete: Cascade)
+  dealId        String
+  deal          Deal       @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  amount        Decimal    @db.Decimal(14, 2)
+  lineRef       String?
+  note          String?
+  createdByName String
+  createdAt     DateTime   @default(now())
+
+  @@unique([poId, dealId])
+  @@index([dealId])
+}
+
+/// v1.3 §58: what Commercial promised the customer about delivery, issued to Operations. Commercial defines the
+/// customer obligation; Operations owns the physical execution. An issued version is never edited: a change is a new version.
+model DispatchInstruction {
+  id               String      @id @default(cuid())
+  dealId           String
+  deal             Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  poId             String?
+  po               CustomerPO? @relation(fields: [poId], references: [id], onDelete: SetNull)
+  version          Int         @default(1)
+  /// [{code, description, qty}]
+  items            Json
+  destination      String
+  contactName      String?
+  contactPhone     String?
+  windowFrom       DateTime?
+  windowTo         DateTime?
+  promiseDate      DateTime?
+  documents        String?
+  entryRequirement String?
+  restrictions     String?
+  changeReason     String?
+  issuedByName     String
+  issuedAt         DateTime    @default(now())
+  supersededAt     DateTime?
+
+  @@index([dealId])
 }

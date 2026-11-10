@@ -9,7 +9,9 @@ import { quoteNo } from "@/lib/quote";
 import { quoteFloor } from "@/lib/esagara-gate";
 import { buildPo, poInclude } from "@/lib/po";
 import { Popovers } from "@/components/Popovers";
-import { acceptPo, chooseResolution, confirmResolution, rejectPo, withdrawResolution } from "../actions";
+import { acceptPo, ackCondition, addAllocation, chooseResolution, confirmResolution, rejectPo, removeAllocation, revalidateSupply, savePoTerms, withdrawResolution } from "../actions";
+import { acceptCtx } from "@/lib/po-accept";
+import { saleOf } from "@/lib/quote";
 import { lineAmount } from "@/lib/money";
 
 export default async function PoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string }> }) {
@@ -21,7 +23,18 @@ export default async function PoPage({ params, searchParams }: { params: Promise
   const po = await db.customerPO.findUnique({ where: { id }, include: poInclude });
   if (!po) notFound();
   const policy = await quoteFloor(po.quoteId);
-  const B = buildPo(po, i, policy.floorPct);
+  const ctx = await acceptCtx(po);
+  const B = buildPo(po, i, policy.floorPct, ctx);
+  const [allocs, siblings, dispatch] = await Promise.all([
+    db.poAllocation.findMany({ where: { poId: po.id }, orderBy: { createdAt: "asc" }, include: { deal: { select: { id: true, code: true, title: true } } } }),
+    db.deal.findMany({ where: { accountId: po.deal.accountId, id: { not: po.dealId }, stage: { not: "LOST" } }, orderBy: { createdAt: "desc" }, take: 30, select: { id: true, code: true, title: true } }),
+    db.dispatchInstruction.findFirst({ where: { poId: po.id, supersededAt: null }, select: { version: true, issuedAt: true } }),
+  ]);
+  const poTotal = saleOf(po.lines);
+  const allocated = allocs.reduce((x, a) => x + Number(a.amount), 0);
+  const IMPACT: Record<string, [string, string]> = { TECHNICAL: ["Técnico", "Technical"], COMMERCIAL: ["Comercial", "Commercial"], ECONOMIC: ["Económico", "Economic"], OPERATIONAL: ["Operativo", "Operational"], LEGAL: ["Legal", "Legal"] };
+  const KIND: Record<string, [string, string]> = { MATCH: ["Coincide", "Match"], DIFFERENCE: ["Diferencia", "Difference"], MISSING: ["Falta", "Missing"], NEW_CONDITION: ["Condición nueva", "New condition"] };
+  const IVA_L: Record<string, [string, string]> = { NOT_STATED: ["No indica", "Not stated"], INCLUDED: ["Precio con IVA incluido", "Price includes VAT"], ADDED: ["IVA se suma", "VAT added"], EXEMPT: ["Exento", "Exempt"] };
   const d = po.deal;
   const q = po.quote;
   const editable = canEdit(user, d.ownerId);
@@ -37,6 +50,11 @@ export default async function PoPage({ params, searchParams }: { params: Promise
     retirada: t("Opción retirada.", "Option withdrawn."),
     aceptada: t("Command ejecutado: PO aceptada. La promesa quedó protegida en el Journey.", "Command executed: PO accepted. The promise is protected on the Journey."),
     "ya-aceptada": t("Esta PO ya había sido aceptada; no se repitió nada.", "This PO was already accepted; nothing was repeated."),
+    duplicada: t("Esta PO ya estaba registrada: es la misma, no se creó otra.", "This PO was already recorded: it's the same one, no other was created."),
+    terminos: t("Condiciones de la PO guardadas. SOLU volvió a comparar.", "PO terms saved. SOLU compared again."),
+    condicion: t("Condición revisada y aceptada con su nota.", "Condition reviewed and accepted with its note."),
+    revalidado: t("Stock y precio revalidados con su evidencia (válido 7 días).", "Stock and price re-confirmed with evidence (valid 7 days)."),
+    asignada: t("Asignaciones actualizadas.", "Allocations updated."),
     rechazada: t("Registrado: esta PO no se acepta.", "Recorded: this PO is not accepted."),
   };
   const errMsg: Record<string, string> = {
@@ -45,6 +63,9 @@ export default async function PoPage({ params, searchParams }: { params: Promise
     motivo: t("Escribe el motivo.", "Write the reason."),
     cerrada: t("Esta PO ya fue decidida.", "This PO was already decided."),
     opcion: t("Esa opción ya no aplica.", "That option no longer applies."),
+    nota: t("Escribe por qué se acepta esa condición.", "Write why that condition is accepted."),
+    asignacion: t("Elige otro Journey del mismo cliente y un monto mayor que cero.", "Pick another Journey of the same customer and an amount above zero."),
+    excede: t("Las asignaciones superarían el total de la PO.", "Allocations would exceed the PO total."),
   };
 
   const QA = ({ label, children, wide, right }: { label: React.ReactNode; children: React.ReactNode; wide?: boolean; right?: boolean }) => (
@@ -132,14 +153,24 @@ export default async function PoPage({ params, searchParams }: { params: Promise
             <div className="jbh"><b>{t("PO VS COTIZACIÓN", "PO VS QUOTE")}</b><span className="grow" /><span className="src">{t("Material = cambia lo que prometemos, cuesta o cobramos", "Material = changes what we promise, spend or collect")}</span></div>
             <div className="tscroll">
               <table className="po-cmp">
-                <thead><tr><th>{t("Campo", "Field")}</th><th>{q ? `Quote ${quoteNo(q)}` : t("Cotización", "Quote")}</th><th>PO {po.number}</th><th>{t("Estado", "State")}</th></tr></thead>
+                <thead><tr><th>{t("Campo", "Field")}</th><th>{q ? `Quote ${quoteNo(q)}` : t("Cotización", "Quote")}</th><th>PO {po.number}</th><th>{t("Estado", "State")}</th><th>{t("Impacto", "Impact")}</th></tr></thead>
                 <tbody>
                   {[...B.diffs].sort((a, b) => ({ material: 0, minor: 1, match: 2 })[a.state] - ({ material: 0, minor: 1, match: 2 })[b.state]).map((x) => (
                     <tr key={x.key} className={x.state}>
                       <td><b>{x.label}</b>{x.note && <span className="src block">{x.note}</span>}</td>
                       <td>{x.quote}</td>
                       <td className="pov">{x.po}</td>
-                      <td>{stateSig(x.state)}</td>
+                      <td>{stateSig(x.state)}{x.kind && x.kind !== "MATCH" && <span className="src block">{t(KIND[x.kind][0], KIND[x.kind][1])}</span>}
+                        {open && editable && x.ackable && (
+                          <QA label={t("Aceptar con nota", "Accept with note")} wide right>
+                            <form action={ackCondition.bind(null, po.id, x.key)} className="qa-form">
+                              <label>{t("Por qué se acepta (queda en el registro)", "Why it's accepted (stays on record)")}<input name="note" required maxLength={300} placeholder={t("Ej.: certificado de origen lo emite el proveedor sin costo", "E.g.: the supplier issues the certificate of origin at no cost")} /></label>
+                              <button type="submit">{t("Aceptar condición", "Accept condition")}</button>
+                            </form>
+                          </QA>
+                        )}
+                      </td>
+                      <td className="small">{x.impact ? t(IMPACT[x.impact][0], IMPACT[x.impact][1]) : ""}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -209,7 +240,27 @@ export default async function PoPage({ params, searchParams }: { params: Promise
               <dt>Incoterm</dt><dd>{po.incoterm ?? "—"}</dd>
               <dt>{t("Pago", "Payment")}</dt><dd>{po.paymentTerms ?? "—"}</dd>
               <dt>{t("Cita", "Cites")}</dt><dd>{po.quoteRef ?? "—"}</dd>
+              <dt>{t("Razón social", "Legal entity")}</dt><dd>{po.legalEntity ?? "—"}{po.taxIdOnPo && <span className="src"> · {po.taxIdOnPo}</span>}</dd>
+              <dt>IVA</dt><dd>{t(IVA_L[po.ivaMode ?? "NOT_STATED"][0], IVA_L[po.ivaMode ?? "NOT_STATED"][1])}</dd>
+              {po.billTo && <><dt>{t("Facturar a", "Bill to")}</dt><dd className="pre">{po.billTo}</dd></>}
+              {po.warranty && <><dt>{t("Garantía", "Warranty")}</dt><dd>{po.warranty}</dd></>}
+              {po.documents && <><dt>{t("Documentos", "Documents")}</dt><dd>{po.documents}</dd></>}
+              {po.penalties && <><dt>{t("Penalidades", "Penalties")}</dt><dd>{po.penalties}</dd></>}
+              {po.otherConditions && <><dt>{t("Otras condiciones", "Other conditions")}</dt><dd>{po.otherConditions}</dd></>}
             </dl>
+            {open && editable && (
+              <details className="scp-add"><summary className="qa-btn">{t("Completar lo que dice la PO", "Complete what the PO says")}</summary>
+                <form action={savePoTerms.bind(null, po.id)} className="qa-form">
+                  <div className="qa-row"><label>{t("Razón social en la PO", "Legal entity on PO")}<input name="legalEntity" maxLength={160} defaultValue={po.legalEntity ?? ""} /></label><label>{t("NIT / Tax ID en la PO", "Tax ID on PO")}<input name="taxIdOnPo" maxLength={40} defaultValue={po.taxIdOnPo ?? ""} /></label></div>
+                  <div className="qa-row"><label>IVA<select name="ivaMode" defaultValue={po.ivaMode ?? "NOT_STATED"}>{Object.entries(IVA_L).map(([k, v]) => <option key={k} value={k}>{t(v[0], v[1])}</option>)}</select></label><label>{t("Garantía exigida", "Warranty required")}<input name="warranty" maxLength={300} defaultValue={po.warranty ?? ""} /></label></div>
+                  <label>{t("Facturar a", "Bill to")}<textarea name="billTo" rows={2} maxLength={300} defaultValue={po.billTo ?? ""} /></label>
+                  <label>{t("Documentos exigidos (certificados, entrada de mercancía…)", "Documents required (certificates, goods receipt…)")}<input name="documents" maxLength={400} defaultValue={po.documents ?? ""} /></label>
+                  <label>{t("Penalidades", "Penalties")}<input name="penalties" maxLength={400} defaultValue={po.penalties ?? ""} /></label>
+                  <label>{t("Otras condiciones", "Other conditions")}<input name="otherConditions" maxLength={400} defaultValue={po.otherConditions ?? ""} /></label>
+                  <button type="submit">{t("Guardar y comparar", "Save and compare")}</button>
+                </form>
+              </details>
+            )}
           </section>
         </div>
 
@@ -244,6 +295,39 @@ export default async function PoPage({ params, searchParams }: { params: Promise
               </>
             )}
             {B.accepted && acc && <p className="small">{t("Aceptada por", "Accepted by")} <b>{acc.acceptedByName}</b> · {i.date(acc.acceptedAt)}</p>}
+            {open && editable && ctx.supply && !ctx.supply.ok && (
+              <details className="scp-add" open><summary className="qa-btn">{t("Registrar que revalidé stock y precio", "Record that I re-confirmed stock and price")}</summary>
+                <form action={revalidateSupply.bind(null, po.id)} className="qa-form">
+                  <label>{t("Evidencia (quién confirmó y dónde)", "Evidence (who confirmed and where)")}<input name="evidence" required maxLength={300} placeholder={t("Ej.: Ana (distribuidor) confirma 3 en stock y mismo precio, correo de hoy 9:10", "E.g.: Ana (distributor) confirms 3 in stock, same price, email today 9:10")} /></label>
+                  <button type="submit">{t("Registrar", "Record")}</button>
+                </form>
+              </details>
+            )}
+            {open && ctx.credit && !ctx.credit.ok && <p className="src" style={{ marginTop: 6 }}><Link href="/comercial/dinero">{t("Pedir revisión de cupo", "Request a credit review")}</Link> · {t("la deciden Finanzas o Gerencia", "Finance or Management decide")}</p>}
+            {B.accepted && (
+              <p style={{ marginTop: 10 }}><Link className="qa-btn" href={`/deals/${d.id}/despacho?po=${po.id}`}>{dispatch ? t(`Instrucción de despacho v${dispatch.version}`, `Dispatch instruction v${dispatch.version}`) : t("Emitir instrucción de despacho", "Issue dispatch instruction")}</Link></p>
+            )}
+          </div>
+          <div>
+            <div className="jbh"><b>{t("JOURNEYS QUE CUBRE", "JOURNEYS IT COVERS")}</b></div>
+            <ul className="plain small">
+              <li><b>{d.code ?? d.title}</b> · USD {i.n2(poTotal - allocated)} <span className="src">{t("(este Journey: lo no asignado)", "(this Journey: what isn't allocated)")}</span></li>
+              {allocs.map((a) => (
+                <li key={a.id}><Link href={`/deals/${a.deal.id}`}>{a.deal.code ?? a.deal.title}</Link> · USD {i.n2(Number(a.amount))}{a.lineRef && <span className="src"> · {a.lineRef}</span>}{a.note && <span className="src"> · {a.note}</span>}
+                  {editable && <form action={removeAllocation.bind(null, po.id, a.id)} style={{ display: "inline" }}> <button type="submit" className="link small">{t("Quitar", "Remove")}</button></form>}
+                </li>
+              ))}
+            </ul>
+            {editable && siblings.length > 0 && (
+              <QA label={t("Asignar parte a otro Journey", "Allocate part to another Journey")} wide>
+                <form action={addAllocation.bind(null, po.id)} className="qa-form">
+                  <label>Journey<select name="dealId" required defaultValue="">{[<option key="" value="" disabled>—</option>, ...siblings.map((s) => <option key={s.id} value={s.id}>{s.code ? `${s.code} · ` : ""}{s.title}</option>)]}</select></label>
+                  <div className="qa-row"><label>{t("Monto USD", "Amount USD")}<input name="amount" inputMode="decimal" required /></label><label>{t("Líneas", "Lines")}<input name="lineRef" maxLength={120} placeholder="DDA-30 × 1" /></label></div>
+                  <label>{t("Por qué", "Why")}<input name="note" maxLength={300} /></label>
+                  <button type="submit">{t("Asignar", "Allocate")}</button>
+                </form>
+              </QA>
+            )}
           </div>
           {open && editable && (
             <div>
