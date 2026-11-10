@@ -15,6 +15,8 @@ export type PhotoReading = {
   specs: string[];
   source: "NAMEPLATE" | "MARKINGS" | "APPEARANCE" | "UNCLEAR";
   note: string;
+  /** Who read it: the AI (photo understanding) or the free in-browser text reader (OCR). */
+  via?: "AI" | "OCR";
 };
 
 export const PHOTO_MIMES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;

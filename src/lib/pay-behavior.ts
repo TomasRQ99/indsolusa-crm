@@ -67,5 +67,9 @@ export async function refreshPaymentBehavior(accountId: string, reason: string) 
 
 /** Never let a derived read model break the money action that triggered it. */
 export async function refreshPaymentBehaviorSafe(accountId: string, reason: string) {
-  try { await refreshPaymentBehavior(accountId, reason); } catch (e) { console.error("payment behavior refresh failed", e); }
+  try { await refreshPaymentBehavior(accountId, reason); } catch (e) {
+    console.error("payment behavior refresh failed", e);
+    // The durable worker retries it (with backoff) instead of losing it.
+    try { const { enqueue } = await import("./jobs"); await enqueue("PAY_BEHAVIOR", { accountId, reason: reason.slice(0, 200) }, { dedupeKey: `PAY_BEHAVIOR:${accountId}` }); } catch { /* best effort */ }
+  }
 }

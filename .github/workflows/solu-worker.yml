@@ -1,0 +1,30 @@
+# SOLU durable worker: every 15 minutes, ask SOLU to run its background jobs
+# (read email replies, import customer emails, refresh the parts catalog and payment behavior).
+# Needs one repository secret: SOLU_WORKER_KEY (created in SOLU › Equipo › Trabajos en segundo plano).
+# Optional repository variable SOLU_URL if the address is not the default below.
+name: SOLU worker
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: solu-worker
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Call SOLU
+        env:
+          KEY: ${{ secrets.SOLU_WORKER_KEY }}
+          URL: ${{ vars.SOLU_URL || 'https://indsolusa-crm.onrender.com' }}
+        run: |
+          if [ -z "$KEY" ]; then echo "SOLU_WORKER_KEY is not set: nothing to do."; exit 0; fi
+          # Render's free plan sleeps: the first call may take about a minute while it wakes up.
+          curl -sS --fail-with-body --max-time 150 --retry 3 --retry-delay 20 --retry-all-errors \
+            -X POST -H "Authorization: Bearer $KEY" "$URL/api/worker"
+          echo

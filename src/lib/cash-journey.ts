@@ -8,6 +8,7 @@ import { loadCredit } from "./queries";
 import { paymentBehaviors } from "./pay-behavior";
 import { computeCommissions } from "./commission";
 import { invoiceFacts, toPayInvoice } from "./pay-rules";
+import { carryCost, getFinanceRate } from "./financing";
 import {
   agingBucket, causeClass, cleanCashPolicy, confirmationOf, delayAttribution, median, pct, promiseStatus, workingDaysBetween,
   DEFAULT_CASH_POLICY, type CashPolicy, type CauseClass, type PromiseStatus, type RootCause,
@@ -239,7 +240,9 @@ export async function loadCashJourney(i: I, scope: Scope = {}) {
   const ar = sumMoney(collect.map((x) => x.value));
   const committed = sumMoney(deals.filter((d) => d.stage === "WON").map((d) => Math.max(0, subMoney(d.amount, sumMoney(d.invoices.map((x) => x.amount))))));
   const readyGoods = sumMoney(deliver.map((x) => x.value));
-  const capital = { ar, committed, readyGoods, total: sumMoney([ar, committed]) };
+  const rate = await getFinanceRate();
+  const total = sumMoney([ar, committed]);
+  const capital = { ar, committed, readyGoods, total, annualPct: rate.annualPct, monthlyCost: rate.annualPct == null ? null : carryCost(total, 30, rate.annualPct) };
 
   return {
     now, policy,

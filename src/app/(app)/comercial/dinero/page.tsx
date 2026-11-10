@@ -127,7 +127,7 @@ export default async function MoneyDesk({ searchParams }: { searchParams: Promis
       <CashBags j={j} i={i} />
 
       <section className="sum" style={{ marginTop: 16 }}>
-        <div><span className="k">{t("Capital comprometido", "Committed capital")}</span><span className="v">{i.money(j.capital.total)}</span><span className="s">{t("vender a crédito es financiar al cliente", "selling on credit means financing the customer")}</span></div>
+        <div><span className="k">{t("Capital comprometido", "Committed capital")}</span><span className="v">{i.money(j.capital.total)}</span><span className="s">{j.capital.monthlyCost != null ? t(`financiarlo cuesta ~${i.money(j.capital.monthlyCost)} al mes (${i.pct2(j.capital.annualPct)} anual)`, `financing it costs ~${i.money(j.capital.monthlyCost)} a month (${i.pct2(j.capital.annualPct)} a year)`) : t("vender a crédito es financiar al cliente", "selling on credit means financing the customer")}</span></div>
         <div><span className="k">{t("Facturas abiertas", "Open invoices")}</span><span className="v">{i.money(j.capital.ar)}</span></div>
         <div><span className="k">{t("Aceptado sin facturar", "Accepted, not invoiced")}</span><span className="v">{i.money(j.capital.committed)}</span><span className="s">{t(`incluye ${i.money(j.capital.readyGoods)} en mercancía lista`, `includes ${i.money(j.capital.readyGoods)} in ready goods`)}</span></div>
         {j.commission && (team ? canManageAll(user) : true) && <div><span className="k">{t("Comisión esperando recaudo", "Commission waiting for collection")}</span><span className="v">{i.money(j.commission.total)}</span><span className="s">{t("se libera con el dinero conciliado", "released with reconciled cash")}</span></div>}

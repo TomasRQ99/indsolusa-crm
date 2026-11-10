@@ -2300,3 +2300,38 @@ model CreditReviewRequest {
   @@index([accountId])
   @@index([status])
 }
+// ---------- Durable worker (2026-11-10) ----------
+// Background work that must not depend on someone opening a page. A free GitHub schedule calls
+// /api/worker every 15 minutes; each call claims due jobs (FOR UPDATE SKIP LOCKED), retries with backoff,
+// and records what it did. Recurring work (mail replies, catalog, payment behavior) is planned as jobs too.
+model Job {
+  id          String    @id @default(cuid())
+  kind        String
+  payload     Json      @default("{}")
+  // Same key = same job: enqueueing it again while it is pending does nothing.
+  dedupeKey   String?   @unique
+  status      String    @default("PENDING") // PENDING | RUNNING | DONE | FAILED
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  runAfter    DateTime  @default(now())
+  lockedAt    DateTime?
+  lastError   String?
+  result      String?
+  createdAt   DateTime  @default(now())
+  doneAt      DateTime?
+
+  @@index([status, runAfter])
+}
+
+model WorkerRun {
+  id         String    @id @default(cuid())
+  trigger    String // SCHEDULE | MANUAL | LOCAL
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  ok         Boolean   @default(false)
+  done       Int       @default(0)
+  failed     Int       @default(0)
+  summary    String?
+
+  @@index([startedAt])
+}

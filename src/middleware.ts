@@ -12,5 +12,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   // Static files (logo, icons) skip the auth gate: cheaper, and they can be cached.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|brand/|api/health|.*\\.(?:png|jpg|jpeg|svg|ico|webp|woff2)$).*)"],
+  // api/worker has its own key check (the GitHub schedule has no login).
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|brand/|api/health|api/worker|.*\\.(?:png|jpg|jpeg|svg|ico|webp|woff2)$).*)"],
 };

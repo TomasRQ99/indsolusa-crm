@@ -102,7 +102,7 @@ export async function recordPromise(invoiceId: string, formData: FormData) {
   assertCanEditMoney(user, inv.deal.ownerId);
   const data = parseForm(
     z.object({
-      promisedFor: z.string().min(1).transform((v) => new Date(v)),
+      promisedFor: z.string().min(1).transform((v) => new Date(v)).refine((d) => !Number.isNaN(d.getTime()), "Fecha / Date"),
       promisedBy: requiredText,
       promisedByRole: optionalText,
       source: requiredText,
@@ -150,11 +150,14 @@ export async function recordCustomerPayment(formData: FormData) {
     z.object({
       accountId: z.string().min(1),
       amount: money.refine((v) => v > 0, "Amount"),
-      receivedAt: z.string().min(1).transform((v) => new Date(v)),
+      receivedAt: z.string().min(1).transform((v) => new Date(v)).refine((d) => !Number.isNaN(d.getTime()), "Fecha / Date"),
       reference: optionalText,
     }),
     formData,
   );
+  // Recording cash for a customer: its owner, or Finanzas / management (same rule as promises).
+  const acc = await db.account.findUniqueOrThrow({ where: { id: data.accountId }, select: { ownerId: true } });
+  assertCanEditMoney(user, acc.ownerId);
   const apps = applicationsFrom(formData);
   if (cmpMoney(sumMoney(apps.map((a) => a.amount)), data.amount) > 0) throw new Error("Se aplicó más de lo recibido / Applied more than received.");
   await checkApplications(data.accountId, apps);
@@ -165,8 +168,9 @@ export async function recordCustomerPayment(formData: FormData) {
 }
 
 export async function applyPayment(paymentId: string, formData: FormData) {
-  await requireUser();
-  const p = await db.customerPayment.findUniqueOrThrow({ where: { id: paymentId }, include: { applications: true } });
+  const user = await requireUser();
+  const p = await db.customerPayment.findUniqueOrThrow({ where: { id: paymentId }, include: { applications: true, account: { select: { ownerId: true } } } });
+  assertCanEditMoney(user, p.account.ownerId);
   if (p.reconciledAt) throw new Error("Ya conciliado / Already reconciled.");
   const apps = applicationsFrom(formData);
   const used = sumMoney(p.applications.map((a) => a.amount));
@@ -180,6 +184,8 @@ export async function reconcilePayment(paymentId: string) {
   const user = await requireFinance();
   const p = await db.customerPayment.findUniqueOrThrow({ where: { id: paymentId }, include: { applications: true } });
   if (!p.applications.length) throw new Error("Primero aplica el pago a sus facturas / Apply the payment to its invoices first.");
+  // Same rule as the Journey's billing tab: money left unapplied needs a written explanation first.
+  if (subMoney(p.amount, sumMoney(p.applications.map((a) => a.amount))) > 0 && !p.residualNote) throw new Error("Queda dinero sin aplicar: explícalo en la pestaña Facturación del Journey antes de conciliar / Unapplied money left: explain it in the Journey's Billing tab before reconciling.");
   await db.customerPayment.updateMany({
     where: { id: paymentId, reconciledAt: null },
     data: { reconciledAt: new Date(), reconciledById: user.id },
@@ -363,6 +369,19 @@ export async function reconcileExecution(executionId: string, outcome: "CONFIRME
 }
 
 // ---------- Credit ----------
+
+/** Yearly cost of money for the financing cost (decision 2026-11-10): one company rate, versioned, Finanzas or Gerencia. */
+export async function saveFinanceRate(formData: FormData) {
+  const user = await requireCreditAuthority();
+  const raw = String(formData.get("annualPct") ?? "").trim().replace(/\s|%/g, "").replace(",", ".");
+  const pct = Number(raw);
+  if (!raw || !Number.isFinite(pct) || pct <= 0 || pct > 200) redirect("/administracion/cupos?err=tasa#costo-dinero");
+  const note = String(formData.get("note") ?? "").trim().slice(0, 300) || null;
+  const last = await db.marketSetting.findFirst({ where: { key: "financeRate" }, orderBy: { version: "desc" }, select: { version: true } });
+  await db.marketSetting.create({ data: { key: "financeRate", version: (last?.version ?? 0) + 1, value: { annualPct: Math.round(pct * 100) / 100, note }, updatedByName: user.name } });
+  refreshApp();
+  redirect("/administracion/cupos?ok=tasa#costo-dinero");
+}
 
 export async function setCreditLimit(accountId: string, formData: FormData) {
   await requireCreditAuthority();

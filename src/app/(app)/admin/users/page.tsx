@@ -22,9 +22,9 @@ export default async function UsersPage() {
   const roleHelp: Record<string, [string, string]> = {
     NEGOCIADOR_COMERCIAL: ["Edita los Journeys que lleva.", "Edits the Journeys they own."],
     NEGOCIADOR_OPERATIVO: ["Lo suyo, más compras, envíos, remisiones y solicitudes a proveedores de cualquier Journey. No cambia la cotización al cliente.", "Their own, plus purchasing, shipments, delivery notes and supplier RFQs on any Journey. Doesn't change the customer quote."],
-    FINANZAS: ["Facturas, cobros, caja, verificación bancaria, ejecución y conciliación de pagos, pago de comisiones. Aprueba pagos a proveedores hasta USD 25.000.", "Invoices, collections, cash, bank verification, payment execution and reconciliation, commission payouts. Approves supplier payments up to USD 25,000."],
+    FINANZAS: ["Facturas, cobros, caja, verificación bancaria, ejecución y conciliación de pagos, pago de comisiones. Aprueba pagos a proveedores hasta USD 25.000. Decide cupos, plazos y excepciones de crédito.", "Invoices, collections, cash, bank verification, payment execution and reconciliation, commission payouts. Approves supplier payments up to USD 25,000. Decides credit limits, terms and exceptions."],
     MARKETING: ["Como Negociador Comercial, y además carga datos de mercado.", "Like a Commercial Negotiator, plus loads market data."],
-    DIRECTOR_COMERCIAL: ["Edita todo; aprueba pagos hasta USD 25.000, cupos y excepciones de Eságara; ve Insights.", "Edits everything; approves payments up to USD 25,000, credit and Eságara exceptions; sees Insights."],
+    DIRECTOR_COMERCIAL: ["Edita todo; aprueba pagos hasta USD 25.000 y excepciones de Eságara; ve y apoya solicitudes de cupo (no las decide); ve Insights.", "Edits everything; approves payments up to USD 25,000 and Eságara exceptions; sees and supports credit requests (doesn't decide them); sees Insights."],
     GERENCIA: ["Todo lo anterior, sin límite de pagos, y además personas, datos y política de comisiones.", "All of the above, with no payment limit, plus people, data and commission policy."],
   };
 

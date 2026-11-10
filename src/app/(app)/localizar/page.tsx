@@ -25,8 +25,9 @@ function parseReading(raw?: string): PhotoReading | null {
     return {
       partNumbers: r.partNumbers.map((x: unknown) => s(x, 60)).filter(Boolean).slice(0, 5) as string[],
       brand: s(r.brand, 60), model: s(r.model, 80), partType: s(r.partType, 80) ?? "", partTypeEn: s(r.partTypeEn, 80) ?? "",
-      category: s(r.category, 30), specs: Array.isArray(r.specs) ? (r.specs.map((x: unknown) => s(x, 40)).filter(Boolean).slice(0, 6) as string[]) : [],
+      category: s(r.category, 30), specs: Array.isArray(r.specs) ? (r.specs.map((x: unknown) => s(x, 40)).filter(Boolean).slice(0, 8) as string[]) : [],
       source: ["NAMEPLATE", "MARKINGS", "APPEARANCE", "UNCLEAR"].includes(r.source) ? r.source : "UNCLEAR", note: s(r.note, 300) ?? "",
+      via: r.via === "OCR" ? "OCR" : "AI",
     };
   } catch { return null; }
 }
@@ -148,11 +149,13 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
           <dl className="filedl">
             <dt>{t("Número(s)", "Number(s)")}</dt><dd className="mono">{photo.partNumbers.length ? photo.partNumbers.join(" · ") : <span className="src">{t("ninguno legible", "none legible")}</span>}</dd>
             <dt>{t("Marca", "Brand")}</dt><dd>{photo.brand ?? "—"}{photo.model ? ` · ${photo.model}` : ""}</dd>
-            <dt>{t("Qué es", "What it is")}</dt><dd>{user.lang === "EN" ? photo.partTypeEn || photo.partType : photo.partType}</dd>
+            {(photo.partType || photo.partTypeEn) && <><dt>{t("Qué es", "What it is")}</dt><dd>{user.lang === "EN" ? photo.partTypeEn || photo.partType : photo.partType}</dd></>}
             {photo.specs.length > 0 && <><dt>{t("Datos", "Ratings")}</dt><dd>{photo.specs.join(" · ")}</dd></>}
           </dl>
-          <p className="src">{SRC[photo.source]}{photo.note ? ` · ${photo.note}` : ""}</p>
-          <p className="src">{t("Compara con la foto antes de cotizar: la IA puede confundir dígitos. Puedes corregir la búsqueda arriba.", "Compare with the photo before quoting: the AI can misread digits. You can correct the search above.")}</p>
+          <p className="src">{SRC[photo.source]}{photo.note && (photo.via !== "OCR" || photo.source === "UNCLEAR") ? ` · ${photo.note}` : ""}</p>
+          <p className="src">{photo.via === "OCR"
+            ? t("Leído gratis en tu navegador, sin IA: solo lee texto impreso (no reconoce la pieza por su forma). Compara cada dígito con la foto antes de cotizar (0/O, 1/I, 8/B se confunden); puedes corregir la búsqueda arriba.", "Read for free in your browser, without AI: it only reads printed text (it can't recognize a part by its shape). Compare every digit with the photo before quoting (0/O, 1/I, 8/B get mixed up); you can correct the search above.")
+            : t("Compara con la foto antes de cotizar: la IA puede confundir dígitos. Puedes corregir la búsqueda arriba.", "Compare with the photo before quoting: the AI can misread digits. You can correct the search above.")}</p>
         </section>
       )}
       {!q && !photo && (

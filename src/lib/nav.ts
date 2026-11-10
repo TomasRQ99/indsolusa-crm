@@ -68,6 +68,7 @@ export const MODULES: NavModule[] = [
     key: "equipo", es: "EQUIPO", en: "TEAM", match: ["/admin", "/profile"],
     tabs: [
       { href: "/admin/users", es: "Personas y datos", en: "People & data", adminOnly: true },
+      { href: "/admin/trabajos", es: "Trabajos en segundo plano", en: "Background work", adminOnly: true },
       { href: "/profile", es: "Mi perfil", en: "My profile" },
     ],
   },

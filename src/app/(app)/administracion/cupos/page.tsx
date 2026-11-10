@@ -6,7 +6,8 @@ import { decideCreditReview } from "../../comercial/dinero/actions";
 import { ALT_LABEL, kindLabel } from "@/components/CashBags";
 import { makeI18n } from "@/lib/i18n";
 import { loadCredit } from "@/lib/queries";
-import { grantCreditException, savePayRules, setCreditLimit } from "../actions";
+import { grantCreditException, saveFinanceRate, savePayRules, setCreditLimit } from "../actions";
+import { getFinanceRate, FIN_COST_FORMULA } from "@/lib/financing";
 import { paymentBehaviors } from "@/lib/pay-behavior";
 import { DEFAULT_PAY_RULES } from "@/lib/pay-rules";
 
@@ -23,6 +24,7 @@ export default async function CreditLimitsPage({ searchParams }: { searchParams:
     db.creditReviewRequest.findMany({ orderBy: { createdAt: "desc" }, take: 40, include: { account: { select: { id: true, name: true, creditLimit: true, paymentTermsDays: true } }, deal: { select: { id: true, code: true } }, requestedBy: { select: { name: true } }, decidedBy: { select: { name: true } } } }),
   ]);
   const openReviews = reviews.filter((r) => r.status === "OPEN");
+  const [rate, rateHistory] = await Promise.all([getFinanceRate(), db.marketSetting.findMany({ where: { key: "financeRate" }, orderBy: { version: "desc" }, take: 6 })]);
   const pb = await paymentBehaviors(rows.map((r) => r.id));
   const over = rows.filter((r) => r.limit != null && r.used > r.limit);
   const near = rows.filter((r) => r.limit != null && r.used <= r.limit && r.used > r.limit * 0.8);
@@ -42,6 +44,25 @@ export default async function CreditLimitsPage({ searchParams }: { searchParams:
         <div><span className="k">{t("Cerca del cupo (>80 %)", "Near the limit (>80 %)")}</span><span className="v">{near.length}</span></div>
         <div><span className="k">{t("Usado total", "Total used")}</span><span className="v">{i.n(rows.reduce((s, r) => s + r.used, 0))}</span><span className="s">USD</span></div>
       </section>
+      <section className="card stack" id="costo-dinero" style={{ marginBottom: 16 }}>
+        <div className="row" style={{ gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
+          <b>{t("Costo del dinero", "Cost of money")}</b>
+          {rate.annualPct != null ? <span className="val">{i.pct2(rate.annualPct)} {t("anual", "a year")}</span> : <span className="sig attn">{t("Sin definir", "Not set")}</span>}
+          <span className="src">{rate.version ? t(`versión ${rate.version} · ${rate.by} · ${i.day(rate.at!)}${rate.note ? ` · ${rate.note}` : ""}`, `version ${rate.version} · ${rate.by} · ${i.day(rate.at!)}${rate.note ? ` · ${rate.note}` : ""}`) : t("las cotizaciones muestran el costo de financiación en cuanto se defina", "quotes show the financing cost once it is set")}</span>
+        </div>
+        <p className="small">{t("Vender a crédito es financiar al cliente. SOLU calcula: venta × esta tasa × días que el cliente tarda en pagar ÷ 365 (según su historial de pagos conciliados; si no hay historial, el plazo pactado). Se muestra en cada cotización junto a la Eságara; no cambia el umbral del 20 %.", "Selling on credit means financing the customer. SOLU calculates: sale × this rate × days the customer takes to pay ÷ 365 (from their reconciled payment history; without history, the agreed terms). It shows on every quote next to Eságara; it doesn't change the 20% threshold.")} <span className="src">{FIN_COST_FORMULA}</span></p>
+        {sp.ok === "tasa" && <p className="small ok-t" role="status">{t("Tasa guardada como una nueva versión.", "Rate saved as a new version.")}</p>}
+        {sp.err === "tasa" && <p className="small risk-t" role="alert">{t("Escribe la tasa anual como un número mayor que 0 (p. ej. 14,5).", "Type the yearly rate as a number above 0 (e.g. 14.5).")}</p>}
+        {decider ? (
+          <form action={saveFinanceRate} className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <label className="small">{t("Tasa anual (%)", "Yearly rate (%)")}<input name="annualPct" inputMode="decimal" required defaultValue={rate.annualPct ?? ""} placeholder="14,5" style={{ width: 110 }} /></label>
+            <label className="small" style={{ flex: 1, minWidth: 200 }}>{t("De dónde sale (opcional)", "Where it comes from (optional)")}<input name="note" defaultValue={rate.note ?? ""} placeholder={t("p. ej. línea de crédito del banco", "e.g. bank credit line")} /></label>
+            <button type="submit" className="sm">{t("Guardar como nueva versión", "Save as a new version")}</button>
+          </form>
+        ) : <p className="src">{t("La definen Finanzas o Gerencia.", "Finance or Management set it.")}</p>}
+        {rateHistory.length > 1 && <details><summary className="small">{t("Versiones anteriores", "Previous versions")}</summary><ul className="mk-ul">{rateHistory.slice(1).map((h) => <li key={h.id} className="small">v{h.version} · {i.pct2(Number((h.value as { annualPct?: number }).annualPct))} · {h.updatedByName} · {i.day(h.createdAt)}</li>)}</ul></details>}
+      </section>
+
       <div className="card flush">
         <table>
           <thead><tr><th>{t("Cliente", "Customer")}</th><th className="n">{t("Cupo", "Limit")}</th><th className="n">{t("Usado", "Used")}</th><th style={{ width: 180 }} /><th className="n">{t("Disponible", "Available")}</th><th>{t("Señal", "Signal")}</th><th /></tr></thead>

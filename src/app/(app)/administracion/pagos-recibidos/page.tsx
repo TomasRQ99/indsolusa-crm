@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canFinance } from "@/lib/permissions";
+import { canEditMoney, canFinance } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { dayInput, invoiceCash, today } from "@/lib/domain";
 import { applyPayment, reconcilePayment, recordCustomerPayment } from "../actions";
@@ -34,6 +34,8 @@ export default async function PaymentsReceivedPage({ searchParams }: { searchPar
   ]);
   const open = account?.invoices.map((inv) => ({ inv, c: invoiceCash(inv) })).filter((x) => x.c.balance - x.c.pendingReconcile > 0.005) ?? [];
   const pending = payments.filter((p) => !p.reconciledAt);
+  // Recording or applying cash: the customer's owner, or Finanzas / management (enforced again on the server).
+  const canRecord = !!account && canEditMoney(user, account.ownerId);
 
   return (
     <>
@@ -66,7 +68,10 @@ export default async function PaymentsReceivedPage({ searchParams }: { searchPar
                     <td>{p.reconciledAt ? <span className="sig ok">✓ {t("Conciliado", "Reconciled")} {i.day(p.reconciledAt)}</span> : <span className="sig info">{t("Por conciliar", "To reconcile")}</span>}</td>
                     <td className="n">
                       {!p.reconciledAt && unapplied > 0.005 && <Link className="btn secondary sm" href={`/administracion/pagos-recibidos?account=${p.account.id}#apply-${p.id}`}>{t("Aplicar", "Apply")}</Link>}
-                      {!p.reconciledAt && manager && applied > 0 && (
+                      {!p.reconciledAt && manager && applied > 0 && unapplied > 0.005 && !p.residualNote && (
+                        <span className="src block">{t("Para conciliar: aplica el resto o explica el sobrante en la pestaña Facturación del Journey.", "To reconcile: apply the rest or explain the leftover in the Journey's Billing tab.")}</span>
+                      )}
+                      {!p.reconciledAt && manager && applied > 0 && (unapplied <= 0.005 || !!p.residualNote) && (
                         <form action={reconcilePayment.bind(null, p.id)}><button className="sm" type="submit">{t("Conciliar", "Reconcile")}</button></form>
                       )}
                     </td>
@@ -88,7 +93,8 @@ export default async function PaymentsReceivedPage({ searchParams }: { searchPar
               </select>
               <button className="secondary sm" type="submit">{t("Ver facturas", "Show invoices")}</button>
             </form>
-            {account && (
+            {account && !canRecord && <p className="src">{t("Solo el responsable de este cliente, Finanzas o la gerencia pueden registrar o aplicar sus pagos.", "Only this customer's owner, Finance or management can record or apply its payments.")}</p>}
+            {account && canRecord && (
               <form action={recordCustomerPayment} className="stack">
                 <input type="hidden" name="accountId" value={account.id} />
                 <label>{t("Monto USD", "Amount USD")}<input name="amount" type="number" min="0" step="0.01" required /></label>
@@ -105,7 +111,7 @@ export default async function PaymentsReceivedPage({ searchParams }: { searchPar
               </form>
             )}
           </div>
-          {account && payments.filter((p) => p.account.id === account.id && !p.reconciledAt).map((p) => {
+          {account && canRecord && payments.filter((p) => p.account.id === account.id && !p.reconciledAt).map((p) => {
             const unapplied = Number(p.amount) - p.applications.reduce((s, a) => s + Number(a.amount), 0);
             if (unapplied <= 0.005 || open.length === 0) return null;
             return (

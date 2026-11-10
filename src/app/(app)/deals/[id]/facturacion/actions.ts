@@ -158,14 +158,20 @@ export async function recordPayPromise(invoiceId: string, fd: FormData) {
   const promisedBy = txt(fd, "promisedBy", 120);
   const source = txt(fd, "source", 300);
   if (!promisedFor || !promisedBy || !source) back(inv.dealId, "err=promesa", `#inv-${invoiceId}`);
-  await db.paymentPromise.create({ data: { invoiceId, promisedFor: promisedFor!, promisedBy: promisedBy!, source: source!, recordedById: user.id } });
+  // §61: a new promise replaces the latest open one (which keeps its history), same as Cuentas por cobrar.
+  await db.$transaction(async (tx) => {
+    const prev = await tx.paymentPromise.findFirst({ where: { invoiceId, replacedById: null }, orderBy: { createdAt: "desc" } });
+    const created = await tx.paymentPromise.create({ data: { invoiceId, promisedFor: promisedFor!, promisedBy: promisedBy!, source: source!, recordedById: user.id } });
+    if (prev) await tx.paymentPromise.update({ where: { id: prev.id }, data: { replacedById: created.id, replacedAt: new Date() } });
+  });
   back(inv.dealId, "ok=promesa", `#inv-${invoiceId}`);
 }
 
 /** Allocate received cash to one or several invoices (many-to-many). Allocation is not reconciliation. */
 export async function allocateCash(dealId: string, paymentId: string, fd: FormData) {
-  await requireUser();
+  const { deal } = await loadDeal(dealId); // owner of the Journey, or Finanzas / management
   const p = await db.customerPayment.findUniqueOrThrow({ where: { id: paymentId }, include: { applications: true } });
+  if (p.accountId !== deal.accountId) back(dealId, "err=otro-cliente");
   if (p.reconciledAt) back(dealId, "err=conciliado");
   const apps: { invoiceId: string; amount: number }[] = [];
   for (const [k, v] of fd.entries()) {

@@ -4,7 +4,7 @@ services:
   - type: web
     name: indsolusa-crm
     runtime: node
-    plan: free # switch to "starter" at launch so the app no longer sleeps
+    plan: starter # paid since 2026-11-10: no sleep, SOLU runs its own background work (keep in sync with Render, or a Blueprint sync could downgrade it)
     region: virginia # keep close to the Neon database (AWS US East 1)
     # Each deploy applies pending database migrations and makes sure the admin user exists.
     buildCommand: npm install && npx prisma migrate deploy && npx prisma db seed && npm run build

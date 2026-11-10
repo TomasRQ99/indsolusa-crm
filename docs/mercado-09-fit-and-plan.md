@@ -26,7 +26,7 @@ This file is the Sprint 0 deliverable that §31 asks for: how the module fits th
 4. **Amount size.** Money columns are `Decimal(14,2)` (up to ~1 trillion). Large Colombian companies report revenues above COP 10 trillion. Financial snapshots need `Decimal(20,2)`.
 5. **Geography and currency.** The product is "SOLU USA" (USD), while Economic Intelligence is designed around Colombia (NIT, Supersociedades, COP). Snapshots keep their own currency and scale; nothing is converted silently.
 6. **AI is not connected** (no Anthropic key). Parts of the contract assume AI: natural-language search, voice notes, nameplate photos, choosing 2–5 discovery questions, Connection Brief drafts. V1 builds the rule-based version of each (clearly marked as such) with the AI step pluggable later. No inferred fact is ever stored as VERIFIED.
-7. **No background worker** (Render free). Importing ~10,000 rows must run in chunks inside requests with a resumable import state, not as one long request.
+7. **No background worker** (Render free) — *resolved 2026-11-10: Render is on the paid Starter plan and SOLU runs a durable job queue every 15 min (src/lib/jobs.ts, ticker.ts; optional GitHub backup via /api/worker).* Importing ~10,000 rows must run in chunks inside requests with a resumable import state, not as one long request.
 8. **"LEAD" exists as a Journey stage.** The contract forbids a Lead entity. Mercado will not create Journeys from signals; a Journey is created only when a person confirms a Need.
 
 ## 3. Decision log (§32) — open, configurable, not invented in code
@@ -41,7 +41,7 @@ This file is the Sprint 0 deliverable that §31 asks for: how the module fits th
 | Meeting recording/transcription policy | Open. Not built. |
 | Allowed web sources and refresh cadence | Partly covered by `web-fetch.ts` (robots.txt, blocked hosts). |
 | Initial Discovery Playbook catalog | Open. V1 seeds the examples from §6.2 as editable rows. |
-| Financing cost in money (cost-of-money rate applied to expected payment days) | **Pending (user, 2026-11-09): later.** SOLU shows financing days only until a rate is defined. |
+| Financing cost in money (cost-of-money rate applied to expected payment days) | **Decided (user, 2026-11-10):** one company yearly cost-of-money rate, versioned, set by Finanzas/Gerencia in Cupos de crédito → Costo del dinero (src/lib/financing.ts, fin-cost-v1: sale × rate × days ÷ 365; days from history, else terms). Shown on quotes and Dinero por mover. |
 | Access to financial detail by role | Proposal: summary for REP, detail for ADMIN/MANAGER (§18). |
 | Markets | **Decided (2026-11-09):** Colombia and USA. Each company keeps its own currency; no silent conversion. |
 | Customer vs supplier company | **Decided:** keep `Account` and `Supplier` separate and link them by NIT (`Supplier.taxId`, first 9 digits). The workspace shows "También proveedor". |

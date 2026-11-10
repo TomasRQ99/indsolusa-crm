@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { expectedPaymentDays } from "@/lib/pay-behavior";
+import { financingOf, getFinanceRate } from "@/lib/financing";
 import { canEdit } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { addDays, dayInput, daysBetween } from "@/lib/domain";
@@ -35,7 +36,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const scope = q.status === "DRAFT" ? await scopeState(q.dealId, q.lines.map((l) => ({ code: l.code, description: l.description })), q) : null;
   const B = buildQuote(q, i, { ...policy, approvedBy: policy.exception?.status === "APPROVED" && !policy.outside ? policy.exception.decidedByName : null }, scope);
   const gate = gateOf(saleOf(q.lines), costOf(q), policy.policy);
-  const pay = await expectedPaymentDays(q.deal.accountId);
+  const [pay, rate] = await Promise.all([expectedPaymentDays(q.deal.accountId), getFinanceRate()]);
   const d = q.deal;
   const editable = canEdit(user, d.ownerId);
   const draft = q.status === "DRAFT";
@@ -159,6 +160,21 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   // ---------- Collection days (§10.4): agreed vs what history says ----------
   const PayLine = () => (pay ? <p className="small" style={{ marginTop: 10 }}>{t("Cobro", "Collection")}: {t(`plazo pactado ${pay.contractualDays} d`, `${pay.contractualDays}-day agreed terms`)}{pay.expectedDays != null ? <> · {t(`según historial ${pay.expectedDays} d`, `history says ${pay.expectedDays} d`)}{pay.deltaDays ? <b className={pay.deltaDays > 0 ? "attn-t" : ""}> ({pay.deltaDays > 0 ? "+" : ""}{pay.deltaDays} {t("días de financiación", "days of financing")})</b> : null}<span className="src"> · {t(`promedio de ${pay.n} factura(s) cobrada(s) y conciliada(s)${pay.enough ? "" : ", orientativo"}`, `average of ${pay.n} collected and reconciled invoice(s)${pay.enough ? "" : ", indicative"}`)} · <Link href={`/mercado/empresas/${q.deal.accountId}#pagos`}>{t("cómo paga", "how they pay")}</Link></span></> : <span className="src"> · {t("sin historial de cobro todavía", "no collection history yet")}</span>}</p> : null);
 
+  // ---------- Financing cost (decision 2026-11-10): shown next to Eságara; the gate keeps today's formula ----------
+  const finSale = q.status === "DRAFT" ? B.sale : B.curSale;
+  const fin = financingOf({ sale: finSale, esagra: q.status === "DRAFT" ? B.esagra : B.curEsagra, expectedDays: pay?.expectedDays ?? null, contractualDays: pay?.contractualDays ?? q.deal.account.paymentTermsDays, annualPct: rate.annualPct });
+  const FinLine = () => (finSale > 0 ? (
+    <p className="small" style={{ marginTop: 4 }}>
+      {t("Financiación", "Financing")}: {fin.rateMissing
+        ? <span className="src">{t("falta la tasa del costo del dinero (la definen Finanzas o Gerencia en Cupos de crédito)", "the cost-of-money rate is missing (Finance or Management set it in Credit limits)")} · <Link href="/administracion/cupos#costo-dinero">{t("ir", "go")}</Link></span>
+        : <>
+            <b>{money(fin.cost)}</b> {t(`por ${fin.days} días a ${i.pct2(fin.annualPct)} anual`, `for ${fin.days} days at ${i.pct2(fin.annualPct)} a year`)}{fin.lateCost > 0.005 && <span className="attn-t"> ({t(`${money(fin.lateCost)} por los ${fin.lateDays} días que suele pagar tarde`, `${money(fin.lateCost)} for the ${fin.lateDays} days they usually pay late`)})</span>}
+            {" "}· {t("Eságara después de financiar", "Eságara after financing")}: <b>{money(fin.esagraAfter)}</b> ({i.pct(fin.pctAfter)})
+            <span className="src block">{fin.basis === "HISTORY" ? t("Días según cómo paga este cliente (dinero conciliado).", "Days from how this customer pays (reconciled cash).") : t("Sin historial de pagos: se usan los días del plazo pactado.", "No payment history: the agreed terms are used.")} {t("Informativo: el umbral de Eságara no incluye la financiación.", "Informational: the Eságara threshold doesn't include financing.")}</span>
+          </>}
+    </p>
+  ) : null);
+
   // ---------- Economics ----------
   const Economics = () => {
     const v = B.versions;
@@ -213,6 +229,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
           </div>
         </div>
         <PayLine />
+        <FinLine />
         {B.econAlert && !draft && <p className="qv-alert">{t("Los costos de hoy dejan la Eságara por debajo del umbral. Lo presentado no cambia; revisa con el proveedor o crea una revisión.", "Today's costs leave Eságara below the threshold. What was presented doesn't change; check with the supplier or create a revision.")}</p>}
         <ExceptionCard quoteId={q.id} i={i} user={user} editable={editable} draft={draft} gate={gate} threshold={policy.threshold} exception={policy.exception} outside={policy.outside} />
 
@@ -616,6 +633,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
         <div className={`qv-box cur${B.econAlert ? " alert" : ""}`}><span className="k">{t("Esperada hoy", "Expected today")}</span><b className="tv">{money(B.curEsagra)}</b><span className="tsub">{i.pct(B.curPct)}</span><span className="src">{B.econChanged ? t("Los costos cambiaron después de presentar.", "Costs changed after presenting.") : t("Sin cambios de costo.", "No cost changes.")}</span></div>
       </div>
       <PayLine />
+      <FinLine />
       <p className="src" style={{ marginTop: 8 }}>{t("SOLU solo avisa si se cruza el piso de la política o si cambia la promesa.", "SOLU only warns if the policy floor is crossed or the promise changes.")}</p>
     </section>
   );
