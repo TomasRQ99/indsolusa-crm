@@ -41,6 +41,8 @@ const spoStep = z.enum(["confirmedAt", "shippedAt", "receivedAt"]);
 export async function markSupplierPo(spoId: string, step: z.infer<typeof spoStep>, formData: FormData) {
   const spo = await db.supplierPO.findUniqueOrThrow({ where: { id: spoId }, select: { dealId: true } });
   await dealOwnerCheck(spo.dealId);
+  // O3 (AC12): "confirmed" is not a click. What the supplier confirmed is recorded and compared with our order.
+  if (step === "confirmedAt") redirect(`/compras/${spoId}#confirmacion`);
   const { eta } = parseForm(z.object({ eta: optionalDate }), formData);
   await db.supplierPO.update({
     where: { id: spoId },

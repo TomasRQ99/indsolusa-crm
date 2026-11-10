@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { SAVING_KINDS, compareConfirmation, materialDiffs, readScope, savingOf } from "@/lib/buying-rules";
 import { ensurePrForSpo, readinessForSpo } from "@/lib/pr";
 import { fullReadiness } from "@/lib/pr-auth";
 import type { Prisma } from "@prisma/client";
@@ -54,6 +55,8 @@ export async function prepareSpo(dealId: string) {
       data: {
         code, dealId, supplierId: supplier!.id, amount: total, currency: pr.currency,
         terms: supplier!.paymentTerms, proformaRef: pr.costSource, shipBy,
+        // O-10: the supplier's first quote is the baseline every saving is measured against.
+        firstQuoteAmount: total, firstQuoteRef: pr.costSource,
         lines: { create: lines },
         requirements: { create: plan.map((m, n) => ({ ...m, position: n })) },
       },
@@ -154,4 +157,92 @@ export async function requestPayment(requirementId: string, fd: FormData) {
   });
   refreshApp();
   redirect(`/administracion/pagos-proveedores/${p.id}?ok=solicitado`);
+}
+
+// ---------- O3 · order facts, supplier confirmation and savings ----------
+
+const o3day = (fd: FormData, k: string) => { const v = String(fd.get(k) ?? ""); return /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T00:00:00Z`) : null; };
+const o3num = (fd: FormData, k: string) => { const n = Number(String(fd.get(k) ?? "").replace(",", ".")); return Number.isFinite(n) && n >= 0 && n < 1e9 ? n : null; };
+
+/** §14.2: a released order is not a sent order, and a sent order is not an acknowledged one. */
+export async function markOrderFact(id: string, fact: "sent" | "ack", fd: FormData) {
+  const { user, spo } = await loadSpo(id);
+  if (!spo.releasedAt) back(id, "err=borrador#hechos");
+  const note = txt(fd, "note", 200);
+  if (fact === "sent") {
+    if (!note) back(id, "err=como#hechos");
+    await db.supplierPO.update({ where: { id }, data: { sentAt: o3day(fd, "at") ?? today(), sentHow: note, sentByName: user.name } });
+  } else {
+    if (!spo.sentAt) back(id, "err=sin-enviar#hechos");
+    await db.supplierPO.update({ where: { id }, data: { ackAt: o3day(fd, "at") ?? today(), ackNote: note } });
+  }
+  back(id, "ok=hecho#hechos");
+}
+
+/** The baseline for savings, while the order is still a draft. */
+export async function setFirstQuote(id: string, fd: FormData) {
+  const { spo } = await loadSpo(id);
+  if (spo.releasedAt) back(id, "err=liberada");
+  const amount = o3num(fd, "firstQuoteAmount");
+  if (amount == null || amount <= 0) back(id, "err=cotizacion#antes");
+  await db.supplierPO.update({ where: { id }, data: { firstQuoteAmount: money2(amount!), firstQuoteRef: txt(fd, "firstQuoteRef", 120), negotiationNote: txt(fd, "negotiationNote", 300) } });
+  back(id, "ok=guardado#antes");
+}
+
+/** Record what the supplier confirmed and compare it with the order. No material difference → confirmed. */
+export async function recordConfirmation(id: string, fd: FormData) {
+  const { user, spo } = await loadSpo(id);
+  if (!spo.releasedAt) back(id, "err=borrador#confirmacion");
+  const source = txt(fd, "source", 200);
+  if (!source) back(id, "err=fuente#confirmacion");
+  const receivedAt = o3day(fd, "receivedAt") ?? today();
+  const lines = spo.lines.map((l) => ({ position: l.position, qty: Math.round(o3num(fd, `cqty_${l.position}`) ?? l.qty), unitPrice: money2(o3num(fd, `cprice_${l.position}`) ?? Number(l.unitCost)) }));
+  const n = Math.min(Number(fd.get("scopeCount") ?? 0) || 0, 30);
+  const scope = Array.from({ length: n }, (_, k) => ({ component: txt(fd, `scomp_${k}`, 160) ?? "", state: String(fd.get(`sstate_${k}`) ?? "NOT_STATED") })).filter((x) => x.component);
+  const conf = { currency: txt(fd, "currency", 3)?.toUpperCase() ?? null, incoterm: txt(fd, "incoterm", 80), paymentTerms: txt(fd, "paymentTerms", 160), readyDate: o3day(fd, "readyDate"), packaging: txt(fd, "packaging", 200), documents: txt(fd, "documents", 300), warranty: txt(fd, "warranty", 200), newConditions: txt(fd, "newConditions", 300), lines, scope: readScope(scope) };
+  const diffs = compareConfirmation(spo, conf, { promiseDependsOnShipBy: !!spo.deal.promisedDate });
+  const material = materialDiffs(diffs).length > 0;
+  await db.$transaction(async (tx) => {
+    await tx.supplierConfirmation.create({ data: {
+      supplierPoId: id, poVersion: spo.version, receivedAt, source: source!, lines, scope, diffs: diffs as unknown as Prisma.InputJsonValue,
+      currency: conf.currency, incoterm: conf.incoterm, paymentTerms: conf.paymentTerms, readyDate: conf.readyDate, packaging: conf.packaging, documents: conf.documents, warranty: conf.warranty, newConditions: conf.newConditions,
+      recordedByName: user.name, ...(material ? {} : { resolvedAt: new Date(), resolvedByName: user.name, resolution: "Sin diferencias materiales" }),
+    } });
+    if (!material) await tx.supplierPO.update({ where: { id }, data: { confirmedAt: receivedAt, ...(conf.readyDate ? { eta: spo.eta ?? null } : {}) } });
+    await tx.activity.create({ data: { type: "NOTE", subject: `Confirmación del proveedor de ${spo.code}: ${material ? `${materialDiffs(diffs).length} diferencia(s) material(es) por resolver` : "coincide con la orden"}`.slice(0, 200), userId: user.id, accountId: spo.deal.accountId, dealId: spo.dealId, phase: "execute", source: source! } });
+  });
+  back(id, material ? "ok=conf-diferencias#confirmacion" : "ok=conf-coincide#confirmacion");
+}
+
+/** Material differences are resolved in writing (accepted, renegotiated, new order version…) before it counts as confirmed. */
+export async function resolveConfirmation(confId: string, fd: FormData) {
+  const c = await db.supplierConfirmation.findUnique({ where: { id: confId }, select: { id: true, supplierPoId: true, receivedAt: true, resolvedAt: true } });
+  if (!c) redirect("/compras");
+  const { user } = await loadSpo(c!.supplierPoId);
+  const resolution = txt(fd, "resolution", 400);
+  if (!resolution) back(c!.supplierPoId, "err=resolucion#confirmacion");
+  if (!c!.resolvedAt) await db.$transaction([
+    db.supplierConfirmation.update({ where: { id: confId }, data: { resolution, resolvedAt: new Date(), resolvedByName: user.name } }),
+    db.supplierPO.update({ where: { id: c!.supplierPoId }, data: { confirmedAt: c!.receivedAt } }),
+  ]);
+  back(c!.supplierPoId, "ok=conf-resuelta#confirmacion");
+}
+
+/** Savings Ledger: a verifiable improvement with its evidence. Supplier savings are measured against the first quote. */
+export async function addSaving(id: string, fd: FormData) {
+  const { user, spo } = await loadSpo(id);
+  const kind = String(fd.get("kind") ?? "");
+  const evidence = txt(fd, "evidence", 300);
+  const fin = o3num(fd, "finalAmount");
+  const supplier = kind === "SUPPLIER_SAVINGS";
+  const baseline = supplier ? (spo.firstQuoteAmount != null ? Number(spo.firstQuoteAmount) : null) : o3num(fd, "baselineAmount");
+  if (!SAVING_KINDS[kind] || !evidence || fin == null || baseline == null) back(id, "err=ahorro#ahorros");
+  const s = savingOf(baseline!, fin!, o3num(fd, "passedToCustomer") ?? 0);
+  if (!s.valid) back(id, "err=ahorro-monto#ahorros");
+  await db.savingsEntry.create({ data: {
+    kind, dealId: spo.dealId, supplierPoId: id, supplierId: spo.supplierId, baselineAmount: money2(baseline!), finalAmount: money2(fin!), savingsAmount: s.gross, passedToCustomer: s.passed, currency: spo.currency,
+    baselineSource: supplier ? `Primera cotización del proveedor${spo.firstQuoteRef ? ` · ${spo.firstQuoteRef}` : ""}` : txt(fd, "baselineSource", 160) ?? "Sin fuente indicada",
+    evidence: evidence!, note: txt(fd, "note", 300), responsibleId: user.id, responsibleName: user.name, at: o3day(fd, "at") ?? today(),
+  } });
+  back(id, "ok=ahorro#ahorros");
 }

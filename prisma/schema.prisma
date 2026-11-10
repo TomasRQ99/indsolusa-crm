@@ -318,6 +318,7 @@ model Deal {
   opsExceptions        OperationalException[]
   purchaseRequirements PurchaseRequirement[]
   purchaseAllocations  PurchaseAllocation[]
+  savings              SavingsEntry[]
 
   @@index([stage])
   @@index([ownerId])
@@ -778,11 +779,23 @@ model SupplierPO {
   shipBy           DateTime?
   costNote         String?
   history          Json?
+  // O3 · separate facts (§14.2): authorized = releasedAt, then sent, acknowledged, confirmed (confirmedAt).
+  sentAt           DateTime?
+  sentHow          String?
+  sentByName       String?
+  ackAt            DateTime?
+  ackNote          String?
+  /// The supplier's FIRST quote for this order: the baseline every saving is measured against (decision O-10).
+  firstQuoteAmount Decimal?  @db.Decimal(14, 2)
+  firstQuoteRef    String?
+  negotiationNote  String?
 
-  lines        SupplierPOLine[]
-  requirements PaymentRequirement[]
-  payments     SupplierPayment[]
-  shipments    Shipment[]
+  lines         SupplierPOLine[]
+  requirements  PaymentRequirement[]
+  payments      SupplierPayment[]
+  shipments     Shipment[]
+  confirmations SupplierConfirmation[]
+  savings       SavingsEntry[]
 
   @@index([dealId])
 }
@@ -3112,4 +3125,66 @@ model PurchaseApproval {
 
   @@index([prId])
   @@index([status])
+}
+
+// ---------- Operaciones O3 · Supplier Confirmation and Savings Ledger (module 11 §12–16) ----------
+
+/// What the supplier confirmed, compared with our Supplier PO. A sent PO is not an accepted PO. `diffs` keeps the
+/// comparison as it was when recorded (expected, actual, economic and customer impact); material differences need
+/// a written resolution before the order counts as confirmed. Scope is compared on its own, never hidden in price.
+model SupplierConfirmation {
+  id             String     @id @default(cuid())
+  supplierPoId   String
+  supplierPo     SupplierPO @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
+  poVersion      Int
+  receivedAt     DateTime
+  source         String
+  /// [{ position, qty, unitPrice }]
+  lines          Json
+  currency       String?
+  readyDate      DateTime?
+  paymentTerms   String?
+  incoterm       String?
+  packaging      String?
+  documents      String?
+  warranty       String?
+  newConditions  String?
+  /// [{ component, state: INCLUDED | EXCLUDED | OPTIONAL | NOT_STATED }] for what the functional unit needs
+  scope          Json       @default("[]")
+  diffs          Json       @default("[]")
+  resolution     String?
+  resolvedAt     DateTime?
+  resolvedByName String?
+  recordedByName String
+  createdAt      DateTime   @default(now())
+
+  @@index([supplierPoId])
+}
+
+/// A verifiable improvement. Not every saving becomes margin: what was passed on to the customer is kept apart
+/// from what the company retained. A claim counts only when the credit was really received.
+model SavingsEntry {
+  id               String      @id @default(cuid())
+  /// SUPPLIER_SAVINGS | FREIGHT_SAVINGS | PAYMENT_SAVINGS | LEGITIMATE_DUTY_REDUCTION | CLAIM_RECOVERY | ERROR_AVOIDANCE
+  kind             String
+  dealId           String?
+  deal             Deal?       @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  supplierPoId     String?
+  supplierPo       SupplierPO? @relation(fields: [supplierPoId], references: [id], onDelete: SetNull)
+  supplierId       String?
+  baselineAmount   Decimal     @db.Decimal(14, 2)
+  baselineSource   String
+  finalAmount      Decimal     @db.Decimal(14, 2)
+  savingsAmount    Decimal     @db.Decimal(14, 2)
+  passedToCustomer Decimal     @default(0) @db.Decimal(14, 2)
+  currency         String      @default("USD")
+  evidence         String
+  note             String?
+  responsibleId    String
+  responsibleName  String
+  at               DateTime
+  createdAt        DateTime    @default(now())
+
+  @@index([dealId])
+  @@index([supplierId])
 }
