@@ -89,6 +89,7 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   SupplierCommitment: "all",
   FreightRequirement: "all",
   FreightQuote: "all",
+  CarrierAccount: "all",
   PurchaseApproval: ["reasons", "amount", "relatedTotal", "stockQty", "stockAmount", "level", "status", "requestedByName", "requestNote", "decidedByName", "decisionNote", "escalatedByName", "policyVersion"],
   SellingEntity: "all",
   MissionExpense: ["spentOn", "category", "description", "amount", "originalNote", "currency", "originalAmount", "fxRate", "fxSource", "receiptName", "noReceiptReason"],

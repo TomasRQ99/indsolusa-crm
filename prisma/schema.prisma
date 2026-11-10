@@ -3303,3 +3303,52 @@ model FreightQuote {
 
   @@index([requirementId])
 }
+
+// ---------- Operaciones O5b · Carrier accounts and integration evidence (module 11 §53.8–53.9) ----------
+
+/// One of our accounts with a carrier, owned by one of our companies. Credentials are NEVER stored here: `secretRef`
+/// names the environment variables that hold them (e.g. DHL_USA → DHL_USA_API_KEY, DHL_USA_API_SECRET,
+/// DHL_USA_ACCOUNT). Only the last 4 digits of the account number are kept for recognition.
+model CarrierAccount {
+  id            String    @id @default(cuid())
+  /// adapter key: DHL_EXPRESS …
+  carrier       String
+  sellerKey     String
+  label         String
+  accountLast4  String?
+  country       String?
+  currency      String    @default("USD")
+  /// TEST | PRODUCTION
+  environment   String    @default("TEST")
+  secretRef     String    @unique
+  active        Boolean   @default(false)
+  effectiveFrom DateTime?
+  effectiveTo   DateTime?
+  updatedByName String
+  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime  @default(now())
+}
+
+/// Every call to a carrier that matters, so an uncertain result is reconciled before anything is repeated (AC44).
+/// Request and response are stored sanitized: no credentials, no full account numbers.
+model CarrierIntegrationAttempt {
+  id             String    @id @default(cuid())
+  adapter        String
+  accountId      String?
+  /// RATE | CAPABILITY | CREATE_SHIPMENT | PICKUP | TRACKING | POD | DOCUMENT | LANDED_COST
+  operation      String
+  idempotencyKey String    @unique
+  /// PENDING | OK | FAILED | UNCERTAIN
+  state          String    @default("PENDING")
+  shipmentId     String?
+  supplierPoId   String?
+  request        Json?
+  response       Json?
+  error          String?
+  byName         String?
+  startedAt      DateTime  @default(now())
+  finishedAt     DateTime?
+
+  @@index([shipmentId])
+  @@index([state])
+}
