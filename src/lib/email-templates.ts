@@ -74,8 +74,11 @@ const c0 = (items: ItemRow[]) => items[0].code || items[0].description.slice(0, 
 const first = (items: ItemRow[]) => (items[0].code ? `${items[0].code}${items[0].brand ? ` (${items[0].brand})` : ""}` : items[0].description.slice(0, 50));
 
 // ---------- 1. Request for quotation (company template) ----------
-export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; neededBy: Date | null; notes: string | null; sender: string; from: string; urgent?: boolean }): Mail {
+export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; neededBy: Date | null; notes: string | null; sender: string; from: string; urgent?: boolean; extra?: string[]; skipWeight?: boolean }): Mail {
   const en = o.lang === "EN";
+  // C4 (§7): the template's own questions stay verbatim; context questions are added after them, and the weight
+  // question is left out only when SOLU already knows it with fresh evidence.
+  const ask = (base: string[]) => [...base.filter((_, k) => !(o.skipWeight && k === 3)), ...(o.extra ?? []).map((x) => `${x}:`)];
   const blocks: Block[] = en ? [
     { p: "Dear Sirs," },
     { p: `${COMPANY.legalName} is a company with offices in Miami and New York. We serve all 50 U.S. states and Puerto Rico. Our mission is to help our customers with their urgent requests and to ensure all spare parts are delivered in a timely manner.` },
@@ -83,7 +86,7 @@ export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; nee
     { items: o.items },
     { p: "Please send us pictures, a diagram or the technical data sheet of the quoted items, so we can double-check with our customer and avoid any mistakes." },
     { p: "To secure the purchase order from our customer, please confirm your:" },
-    { bullets: ["Best resale price:", "Availability (lead time after receiving our payment):", "Payment options:", "Approximate weight and box dimensions:"] },
+    { bullets: ask(["Best resale price:", "Availability (lead time after receiving our payment):", "Payment options:", "Approximate weight and box dimensions:"]) },
     ...(o.neededBy ? [{ p: `We would appreciate your answer by ${longDay(o.neededBy, "EN")}.`, strong: true }] : []),
     ...(o.notes ? [{ p: o.notes }] : []),
     { p: "For quoting and invoicing purposes, please find our complete information below:" },
@@ -99,7 +102,7 @@ export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; nee
     { items: o.items },
     { p: "Por favor envíennos fotos, un diagrama o la ficha técnica de los ítems cotizados, para confirmarlos con nuestro cliente y evitar errores." },
     { p: "Para obtener la orden de compra de nuestro cliente, por favor confirmen:" },
-    { bullets: ["Mejor precio de reventa:", "Disponibilidad (plazo de entrega después de recibir nuestro pago):", "Formas de pago:", "Peso y dimensiones aproximadas de la caja:"] },
+    { bullets: ask(["Mejor precio de reventa:", "Disponibilidad (plazo de entrega después de recibir nuestro pago):", "Formas de pago:", "Peso y dimensiones aproximadas de la caja:"]) },
     ...(o.neededBy ? [{ p: `Agradecemos su respuesta a más tardar el ${longDay(o.neededBy, "ES")}.`, strong: true }] : []),
     ...(o.notes ? [{ p: o.notes }] : []),
     { p: "Para efectos de cotización y facturación, estos son nuestros datos completos:" },

@@ -17,6 +17,9 @@ import { readPage, removeWebSource, searchSources } from "../fuentes/actions";
 import { digikeyConfigured, mouserConfigured } from "@/lib/web-sources";
 import { partConfirmations, supplierEvidence } from "@/lib/supplier-evidence";
 import { SupplierEvidenceLine } from "@/components/SupplierEvidenceLine";
+import { partLogistics } from "@/lib/supply";
+import { OBS_STATUS } from "@/lib/supply-rules";
+import { addImportExperience, addObservation } from "../logistics-actions";
 type Sp = { ok?: string; err?: string; otro?: string; n?: string; deal?: string; m?: string; p?: string; st?: string };
 
 export default async function PartPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Sp> }) {
@@ -52,9 +55,10 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     db.supplier.count({ where: { website: { not: null } } }),
   ]);
   const apis = { mouser: mouserConfigured(), digikey: digikeyConfigured() };
-  const [sev, conf] = await Promise.all([
+  const [sev, conf, lg] = await Promise.all([
     supplierEvidence(offers.map((o) => o.supplier.id), { partKeys: keys }),
     partConfirmations(p.id, h.buys.length),
+    partLogistics(p.id),
   ]);
   const nowTs = new Date();
   const canEditCtx = !!ctxDeal && (manager || ctxDeal.ownerId === user.id);
@@ -85,9 +89,16 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     web: t("Página leída: muestra este número de parte. Quedó en Fuentes en internet.", "Page read: it shows this part number. It's now under Web sources."),
     webnomatch: t("Página leída, pero no muestra este número de parte exacto. Revísala antes de confiar en ella.", "Page read, but it doesn't show this exact part number. Check it before relying on it."),
     fuentes: t(`Búsqueda terminada: ${sp.n ?? 0} resultado(s), ${sp.m ?? 0} con este número de parte exacto.`, `Search done: ${sp.n ?? 0} result(s), ${sp.m ?? 0} with this exact part number.`),
+    obs: t("Observación guardada en el pasaporte logístico. El historial se conserva.", "Observation saved in the logistics passport. History is kept."),
+    importacion: t("Importación guardada como precedente.", "Import saved as a precedent."),
     fusionado: t(`Fusionado: buscar ${sp.n ?? "el duplicado"} ahora trae esta parte.`, `Merged: searching ${sp.n ?? "the duplicate"} now brings up this part.`),
   };
   const errs: Record<string, string> = {
+    obs: t("Elige el tipo y escribe la fuente.", "Pick the kind and write the source."),
+    "obs-vacia": t("Escribe al menos un dato (peso, medidas, bultos, origen o HS).", "Enter at least one value (weight, size, packages, origin or HS)."),
+    fecha: t("La fecha no puede ser futura.", "The date can't be in the future."),
+    importacion: t("La fecha de nacionalización es obligatoria y no puede ser futura.", "The clearance date is required and can't be in the future."),
+    "importacion-vacia": t("Registra al menos la subpartida, los documentos o cómo se resolvió.", "Record at least the subheading, the documents or how it was resolved."),
     existe: t("Esa parte ya estaba en el catálogo: es esta.", "That part was already in the catalog: it's this one."),
     falta: t("Falta el número de parte.", "The part number is missing."),
     numero: t("Ese número ya es de otra parte del catálogo.", "That number already belongs to another catalog part."),
@@ -334,6 +345,87 @@ export default async function PartPage({ params, searchParams }: { params: Promi
             <p className="src loc-srcstate">
               {t("Fuentes oficiales:", "Official sources:")} Mouser {apis.mouser ? <b>{t("activo", "on")}</b> : t("sin clave", "no key")} · Digi-Key {apis.digikey ? <b>{t("activo", "on")}</b> : t("sin clave", "no key")} · {t(`${sitesWithWeb} proveedor(es) con sitio web`, `${sitesWithWeb} supplier(s) with a website`)} (<Link href="/suppliers">{t("agregar", "add")}</Link>). {t("La búsqueda puede tardar hasta un minuto.", "The search can take up to a minute.")}
             </p>
+          </section>
+
+          {/* C4 §10 · Product Logistics Passport */}
+          <section className="jblock" id="pasaporte">
+            <div className="jbh"><b>{t("PASAPORTE LOGÍSTICO", "LOGISTICS PASSPORT")}</b><span className="grow" /><span className="src">{t("cada dato con su contexto; medir al recibir agrega, no reemplaza", "every value with its context; measuring at receipt adds, never replaces")}</span></div>
+            {lg.obs.length === 0 ? <p className="quiet-p">{t("Sin datos de peso, medidas u origen todavía.", "No weight, size or origin data yet.")}</p> : (
+              <>
+                <dl className="qv-dl tight2">
+                  <dt>{t("Peso bruto", "Gross weight")}</dt><dd>{lg.passport.grossKg ? <><b>{String(lg.passport.grossKg.value)} kg</b> <span className="src">{t(OBS_STATUS[lg.passport.grossKg.status]?.es ?? "", OBS_STATUS[lg.passport.grossKg.status]?.en ?? "")} · {i.day(lg.passport.grossKg.at)}{lg.passport.grossKg.qtyContext ? t(` · para ${lg.passport.grossKg.qtyContext} u.`, ` · for ${lg.passport.grossKg.qtyContext} pcs`) : ""}{lg.passport.grossKg.packaging ? ` · ${lg.passport.grossKg.packaging}` : ""}</span>{lg.passport.grossKg.stale && <span className="sig attn">{t("más de un año: revalidar", "over a year old: re-confirm")}</span>}</> : "—"}</dd>
+                  <dt>{t("Medidas", "Size")}</dt><dd>{lg.passport.dims ? `${lg.passport.dims.l} × ${lg.passport.dims.w} × ${lg.passport.dims.h} cm · ${lg.passport.dims.volM3} m³` : "—"}</dd>
+                  <dt>{t("Origen", "Origin")}</dt><dd>{lg.passport.origin ? String(lg.passport.origin.value) : "—"}</dd>
+                  <dt>{t("HS del proveedor", "Supplier HS")}</dt><dd>{lg.passport.hsSupplier ? <>{String(lg.passport.hsSupplier.value)} <span className="src">{t("(no es la clasificación colombiana)", "(not the Colombian classification)")}</span></> : "—"}</dd>
+                </dl>
+                {lg.learning.map((l) => <p key={l.measured.id} className="note">{t(`Aprendizaje: se esperaba ${l.expected.grossKg} kg (${OBS_STATUS[l.expected.status]?.es.toLowerCase()}) y al recibir se midió ${l.measured.grossKg} kg — ${l.diffPct > 0 ? "+" : ""}${l.diffPct} %. Las dos observaciones se conservan.`, `Learning: expected ${l.expected.grossKg} kg (${OBS_STATUS[l.expected.status]?.en.toLowerCase()}) and measured ${l.measured.grossKg} kg at receipt — ${l.diffPct > 0 ? "+" : ""}${l.diffPct}%. Both observations are kept.`)}</p>)}
+                <details className="src"><summary>{t(`Historial (${lg.obs.length})`, `History (${lg.obs.length})`)}</summary>
+                  <ul>{lg.obs.map((o) => <li key={o.id}>{i.day(o.observedAt)} · {t(OBS_STATUS[o.status]?.es ?? o.status, OBS_STATUS[o.status]?.en ?? o.status)} · {[o.grossKg != null ? `${Number(o.grossKg)} kg` : null, o.lengthCm != null ? `${Number(o.lengthCm)}×${Number(o.widthCm)}×${Number(o.heightCm)} cm` : null, o.packages != null ? t(`${o.packages} bulto(s)`, `${o.packages} pkg`) : null, o.origin, o.qtyContext ? t(`para ${o.qtyContext} u.`, `for ${o.qtyContext} pcs`) : null].filter(Boolean).join(" · ")} · {o.source}{o.supplier ? ` (${o.supplier.name})` : ""} · {o.recordedByName}</li>)}</ul>
+                </details>
+              </>
+            )}
+            <details className="scp-add"><summary className="qa-btn">{t("+ Observación (p. ej. medido al recibir)", "+ Observation (e.g. measured at receipt)")}</summary>
+              <form action={addObservation.bind(null, p.id)} className="qa-form">
+                <div className="qa-row">
+                  <label>{t("Tipo", "Kind")}<select name="status" defaultValue="RECEIPT_MEASURED">{Object.entries(OBS_STATUS).map(([k, v]) => <option key={k} value={k}>{t(v.es, v.en)}</option>)}</select></label>
+                  <label>{t("Fecha", "Date")}<input name="observedAt" type="date" defaultValue={now.toISOString().slice(0, 10)} /></label>
+                  <label>{t("Para cuántas unidades", "For how many units")}<input name="qtyContext" type="number" min={1} /></label>
+                  <label>{t("Empaque / configuración", "Packaging / configuration")}<input name="packaging" maxLength={120} /></label>
+                </div>
+                <div className="qa-row">
+                  <label>{t("Peso neto kg", "Net kg")}<input name="netKg" inputMode="decimal" /></label>
+                  <label>{t("Peso bruto kg", "Gross kg")}<input name="grossKg" inputMode="decimal" /></label>
+                  <label>{t("Largo cm", "Length cm")}<input name="lengthCm" inputMode="decimal" /></label>
+                  <label>{t("Ancho cm", "Width cm")}<input name="widthCm" inputMode="decimal" /></label>
+                  <label>{t("Alto cm", "Height cm")}<input name="heightCm" inputMode="decimal" /></label>
+                  <label>{t("Bultos", "Packages")}<input name="packages" type="number" min={0} /></label>
+                </div>
+                <div className="qa-row">
+                  <label>{t("Origen", "Origin")}<input name="origin" maxLength={60} /></label>
+                  <label>{t("HS del proveedor", "Supplier HS")}<input name="hsSupplier" maxLength={20} /></label>
+                  <label style={{ flex: 2 }}>{t("Fuente", "Source")}<input name="source" required maxLength={200} placeholder={t("Báscula de bodega Miami, proforma PF-221…", "Miami warehouse scale, proforma PF-221…")} /></label>
+                </div>
+                {sp.deal && <input type="hidden" name="dealId" value={sp.deal} />}
+                <button type="submit">{t("Guardar observación", "Save observation")}</button>
+              </form>
+            </details>
+          </section>
+
+          {/* C4 §11 · Import Experience (precedents) */}
+          <section className="jblock" id="importaciones">
+            <div className="jbh"><b>{t("IMPORTACIONES ANTERIORES", "PAST IMPORTS")}</b><span className="grow" /><span className="src">{t("precedentes con fecha, no autorizaciones", "dated precedents, not authorizations")}</span></div>
+            {lg.imports.length === 0 ? <p className="quiet-p">{t("Ninguna registrada.", "None recorded.")}</p> : (
+              <ul className="exc-hist">{lg.imports.map((m) => (
+                <li key={m.id}><b>{i.day(m.importedAt)}</b>{m.hsCode ? <> · {t("subpartida", "subheading")} <span className="mono">{m.hsCode}</span></> : null}{m.days != null ? t(` · ${m.days} días`, ` · ${m.days} days`) : ""}{m.realCostUsd != null ? ` · USD ${i.n2(Number(m.realCostUsd))}` : ""}
+                  {m.hsCriterion && <span className="block small">{t("Criterio", "Criterion")}: {m.hsCriterion}</span>}
+                  {(m.documents || m.approvals) && <span className="block small">{[m.documents, m.approvals].filter(Boolean).join(" · ")}</span>}
+                  {(m.inspection || m.delays) && <span className="block small">{[m.inspection, m.delays].filter(Boolean).join(" · ")}</span>}
+                  {m.resolution && <span className="block small">{t("Resolución", "Resolution")}: {m.resolution}</span>}
+                  <span className="src block">{m.recordedByName} · {t("Es un precedente: la norma, la tarifa o la clasificación pueden haber cambiado. Revísalo con el agente antes de prometer.", "It's a precedent: rules, tariffs or classification may have changed. Check with the broker before promising.")}</span>
+                </li>
+              ))}</ul>
+            )}
+            <details className="scp-add"><summary className="qa-btn">{t("+ Importación real", "+ Real import")}</summary>
+              <form action={addImportExperience.bind(null, p.id)} className="qa-form">
+                <div className="qa-row">
+                  <label>{t("Fecha de nacionalización", "Clearance date")}<input name="importedAt" type="date" required /></label>
+                  <label>{t("Subpartida usada (Colombia)", "Subheading used (Colombia)")}<input name="hsCode" maxLength={20} /></label>
+                  <label>{t("Costo real USD", "Real cost USD")}<input name="realCostUsd" inputMode="decimal" /></label>
+                  <label>{t("Días", "Days")}<input name="days" type="number" min={0} /></label>
+                </div>
+                <label>{t("Criterio / fuente de la clasificación", "Classification criterion / source")}<input name="hsCriterion" maxLength={300} placeholder={t("Agente aduanero X, concepto DIAN…", "Broker X, DIAN ruling…")} /></label>
+                <label>{t("Documentos presentados", "Documents filed")}<input name="documents" maxLength={600} /></label>
+                <label>{t("Vistos buenos (VUCE, RETIE, INVIMA…)", "Approvals (VUCE, RETIE, INVIMA…)")}<input name="approvals" maxLength={600} /></label>
+                <div className="qa-row">
+                  <label>{t("Inspección", "Inspection")}<input name="inspection" maxLength={300} /></label>
+                  <label>{t("Demoras", "Delays")}<input name="delays" maxLength={400} /></label>
+                </div>
+                <label>{t("Notas del agente", "Broker notes")}<input name="agentNotes" maxLength={600} /></label>
+                <label>{t("Cómo se resolvió", "How it was resolved")}<input name="resolution" maxLength={600} /></label>
+                {sp.deal && <input type="hidden" name="dealId" value={sp.deal} />}
+                <button type="submit">{t("Guardar importación", "Save import")}</button>
+              </form>
+            </details>
           </section>
 
           <section className="jblock">

@@ -61,6 +61,13 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   PaymentMapPerson: "all",
   PaymentPromise: "all",
   CreditReviewRequest: "all",
+  // Comercial C4 · Sourcing & Supply
+  SupplyOption: ["price", "currency", "qty", "stockQty", "leadDaysMin", "leadDaysMax", "validUntil", "covers", "status", "discardReason", "importFeasibility", "availability", "supplierId"],
+  SupplierPaymentOption: "all",
+  SupplyBasis: "all",
+  LogisticsObservation: "all",
+  ImportExperience: "all",
+  SourcingSearch: "all",
 };
 const MASK = new Set(["bankAccount", "docAccount"]);
 const SKIP = new Set(["id", "createdAt", "updatedAt"]);

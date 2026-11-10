@@ -1614,3 +1614,9 @@ tr.muted td { color: var(--ink-3); }
 @media (max-width: 560px) { .ind-grid { grid-template-columns: minmax(0, 1fr); } }
 .ind-grid .card { margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .ind-grid .v { font: 600 20px/26px var(--font-mono), monospace; font-variant-numeric: tabular-nums; }
+
+/* Comercial C4 · Sourcing & Supply */
+.sup-pay { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.sup-pay .scp-mx { margin: 4px 0; }
+.rfq-asks { display: grid; gap: 6px; margin-top: 6px; }
+.rfq-asks .loc-chip { margin-left: 4px; }

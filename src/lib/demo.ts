@@ -649,6 +649,7 @@ export async function loadDemo(adminId: string) {
       await seedMarketM5(tx, d, paola.name, lacteos.id);
       await seedMarketM6(tx, d, paola.name, lacteos.id);
       await seedComercialC1(tx, d, paola.name);
+      await seedComercialC4(tx, d, paola.name);
       await seedComercialC3(tx, d, { paolaId: paola.id, paolaName: paola.name });
 
       await tx.task.createMany({
@@ -842,6 +843,51 @@ async function seedComercialC3(tx: Prisma.TransactionClient, d: (n: number) => D
   } });
 }
 
+/** Comercial C4 sample: on the Papeles del Sur dosing-pump draft, two supplier options that are NOT equivalent in scope
+ *  (pumps only vs pumps + 4–20 mA controller), card vs wire, a saved search, and the DDA-30 logistics passport with a
+ *  measured-vs-reported learning and a dated import precedent. No supply basis: choosing is left to the person. */
+async function seedComercialC4(tx: Prisma.TransactionClient, d: (n: number) => Date, by: string) {
+  const deal = await tx.deal.findFirst({ where: { title: C1_TITLE, account: { isDemo: true } }, select: { id: true, scopeLines: { select: { id: true, code: true } } } });
+  if (!deal || (await tx.supplyOption.count({ where: { dealId: deal.id } }))) return;
+  const [us, es] = await Promise.all([
+    tx.supplier.findFirst({ where: { isDemo: true, name: "Distribuidor Industrial A" + TAG }, select: { id: true } }),
+    tx.supplier.findFirst({ where: { isDemo: true, name: "Bombas Ibérica" + TAG }, select: { id: true } }),
+  ]);
+  if (!us || !es) return;
+  const pump = deal.scopeLines.find((l) => l.code === "DDA-30");
+  const ctrl = deal.scopeLines.find((l) => l.code !== "DDA-30");
+  const ev = (src: string, at: Date, keys: string[]) => Object.fromEntries(keys.map((k) => [k, { src, at: at.toISOString() }]));
+  const a = await tx.supplyOption.create({ data: {
+    dealId: deal.id, supplierId: us.id, label: "3 × bomba DDA-30 (solo bombas, sin controlador)", covers: pump ? [pump.id] : [], currency: "USD", price: 10200, qty: 3, stockQty: 3,
+    leadDaysMin: 5, leadDaysMax: 7, leadTrigger: "al confirmar el pago", validUntil: d(20), condition: "Nuevo y original", warranty: "12 meses", incoterm: "FCA Miami", pickup: "Miami, FL 33166, USA",
+    origin: "Alemania", grossKg: 8.1, dims: "60x40x30", packages: 1, excludedNote: "Controlador 4–20 mA y kit de inyección", availability: "QUOTE", importFeasibility: "CONDITIONAL", importNote: "Supone nacionalización normal; sin vistos buenos especiales conocidos (ejemplo)",
+    evidence: ev("Correo de ventas Distribuidor Industrial A (ejemplo)", d(-2), ["price", "qty", "stockQty", "leadDaysMin", "leadDaysMax", "leadTrigger", "validUntil", "condition", "warranty", "incoterm", "pickup", "origin", "grossKg", "dims", "packages", "excludedNote", "covers"]),
+    recordedByName: by, createdAt: d(-2),
+    paymentOptions: { create: [
+      { method: "WIRE", surchargePct: 0, fixedFee: 35, fxSpreadPct: 0, daysToRelease: 3, releaseTrigger: "cuando el dinero se acredita", confirmed: true, source: "Mismo correo (ejemplo)" },
+      { method: "CARD", surchargePct: 4, fixedFee: 0, fxSpreadPct: 0, daysToRelease: 0, releaseTrigger: "al aprobar el cargo", confirmed: true, source: "Mismo correo (ejemplo)" },
+    ] },
+  } });
+  await tx.supplyOption.create({ data: {
+    dealId: deal.id, supplierId: es.id, label: "3 × bomba DDA-30 + controlador con entrada 4–20 mA", covers: [pump?.id, ctrl?.id].filter(Boolean) as string[], currency: "EUR", price: 11900, qty: 3,
+    leadDaysMin: 15, leadDaysMax: 20, leadTrigger: "después del anticipo", validUntil: d(30), condition: "Nuevo y original", warranty: "24 meses", incoterm: "EXW Valencia", origin: "España",
+    includedNote: "Bombas, controlador y cableado de señal", availability: "QUOTE", importFeasibility: "NEEDS_REVIEW",
+    evidence: ev("Proforma PF-2611 de Bombas Ibérica (ejemplo)", d(-1), ["price", "qty", "leadDaysMin", "leadDaysMax", "leadTrigger", "validUntil", "condition", "warranty", "incoterm", "origin", "includedNote", "covers"]),
+    recordedByName: by, createdAt: d(-1),
+    paymentOptions: { create: [{ method: "WIRE", surchargePct: null, fixedFee: 25, fxSpreadPct: null, daysToRelease: null, releaseTrigger: "anticipo del 50 %", confirmed: false, source: "Proforma (no dice cargos bancarios) (ejemplo)" }] },
+  } });
+  await tx.sourcingSearch.create({ data: { dealId: deal.id, query: "bomba dosificadora 30 l/h", sources: ["CATALOG", "HISTORY", "OFFERS"], candidates: [{ mpn: "DDA-30", brand: "Grundfos", score: 92 }], discarded: [{ mpn: "DDA-15", reason: "15 l/h: no alcanza el caudal de 30 l/h (ejemplo)" }], recordedByName: by, createdAt: d(-3) } });
+  const part = await tx.part.findUnique({ where: { mpnKey: "DDA30" }, select: { id: true } });
+  if (part && !(await tx.logisticsObservation.count({ where: { partId: part.id } }))) {
+    await tx.logisticsObservation.createMany({ data: [
+      { partId: part.id, supplierId: us.id, qtyContext: 1, grossKg: 2.4, lengthCm: 35, widthCm: 25, heightCm: 25, packages: 1, origin: "Alemania", hsSupplier: "8413.50", status: "SUPPLIER_REPORTED", source: "Cotización anterior del proveedor (ejemplo)", observedAt: d(-200), recordedByName: by },
+      { partId: part.id, qtyContext: 1, grossKg: 3.1, packages: 1, status: "RECEIPT_MEASURED", source: "Báscula de la bodega Miami al recibir (ejemplo)", observedAt: d(-185), recordedByName: by },
+    ] });
+    await tx.importExperience.create({ data: { partId: part.id, productLabel: "DDA-30 · Bomba dosificadora de diafragma", hsCode: "8413.50 (ejemplo)", hsCriterion: "Agente aduanero (ejemplo); revisar vigencia", documents: "Factura comercial, lista de empaque, guía aérea", approvals: "Sin vistos buenos especiales en esa ocasión", realCostUsd: 410, days: 6, delays: "1 día por inspección documental", resolution: "Se aclaró la descripción en la factura comercial", importedAt: d(-180), recordedByName: by } });
+  }
+  void a;
+}
+
 /** Open credit request for Minera El Roble, with the exposure frozen as of today. */
 async function seedCreditRequestC3(paolaId: string) {
   const min = await db.account.findFirst({ where: { isDemo: true, name: "Minera El Roble" + TAG }, select: { id: true, paymentTermsDays: true } });
@@ -886,6 +932,8 @@ async function topUpMarketDemo() {
   // Comercial C3 sample if missing.
   if (!(await db.cashBlocker.count({ where: { deal: { account: { isDemo: true } } } }))) await db.$transaction((tx) => seedComercialC3(tx, d, { paolaId: paola.id, paolaName: paola.name }), { timeout: 30000 });
   await seedCreditRequestC3(paola.id);
+  // Comercial C4 sample if missing.
+  if (!(await db.supplyOption.count({ where: { deal: { account: { isDemo: true } } } }))) await db.$transaction((tx) => seedComercialC4(tx, d, paola.name), { timeout: 30000 });
 }
 
 const NAMEPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320"><rect width="520" height="320" fill="#8a9097"/><rect x="20" y="20" width="480" height="280" rx="10" fill="#d9dde1" stroke="#5c636a" stroke-width="3"/><circle cx="42" cy="42" r="7" fill="#9aa1a8"/><circle cx="478" cy="42" r="7" fill="#9aa1a8"/><circle cx="42" cy="278" r="7" fill="#9aa1a8"/><circle cx="478" cy="278" r="7" fill="#9aa1a8"/><text x="60" y="78" font-family="Arial" font-weight="700" font-size="30" fill="#0f9d9a">SIEMENS</text><text x="60" y="112" font-family="Arial" font-size="20" fill="#222">SINAMICS G120C</text><text x="60" y="150" font-family="Courier New" font-size="18" fill="#222">6SL3210-1KE21-7UF1</text><text x="60" y="184" font-family="Arial" font-size="16" fill="#222">IN: 3AC 380-480V 50/60Hz 18,5A</text><text x="60" y="210" font-family="Arial" font-size="16" fill="#222">OUT: 3AC 0-480V 16,5A 7,5kW</text><text x="60" y="236" font-family="Arial" font-size="14" fill="#444">S/N: XAJ2-7781-0042  IP20</text><text x="60" y="262" font-family="Arial" font-size="12" fill="#666">Made in Germany</text></svg>`;
@@ -902,6 +950,8 @@ export async function removeDemo() {
       await tx.productFact.deleteMany({ where: { recordedByName: { endsWith: TAG } } });
       await tx.productSignal.deleteMany({ where: { reportedByName: { endsWith: TAG } } });
       await tx.productRelationship.deleteMany({ where: { recordedByName: { endsWith: TAG } } });
+      await tx.logisticsObservation.deleteMany({ where: { recordedByName: { endsWith: TAG } } });
+      await tx.importExperience.deleteMany({ where: { recordedByName: { endsWith: TAG } } });
       // Mercado sample data (explorations cascade to links, gaps and tasks).
       await tx.marketSignal.deleteMany({ where: { capturedByName: { endsWith: TAG } } });
       await tx.knowledgeGap.deleteMany({ where: { createdByName: { endsWith: TAG } } });

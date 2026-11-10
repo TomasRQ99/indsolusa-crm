@@ -584,6 +584,10 @@ export default async function JourneyPage({
   const Source = () => (
     <>
       <section className="jblock">
+        <div className="jbh"><b>{t("ABASTECIMIENTO", "SOURCING & SUPPLY")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/abastecimiento`}>{t("Abrir", "Open")}</Link></div>
+        <p className="quiet-p">{t("Opciones de cada proveedor con la fuente de cada dato, comparación por alcance (no solo precio), formas de pago, logística e importación, y la base de suministro elegida.", "Each supplier's options with the source of every value, comparison by scope (not just price), payment methods, logistics and import, and the chosen supply basis.")}</p>
+      </section>
+      <section className="jblock">
         <div className="jbh"><b>{t("CÓMO LO VAMOS A CONSEGUIR", "HOW WE WILL SOURCE IT")}</b></div>
         {editable ? (
           <form action={saveSourcing.bind(null, deal.id)} className="stack jform">

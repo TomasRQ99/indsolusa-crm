@@ -14,6 +14,7 @@ import { isUsCountry, rfqEmail, type RfqItem } from "@/lib/rfq";
 import { spanishCountry } from "@/lib/company";
 import { sendTracked } from "@/lib/mail-replies";
 import { randomUUID } from "node:crypto";
+import { ASK_LEVEL, RFQ_ASKS, askLines, type AskKey } from "@/lib/supply-rules";
 
 const txt = (fd: FormData, k: string, max = 300) => {
   const v = String(fd.get(k) ?? "").trim().slice(0, max);
@@ -192,7 +193,11 @@ export async function createRfq(fd: FormData) {
   const urgent = fd.get("urgent") === "1";
   const notes = txt(fd, "notes", 800);
   const from = cfg.from ?? "sales@indsolusa.com";
-  const preview = rfqEmail({ code: "RFQ", lang: langPref === "ES" ? "ES" : "EN", supplierName: "—", items, neededBy, notes, urgent, senderName: user.name, from });
+  // C4 (§7): the extra questions the person kept ticked; levels come from the same rules the form showed.
+  const askKeys = [...new Set(fd.getAll("ask").map(String))].filter((k): k is AskKey => k in RFQ_ASKS);
+  const skipWeight = fd.get("skipWeight") === "1";
+  const asked = askKeys.map((key) => { const l = String(fd.get(`lvl_${key}`) ?? ""); return { key, level: l in ASK_LEVEL ? l : "OPTIONAL" }; });
+  const preview = rfqEmail({ code: "RFQ", lang: langPref === "ES" ? "ES" : "EN", supplierName: "—", items, neededBy, notes, urgent, senderName: user.name, from, extra: askLines(askKeys, langPref === "ES" ? "ES" : "EN"), skipWeight });
   // One key per RFQ form: a double click or resubmit opens the RFQ already created instead of sending again.
   const key = String(fd.get("idem") ?? "").trim();
   const idemKey = /^[A-Za-z0-9-]{16,64}$/.test(key) ? `rfq:${key}` : null;
@@ -202,7 +207,7 @@ export async function createRfq(fd: FormData) {
   }
   const rfq = await db.$transaction(async (tx) => {
     const code = await nextCode("RFQ", "rfq", tx);
-    return tx.rfq.create({ data: { code, idemKey, dealId: deal?.id ?? null, items, lang: langPref === "ES" ? "ES" : langPref === "EN" ? "EN" : "AUTO", neededBy, urgent, notes, subject: preview.subject, body: preview.text, createdById: user.id, createdByName: user.name } });
+    return tx.rfq.create({ data: { code, idemKey, dealId: deal?.id ?? null, items, lang: langPref === "ES" ? "ES" : langPref === "EN" ? "EN" : "AUTO", neededBy, urgent, notes, subject: preview.subject, body: preview.text, asked, createdById: user.id, createdByName: user.name } });
   }).catch(async (e) => {
     if ((e as { code?: string }).code === "P2002" && idemKey) { const prior = await db.rfq.findUnique({ where: { idemKey }, select: { id: true } }); if (prior) redirect(`/localizar/rfq/${prior.id}?ok=enviada`); }
     throw e;
@@ -210,7 +215,7 @@ export async function createRfq(fd: FormData) {
   // One separate email per supplier (they never see each other). Language: chosen, or by country (Colombia → Spanish).
   for (const s of withEmail) {
     const lang = langPref === "ES" || langPref === "EN" ? langPref : spanishCountry(s.country) ? "ES" : "EN";
-    const mail = rfqEmail({ code: rfq.code, lang, supplierName: s.name, items, neededBy, notes, urgent, senderName: user.name, from });
+    const mail = rfqEmail({ code: rfq.code, lang, supplierName: s.name, items, neededBy, notes, urgent, senderName: user.name, from, extra: askLines(askKeys, lang), skipWeight });
     const rr = await db.rfqRecipient.create({ data: { rfqId: rfq.id, supplierId: s.id, email: s.email!, status: "SENDING" } });
     const r = await sendTracked({ template: "RFQ", refKind: "RFQR", refId: rr.id, refCode: rfq.code, partyKind: "SUPPLIER", supplierId: s.id, dealId: deal?.id ?? null, toAddr: s.email!, toName: s.name, subject: mail.subject, text: mail.text, html: mail.html, senderName: user.name, idemKey: `rfqr:${rr.id}` });
     // UNCERTAIN = no answer from Microsoft: SOLU checks Sent Items before anyone may retry.

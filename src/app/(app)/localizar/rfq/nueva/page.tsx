@@ -11,6 +11,8 @@ import { journeyUrgency } from "@/lib/urgency";
 import { createRfq } from "../../ofertas/actions";
 import { supplierEvidence } from "@/lib/supplier-evidence";
 import { SupplierEvidenceLine } from "@/components/SupplierEvidenceLine";
+import { rfqAskContext } from "@/lib/supply";
+import { ASK_LEVEL, RFQ_ASKS, askLines } from "@/lib/supply-rules";
 
 export default async function NewRfq({ searchParams }: { searchParams: Promise<{ part?: string | string[]; deal?: string; err?: string }> }) {
   const user = await requireUser();
@@ -42,7 +44,10 @@ export default async function NewRfq({ searchParams }: { searchParams: Promise<{
   const cfg = mailConfig();
   // SOLU suggests "urgent" only from facts of the Journey; the person can change it.
   const urg = await journeyUrgency(deal?.id);
-  const preview = parts.length ? rfqEmail({ code: "RFQ-…", lang: "EN", supplierName: t("[proveedor]", "[supplier]"), items: parts.map((p) => ({ partId: p.id, mpn: p.mpn, name: p.name, nameEn: p.nameEn, brand: p.brand, qty: qtyFor(p) })), neededBy: null, notes: null, urgent: !!urg, senderName: user.name, from: cfg.from ?? "sales@indsolusa.com" }) : null;
+  // C4 (§7): extra questions by context, each with its reason; what we already know is not asked again.
+  const { ctx: askCtx, asks } = await rfqAskContext(parts.map((p) => p.id), deal?.id ?? null, !!urg);
+  const defaultAsk = asks.filter((a) => a.ask).map((a) => a.key);
+  const preview = parts.length ? rfqEmail({ code: "RFQ-…", lang: "EN", supplierName: t("[proveedor]", "[supplier]"), items: parts.map((p) => ({ partId: p.id, mpn: p.mpn, name: p.name, nameEn: p.nameEn, brand: p.brand, qty: qtyFor(p) })), neededBy: null, notes: null, urgent: !!urg, senderName: user.name, from: cfg.from ?? "sales@indsolusa.com", extra: askLines(defaultAsk, "EN"), skipWeight: !!askCtx.known.PACKAGES }) : null;
   const errs: Record<string, string> = {
     partes: t("Elige al menos una parte.", "Pick at least one part."),
     proveedores: t("Elige al menos un proveedor.", "Pick at least one supplier."),
@@ -96,6 +101,17 @@ export default async function NewRfq({ searchParams }: { searchParams: Promise<{
                 );
               })}
             </div>
+          </section>
+
+          <section className="jblock loc-sec">
+            <div className="jbh"><b>{t("QUÉ LE PREGUNTAMOS", "WHAT WE ASK")}</b><span className="grow" /><span className="src">{t("Además de precio, disponibilidad, formas de pago y peso de la plantilla", "Besides the template's price, availability, payment options and weight")}</span></div>
+            <p className="src">{askCtx.importsToColombia === true ? t(`Se trata como importación a Colombia porque ${askCtx.importWhy?.es ?? "va a Colombia"}.`, `Treated as an import into Colombia because ${askCtx.importWhy?.en ?? "it goes into Colombia"}.`) : askCtx.importsToColombia === false ? t("No parece una importación a Colombia: no se piden datos de aduana.", "Doesn't look like an import into Colombia: no customs data asked.") : t("No sabemos si va a Colombia: marca los datos de importación si aplica.", "We don't know if it goes into Colombia: tick the import data if it applies.")}{askCtx.known.PACKAGES ? t(" El peso y las medidas ya los conocemos, así que no se preguntan.", " We already know weight and size, so they aren't asked.") : ""}</p>
+            <div className="rfq-asks">
+              {asks.map((a) => (
+                <label key={a.key} className="loc-check"><input type="hidden" name={`lvl_${a.key}`} value={a.level} /><input type="checkbox" name="ask" value={a.key} defaultChecked={a.ask} /> <span><b>{t(RFQ_ASKS[a.key].es, RFQ_ASKS[a.key].en)}</b> <span className="loc-chip">{t(ASK_LEVEL[a.level].es, ASK_LEVEL[a.level].en)}</span><span className="src block">{t(a.why.es, a.why.en)}</span></span></label>
+              ))}
+            </div>
+            {askCtx.known.PACKAGES && <input type="hidden" name="skipWeight" value="1" />}
           </section>
 
           <section className="jblock loc-sec">

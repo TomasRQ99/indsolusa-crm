@@ -12,6 +12,7 @@ import type { PhotoReading } from "@/lib/part-vision";
 import { PhotoSearch } from "@/components/PhotoSearch";
 import { whyText, LIFE } from "./labels";
 import { createPart, syncCatalog } from "./actions";
+import { saveSearch } from "../deals/[id]/abastecimiento/actions";
 
 const EXAMPLES = ["6SL3210-1KE21-7UF1", "rodamiento 6205", "Siemens", "bomba dosificadora Grundfos", "servomotr siemens", "VFD urgente"];
 
@@ -182,6 +183,27 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
               <p><b>{t(`“${q}” no está en nuestro catálogo todavía.`, `“${q}” isn't in our catalog yet.`)}</b></p>
               <p className="src">{t("El catálogo se arma con lo que ya cotizamos, vendimos y compramos. Si es una parte nueva, agrégala y la próxima vez aparecerá. (La búsqueda en internet llega en la siguiente fase.)", "The catalog is built from what we already quoted, sold and bought. If it's a new part, add it and it'll show up next time. (Web search comes in the next phase.)")}</p>
             </div>
+          )}
+          {ctxDeal && hits.length > 0 && (
+            <details className="scp-add" open={sp.err === "motivo"}>
+              <summary className="qa-btn">{t(`Guardar esta búsqueda en ${ctxDeal.code ?? "el Journey"}`, `Save this search to ${ctxDeal.code ?? "the Journey"}`)}</summary>
+              <form action={saveSearch.bind(null, ctxDeal.id)} className="qa-form">
+                <input type="hidden" name="q" value={q} />
+                <input type="hidden" name="hits" value={JSON.stringify(hits.slice(0, 15).map((h) => ({ partId: h.id, mpn: h.mpn, brand: h.brand, score: h.score })))} />
+                {["CATALOG", "HISTORY", "OFFERS", ...(photo ? ["PHOTO"] : [])].map((s) => <input key={s} type="hidden" name="sources" value={s} />)}
+                <p className="src">{t("Marca cuáles son candidatas y por qué descartas las otras: así nadie repite la búsqueda ni la misma duda.", "Mark which are candidates and why you discard the others: nobody repeats the search or the same doubt.")}</p>
+                {sp.err === "motivo" && <p className="note attn">{t("Cada parte descartada necesita su motivo.", "Each discarded part needs its reason.")}</p>}
+                {hits.slice(0, 15).map((h) => (
+                  <div key={h.id} className="qa-row">
+                    <span style={{ flex: 2 }}><b className="mono">{h.mpn}</b> <span className="src">{h.brand ?? ""} · {h.score}%</span></span>
+                    <label>{t("Decisión", "Decision")}<select name={`d_${h.id}`} defaultValue={best && h.id === best.id ? "C" : ""}><option value="">—</option><option value="C">{t("Candidata", "Candidate")}</option><option value="D">{t("Descartada", "Discarded")}</option></select></label>
+                    <label style={{ flex: 2 }}>{t("Motivo (si se descarta)", "Reason (if discarded)")}<input name={`r_${h.id}`} maxLength={200} /></label>
+                  </div>
+                ))}
+                <label>{t("Nota (opcional)", "Note (optional)")}<input name="note" maxLength={400} /></label>
+                <button type="submit">{t("Guardar búsqueda", "Save search")}</button>
+              </form>
+            </details>
           )}
           <details className="qa" open={hits.length === 0}>
             <summary className="qa-btn">{t("Agregar una parte nueva al catálogo", "Add a new part to the catalog")}</summary>
