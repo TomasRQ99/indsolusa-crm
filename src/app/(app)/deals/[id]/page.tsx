@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ValueKindSelect } from "@/components/ValueKindSelect";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -160,6 +161,7 @@ export default async function JourneyPage({
             </select>
             <input name="occurredAt" type="date" defaultValue={todayStr} aria-label={t("Fecha", "Date")} />
           </div>
+          <ValueKindSelect es={i.es} />
           <label>{t("Fuente (quién o qué lo dice)", "Source (who or what says so)")}<input name="source" maxLength={200} placeholder={t("Ej.: correo de Carlos Duarte", "E.g.: email from Carlos Duarte")} /></label>
           <label className="chk"><input type="checkbox" name="uncertain" value="1" /> {t("Aún no está confirmado", "Not confirmed yet")}</label>
           <button type="submit">{t("Guardar en el Journey", "Save to the Journey")}</button>
@@ -321,6 +323,7 @@ export default async function JourneyPage({
               <option value="NOTE">{t("Nota", "Note")}</option>
             </select>
             <input name="subject" required placeholder={t("Qué pasó, en una línea", "What happened, in one line")} />
+            <ValueKindSelect es={i.es} />
             <button type="submit">{t("Registrar", "Log")}</button>
           </form>
         </QA>
@@ -1104,6 +1107,7 @@ export default async function JourneyPage({
                       <option value="MEETING">{t("Reunión", "Meeting")}</option>
                     </select>
                     <input name="subject" required placeholder={t("Qué se dijo, en una línea", "What was said, in one line")} />
+                    <ValueKindSelect es={i.es} />
                     <button type="submit">{t("Registrar", "Log")}</button>
                   </form>
                 </QA>

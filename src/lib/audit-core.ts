@@ -76,6 +76,7 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   // Comercial C6 · PO, Acceptance & Dispatch
   PoAllocation: "all",
   DispatchInstruction: "all",
+  GoalTarget: "all",
 };
 const MASK = new Set(["bankAccount", "docAccount"]);
 const SKIP = new Set(["id", "createdAt", "updatedAt"]);

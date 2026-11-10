@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ValueKindSelect } from "@/components/ValueKindSelect";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -262,6 +263,7 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
                   <input type="hidden" name="accountId" value={a.id} />
                   <select name="type" defaultValue="CALL" aria-label={t("Tipo", "Type")}><option value="CALL">{t("Llamada", "Call")}</option><option value="MEETING">{t("Reunión", "Meeting")}</option><option value="EMAIL">{t("Correo", "Email")}</option><option value="NOTE">{t("Nota", "Note")}</option></select>
                   <input name="subject" placeholder={t("Qué pasó", "What happened")} required />
+                  <ValueKindSelect es={i.es} />
                   <button type="submit" className="secondary">{t("Registrar", "Log")}</button>
                 </form>
               </details>

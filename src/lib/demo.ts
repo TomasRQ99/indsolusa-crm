@@ -673,6 +673,7 @@ export async function loadDemo(adminId: string) {
   for (const a of await db.account.findMany({ where: { isDemo: true }, select: { id: true } })) await refreshPaymentBehaviorSafe(a.id, "Datos de ejemplo cargados");
   const pao = await db.user.findUnique({ where: { email: `paola${DEMO_DOMAIN}` }, select: { id: true } });
   if (pao) await seedCreditRequestC3(pao.id);
+  if (pao) await seedComercialC7(pao.id);
 }
 
 
@@ -975,6 +976,26 @@ async function topUpMarketDemo() {
   if (!(await db.solutionCase.count({ where: { deal: { account: { isDemo: true } } } }))) await db.$transaction((tx) => seedComercialC5(tx, d, paola.name), { timeout: 30000 });
   // Comercial C6 sample if missing.
   await db.$transaction((tx) => seedComercialC6(tx), { timeout: 30000 });
+  // Comercial C7 sample if missing.
+  await seedComercialC7(paola.id);
+}
+
+/** Comercial C7 sample: this month's five targets for Paola (set by management, with a reason) and her recent
+ *  conversations marked with what they left, so the goals page shows pace and a bottleneck sentence. */
+async function seedComercialC7(userId: string) {
+  const period = new Date().toISOString().slice(0, 7);
+  if (await db.goalTarget.count({ where: { userId, period } })) return;
+  const kinds = ["NEED", "DECISION_MAKER", "NEXT_MOVE", null, "INFO", "OBJECTION", "DECISION_WINDOW", null];
+  const acts = await db.activity.findMany({ where: { userId, type: { in: ["CALL", "MEETING", "EMAIL"] }, valueKind: null, account: { isDemo: true } }, orderBy: { occurredAt: "desc" }, take: 8, select: { id: true } });
+  for (const [k, a] of acts.entries()) if (kinds[k]) await db.activity.update({ where: { id: a.id }, data: { valueKind: kinds[k] } });
+  const rationale = "Ejemplo: metas del mes acordadas en la reunión de planeación";
+  await db.goalTarget.createMany({ data: [
+    { userId, period, metric: "ESAGARA_AMOUNT", target: 12000, rationale, setByName: "Gerencia" + TAG },
+    { userId, period, metric: "VALUE_CONTACTS", target: 40, rationale, setByName: "Gerencia" + TAG },
+    { userId, period, metric: "NEEDS_CREATED", target: 6, rationale, setByName: "Gerencia" + TAG },
+    { userId, period, metric: "SOLUTIONS_PRESENTED", target: 5, rationale, setByName: "Gerencia" + TAG },
+    { userId, period, metric: "DECISIONS_MOVED", target: 4, rationale, setByName: "Gerencia" + TAG },
+  ] });
 }
 
 const NAMEPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320"><rect width="520" height="320" fill="#8a9097"/><rect x="20" y="20" width="480" height="280" rx="10" fill="#d9dde1" stroke="#5c636a" stroke-width="3"/><circle cx="42" cy="42" r="7" fill="#9aa1a8"/><circle cx="478" cy="42" r="7" fill="#9aa1a8"/><circle cx="42" cy="278" r="7" fill="#9aa1a8"/><circle cx="478" cy="278" r="7" fill="#9aa1a8"/><text x="60" y="78" font-family="Arial" font-weight="700" font-size="30" fill="#0f9d9a">SIEMENS</text><text x="60" y="112" font-family="Arial" font-size="20" fill="#222">SINAMICS G120C</text><text x="60" y="150" font-family="Courier New" font-size="18" fill="#222">6SL3210-1KE21-7UF1</text><text x="60" y="184" font-family="Arial" font-size="16" fill="#222">IN: 3AC 380-480V 50/60Hz 18,5A</text><text x="60" y="210" font-family="Arial" font-size="16" fill="#222">OUT: 3AC 0-480V 16,5A 7,5kW</text><text x="60" y="236" font-family="Arial" font-size="14" fill="#444">S/N: XAJ2-7781-0042  IP20</text><text x="60" y="262" font-family="Arial" font-size="12" fill="#666">Made in Germany</text></svg>`;

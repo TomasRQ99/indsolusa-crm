@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ValueKindSelect } from "@/components/ValueKindSelect";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { daysBetween } from "@/lib/domain";
@@ -150,6 +151,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
                 </select>
               </div>
               <input name="subject" required placeholder={t("Qué pasó, en una línea", "What happened, in one line")} />
+              <ValueKindSelect es={i.es} />
               <button type="submit">{t("Registrar", "Log")}</button>
             </form>
           </QA>

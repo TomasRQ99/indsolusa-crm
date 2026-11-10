@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { valueKindOf } from "@/lib/goal-rules";
 import { requireUser, type SessionUser } from "@/lib/auth";
 import { assertCanEdit } from "@/lib/permissions";
 import { addDays, today } from "@/lib/domain";
@@ -170,8 +171,9 @@ export async function logHappened(dealId: string, formData: FormData) {
   const source = String(formData.get("source") ?? "").trim().slice(0, 200) || null;
   const uncertain = formData.get("uncertain") === "1";
   const when = day(formData.get("occurredAt"));
+  const valueKind = valueKindOf(formData.get("valueKind"));
   await db.activity.create({
-    data: { type, subject, userId: user.id, accountId: deal.accountId, contactId: deal.contactId, dealId, phase, source, uncertain, ...(when ? { occurredAt: when } : {}) },
+    data: { type, subject, userId: user.id, accountId: deal.accountId, contactId: deal.contactId, dealId, phase, source, uncertain, valueKind, ...(when ? { occurredAt: when } : {}) },
   });
   refreshApp();
   back("registrado", "", formData);

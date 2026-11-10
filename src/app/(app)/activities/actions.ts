@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { optionalId, optionalText, parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
+import { valueKindOf } from "@/lib/goal-rules";
 
 const activitySchema = z.object({
   type: z.enum(["CALL", "MEETING", "EMAIL", "NOTE"]),
@@ -19,6 +20,6 @@ const activitySchema = z.object({
 export async function logActivity(formData: FormData) {
   const user = await requireUser();
   const data = parseForm(activitySchema, formData);
-  await db.activity.create({ data: { ...data, userId: user.id } });
+  await db.activity.create({ data: { ...data, userId: user.id, valueKind: valueKindOf(formData.get("valueKind")) } });
   refreshApp();
 }

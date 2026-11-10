@@ -75,6 +75,7 @@ model User {
   deals      Deal[]
   tasks      Task[]
   activities Activity[]
+  goalTargets GoalTarget[]
 
   paymentsRequested   SupplierPayment[]   @relation("PaymentRequester")
   paymentsVerified    SupplierPayment[]   @relation("PaymentVerifier")
@@ -684,6 +685,9 @@ model Activity {
   phase      String?
   source     String?
   uncertain  Boolean      @default(false)
+  // Comercial C7 §39: what this contact produced (INFO, NEED, RELATIONSHIP, DECISION_MAKER, NEXT_MOVE, OBJECTION,
+  // DECISION_WINDOW). Null = nothing useful (an attempt with no answer), so it never counts as a useful contact.
+  valueKind  String?
 
   @@index([accountId, occurredAt])
   @@index([occurredAt])
@@ -2690,4 +2694,24 @@ model DispatchInstruction {
   supersededAt     DateTime?
 
   @@index([dealId])
+}
+// ---------- Comercial C7 · Goals & Future Creation (v1.1 §37–42, §50) ----------
+
+/// A monthly target for one person and one core goal, set by Gerencia / Director Comercial. Versioned: a change
+/// supersedes the current row (kept for history). A closed month can't change. Visible only to the person and
+/// their managers; never ranked.
+model GoalTarget {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  metric       String
+  period       String
+  target       Decimal   @db.Decimal(14, 2)
+  rationale    String?
+  setByName    String
+  version      Int       @default(1)
+  supersededAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId, period])
 }
