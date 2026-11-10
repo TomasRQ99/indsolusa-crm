@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { canEdit, canEditMoney, canManageAll } from "@/lib/permissions";
+import { Withholdings } from "@/components/Withholdings";
 import { savePaymentMap } from "../../comercial/dinero/actions";
 import { makeI18n } from "@/lib/i18n";
 import { dayInput, today } from "@/lib/domain";
@@ -183,6 +184,11 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
                 </li>
               ))}</ul>
             )}
+          </section>
+
+          <section className="jblock">
+            <div className="jbh"><b>{t("RETENCIONES", "WITHHOLDINGS")}</b><span className="grow" /><span className="src"><Link href={`/administracion/pagos-recibidos?account=${a.id}#retenciones`}>{t("registrar", "record")}</Link></span></div>
+            <Withholdings accountId={a.id} lang={i.es ? "ES" : "EN"} canRecord={false} canVoid={false} heading={false} />
           </section>
 
           <section className="jblock" id="mapa-pago">

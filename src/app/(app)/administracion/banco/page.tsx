@@ -23,7 +23,7 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
     db.bankAccount.findMany({ where: { active: true }, orderBy: { createdAt: "asc" } }),
     db.bankStatement.findMany({ orderBy: { createdAt: "desc" }, take: 8, include: { bankAccount: { select: { label: true } }, _count: { select: { transactions: true } } } }),
     db.bankTransaction.findMany({ orderBy: [{ date: "desc" }, { createdAt: "desc" }], take: 400, include: { bankAccount: { select: { label: true, currency: true } }, matches: { include: { customerPayment: { select: { id: true, reference: true, account: { select: { name: true } } } }, paymentExecution: { select: { id: true, paymentId: true, payment: { select: { supplierPo: { select: { code: true, supplier: { select: { name: true } } } } } } } } } } } }),
-    db.customerPayment.findMany({ where: { receivedAt: { gte: since } }, select: { id: true, amount: true, receivedAt: true, reference: true, account: { select: { name: true } }, bankMatches: { select: { amount: true } } } }),
+    db.customerPayment.findMany({ where: { kind: "CASH", receivedAt: { gte: since } }, select: { id: true, amount: true, receivedAt: true, reference: true, account: { select: { name: true } }, bankMatches: { select: { amount: true } } } }),
     db.paymentExecution.findMany({ where: { sentAt: { gte: since }, state: { not: "FAILED" } }, select: { id: true, amount: true, sentAt: true, bankRef: true, payment: { select: { supplierPo: { select: { code: true, supplier: { select: { name: true } } } } } }, bankMatches: { select: { amount: true } } } }),
     edit ? db.account.findMany({ where: { internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : [],
   ]);

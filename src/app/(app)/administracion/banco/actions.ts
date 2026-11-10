@@ -66,7 +66,7 @@ export async function matchCustomerPayment(txId: string, fd: FormData) {
   const user = await finance();
   const { t, open, state } = await loadTx(txId);
   const p = await db.customerPayment.findUnique({ where: { id: String(fd.get("paymentId") ?? "") }, include: { bankMatches: { select: { amount: true } } } });
-  if (!p || Number(t.amount) <= 0 || state === "CLASSIFIED" || open <= 0.005) go("err=cruce");
+  if (!p || p.kind !== "CASH" || Number(t.amount) <= 0 || state === "CLASSIFIED" || open <= 0.005) go("err=cruce");
   const free = money2(Number(p!.amount) - sumMoney(p!.bankMatches.map((m) => m.amount)));
   const amount = Math.min(open, free);
   if (amount <= 0.005) go("err=cruce");

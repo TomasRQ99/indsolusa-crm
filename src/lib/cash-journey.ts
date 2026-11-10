@@ -201,7 +201,7 @@ export async function loadCashJourney(i: I, scope: Scope = {}) {
       }
     }
   }
-  const pays = await db.customerPayment.findMany({ where: { accountId: { in: accountIds }, reconciledAt: { gte: since } }, select: { receivedAt: true, reconciledAt: true } });
+  const pays = await db.customerPayment.findMany({ where: { kind: "CASH", accountId: { in: accountIds }, reconciledAt: { gte: since } }, select: { receivedAt: true, reconciledAt: true } });
   for (const p of pays) iv.RECEIVED_RECONCILED.push(span(p.receivedAt, p.reconciledAt!, []));
   const intervals = (Object.keys(iv) as IntervalKey[]).map((k) => intervalStats(k, iv[k]));
 

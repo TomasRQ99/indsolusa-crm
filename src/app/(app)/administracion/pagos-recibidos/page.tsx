@@ -5,17 +5,21 @@ import { canEditMoney, canFinance } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { dayInput, invoiceCash, today } from "@/lib/domain";
 import { applyPayment, reconcilePayment, recordCustomerPayment } from "../actions";
+import { Withholdings } from "@/components/Withholdings";
 
-export default async function PaymentsReceivedPage({ searchParams }: { searchParams: Promise<{ account?: string }> }) {
+export default async function PaymentsReceivedPage({ searchParams }: { searchParams: Promise<{ account?: string; ok?: string; err?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
   const manager = canFinance(user);
-  const { account: accountId } = await searchParams;
+  const { account: accountId, ok, err } = await searchParams;
+  const okMsg: Record<string, string> = { retencion: t("Retención registrada. La factura debe ese valor menos.", "Withholding recorded. The invoice owes that much less."), certificado: t("Certificado guardado.", "Certificate saved."), anulada: t("Retención anulada. La factura vuelve a deber ese valor.", "Withholding voided. The invoice owes that amount again.") };
+  const errMsg: Record<string, string> = { permiso: t("No tienes permiso para esto.", "You don't have permission for this."), "ret-type": t("Elige el tipo de retención.", "Choose the withholding type."), "ret-amount": t("Escribe el valor retenido.", "Write the amount withheld."), "ret-exceeds": t("La retención no puede ser mayor que el saldo de la factura.", "The withholding can't exceed the invoice balance."), "ret-note": t("Para «otra deducción» escribe qué es.", "For \"other deduction\" write what it is."), "ret-certificado": t("Escribe el número del certificado.", "Write the certificate number.") };
 
   const [accounts, payments, account] = await Promise.all([
     db.account.findMany({ where: { invoices: { some: {} } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.customerPayment.findMany({
+      where: { kind: "CASH" },
       orderBy: [{ reconciledAt: { sort: "asc", nulls: "first" } }, { receivedAt: "desc" }],
       take: 100,
       include: {
@@ -47,6 +51,8 @@ export default async function PaymentsReceivedPage({ searchParams }: { searchPar
         </div>
       </div>
 
+      {ok && okMsg[ok] && <div className="note okn">{okMsg[ok]}</div>}
+      {err && errMsg[err] && <div className="note risk">{errMsg[err]}</div>}
       <div className="two">
         <div className="card flush">
           <table>
@@ -129,6 +135,7 @@ export default async function PaymentsReceivedPage({ searchParams }: { searchPar
           })}
         </aside>
       </div>
+      <Withholdings accountId={account?.id ?? null} lang={i.es ? "ES" : "EN"} canRecord={canRecord} canVoid={manager} open={open.map(({ inv, c }) => ({ id: inv.id, number: inv.number, balance: c.balance - c.pendingReconcile }))} />
     </>
   );
 }

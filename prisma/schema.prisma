@@ -983,20 +983,26 @@ enum AccountingSync {
 }
 
 model CustomerPayment {
-  id             String    @id @default(cuid())
-  accountId      String
-  account        Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  amount         Decimal   @db.Decimal(14, 2)
-  receivedAt     DateTime
-  reference      String?
-  reconciledAt   DateTime?
-  reconciledById String?
-  reconciledBy   User?     @relation("CashReconciler", fields: [reconciledById], references: [id])
-  createdById    String
-  createdBy      User      @relation("CashRecorder", fields: [createdById], references: [id])
-  createdAt      DateTime  @default(now())
+  id              String    @id @default(cuid())
+  accountId       String
+  account         Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  amount          Decimal   @db.Decimal(14, 2)
+  receivedAt      DateTime
+  reference       String?
+  reconciledAt    DateTime?
+  reconciledById  String?
+  reconciledBy    User?     @relation("CashReconciler", fields: [reconciledById], references: [id])
+  createdById     String
+  createdBy       User      @relation("CashRecorder", fields: [createdById], references: [id])
+  createdAt       DateTime  @default(now())
   // What to do with cash left over after allocation (credit on account, refund, ask the customer).
-  residualNote   String?
+  residualNote    String?
+  /// CASH (money in the bank) | WITHHOLDING (kept by the customer for the tax authority: settles the invoice, never cash)
+  kind            String    @default("CASH")
+  /// RETEFUENTE | RETEICA | RETEIVA | OTHER
+  withholdingType String?
+  certificate     String?
+  withholdingNote String?
 
   applications PaymentApplication[]
   bankMatches  BankMatch[]
