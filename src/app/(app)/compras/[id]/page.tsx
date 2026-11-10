@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { readinessForSpo } from "@/lib/pr";
 import { SpoBuying } from "@/components/SpoBuying";
+import { SpoCommitments } from "@/components/SpoCommitments";
 import { fullReadiness } from "@/lib/pr-auth";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -46,6 +47,8 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
     borrador: t("Primero libera la orden.", "Release the order first."), como: t("Escribe cómo se envió.", "Write how it was sent."), "sin-enviar": t("Primero marca la orden como enviada.", "Mark the order as sent first."),
     fuente: t("Escribe de dónde sale la confirmación.", "Write where the confirmation comes from."), resolucion: t("Escribe cómo se resuelven las diferencias.", "Write how the differences are resolved."),
     cotizacion: t("Indica el valor de la primera cotización.", "Give the first quote amount."),
+    tipo: t("Elige el tipo de pedido.", "Choose the kind of order."), compromiso: t("Un compromiso necesita su fecha y de dónde sale.", "A commitment needs its date and where it comes from."),
+    evidencia: t("Escribe la evidencia de que ocurrió.", "Write the evidence that it happened."), ocurrido: t("Ese hito ya ocurrió.", "That milestone already happened."),
     ahorro: t("Un ahorro necesita tipo, valor final, base y evidencia.", "A saving needs a kind, final amount, baseline and evidence."),
     "ahorro-monto": t("No hay ahorro: el valor final no es menor que la base, o lo que pasó al cliente supera el ahorro.", "There is no saving: the final amount isn't below the baseline, or what was passed to the customer exceeds the saving."),
     requerimiento: t("No se liberó: el requerimiento de compra tiene puntos por resolver (por ejemplo, una autorización pendiente).", "Not released: the purchase requirement has open points (for example, a pending authorization)."),
@@ -198,6 +201,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
             <p className="src" style={{ marginTop: 8 }}>{t("Aprobado no es pagado y enviado al banco tampoco: solo cuenta como pagado cuando el banco o el proveedor lo confirma.", "Approved isn't paid, and neither is sent to the bank: it only counts as paid once the bank or supplier confirms it.")}</p>
           </section>
           <SpoBuying spoId={spo.id} lang={i.es ? "ES" : "EN"} editable={editable} />
+          <SpoCommitments spoId={spo.id} lang={i.es ? "ES" : "EN"} editable={editable} />
         </div>
 
         <aside className="jrail">

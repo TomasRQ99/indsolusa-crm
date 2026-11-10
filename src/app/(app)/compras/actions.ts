@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { MILESTONES } from "@/lib/commitment-rules";
 import { SAVING_KINDS, compareConfirmation, materialDiffs, readScope, savingOf } from "@/lib/buying-rules";
 import { ensurePrForSpo, readinessForSpo } from "@/lib/pr";
 import { fullReadiness } from "@/lib/pr-auth";
@@ -245,4 +246,49 @@ export async function addSaving(id: string, fd: FormData) {
     evidence: evidence!, note: txt(fd, "note", 300), responsibleId: user.id, responsibleName: user.name, at: o3day(fd, "at") ?? today(),
   } });
   back(id, "ok=ahorro#ahorros");
+}
+// ---------- O4b · supplier commitments (§22–24) ----------
+
+/** Choose the kind of order: its milestones are created once, in order. Changing the kind keeps what already has data. */
+export async function setOrderKind(id: string, fd: FormData) {
+  const { spo } = await loadSpo(id);
+  const kind = String(fd.get("orderKind") ?? "");
+  if (!MILESTONES[kind]) back(id, "err=tipo#compromisos");
+  const existing = await db.supplierCommitment.findMany({ where: { supplierPoId: id } });
+  const keep = existing.filter((c) => c.status !== "PENDING" || c.expectedDate);
+  await db.$transaction([
+    db.supplierCommitment.deleteMany({ where: { supplierPoId: id, id: { notIn: keep.map((c) => c.id) } } }),
+    db.supplierCommitment.createMany({ data: MILESTONES[kind].filter((m) => !keep.some((c) => c.type === m.key)).map((m, n) => ({ supplierPoId: id, position: n, type: m.key, label: m.es })) }),
+    db.supplierPO.update({ where: { id }, data: { orderKind: kind } }),
+  ]);
+  void spo;
+  // Order by the new kind's sequence; milestones kept from the earlier kind that aren't part of it go first.
+  const order = MILESTONES[kind].map((m) => m.key);
+  for (const c of await db.supplierCommitment.findMany({ where: { supplierPoId: id }, select: { id: true, type: true } })) await db.supplierCommitment.update({ where: { id: c.id }, data: { position: order.indexOf(c.type) } });
+  back(id, "ok=tipo#compromisos");
+}
+
+/** What the supplier said: a date, whether it is only reported or a commitment, and where it comes from. */
+export async function updateCommitment(commitmentId: string, fd: FormData) {
+  const c = await db.supplierCommitment.findUnique({ where: { id: commitmentId }, select: { id: true, supplierPoId: true, status: true } });
+  if (!c) redirect("/compras");
+  const { user } = await loadSpo(c!.supplierPoId);
+  if (c!.status === "OCCURRED") back(c!.supplierPoId, "err=ocurrido#compromisos");
+  const expectedDate = o3day(fd, "expectedDate");
+  const status = fd.get("status") === "COMMITTED" ? "COMMITTED" : "REPORTED";
+  const source = txt(fd, "source", 200);
+  if (!expectedDate || !source) back(c!.supplierPoId, "err=compromiso#compromisos");
+  await db.supplierCommitment.update({ where: { id: commitmentId }, data: { expectedDate, status, source, contact: txt(fd, "contact", 120), lastConfirmedAt: new Date(), recordedByName: user.name } });
+  back(c!.supplierPoId, "ok=compromiso#compromisos");
+}
+
+/** It actually happened: a different fact from the supplier saying it would, with its own evidence. */
+export async function markOccurred(commitmentId: string, fd: FormData) {
+  const c = await db.supplierCommitment.findUnique({ where: { id: commitmentId }, select: { id: true, supplierPoId: true } });
+  if (!c) redirect("/compras");
+  const { user } = await loadSpo(c!.supplierPoId);
+  const note = txt(fd, "note", 200);
+  if (!note) back(c!.supplierPoId, "err=evidencia#compromisos");
+  await db.supplierCommitment.update({ where: { id: commitmentId }, data: { status: "OCCURRED", occurredAt: o3day(fd, "at") ?? today(), occurredNote: note, recordedByName: user.name } });
+  back(c!.supplierPoId, "ok=ocurrio#compromisos");
 }

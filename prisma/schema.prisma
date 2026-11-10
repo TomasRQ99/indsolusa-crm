@@ -796,6 +796,9 @@ model SupplierPO {
   shipments     Shipment[]
   confirmations SupplierConfirmation[]
   savings       SavingsEntry[]
+  commitments   SupplierCommitment[]
+  /// STOCK | MANUFACTURED | SERVICE | REPAIR: which milestones apply (§23)
+  orderKind     String?
 
   @@index([dealId])
 }
@@ -3196,4 +3199,31 @@ model SavingsEntry {
 
   @@index([dealId])
   @@index([supplierId])
+}
+
+// ---------- Operaciones O4b · Supplier commitments (module 11 §22–24) ----------
+
+/// Something the supplier said will happen, kept as what it is: reported, committed, or actually occurred. A date
+/// the supplier gave is never a fact that happened. Milestones differ by kind of order (stock, manufactured,
+/// service, repair). While the expected date is ahead it is a healthy wait and creates no task.
+model SupplierCommitment {
+  id              String     @id @default(cuid())
+  supplierPoId    String
+  supplierPo      SupplierPO @relation(fields: [supplierPoId], references: [id], onDelete: Cascade)
+  position        Int        @default(0)
+  /// milestone key, e.g. PO_CONFIRMED, READY, PRODUCTION, TESTING, PICKUP…
+  type            String
+  label           String
+  expectedDate    DateTime?
+  /// PENDING | REPORTED | COMMITTED | OCCURRED
+  status          String     @default("PENDING")
+  source          String?
+  contact         String?
+  lastConfirmedAt DateTime?
+  occurredAt      DateTime?
+  occurredNote    String?
+  recordedByName  String?
+  createdAt       DateTime   @default(now())
+
+  @@index([supplierPoId])
 }

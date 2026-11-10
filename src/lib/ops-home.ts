@@ -2,6 +2,7 @@ import { db } from "./db";
 import { addDays, today } from "./domain";
 import { subMoney, sumMoney } from "./money";
 import { DEFAULT_OPS_POLICY, OPS_POLICY_KEY, promiseHealth, type OpsPolicy } from "./ops-rules";
+import { DEFAULT_GRACE_DAYS, commitmentReading } from "./commitment-rules";
 
 // Operaciones O0 · Operations Home and Future (module 11 §46–47; AC37). Built over records that already exist:
 // exceptions first, then what is ready to move, promises at risk, healthy waits and resource exposure.
@@ -50,11 +51,16 @@ export async function opsHome() {
   const atRisk = promises.filter((p) => p.health !== "PROTECTED").sort((a, b) => order[a.health] - order[b.health] || +a.promise - +b.promise);
 
   const row = (key: string, href: string, deal: DealRef, es: string, en: string, at: Date | null, amount?: number, note?: string | null): OpsRow => ({ key, href, deal, what: { es, en }, at, amount, note });
+  // O4b: supplier commitments. Ahead of their date they are healthy waits; past the grace days without evidence, attention.
+  const commits = await db.supplierCommitment.findMany({ where: { status: { in: ["REPORTED", "COMMITTED"] }, expectedDate: { not: null }, supplierPo: { receivedAt: null } }, orderBy: { expectedDate: "asc" }, select: { id: true, label: true, status: true, expectedDate: true, supplierPo: { select: { id: true, code: true, supplier: { select: { name: true } }, deal: { select: dealSel } } } } });
+  const readC = commits.map((c) => ({ c, r: commitmentReading(c, T, DEFAULT_GRACE_DAYS) }));
   const attention: OpsRow[] = [
+    ...readC.filter((x) => x.r.reading === "MISSED").map(({ c, r }) => row(`cm-${c.id}`, `/compras/${c.supplierPo.id}#compromisos`, c.supplierPo.deal, `${c.supplierPo.supplier.name}: «${c.label}» de ${c.supplierPo.code} sin evidencia ${r.days} día(s) después de la fecha`, `${c.supplierPo.supplier.name}: “${c.label}” of ${c.supplierPo.code} without evidence ${r.days} day(s) after the date`, c.expectedDate)),
     ...holds.map((s) => row(`h-${s.id}`, `/logistica/${s.id}`, s.deal, s.customs === "HOLD" ? "Envío retenido en aduana" : "Recepción en disputa", s.customs === "HOLD" ? "Shipment held at customs" : "Receipt in dispute", null, undefined, s.customs === "HOLD" ? s.customsNote : s.disputeNote)),
     ...uncertain.map((x) => row(`u-${x.id}`, `/administracion/pagos-proveedores/${x.payment.id}`, x.payment.supplierPo.deal, "Pago enviado sin confirmar: no reenviar hasta verificar con el banco", "Payment sent but unconfirmed: don't resend until checked with the bank", x.sentAt, Number(x.amount))),
   ];
   const ready: OpsRow[] = [
+    ...readC.filter((x) => x.r.reading === "DUE").map(({ c }) => row(`cd-${c.id}`, `/compras/${c.supplierPo.id}#compromisos`, c.supplierPo.deal, `${c.supplierPo.supplier.name}: confirmar con evidencia «${c.label}» de ${c.supplierPo.code}`, `${c.supplierPo.supplier.name}: confirm with evidence “${c.label}” of ${c.supplierPo.code}`, c.expectedDate)),
     ...toBuy.map((d) => row(`b-${d.id}`, `/compras?deal=${d.id}`, d, "PO del cliente aceptada: falta la compra al proveedor", "Customer PO accepted: the supplier purchase is missing", d.poAcceptedAt)),
     ...drafts.map((p) => row(`d-${p.id}`, `/compras/${p.id}`, p.deal, `Compra ${p.code} a ${p.supplier.name} sin liberar`, `Purchase ${p.code} to ${p.supplier.name} not released`, p.createdAt, Number(p.amount))),
     ...payToVerify.map((p) => row(`v-${p.id}`, `/administracion/pagos-proveedores/${p.id}`, p.supplierPo.deal, p.verifiedAt ? `Pago de ${p.supplierPo.code} verificado: falta aprobarlo` : `Pago de ${p.supplierPo.code}: falta verificar los datos bancarios`, p.verifiedAt ? `Payment for ${p.supplierPo.code} verified: approval pending` : `Payment for ${p.supplierPo.code}: bank details to verify`, p.dueBy, Number(p.amountUsd))),
@@ -64,6 +70,7 @@ export async function opsHome() {
     ...toInvoice.map((d) => row(`i-${d.id}`, `/deals/${d.deal.id}/facturacion`, d.deal, `Entrega ${d.code} hecha: falta facturar`, `Delivery ${d.code} done: invoice pending`, d.deliveredAt)),
   ];
   const waiting: OpsRow[] = [
+    ...readC.filter((x) => x.r.reading === "WAITING").map(({ c }) => row(`cw-${c.id}`, `/compras/${c.supplierPo.id}#compromisos`, c.supplierPo.deal, `${c.supplierPo.supplier.name}: ${c.label} (${c.supplierPo.code})${c.status === "COMMITTED" ? " · comprometido" : " · informado"}`, `${c.supplierPo.supplier.name}: ${c.label} (${c.supplierPo.code})${c.status === "COMMITTED" ? " · committed" : " · reported"}`, c.expectedDate)),
     ...waitingPos.map((p) => row(`w-${p.id}`, `/compras/${p.id}`, p.deal, `${p.supplier.name} entrega ${p.code}`, `${p.supplier.name} delivers ${p.code}`, p.eta)),
     ...waitingDeals.map((d) => row(`wd-${d.id}`, `/deals/${d.id}`, d, d.waitingFor!, d.waitingFor!, d.waitingUntil)),
   ].sort((a, b) => +(a.at ?? 0) - +(b.at ?? 0));
