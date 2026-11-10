@@ -2,8 +2,9 @@ import type { SessionUser } from "./auth";
 import type { I18n } from "./i18n";
 import type { ModuleKey } from "./nav";
 import { db } from "./db";
-import { canManageAll } from "./permissions";
-import { invoiceBlockers } from "./domain";
+import { canDecideCredit, canManageAll } from "./permissions";
+import { invoiceBlockers, invoiceCash, today } from "./domain";
+import { confirmationOf } from "./cash-rules";
 import { loadCredit, loadReceivables, loadSupplierPayments } from "./queries";
 import { buildMiDia } from "./midia";
 import { forwardOf } from "./logistics";
@@ -23,17 +24,23 @@ export async function shellAttention(user: SessionUser, i: I18n) {
 
   const approver = APPROVER_ROLES.includes(user.role);
   const excInclude = { quote: { select: { id: true, deal: { select: { account: { select: { name: true } } } } } } } as const;
-  const [midia, receivables, payments, ready, credit, ships, excToDecide, excBack] = await Promise.all([
+  const decider = canDecideCredit(user);
+  const [midia, receivables, payments, ready, credit, ships, excToDecide, excBack, reviews, rejectedRaw, lateBlockers] = await Promise.all([
     buildMiDia(user, i, { agenda: false }), // same number Mi Día shows in its heading
     loadReceivables({ deal: mineDeal }),
     loadSupplierPayments({ executedAt: null }),
     db.delivery.findMany({ where: { invoice: null, deal: mineDeal }, include: { deal: { include: { account: true } } } }),
-    manager ? loadCredit() : Promise.resolve([]),
+    decider ? loadCredit() : Promise.resolve([]),
     db.shipment.findMany({ where: { receipt: { not: "CONFIRMED" }, deal: mineDeal }, include: { deal: { select: { promisedDate: true, account: { select: { name: true } } } } } }),
     // Eságara exceptions: the approver sees what waits for them; the requester sees a question sent back.
     approver ? db.esagaraException.findMany({ where: { status: "REQUESTED", requestedById: { not: user.id } }, include: excInclude }) : Promise.resolve([]),
     db.esagaraException.findMany({ where: { status: "RETURNED", requestedById: user.id }, include: excInclude }),
+    // C3: credit requests wait for Finance/Management (never the requester); rejected invoices and overdue blockers for their owner.
+    decider ? db.creditReviewRequest.findMany({ where: { status: "OPEN", requestedById: { not: user.id } }, include: { account: { select: { name: true } } } }) : Promise.resolve([]),
+    db.invoice.findMany({ where: { deal: mineDeal, steps: { some: { kind: "REJECTED" } } }, include: { steps: true, account: { select: { name: true } }, applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } } } }),
+    db.cashBlocker.findMany({ where: { responsibleId: user.id, resolvedAt: null, expectedResolution: { lt: today() } }, include: { deal: { select: { code: true, account: { select: { name: true } } } } } }),
   ]);
+  const rejected = rejectedRaw.filter((x) => confirmationOf(x.steps).stage === "REJECTED" && invoiceCash(x).balance > 0.005);
   // Shipments interrupt only when the result is at stake — never per carrier scan.
   const shipNeeds = ships
     .map((s) => ({ s, k: forwardOf({ ...s, promisedDate: s.deal.promisedDate }, i) }))
@@ -54,8 +61,10 @@ export async function shellAttention(user: SessionUser, i: I18n) {
   set("operaciones", readyToInvoice + shipNeeds.length, shipNeeds.some((x) => x.k !== "HOLD") ? "risk" : "attn");
   if (broken.length || toReconcile.length) set("administracion", broken.length + toVerify.length + toReconcile.length, "risk");
   else set("administracion", toVerify.length, "attn");
-  set("gerencia", toApprove.length + creditDecisions.length, "attn");
-  set("comercial", excToDecide.length + excBack.length, "attn");
+  set("gerencia", toApprove.length + (manager ? creditDecisions.length : 0), "attn");
+  if (decider && !counters.administracion) set("administracion", reviews.length + (manager ? 0 : creditDecisions.length), "attn");
+  else if (decider && counters.administracion) counters.administracion.n += reviews.length + (manager ? 0 : creditDecisions.length);
+  set("comercial", excToDecide.length + excBack.length + rejected.length + lateBlockers.length, rejected.length ? "risk" : "attn");
 
   const alerts: Alert[] = [
     ...broken.map((r) => ({ key: `b${r.id}`, tone: "risk" as const, href: `/administracion/cobrar?f=${r.id}`, text: t(`Compromiso incumplido: ${r.account.name} · ${i.money(r.cash.balance)}`, `Commitment missed: ${r.account.name} · ${i.money(r.cash.balance)}`) })),
@@ -65,6 +74,9 @@ export async function shellAttention(user: SessionUser, i: I18n) {
     ...toApprove.map((p) => ({ key: `a${p.id}`, tone: "attn" as const, href: `/administracion/pagos-proveedores/${p.id}`, text: t(`Aprobar pago a ${p.supplierPo.supplier.name} · ${p.currency} ${i.n(p.amount)}`, `Approve payment to ${p.supplierPo.supplier.name} · ${p.currency} ${i.n(p.amount)}`) })),
     ...excToDecide.map((e) => ({ key: `x${e.id}`, tone: "attn" as const, href: `/comercial/esagara#e-${e.id}`, text: t(`Decidir excepción de Eságara: ${e.quote.deal.account.name} · ${i.pct2(Number(e.esagaraPct))}`, `Decide Eságara exception: ${e.quote.deal.account.name} · ${i.pct2(Number(e.esagaraPct))}`) })),
     ...excBack.map((e) => ({ key: `y${e.id}`, tone: "attn" as const, href: `/cotizaciones/${e.quote.id}#esagara`, text: t(`Te devolvieron una pregunta sobre la excepción de ${e.quote.deal.account.name}`, `You got a question back on the ${e.quote.deal.account.name} exception`) })),
+    ...rejected.map((x) => ({ key: `r${x.id}`, tone: "risk" as const, href: `/comercial/dinero#collect:${x.id}`, text: t(`Factura ${x.number} rechazada por ${x.account.name}: corregir y volver a radicar`, `Invoice ${x.number} rejected by ${x.account.name}: fix and resubmit`) })),
+    ...lateBlockers.map((b) => ({ key: `k${b.id}`, tone: "attn" as const, href: `/comercial/dinero?scope=mine`, text: t(`Bloqueo vencido: ${b.deal.code} · ${b.deal.account.name} · ${b.nextMovement}`, `Blocker past its date: ${b.deal.code} · ${b.deal.account.name} · ${b.nextMovement}`) })),
+    ...reviews.map((r) => ({ key: `q${r.id}`, tone: "attn" as const, href: `/administracion/cupos#solicitudes`, text: t(`Decidir solicitud de cupo: ${r.account.name}`, `Decide credit request: ${r.account.name}`) })),
     ...creditDecisions.map(({ a, d }) => ({ key: `c${d.id}`, tone: "attn" as const, href: `/administracion/cupos#${a.id}`, text: t(`Decidir el cupo de ${a.name}`, `Decide ${a.name}'s credit limit`) })),
   ];
 

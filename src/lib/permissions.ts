@@ -61,6 +61,12 @@ export function assertCanEditOps(u: U, ownerId: string) {
   if (!canEditOps(u, ownerId)) throw new Error("No tienes permiso para cambiar este registro. / You do not have permission to change this record.");
 }
 
+/** Credit authority (user decision 2026-11-10): credit limits, terms and credit exceptions are decided by
+ *  Finanzas or Gerencia, never by the person who asks. Director Comercial sees and supports requests. */
+export function canDecideCredit(u: U) {
+  return u.role === "GERENCIA" || u.role === "FINANZAS";
+}
+
 /** Mercado §18: loading economic datasets is for Management and Marketing. */
 export function canImportData(u: U) {
   return canManageAll(u) || u.role === "MARKETING";

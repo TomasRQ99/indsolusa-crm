@@ -13,7 +13,7 @@ export async function getPayRules(): Promise<{ value: PayRules; version: number;
 export const payInvoiceSelect = {
   id: true, number: true, amount: true, issuedAt: true, dueAt: true,
   applications: { select: { amount: true, payment: { select: { reconciledAt: true, receivedAt: true } } } },
-  promises: { select: { promisedFor: true, createdAt: true } },
+  promises: { select: { promisedFor: true, createdAt: true, replacedAt: true } },
 } as const;
 
 /** Full behavior of one customer, with the rules in force. */

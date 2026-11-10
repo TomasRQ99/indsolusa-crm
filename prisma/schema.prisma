@@ -55,6 +55,9 @@ enum CommissionHalf {
 // Users are deactivated, never deleted, so ownership history stays intact.
 model User {
   id                 String    @id @default(cuid())
+  cashBlockers       CashBlocker[]          @relation("CashBlockerOwner")
+  creditRequested    CreditReviewRequest[]  @relation("CreditRequester")
+  creditDecided      CreditReviewRequest[]  @relation("CreditDecider")
   email              String    @unique
   name               String
   passwordHash       String
@@ -140,6 +143,8 @@ model Account {
   employments   Employment[]
   marketCompany MarketCompany?
   payBehaviors  PaymentBehaviorSnapshot[]
+  paymentMap    PaymentMap?
+  creditReviews CreditReviewRequest[]
   openLoops     OpenLoop[]
   prepared      PreparedMessage[]
 
@@ -167,6 +172,7 @@ model AccountDocument {
 
 model Contact {
   id        String   @id @default(cuid())
+  paymentRoles PaymentMapPerson[]
   firstName String
   lastName  String
   email     String?
@@ -284,6 +290,8 @@ model Deal {
   deliveries      Delivery[]
   invoices        Invoice[]
   billingRequests BillingRequest[]
+  cashBlockers    CashBlocker[]
+  creditReviews   CreditReviewRequest[]
 
   @@index([stage])
   @@index([ownerId])
@@ -860,6 +868,14 @@ model Invoice {
 
   applications   PaymentApplication[]
   promises       PaymentPromise[]
+  steps          InvoiceStep[]
+  // Collection next movement (§60): at most one visible next move, or a wait with control.
+  collectNext       String?
+  collectNextAt     DateTime?
+  collectWaitingFor String?
+  collectContact    String?
+  collectByName     String?
+  collectAt         DateTime?
   commissions    CommissionEntry[]
   quoteId        String?
   quote          Quote?               @relation(fields: [quoteId], references: [id], onDelete: SetNull)
@@ -929,6 +945,13 @@ model PaymentPromise {
   recordedById String
   recordedBy   User     @relation(fields: [recordedById], references: [id])
   createdAt    DateTime @default(now())
+  // Comercial C3 (§61): amount and role; a new promise replaces the open one, never overwrites it.
+  amount         Decimal?        @db.Decimal(14, 2)
+  promisedByRole String?
+  replacedById   String?         @unique
+  replacedBy     PaymentPromise? @relation("PromiseReplaced", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces       PaymentPromise? @relation("PromiseReplaced")
+  replacedAt     DateTime?
 
   @@index([invoiceId])
 }
@@ -2168,4 +2191,112 @@ model EsagaraException {
   @@index([status])
   @@index([quoteId])
   @@index([accountId])
+}
+// ---------- Comercial C3 · Commercial Cash Journey (v1.2 §54–75) ----------
+
+/// Root Cause Contract (§57, §70): money stopped before becoming cash, with its cause. stage DELIVER | INVOICE | COLLECT.
+/// The person who moves next (responsible) is not the cause (rootCause). Never deleted: resolved with a date.
+model CashBlocker {
+  id                 String    @id @default(cuid())
+  dealId             String
+  deal               Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  stage              String
+  shipmentId         String?
+  deliveryId         String?
+  invoiceId          String?
+  readyAt            DateTime?
+  blockedSince       DateTime
+  blockedValue       Decimal   @db.Decimal(14, 2)
+  reasonCode         String
+  rootCause          String
+  secondaryCause     String?
+  narrative          String
+  evidence           String?
+  responsibleId      String
+  responsible        User      @relation("CashBlockerOwner", fields: [responsibleId], references: [id])
+  nextMovement       String
+  expectedResolution DateTime?
+  resolvedAt         DateTime?
+  resolvedNote       String?
+  createdByName      String
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([dealId])
+  @@index([resolvedAt])
+}
+
+/// Invoice confirmation (§59): each step of the customer's process, kept as history.
+/// kind SUBMITTED | RECEIVED | ACCEPTED | REJECTED | APPROVED_FOR_PAYMENT.
+model InvoiceStep {
+  id        String   @id @default(cuid())
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  kind      String
+  at        DateTime
+  reference String?
+  reason    String?
+  evidence  String?
+  byName    String
+  createdAt DateTime @default(now())
+
+  @@index([invoiceId])
+}
+
+/// Payment Map (§59): how the customer receives, validates, approves, schedules and pays. People are Contacts (no copy).
+model PaymentMap {
+  id            String             @id @default(cuid())
+  accountId     String             @unique
+  account       Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  process       String?
+  portal        String?
+  payDays       String?
+  documents     String?
+  notes         String?
+  updatedByName String
+  updatedAt     DateTime           @updatedAt
+  people        PaymentMapPerson[]
+}
+
+/// role RECEIVES | VALIDATES | APPROVES | SCHEDULES | PAYS
+model PaymentMapPerson {
+  id        String     @id @default(cuid())
+  mapId     String
+  map       PaymentMap @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  role      String
+  contactId String
+  contact   Contact    @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([mapId, role, contactId])
+}
+
+/// Credit limit review (§63): Comercial asks, Finanzas or Gerencia decide (never the requester).
+/// kind INCREASE | DECREASE | TEMPORARY_EXCEPTION | TERMS_REVIEW · status OPEN | APPROVED | REJECTED | WITHDRAWN.
+model CreditReviewRequest {
+  id             String    @id @default(cuid())
+  accountId      String
+  account        Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  dealId         String?
+  deal           Deal?     @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  kind           String
+  requestedLimit Decimal?  @db.Decimal(14, 2)
+  requestedTerms Int?
+  until          DateTime?
+  reason         String
+  info           String?
+  alternatives   String[]
+  snapshot       Json
+  status         String    @default("OPEN")
+  requestedById  String
+  requestedBy    User      @relation("CreditRequester", fields: [requestedById], references: [id])
+  decidedById    String?
+  decidedBy      User?     @relation("CreditDecider", fields: [decidedById], references: [id])
+  decidedAt      DateTime?
+  decisionNote   String?
+  approvedLimit  Decimal?  @db.Decimal(14, 2)
+  approvedTerms  Int?
+  createdAt      DateTime  @default(now())
+
+  @@index([accountId])
+  @@index([status])
 }

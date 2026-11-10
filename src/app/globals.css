@@ -1571,3 +1571,46 @@ a.mk-link:hover { border-color: var(--brand); }
 .mk-th { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px 16px; align-items: end; }
 .mk-th label { font-size: 12px; }
 tr.muted td { color: var(--ink-3); }
+
+/* ---------- Comercial C3 · Money Desk and cash leakage ---------- */
+.seg a { display: inline-flex; align-items: center; padding: 0 10px; height: 26px; color: var(--ink-2); text-decoration: none; font-size: 13px; background: var(--surface); }
+.seg a + a { border-left: 1px solid var(--line-strong); }
+.seg a.on { background: var(--brand-soft); color: var(--brand); }
+.cb-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1100px) { .cb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .cb-grid { grid-template-columns: minmax(0, 1fr); } }
+.cb { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cb.move { border-left: 3px solid var(--attn); }
+.cb-head { display: flex; flex-direction: column; gap: 2px; }
+.cb-head b { font: 600 12px/16px var(--font-sans), sans-serif; letter-spacing: 0.04em; text-transform: uppercase; }
+.cb-v { font: 600 20px/26px var(--font-mono), monospace; font-variant-numeric: tabular-nums; color: var(--ink); }
+.cb-top { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px; margin: 0; font-size: 13px; line-height: 18px; }
+.cb-top dt { color: var(--ink-3); font-size: 12px; }
+.cb-top dd { margin: 0; overflow-wrap: anywhere; }
+.md-item { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.md-item.move { border-left: 3px solid var(--attn); }
+.md-top { display: flex; align-items: baseline; gap: 12px; justify-content: space-between; flex-wrap: wrap; }
+.md-top .val { font: 600 15px/20px var(--font-mono), monospace; font-variant-numeric: tabular-nums; }
+.md-blk { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; background: var(--surface-sunken); border-radius: 6px; }
+.md-truths { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 4px 0; }
+@media (max-width: 760px) { .md-truths { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.md-truths div { display: flex; flex-direction: column; min-width: 0; }
+.md-truths dt { font-size: 12px; color: var(--ink-3); }
+.md-truths dd { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.md-forms { display: flex; flex-direction: column; gap: 4px; }
+.md-form > summary { cursor: pointer; color: var(--brand); }
+.md-form > form { margin-top: 8px; }
+.md-form label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.md-alts > div { border: 1px dashed var(--line-strong); border-radius: 6px; padding: 8px 10px; }
+.lk-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; gap: 2px; background: var(--surface-sunken); min-width: 80px; }
+.lk-bar i { display: block; height: 100%; }
+.lk-bar i.c-COMPANY, .lk-key.c-COMPANY { background: #2a78d6; }
+.lk-bar i.c-CUSTOMER, .lk-key.c-CUSTOMER { background: #eb6834; }
+.lk-bar i.c-EXTERNAL, .lk-key.c-EXTERNAL { background: #1baf7a; }
+.lk-bar i.c-UNSET, .lk-key.c-UNSET { background: var(--line-strong); }
+.lk-key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.ind-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1100px) { .ind-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .ind-grid { grid-template-columns: minmax(0, 1fr); } }
+.ind-grid .card { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.ind-grid .v { font: 600 20px/26px var(--font-mono), monospace; font-variant-numeric: tabular-nums; }

@@ -37,6 +37,8 @@ export const MODULES: NavModule[] = [
     tabs: [
       { href: "/deals", es: "Journeys", en: "Journeys" },
       { href: "/cotizaciones", es: "Futuro comercial", en: "Commercial future" },
+      { href: "/comercial/dinero", es: "Dinero por mover", en: "Money to move" },
+      { href: "/comercial/fugas", es: "Fugas de caja", en: "Cash leakage" },
       { href: "/comercial/esagara", es: "Excepciones de Eságara", en: "Eságara exceptions" },
     ],
   },

@@ -3,6 +3,8 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { daysBetween } from "@/lib/domain";
 import { buildMiDia, type AgendaItem, type Need } from "@/lib/midia";
+import { loadCashJourney } from "@/lib/cash-journey";
+import { CashBags } from "@/components/CashBags";
 import { OutlookNote } from "@/components/OutlookNote";
 import { Popovers } from "@/components/Popovers";
 import { blockDone, defineNext, doneAndNext, logHappened, moveBlock, newPromise, postpone, removeBlock, reserveTime, scheduleMove, scheduleMoveAt } from "./actions";
@@ -24,7 +26,8 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
-  const m = await buildMiDia(user, i);
+  const [m, cash] = await Promise.all([buildMiDia(user, i), loadCashJourney(i, { ownerId: user.id, light: true }).catch((e) => { console.error("cash journey failed", e); return null; })]);
+  const cashCases = cash ? cash.deliver.length + cash.invoice.length + cash.collect.length + cash.credit.length : 0;
 
   const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: "America/Bogota" }).format(new Date()));
   const hello = hour < 12 ? t("Buenos días", "Good morning") : hour < 19 ? t("Buenas tardes", "Good afternoon") : t("Buenas noches", "Good evening");
@@ -249,6 +252,13 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
       <OutlookNote code={sp.cal} t={t} />
       {sp.ok && okMsg[sp.ok] && <div className={`note${sp.ok.startsWith("sin-") ? " attn" : " okn"}`} role="status">{okMsg[sp.ok]}</div>}
       <Popovers />
+
+      {cash && cashCases > 0 && (
+        <section className="mblock" aria-labelledby="h-cash" style={{ marginBottom: 16 }}>
+          <div className="bhead"><b id="h-cash">{t("DINERO QUE DEBO MOVER", "MONEY I NEED TO MOVE")}</b><span>{t("de mercancía lista a dinero conciliado · primero lo que necesita un movimiento, luego lo de más valor", "from ready goods to reconciled cash · first what needs a move, then the highest value")}</span><span className="grow" /><Link className="small" href="/comercial/dinero?scope=mine">{t("Abrir", "Open")}</Link></div>
+          <CashBags j={cash} i={i} compact />
+        </section>
+      )}
 
       <div className="cols">
         {/* 50 % — NECESITA DE TI */}

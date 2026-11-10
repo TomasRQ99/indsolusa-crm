@@ -54,6 +54,13 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   IntelligenceSource: ["name", "kind"],
   DatasetImport: ["fileName", "status", "scale", "currency", "decimalStyle", "fixedYear", "committedAt", "committedByName"],
   MarketSetting: "all",
+  // C3 · Commercial cash journey: blockers, invoice confirmation, the customer's payment map, promises and credit reviews.
+  CashBlocker: "all",
+  InvoiceStep: "all",
+  PaymentMap: "all",
+  PaymentMapPerson: "all",
+  PaymentPromise: "all",
+  CreditReviewRequest: "all",
 };
 const MASK = new Set(["bankAccount", "docAccount"]);
 const SKIP = new Set(["id", "createdAt", "updatedAt"]);

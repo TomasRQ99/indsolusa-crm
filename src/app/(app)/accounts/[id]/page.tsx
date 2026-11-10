@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canEdit, canManageAll } from "@/lib/permissions";
+import { canEdit, canEditMoney, canManageAll } from "@/lib/permissions";
+import { savePaymentMap } from "../../comercial/dinero/actions";
 import { makeI18n } from "@/lib/i18n";
 import { dayInput, today } from "@/lib/domain";
 import { stageLabel } from "@/lib/labels";
@@ -28,12 +29,15 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
   const editable = canEdit(user, a.ownerId);
   const mail = mailConfig();
   const recipients = a.contacts.filter((c) => c.email).map((c) => ({ id: c.id, label: `${c.firstName} ${c.lastName} <${c.email}>` }));
-  const [users, docs, payRules] = await Promise.all([
+  const MAP_ROLES = [["RECEIVES", t("Recibe la factura", "Receives the invoice")], ["VALIDATES", t("Valida", "Validates")], ["APPROVES", t("Aprueba", "Approves")], ["SCHEDULES", t("Programa el pago", "Schedules payment")], ["PAYS", t("Paga (Tesorería)", "Pays (Treasury)")]] as const;
+  const [users, docs, payRules, payMap] = await Promise.all([
     canManageAll(user) ? db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
     // The file bytes stay in the database: only the list is loaded here.
     db.accountDocument.findMany({ where: { accountId: id }, orderBy: { createdAt: "desc" }, select: { id: true, kind: true, name: true, size: true, extracted: true, createdAt: true } }),
     getPayRules(),
+    db.paymentMap.findUnique({ where: { accountId: id }, include: { people: { include: { contact: { select: { id: true, firstName: true, lastName: true, title: true } } } } } }),
   ]);
+  const mapEditable = canEditMoney(user, a.ownerId);
   const F = ({ f, src }: { f: Fresh; src?: string | null }) => <span className={`fresh${f.stale ? " stale" : ""}`}>{src ? `${src} · ` : ""}{f.label}{f.stale && f.at ? ` · ${t("confirmar", "re-confirm")}` : ""}</span>;
 
   // Past results: Journeys whose result is known (never "delivered = achieved").
@@ -177,6 +181,42 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
                   <span><b>{c.what}</b><span className="src block">{t("Por qué", "Why")}: {c.basis} · {c.createdByName} · <F f={freshness(i, c.createdAt, 365, now)} src={t("registrada", "recorded")} />{c.triggerEvent ? ` · ${t("cuando", "when")} ${c.triggerEvent}` : ""} · <Link href={`/deals/${d.id}/resultado`}>{d.code}</Link></span></span>
                 </li>
               ))}</ul>
+            )}
+          </section>
+
+          <section className="jblock" id="mapa-pago">
+            <div className="jbh"><b>{t("MAPA DE PAGO", "PAYMENT MAP")}</b><span className="grow" /><span className="src">{payMap ? t(`actualizado por ${payMap.updatedByName} · ${i.day(payMap.updatedAt)}`, `updated by ${payMap.updatedByName} · ${i.day(payMap.updatedAt)}`) : t("quién recibe, valida, aprueba, programa y paga", "who receives, validates, approves, schedules and pays")}</span></div>
+            {payMap ? (
+              <dl className="filedl">
+                {MAP_ROLES.map(([r, label]) => { const ps = payMap.people.filter((p) => p.role === r); return ps.length ? [<dt key={`${r}-t`}>{label}</dt>, <dd key={`${r}-d`}>{ps.map((p, k) => <span key={p.id}>{k ? ", " : ""}<Link href={`/mercado/personas/${p.contact.id}`}>{p.contact.firstName} {p.contact.lastName}</Link>{p.contact.title ? ` (${p.contact.title})` : ""}</span>)}</dd>] : null; })}
+                {payMap.process && <><dt>{t("Proceso", "Process")}</dt><dd>{payMap.process}</dd></>}
+                {payMap.portal && <><dt>{t("Portal", "Portal")}</dt><dd>{payMap.portal}</dd></>}
+                {payMap.payDays && <><dt>{t("Días / cortes de pago", "Pay days / cut-offs")}</dt><dd>{payMap.payDays}</dd></>}
+                {payMap.documents && <><dt>{t("Documentos exigidos", "Required documents")}</dt><dd>{payMap.documents}</dd></>}
+                {payMap.notes && <><dt>{t("Notas", "Notes")}</dt><dd>{payMap.notes}</dd></>}
+              </dl>
+            ) : <p className="quiet-p">{t("Aún no sabemos cómo entra y se paga una factura en este cliente. Saberlo evita facturas rechazadas y cobros a la persona equivocada.", "We don't know yet how an invoice gets in and paid at this customer. Knowing it avoids rejected invoices and chasing the wrong person.")}</p>}
+            {mapEditable && (
+              <details className="md-form"><summary className="small">{payMap ? t("Actualizar mapa de pago", "Update payment map") : t("Completar mapa de pago", "Fill in the payment map")}</summary>
+                <form action={savePaymentMap.bind(null, a.id)} className="stack" style={{ gap: 8 }}>
+                  <input type="hidden" name="back" value={`/accounts/${a.id}#mapa-pago`} />
+                  {a.contacts.length > 0 ? (
+                    <div className="mk-scroll"><table className="small">
+                      <thead><tr><th>{t("Persona", "Person")}</th>{MAP_ROLES.map(([r, label]) => <th key={r}>{label}</th>)}</tr></thead>
+                      <tbody>{a.contacts.map((c) => <tr key={c.id}><td>{c.firstName} {c.lastName}</td>{MAP_ROLES.map(([r]) => <td key={r}><input type="checkbox" name={`role_${r}`} value={c.id} aria-label={`${c.firstName} ${c.lastName} · ${r}`} defaultChecked={!!payMap?.people.some((p) => p.role === r && p.contactId === c.id)} /></td>)}</tr>)}</tbody>
+                    </table></div>
+                  ) : <p className="src">{t("Agrega contactos del cliente para asignar quién hace cada paso.", "Add customer contacts to assign who does each step.")}</p>}
+                  <label className="small">{t("Proceso (cómo entra y se aprueba una factura)", "Process (how an invoice gets in and approved)")}<textarea name="process" rows={2} defaultValue={payMap?.process ?? ""} /></label>
+                  <div className="grid cols-3">
+                    <label className="small">{t("Portal", "Portal")}<input name="portal" defaultValue={payMap?.portal ?? ""} /></label>
+                    <label className="small">{t("Días / cortes de pago", "Pay days / cut-offs")}<input name="payDays" defaultValue={payMap?.payDays ?? ""} placeholder={t("p. ej. viernes; corte día 25", "e.g. Fridays; cut-off on the 25th")} /></label>
+                    <label className="small">{t("Documentos exigidos", "Required documents")}<input name="documents" defaultValue={payMap?.documents ?? ""} /></label>
+                  </div>
+                  <label className="small">{t("Notas", "Notes")}<textarea name="notes" rows={2} defaultValue={payMap?.notes ?? ""} /></label>
+                  <span className="src">{t("Usa las personas que ya existen; no se duplican contactos. Guarda solo lo necesario para cobrar bien.", "Uses the people that already exist; contacts aren't duplicated. Keep only what is needed to collect well.")}</span>
+                  <div><button type="submit" className="sm">{t("Guardar", "Save")}</button></div>
+                </form>
+              </details>
             )}
           </section>
         </div>

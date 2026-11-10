@@ -5,6 +5,8 @@ import { db } from "./db";
 import { refreshUnderstanding } from "./comm-store";
 import { refreshPaymentBehaviorSafe } from "./pay-behavior";
 import { addDays, nextCode, nextDocNumber, today } from "./domain";
+import { subMoney } from "./money";
+import { loadCredit } from "./queries";
 
 // Sample data so every SOLU screen can be seen working. Every record is marked
 // "(ejemplo)" and can be removed in one step without touching real data.
@@ -647,6 +649,7 @@ export async function loadDemo(adminId: string) {
       await seedMarketM5(tx, d, paola.name, lacteos.id);
       await seedMarketM6(tx, d, paola.name, lacteos.id);
       await seedComercialC1(tx, d, paola.name);
+      await seedComercialC3(tx, d, { paolaId: paola.id, paolaName: paola.name });
 
       await tx.task.createMany({
         data: [
@@ -664,6 +667,8 @@ export async function loadDemo(adminId: string) {
   for (const th of await db.commThread.findMany({ where: { account: { isDemo: true } }, select: { id: true } })) await refreshUnderstanding(th.id);
   // Payment behavior of the sample customers, as if Treasury had just reconciled (creates the M4 trend signal).
   for (const a of await db.account.findMany({ where: { isDemo: true }, select: { id: true } })) await refreshPaymentBehaviorSafe(a.id, "Datos de ejemplo cargados");
+  const pao = await db.user.findUnique({ where: { email: `paola${DEMO_DOMAIN}` }, select: { id: true } });
+  if (pao) await seedCreditRequestC3(pao.id);
 }
 
 
@@ -792,6 +797,64 @@ async function seedComercialC1(tx: Prisma.TransactionClient, d: (n: number) => D
   if (!(await tx.productRelationship.count({ where: { ...rel, supersededAt: null } }))) await tx.productRelationship.create({ data: { ...rel, fromLabel: "DDA-30", toLabel: "Kit de inyección y válvula de pie", evidence: "Manual del fabricante, sección de instalación (ejemplo)", recordedByName: by } });
 }
 
+/** Comercial C3 sample: ready goods (one with a customer-side blocker), invoice steps (one rejected, one not accepted),
+ *  a partly kept promise replaced by a new one, and Lácteos' payment map. The credit request is added after (it needs live figures). */
+async function seedComercialC3(tx: Prisma.TransactionClient, d: (n: number) => Date, ids: { paolaId: string; paolaName: string }) {
+  if (await tx.cashBlocker.count({ where: { deal: { account: { isDemo: true } } } })) return;
+  const T = d(0);
+  const cap = (x: Date) => (x > T ? T : x);
+  const dealBy = (title: string) => tx.deal.findFirst({ where: { title, account: { isDemo: true } }, include: { shipments: true, invoices: true, account: { select: { id: true } } } });
+  // Entregar: arrived at our warehouse and cleared.
+  const sid = await dealBy("Acoples para laminador");
+  const pap = await dealBy("Válvulas de control caldera 2");
+  for (const [dl, days] of [[sid, 6], [pap, 4]] as const) {
+    const sh = dl?.shipments.find((x) => !x.toCustomer && !x.deliveryId);
+    if (sh) await tx.shipment.update({ where: { id: sh.id }, data: { deliveredAt: d(-days), customs: "CLEARED", deliveredNote: "Llegó a nuestra bodega (ejemplo)" } });
+  }
+  if (sid) await tx.cashBlocker.create({ data: {
+    dealId: sid.id, stage: "DELIVER", shipmentId: sid.shipments.find((x) => !x.toCustomer)?.id ?? null, readyAt: d(-6), blockedSince: d(-4), blockedValue: sid.amount,
+    reasonCode: "receiving_appointment", rootCause: "CUSTOMER", narrative: "Almacén de Siderúrgica no da cita de recepción hasta que cierre su inventario semanal.", evidence: "Correo de Almacén del 6-nov (ejemplo)",
+    responsibleId: ids.paolaId, nextMovement: "Confirmar la cita de recepción con Almacén", expectedResolution: d(1), createdByName: ids.paolaName,
+  } });
+  // Invoice steps: one rejected, one submitted and not accepted, one accepted.
+  const step = (invoiceId: string, kind: string, at: Date, extra: { reference?: string; reason?: string } = {}) => tx.invoiceStep.create({ data: { invoiceId, kind, at: cap(at), byName: ids.paolaName, ...extra } });
+  const rej = (await dealBy("Repuestos bomba de lodos"))?.invoices[0];
+  if (rej) { await step(rej.id, "SUBMITTED", addDays(rej.issuedAt, 1), { reference: "RAD-55102" }); await step(rej.id, "REJECTED", addDays(rej.issuedAt, 6), { reason: "El número de OC en la factura no coincide con la entrada de mercancía (ejemplo)" }); }
+  const sub = (await dealBy("Bombas de agua de enfriamiento horno (principal + respaldo)"))?.invoices[0];
+  if (sub) { await step(sub.id, "SUBMITTED", addDays(sub.issuedAt, 1), { reference: "Portal SN-4471" }); await step(sub.id, "RECEIVED", addDays(sub.issuedAt, 2)); }
+  const ok = (await dealBy("Sellos mecánicos bomba CIP"))?.invoices[0];
+  if (ok) { await step(ok.id, "SUBMITTED", addDays(ok.issuedAt, 1)); await step(ok.id, "ACCEPTED", addDays(ok.issuedAt, 3)); }
+  // Promise with an amount, partly kept, then replaced by a new one (history is kept).
+  const flo = await dealBy("Bomba dosificadora de floculante");
+  const fi = flo?.invoices[0];
+  if (flo && fi) {
+    const p1 = await tx.paymentPromise.create({ data: { invoiceId: fi.id, promisedFor: d(-1), promisedBy: "Luz Marina Ríos (ejemplo)", promisedByRole: "Tesorería", amount: fi.amount, source: "Llamada: «sale en la corrida del lunes» (ejemplo)", recordedById: ids.paolaId, createdAt: d(-6) } });
+    await tx.customerPayment.create({ data: { accountId: flo.account.id, amount: 2000, receivedAt: d(-1), reference: "TRF-C3-ejemplo", reconciledAt: new Date(), createdById: ids.paolaId, applications: { create: [{ invoiceId: fi.id, amount: 2000 }] } } });
+    const p2 = await tx.paymentPromise.create({ data: { invoiceId: fi.id, promisedFor: d(5), promisedBy: "Luz Marina Ríos (ejemplo)", promisedByRole: "Tesorería", amount: subMoney(fi.amount, 2000), source: "Correo: el saldo sale en la próxima corrida (ejemplo)", recordedById: ids.paolaId } });
+    await tx.paymentPromise.update({ where: { id: p1.id }, data: { replacedById: p2.id, replacedAt: new Date() } });
+  }
+  // Lácteos: who receives and pays, and how.
+  const lac = await tx.account.findFirst({ where: { isDemo: true, name: "Lácteos del Valle" + TAG }, select: { id: true, contacts: { select: { id: true }, take: 1 } } });
+  if (lac && !(await tx.paymentMap.count({ where: { accountId: lac.id } }))) await tx.paymentMap.create({ data: {
+    accountId: lac.id, process: "La factura se carga al portal de proveedores; Mantenimiento confirma la entrada de mercancía y Contabilidad la aprueba (ejemplo).",
+    portal: "Portal de proveedores Lácteos (ejemplo)", payDays: "Viernes; corte de facturas el día 25", documents: "Factura + remisión firmada + número de entrada", updatedByName: ids.paolaName,
+    people: lac.contacts[0] ? { create: [{ role: "RECEIVES", contactId: lac.contacts[0].id }, { role: "VALIDATES", contactId: lac.contacts[0].id }] } : undefined,
+  } });
+}
+
+/** Open credit request for Minera El Roble, with the exposure frozen as of today. */
+async function seedCreditRequestC3(paolaId: string) {
+  const min = await db.account.findFirst({ where: { isDemo: true, name: "Minera El Roble" + TAG }, select: { id: true, paymentTermsDays: true } });
+  if (!min || (await db.creditReviewRequest.count({ where: { accountId: min.id } }))) return;
+  const [c] = await loadCredit({ id: min.id });
+  const deal = await db.deal.findFirst({ where: { accountId: min.id, title: "Kit de bomba de lodos" }, select: { id: true } });
+  await db.creditReviewRequest.create({ data: {
+    accountId: min.id, dealId: deal?.id ?? null, kind: "INCREASE", requestedLimit: 25000, reason: "El kit de bomba de lodos queda bloqueado por cupo; la Minera tiene un paro programado y lo necesita antes (ejemplo).",
+    info: "Paga con retraso pero ha cumplido sus promesas recientes.", alternatives: ["PRIOR_PAYMENT", "SPLIT_ORDER"], requestedById: paolaId,
+    snapshot: { limit: c?.limit ?? null, used: c?.used ?? 0, openInvoices: c?.openInvoices ?? 0, committed: c?.uninvoiced ?? 0, available: c?.available ?? null, overdue: 0, overdueCount: c?.overdueCount ?? 0, termsDays: min.paymentTermsDays, expectedDays: null, avgDelay: null, payN: 0, trend: "UNKNOWN", promisesKept: 0, promisesBroken: 0, blocking: [] },
+  } });
+}
+
 /** Environments loaded before Mercado existed get only the Mercado sample, nothing else is touched. */
 async function topUpMarketDemo() {
   const paola = await db.user.findUnique({ where: { email: `paola${DEMO_DOMAIN}` }, select: { id: true, name: true } });
@@ -820,6 +883,9 @@ async function topUpMarketDemo() {
   if (!(await db.personNote.count({ where: { kind: "PROBLEM", sourceType: "CONVERSATION", contact: { accountId: lacteos.id } } }))) await db.$transaction((tx) => seedMarketM6(tx, d, paola.name, lacteos.id), { timeout: 30000 });
   // Comercial C1 sample if missing.
   if (!(await db.scopeLine.count({ where: { deal: { title: C1_TITLE, account: { isDemo: true } } } }))) await db.$transaction((tx) => seedComercialC1(tx, d, paola.name), { timeout: 30000 });
+  // Comercial C3 sample if missing.
+  if (!(await db.cashBlocker.count({ where: { deal: { account: { isDemo: true } } } }))) await db.$transaction((tx) => seedComercialC3(tx, d, { paolaId: paola.id, paolaName: paola.name }), { timeout: 30000 });
+  await seedCreditRequestC3(paola.id);
 }
 
 const NAMEPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320"><rect width="520" height="320" fill="#8a9097"/><rect x="20" y="20" width="480" height="280" rx="10" fill="#d9dde1" stroke="#5c636a" stroke-width="3"/><circle cx="42" cy="42" r="7" fill="#9aa1a8"/><circle cx="478" cy="42" r="7" fill="#9aa1a8"/><circle cx="42" cy="278" r="7" fill="#9aa1a8"/><circle cx="478" cy="278" r="7" fill="#9aa1a8"/><text x="60" y="78" font-family="Arial" font-weight="700" font-size="30" fill="#0f9d9a">SIEMENS</text><text x="60" y="112" font-family="Arial" font-size="20" fill="#222">SINAMICS G120C</text><text x="60" y="150" font-family="Courier New" font-size="18" fill="#222">6SL3210-1KE21-7UF1</text><text x="60" y="184" font-family="Arial" font-size="16" fill="#222">IN: 3AC 380-480V 50/60Hz 18,5A</text><text x="60" y="210" font-family="Arial" font-size="16" fill="#222">OUT: 3AC 0-480V 16,5A 7,5kW</text><text x="60" y="236" font-family="Arial" font-size="14" fill="#444">S/N: XAJ2-7781-0042  IP20</text><text x="60" y="262" font-family="Arial" font-size="12" fill="#666">Made in Germany</text></svg>`;
@@ -845,6 +911,9 @@ export async function removeDemo() {
       if (ids.length) await tx.exploration.deleteMany({ where: { ownerId: { in: ids } } });
       if (ids.length) {
         await tx.task.deleteMany({ where: { assigneeId: { in: ids } } });
+        await tx.cashBlocker.deleteMany({ where: { responsibleId: { in: ids } } });
+        await tx.creditReviewRequest.deleteMany({ where: { requestedById: { in: ids } } });
+        await tx.creditReviewRequest.updateMany({ where: { decidedById: { in: ids } }, data: { decidedById: null } });
         await tx.commissionEntry.deleteMany({ where: { OR: [{ userId: { in: ids } }, { approvedById: { in: ids } }] } });
         await tx.supplier.updateMany({ where: { bankVerifiedById: { in: ids } }, data: { bankVerifiedById: null } });
         await tx.user.deleteMany({ where: { id: { in: ids } } });

@@ -22,14 +22,14 @@ export type PayRules = typeof DEFAULT_PAY_RULES;
 export type PayInvoice = {
   id: string; number: string; amount: number; issuedAt: Date; dueAt: Date;
   apps: { amount: number; reconciled: boolean; receivedAt: Date }[];
-  promises: { promisedFor: Date; createdAt: Date }[];
+  promises: { promisedFor: Date; createdAt: Date; replacedAt?: Date | null }[];
 };
 
 /** Invoice rows as Prisma returns them (Decimal amounts) → plain numbers for the rules. */
 export type RawPayInvoice = {
   id: string; number: string; amount: unknown; issuedAt: Date; dueAt: Date;
   applications: { amount: unknown; payment: { reconciledAt: Date | null; receivedAt: Date } }[];
-  promises?: { promisedFor: Date; createdAt: Date }[];
+  promises?: { promisedFor: Date; createdAt: Date; replacedAt?: Date | null }[];
 };
 export const toPayInvoice = (x: RawPayInvoice): PayInvoice => ({
   id: x.id, number: x.number, amount: Number(x.amount), issuedAt: x.issuedAt, dueAt: x.dueAt,
@@ -105,6 +105,8 @@ export function promiseFacts(invs: PayInvoice[], now: Date) {
   let kept = 0, broken = 0, pending = 0;
   for (const inv of invs) {
     for (const p of inv.promises) {
+      // A promise the customer replaced before its day is not judged; the new one is.
+      if (p.replacedAt && daysBetween(p.replacedAt, p.promisedFor) >= 0) continue;
       const recBy = sumMoney(inv.apps.filter((a) => a.reconciled && daysBetween(a.receivedAt, p.promisedFor) >= 0).map((a) => a.amount));
       const anyBy = sumMoney(inv.apps.filter((a) => daysBetween(a.receivedAt, p.promisedFor) >= 0).map((a) => a.amount));
       if (cmpMoney(recBy, inv.amount) >= 0) kept++;

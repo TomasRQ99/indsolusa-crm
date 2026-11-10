@@ -4,7 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { assertCanEditMoney, assertCanEditOps, canFinance, canManageAll } from "@/lib/permissions";
+import { assertCanEditMoney, assertCanEditOps, canDecideCredit, canFinance, canManageAll } from "@/lib/permissions";
 import { optionalDate, optionalText, parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
 import { addDays, bankDiscrepancies, esagra, invoiceBlockers, invoiceCash, nextDocNumber, paymentState, today } from "@/lib/domain";
@@ -24,6 +24,12 @@ async function requireManager() {
 }
 
 /** Treasury & cash work: management or Finanzas (user decision 2026-11-09). */
+async function requireCreditAuthority() {
+  const user = await requireUser();
+  if (!canDecideCredit(user)) throw new Error("Solo Finanzas o Gerencia deciden sobre crédito / Only Finance or Management decide on credit.");
+  return user;
+}
+
 async function requireFinance() {
   const user = await requireUser();
   if (!canFinance(user)) throw new Error("Solo Gerencia, Director Comercial o Finanzas / Management or Finance only.");
@@ -89,17 +95,26 @@ export async function issueInvoice(deliveryId: string) {
 
 // ---------- Promises and cash ----------
 
+/** §61: a promise never overwrites another. A new one replaces the latest open promise, which keeps its history. */
 export async function recordPromise(invoiceId: string, formData: FormData) {
   const user = await requireUser();
+  const inv = await db.invoice.findUniqueOrThrow({ where: { id: invoiceId }, select: { deal: { select: { ownerId: true } } } });
+  assertCanEditMoney(user, inv.deal.ownerId);
   const data = parseForm(
     z.object({
       promisedFor: z.string().min(1).transform((v) => new Date(v)),
       promisedBy: requiredText,
+      promisedByRole: optionalText,
       source: requiredText,
+      amount: z.string().optional().transform((v) => (v && v.trim() ? money.parse(v.replace(",", ".")) : null)),
     }),
     formData,
   );
-  await db.paymentPromise.create({ data: { ...data, invoiceId, recordedById: user.id } });
+  await db.$transaction(async (tx) => {
+    const prev = await tx.paymentPromise.findFirst({ where: { invoiceId, replacedById: null }, orderBy: { createdAt: "desc" } });
+    const p = await tx.paymentPromise.create({ data: { ...data, amount: data.amount && data.amount > 0 ? data.amount : null, invoiceId, recordedById: user.id } });
+    if (prev) await tx.paymentPromise.update({ where: { id: prev.id }, data: { replacedById: p.id, replacedAt: new Date() } });
+  });
   refreshApp();
 }
 
@@ -350,7 +365,7 @@ export async function reconcileExecution(executionId: string, outcome: "CONFIRME
 // ---------- Credit ----------
 
 export async function setCreditLimit(accountId: string, formData: FormData) {
-  await requireManager();
+  await requireCreditAuthority();
   const raw = String(formData.get("creditLimit") ?? "").trim();
   const creditLimit = raw === "" ? null : money.parse(raw);
   await db.account.update({ where: { id: accountId }, data: { creditLimit } });
@@ -358,7 +373,7 @@ export async function setCreditLimit(accountId: string, formData: FormData) {
 }
 
 export async function grantCreditException(dealId: string, formData: FormData) {
-  const user = await requireManager();
+  const user = await requireCreditAuthority();
   const { note } = parseForm(z.object({ note: requiredText }), formData);
   await db.deal.update({
     where: { id: dealId },

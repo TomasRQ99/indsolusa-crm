@@ -109,9 +109,12 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
                 <summary>{t("Registrar promesa de pago", "Record payment promise")}</summary>
                 <form action={recordPromise.bind(null, sel.id)} className="stack">
                   <label>{t("Pagará el", "Will pay on")}<input name="promisedFor" type="date" required defaultValue={dayInput(addDays(now, 3))} /></label>
-                  <label>{t("Quién lo dijo", "Who said it")}<input name="promisedBy" required placeholder={t("Nombre y cargo", "Name and role")} /></label>
+                  <label>{t("Monto (vacío = todo el saldo)", "Amount (empty = full balance)")}<input name="amount" inputMode="decimal" placeholder={i.n2(sel.cash.balance)} /></label>
+                  <label>{t("Quién lo dijo", "Who said it")}<input name="promisedBy" required placeholder={t("Nombre", "Name")} /></label>
+                  <label>{t("Su cargo", "Their role")}<input name="promisedByRole" placeholder={t("p. ej. Tesorería", "e.g. Treasury")} /></label>
                   <label>{t("Cómo y qué dijo (literal)", "How and what was said (verbatim)")}<input name="source" required placeholder={t("Llamada: \"lo programamos el viernes\"", "Call: \"scheduled for Friday\"")} /></label>
                   <button type="submit" className="secondary">{t("Registrar promesa", "Record promise")}</button>
+                  {sel.promises.length > 0 && <span className="src">{t("Reemplaza la promesa vigente; la anterior queda en el historial.", "Replaces the current promise; the previous one stays in the history.")}</span>}
                 </form>
               </details>
               <Link className="btn secondary wide" style={{ marginTop: 10 }} href={`/administracion/pagos-recibidos?account=${sel.account.id}`}>{t("Registrar o conciliar pago", "Record or reconcile payment")}</Link>
@@ -122,7 +125,7 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
                 <ul className="timeline">
                   {sel.promises.map((p) => (
                     <li key={p.id}>
-                      <b>{i.dateShort(p.promisedFor)}</b> · {p.promisedBy}
+                      <b>{i.dateShort(p.promisedFor)}</b>{p.amount ? ` · ${i.money2(p.amount)}` : ""} · {p.promisedBy}{p.promisedByRole ? ` (${p.promisedByRole})` : ""}{p.replacedAt && <span className="sig dash" style={{ marginLeft: 6 }}>{t("reemplazada", "replaced")}</span>}
                       <span className="src block">{p.source}</span>
                       <span className="src block">{t("Registró", "Recorded by")} {p.recordedBy.name} · {i.date(p.createdAt)}</span>
                     </li>
