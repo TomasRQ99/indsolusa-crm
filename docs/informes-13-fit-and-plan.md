@@ -51,3 +51,20 @@ coming, own commission); `Team`, `TeamMember`; `/informes/equipo` (leader's revi
 Mi desempeño has no development block (Module 16) and no quality dimension yet; comparison is vs goal and vs previous month
 only (no prior year, rolling average or trend line); a leader sees the current month only; a team gives report visibility,
 not the right to see commissions; no pair (dupla) view; the Insights tab still lives under Gerencia.
+## 5. I1 and I2 — DONE 2026-11-11
+
+**Business Pulse (§5, §24).** `src/lib/pulse.ts` (`computePulse`: period figures from event dates for the month and the
+previous one, plus `stateNow`; `pulseGroups`: Mercado, Comercial, Operaciones, Administración); `PulseSnapshot`;
+`/informes/pulso` (+ actions `closePulse`, `reopenPulse`). PERIOD figures compare with the previous month; STATE figures are
+labelled "foto de hoy" and have no comparison. Only an ended month can be closed (Gerencia); a closed month shows the saved
+figures; reopening needs a reason and keeps the earlier close. Checked: the company's Eságara equals the sum of each
+person's for the same month (AC55).
+**Future Pulse and intervention queue (§6, §23, v1.1 §25).** `src/lib/future-pulse.ts` (`horizonOf`, `futurePulse`: market,
+commercial, contracted and financial futures by horizon, never added together, no probabilities; `interventionQueue`: at
+most nine items from promises at risk, high-value commitments with risk, biggest Eságara drops, overdue customers, a pending
+policy change, open customer claims — each with impact, owner and where to decide); `/informes/futuro`.
+Both visible to Gerencia, Dirección Comercial, Finanzas and Administración.
+**Limits:** SOLU keeps no history of balances, so a state figure of a past month is only fixed if that month was closed;
+the Team block of the pulse waits for Module 16; the queue has no capacity, succession, contractual-deadline or supplier-exposure
+items yet; financial future has no bank balance; impact amounts in the queue are not localised; no trend lines.
+**Remaining:** I3 (Director and Administración views), I4 (goal-gap causes, insights), I5 (saved views, briefs, builder).

@@ -4036,3 +4036,22 @@ model TeamMember {
   @@unique([teamId, userId])
   @@index([userId])
 }
+
+// ---------- Módulo 13 · monthly close of the Business Pulse (§24) ----------
+
+/// The pulse of a month as it stood when it was closed. A closed month shows these figures and is never silently
+/// recalculated; reopening needs Gerencia and a reason, and the earlier close stays as history.
+model PulseSnapshot {
+  id             String    @id @default(cuid())
+  /// "YYYY-MM"
+  period         String
+  version        Int
+  data           Json
+  closedByName   String
+  closedAt       DateTime  @default(now())
+  reopenedAt     DateTime?
+  reopenedByName String?
+  reopenReason   String?
+
+  @@unique([period, version])
+}

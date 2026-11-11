@@ -97,6 +97,7 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   DispatchOrder: "all",
   BankAccount: "all",
   DealCost: "all",
+  PulseSnapshot: ["period", "version", "closedByName", "reopenedByName", "reopenReason"],
   Team: "all",
   TeamMember: "all",
   DealAuthorization: "all",

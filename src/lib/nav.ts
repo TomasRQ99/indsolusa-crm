@@ -105,6 +105,8 @@ export const MODULES: NavModule[] = [
     tabs: [
       { href: "/informes", es: "Mi desempeño", en: "My performance" },
       { href: "/informes/equipo", es: "Equipo", en: "Team" },
+      { href: "/informes/pulso", es: "Pulso del negocio", en: "Business pulse", roles: ["GERENCIA", "DIRECTOR_COMERCIAL", "FINANZAS", "ADMINISTRACION"] },
+      { href: "/informes/futuro", es: "Pulso del futuro", en: "Future pulse", roles: ["GERENCIA", "DIRECTOR_COMERCIAL", "FINANZAS", "ADMINISTRACION"] },
       { href: "/informes/metricas", es: "Diccionario de métricas", en: "Metric dictionary" },
     ],
   },
