@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { today, dayInput } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
 import { getOpsPolicy } from "@/lib/ops-home";
+import { shipClass } from "@/lib/ops-rules";
 import { CLEARANCE_DAYS, LAST_MILE_DAYS, isDomestic } from "@/lib/purchasing";
 import { WEIGHT_SOURCES, choiceNeedsReason, logisticsReadiness, readQuotes, weightCheck } from "@/lib/freight-rules";
 import { adapters } from "@/lib/carriers/gateway";
@@ -13,7 +14,7 @@ import { addFreightQuote, chooseFreightQuote, saveFreight } from "@/app/(app)/co
 export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lang: "ES" | "EN"; editable: boolean }) {
   const i = makeI18n(lang);
   const { t } = i;
-  const spo = await db.supplierPO.findUnique({ where: { id: spoId }, select: { id: true, dealId: true, supplierId: true, shipBy: true, incoterm: true, currency: true, lines: { select: { code: true } }, supplier: { select: { country: true } }, deal: { select: { promisedDate: true, account: { select: { address: true } } } }, freight: { include: { quotes: { orderBy: { cost: "asc" } } } } } });
+  const spo = await db.supplierPO.findUnique({ where: { id: spoId }, select: { id: true, dealId: true, supplierId: true, shipBy: true, incoterm: true, currency: true, amount: true, lines: { select: { code: true } }, supplier: { select: { country: true } }, deal: { select: { promisedDate: true, account: { select: { address: true } } } }, freight: { include: { quotes: { orderBy: { cost: "asc" } } } } } });
   if (!spo) return null;
   const T = today();
   const codes = spo.lines.map((l) => l.code).filter((c): c is string => !!c);
@@ -33,6 +34,10 @@ export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lan
   const wc = weightCheck(f?.grossKg != null ? Number(f.grossKg) : null, obs.map((o) => Number(o.grossKg)));
   const after = international ? CLEARANCE_DAYS + LAST_MILE_DAYS : LAST_MILE_DAYS;
   const reads = f ? readQuotes(f.quotes.map((q) => ({ id: q.id, cost: Number(q.cost), currency: q.currency, transitDays: q.transitDays, pickupDate: q.pickupDate })), { readyDate: f.readyDate, promise: spo.deal.promisedDate, today: T, afterArrivalDays: after, policy: pol.value }) : [];
+  // Courier or cargo: physical (gross) weight and the value of the goods alone, which is what this purchase order holds.
+  const sc = international ? shipClass(v.grossKg, spo.currency === "USD" ? Number(spo.amount) : null, pol.value) : null;
+  const scWord = { COURIER: t("Cuenta courier", "Courier account"), CARGO: t("Cuenta de carga: importación formal y nacionalización", "Cargo account: formal import and nationalisation"), BETWEEN: t("Courier o carga: por confirmar", "Courier or cargo: to confirm"), UNKNOWN: t("Courier o carga: faltan datos", "Courier or cargo: data missing") };
+  const scTone = { COURIER: "ok", CARGO: "attn", BETWEEN: "wait", UNKNOWN: "wait" } as const;
   const tone = { PROTECTED: "ok", NARROW: "attn", AT_RISK: "risk", BREACHED: "risk", UNKNOWN: "wait" } as const;
   const word = { PROTECTED: t("Protege la promesa", "Protects the promise"), NARROW: t("Promesa justa", "Narrow"), AT_RISK: t("Promesa en riesgo", "Promise at risk"), BREACHED: t("Promesa incumplida", "Promise breached"), UNKNOWN: t("No se puede leer", "Can't be read") };
   const yn = (name: string, val: boolean | null | undefined) => <select name={name} defaultValue={val == null ? "" : val ? "yes" : "no"}><option value="">{t("No se sabe", "Unknown")}</option><option value="yes">{t("Sí", "Yes")}</option><option value="no">No</option></select>;
@@ -42,6 +47,7 @@ export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lan
     <section className="jblock" id="flete">
       <div className="jbh"><b>{t("FLETE", "FREIGHT")}</b><span className="grow" />{missing == null ? <span className="sig wait">{t("Sin preparar", "Not prepared")}</span> : missing.length === 0 ? <span className="sig ok">{t("Listo para reservar transporte", "Ready to book transport")}</span> : <span className="sig attn">{t(`Faltan ${missing.length} datos`, `${missing.length} items missing`)}</span>}</div>
       {missing && missing.length > 0 && <ul className="mk-ul small">{missing.map((m) => <li key={m.key}><b>{t(m.what.es, m.what.en)}</b> · <span className="muted">{t(m.why.es, m.why.en)}</span></li>)}</ul>}
+      {sc && <p className="small"><span className={`sig ${scTone[sc.cls]}`}>{scWord[sc.cls]}</span> {sc.reasons.map((r) => t(r.es, r.en)).join(" · ")}<span className="src block">{t("Regla de DHL a través de Importsoluciones: cuenta el peso físico (no el volumétrico) y el valor del bien sin fletes ni servicios. Los valores se cambian en Operaciones → Configuración.", "DHL rule through Importsoluciones: physical weight counts (not volumetric) and the value of the goods without freight or services. The values are changed in Operations → Settings.")}</span></p>}
       {wc.ask && !f?.reconfirmedAt && <p className="note attn">{t(`El peso indicado (${Number(f!.grossKg)} kg) no coincide con lo medido antes para esta referencia (${wc.min}–${wc.max} kg). No se sobrescribe ninguno: pide al proveedor que lo reconfirme y anótalo abajo.`, `The stated weight (${Number(f!.grossKg)} kg) doesn't match what was measured before for this part (${wc.min}–${wc.max} kg). Neither is overwritten: ask the supplier to reconfirm and note it below.`)}</p>}
       {f?.reconfirmedAt && <p className="src">{t(`Peso reconfirmado el ${i.day(f.reconfirmedAt)}: ${f.reconfirmNote}`, `Weight reconfirmed on ${i.day(f.reconfirmedAt)}: ${f.reconfirmNote}`)}</p>}
 

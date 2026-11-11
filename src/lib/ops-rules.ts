@@ -30,10 +30,11 @@ export const needsCommercial = (areas: unknown) => readAreas(areas).length > 0;
 
 export const OPS_POLICY_KEY = "opsPolicy";
 /** narrowDays: expected delivery this close to the promise (or closer) reads "Narrow". Editable; defaults await O-15. */
-export type OpsPolicy = { narrowDays: number; upcomingDays: number; graceDays: number; warrantyMonths: number; warrantyEndingDays: number };
-export const DEFAULT_OPS_POLICY: OpsPolicy = { narrowDays: 2, upcomingDays: 14, graceDays: 1, warrantyMonths: 12, warrantyEndingDays: 60 };
+export type OpsPolicy = { narrowDays: number; upcomingDays: number; graceDays: number; warrantyMonths: number; warrantyEndingDays: number; courierMaxKg: number; cargoOverKg: number; cargoFobUsd: number };
+// Courier / cargo values as given by Importsoluciones on 2026-11-11 (courier up to 49 kg; cargo above 50 kg or FOB above USD 2,000).
+export const DEFAULT_OPS_POLICY: OpsPolicy = { narrowDays: 2, upcomingDays: 14, graceDays: 1, warrantyMonths: 12, warrantyEndingDays: 60, courierMaxKg: 49, cargoOverKg: 50, cargoFobUsd: 2000 };
 /** Bounds for each threshold, used by the settings screen: a value outside them is refused, never clamped silently. */
-export const OPS_POLICY_BOUNDS: Record<keyof OpsPolicy, [number, number]> = { narrowDays: [0, 30], upcomingDays: [1, 90], graceDays: [0, 15], warrantyMonths: [1, 120], warrantyEndingDays: [1, 365] };
+export const OPS_POLICY_BOUNDS: Record<keyof OpsPolicy, [number, number]> = { narrowDays: [0, 30], upcomingDays: [1, 90], graceDays: [0, 15], warrantyMonths: [1, 120], warrantyEndingDays: [1, 365], courierMaxKg: [1, 1000], cargoOverKg: [1, 1000], cargoFobUsd: [0, 1000000] };
 export function cleanOpsPolicy(raw: Record<string, unknown>): OpsPolicy | null {
   const out = {} as OpsPolicy;
   for (const k of Object.keys(OPS_POLICY_BOUNDS) as (keyof OpsPolicy)[]) {
@@ -41,7 +42,23 @@ export function cleanOpsPolicy(raw: Record<string, unknown>): OpsPolicy | null {
     if (!Number.isInteger(n) || n < OPS_POLICY_BOUNDS[k][0] || n > OPS_POLICY_BOUNDS[k][1]) return null;
     out[k] = n;
   }
+  // The cargo weight can never start below where courier ends.
+  if (out.cargoOverKg < out.courierMaxKg) return null;
   return out;
+}
+
+export type ShipClass = { cls: "COURIER" | "CARGO" | "BETWEEN" | "UNKNOWN"; reasons: Txt[] };
+/** Courier or cargo (rule given by Importsoluciones, who hold the DHL account). Cargo means formal import and
+ *  nationalisation. Uses the PHYSICAL weight, never the volumetric one, and the FOB value of the goods alone. */
+export function shipClass(physicalKg: number | null, fobUsd: number | null, p: OpsPolicy): ShipClass {
+  const reasons: Txt[] = [];
+  if (physicalKg != null && physicalKg > p.cargoOverKg) reasons.push({ es: `Peso físico de ${physicalKg} kg, por encima de ${p.cargoOverKg} kg`, en: `Physical weight ${physicalKg} kg, above ${p.cargoOverKg} kg` });
+  if (fobUsd != null && fobUsd > p.cargoFobUsd) reasons.push({ es: `Valor FOB de USD ${fobUsd.toFixed(2)}, por encima de USD ${p.cargoFobUsd}`, en: `FOB value USD ${fobUsd.toFixed(2)}, above USD ${p.cargoFobUsd}` });
+  if (reasons.length) return { cls: "CARGO", reasons };
+  // Without both facts SOLU does not guess: a missing weight or value could still make it cargo.
+  if (physicalKg == null || fobUsd == null) return { cls: "UNKNOWN", reasons: [physicalKg == null ? { es: "Falta el peso físico", en: "Physical weight missing" } : { es: "Falta el valor FOB en USD", en: "FOB value in USD missing" }] };
+  if (physicalKg > p.courierMaxKg) return { cls: "BETWEEN", reasons: [{ es: `Peso entre ${p.courierMaxKg} y ${p.cargoOverKg} kg: la regla no dice cuál cuenta aplica`, en: `Weight between ${p.courierMaxKg} and ${p.cargoOverKg} kg: the rule doesn't say which account applies` }] };
+  return { cls: "COURIER", reasons: [{ es: `Hasta ${p.courierMaxKg} kg y FOB hasta USD ${p.cargoFobUsd}`, en: `Up to ${p.courierMaxKg} kg and FOB up to USD ${p.cargoFobUsd}` }] };
 }
 
 export type PromiseHealth = "PROTECTED" | "NARROW" | "AT_RISK" | "BREACHED" | "UNKNOWN";
