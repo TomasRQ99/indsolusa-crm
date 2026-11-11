@@ -5,6 +5,7 @@ import { canEditOps } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { dayInput, today } from "@/lib/domain";
+import { getOpsPolicy } from "@/lib/ops-home";
 import { CLAIM_KINDS, CLAIM_STATES, RESPONSIBLE, coveredOn, warrantyState } from "@/lib/warranty-rules";
 import { addClaimNote, addWarranty, closeClaim, openClaim, removeWarranty } from "./actions";
 
@@ -28,6 +29,7 @@ export default async function WarrantyPage({ params, searchParams }: { params: P
   if (!d) notFound();
   const editable = canEditOps(user, d.ownerId);
   const T = today();
+  const pol = (await getOpsPolicy()).value;
   // Delivered lines that have no warranty recorded yet: offered as a starting point, nothing is assumed.
   const delivered = d.deliveries.flatMap((x) => x.lines.map((l) => ({ item: `${l.qty} × ${l.dealItem.code ? `${l.dealItem.code} · ` : ""}${l.dealItem.description}`.slice(0, 200), serial: l.serials, at: x.deliveredAt, rem: x.code })));
   const pre = delivered.find((x) => !d.warranties.some((w) => w.item === x.item)) ?? null;
@@ -57,7 +59,7 @@ export default async function WarrantyPage({ params, searchParams }: { params: P
                 <td className="small"><b>{w.item}</b>{w.terms && <span className="src block">{w.terms}</span>}</td>
                 <td className="mono small">{w.serial ?? "—"}</td>
                 <td className="mono small">{i.day(w.startsOn)} – {i.day(s.end)}<span className="src block">{t(`${w.months} meses`, `${w.months} months`)}</span></td>
-                <td>{s.active ? <span className={`sig ${s.daysLeft <= 60 ? "attn" : "ok"}`}>{t(`Vigente · ${s.daysLeft} días`, `Active · ${s.daysLeft} days`)}</span> : s.notStarted ? <span className="sig wait">{t("Aún no empieza", "Not started")}</span> : <span className="sig wait">{t("Vencida", "Expired")}</span>}</td>
+                <td>{s.active ? <span className={`sig ${s.daysLeft <= pol.warrantyEndingDays ? "attn" : "ok"}`}>{t(`Vigente · ${s.daysLeft} días`, `Active · ${s.daysLeft} days`)}</span> : s.notStarted ? <span className="sig wait">{t("Aún no empieza", "Not started")}</span> : <span className="sig wait">{t("Vencida", "Expired")}</span>}</td>
                 <td className="small">{w.supplierName ?? "—"}{w.supplierMonths ? <span className="src block">{t(`${w.supplierMonths} meses del proveedor`, `${w.supplierMonths} months from supplier`)}</span> : null}</td>
                 <td>{editable && <form action={removeWarranty.bind(null, w.id)}><button type="submit" className="linkb">{t("quitar", "remove")}</button></form>}</td>
               </tr>
@@ -71,7 +73,7 @@ export default async function WarrantyPage({ params, searchParams }: { params: P
               <div className="qa-row">
                 <label>{t("Serial", "Serial")}<input name="serial" maxLength={200} defaultValue={pre?.serial ?? ""} /></label>
                 <label style={{ flex: "0 0 160px" }}>{t("Empieza", "Starts")}<input name="startsOn" type="date" required defaultValue={dayInput(pre?.at ?? T)} /></label>
-                <label style={{ flex: "0 0 120px" }}>{t("Meses", "Months")}<input name="months" type="number" min={1} max={240} required defaultValue={12} /></label>
+                <label style={{ flex: "0 0 120px" }}>{t("Meses", "Months")}<input name="months" type="number" min={1} max={240} required defaultValue={pol.warrantyMonths} /></label>
               </div>
               <label>{t("Condiciones (qué cubre y qué no)", "Terms (what it covers and what it doesn't)")}<input name="terms" maxLength={300} /></label>
               <div className="qa-row">

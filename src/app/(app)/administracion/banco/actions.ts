@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { canFinance } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { money2, sumMoney } from "@/lib/money";
+import { invoiceCash } from "@/lib/domain";
 import { CLASSES, matchState, parseBankCsv } from "@/lib/bank-csv";
 
 // Operaciones O9a · bank statements (module 11 §42). Finanzas, Administración and management upload the bank's file
@@ -85,6 +86,22 @@ export async function createPaymentFromTx(txId: string, fd: FormData) {
     await tx.bankMatch.create({ data: { transactionId: txId, customerPaymentId: p.id, amount: money2(open), createdByName: user.name } });
   });
   go("ok=pago-creado");
+}
+
+/** Money in that equals what one open invoice still owes: record the payment and apply it to that invoice in one step. */
+export async function createPaymentForInvoice(txId: string, fd: FormData) {
+  const user = await finance();
+  const { t, open, state } = await loadTx(txId);
+  const inv = await db.invoice.findUnique({ where: { id: String(fd.get("invoiceId") ?? "") }, include: { applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } } } });
+  if (!inv || Number(t.amount) <= 0 || state === "CLASSIFIED" || open <= 0.005) go("err=cruce");
+  const c = invoiceCash(inv!);
+  // Checked again at the moment of saving: the invoice may have been paid since the page was opened.
+  if (open > c.balance - c.pendingReconcile + 0.005) go("err=factura-saldo");
+  await db.$transaction(async (tx) => {
+    const p = await tx.customerPayment.create({ data: { accountId: inv!.accountId, amount: money2(open), receivedAt: t.date, reference: `${t.description}${t.reference ? ` · ${t.reference}` : ""}`.slice(0, 190), createdById: user.id, applications: { create: [{ invoiceId: inv!.id, amount: money2(open) }] } } });
+    await tx.bankMatch.create({ data: { transactionId: txId, customerPaymentId: p.id, amount: money2(open), createdByName: user.name } });
+  });
+  go("ok=pago-factura");
 }
 
 /** Money out ↔ a supplier payment sent from SOLU. The link is evidence; confirming the payment stays its own step. */

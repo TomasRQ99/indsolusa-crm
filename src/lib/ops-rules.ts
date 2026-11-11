@@ -30,8 +30,19 @@ export const needsCommercial = (areas: unknown) => readAreas(areas).length > 0;
 
 export const OPS_POLICY_KEY = "opsPolicy";
 /** narrowDays: expected delivery this close to the promise (or closer) reads "Narrow". Editable; defaults await O-15. */
-export type OpsPolicy = { narrowDays: number; upcomingDays: number };
-export const DEFAULT_OPS_POLICY: OpsPolicy = { narrowDays: 2, upcomingDays: 14 };
+export type OpsPolicy = { narrowDays: number; upcomingDays: number; graceDays: number; warrantyMonths: number; warrantyEndingDays: number };
+export const DEFAULT_OPS_POLICY: OpsPolicy = { narrowDays: 2, upcomingDays: 14, graceDays: 1, warrantyMonths: 12, warrantyEndingDays: 60 };
+/** Bounds for each threshold, used by the settings screen: a value outside them is refused, never clamped silently. */
+export const OPS_POLICY_BOUNDS: Record<keyof OpsPolicy, [number, number]> = { narrowDays: [0, 30], upcomingDays: [1, 90], graceDays: [0, 15], warrantyMonths: [1, 120], warrantyEndingDays: [1, 365] };
+export function cleanOpsPolicy(raw: Record<string, unknown>): OpsPolicy | null {
+  const out = {} as OpsPolicy;
+  for (const k of Object.keys(OPS_POLICY_BOUNDS) as (keyof OpsPolicy)[]) {
+    const n = Number(raw[k]);
+    if (!Number.isInteger(n) || n < OPS_POLICY_BOUNDS[k][0] || n > OPS_POLICY_BOUNDS[k][1]) return null;
+    out[k] = n;
+  }
+  return out;
+}
 
 export type PromiseHealth = "PROTECTED" | "NARROW" | "AT_RISK" | "BREACHED" | "UNKNOWN";
 const DAY = 864e5;

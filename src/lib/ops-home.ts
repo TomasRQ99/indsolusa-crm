@@ -2,7 +2,7 @@ import { db } from "./db";
 import { addDays, today } from "./domain";
 import { subMoney, sumMoney } from "./money";
 import { DEFAULT_OPS_POLICY, OPS_POLICY_KEY, promiseHealth, type OpsPolicy } from "./ops-rules";
-import { DEFAULT_GRACE_DAYS, commitmentReading } from "./commitment-rules";
+import { commitmentReading } from "./commitment-rules";
 
 // Operaciones O0 · Operations Home and Future (module 11 §46–47; AC37). Built over records that already exist:
 // exceptions first, then what is ready to move, promises at risk, healthy waits and resource exposure.
@@ -53,7 +53,7 @@ export async function opsHome() {
   const row = (key: string, href: string, deal: DealRef, es: string, en: string, at: Date | null, amount?: number, note?: string | null): OpsRow => ({ key, href, deal, what: { es, en }, at, amount, note });
   // O4b: supplier commitments. Ahead of their date they are healthy waits; past the grace days without evidence, attention.
   const commits = await db.supplierCommitment.findMany({ where: { status: { in: ["REPORTED", "COMMITTED"] }, expectedDate: { not: null }, supplierPo: { receivedAt: null } }, orderBy: { expectedDate: "asc" }, select: { id: true, label: true, status: true, expectedDate: true, supplierPo: { select: { id: true, code: true, supplier: { select: { name: true } }, deal: { select: dealSel } } } } });
-  const readC = commits.map((c) => ({ c, r: commitmentReading(c, T, DEFAULT_GRACE_DAYS) }));
+  const readC = commits.map((c) => ({ c, r: commitmentReading(c, T, pol.graceDays) }));
   // O8: dispatch orders to the customer, and O7: freight claims still open with a carrier.
   const [dispatch, claims] = await Promise.all([
     db.dispatchOrder.findMany({ where: { cancelledAt: null, OR: [{ deliveredAt: null }, { delivery: { invoice: null, receptionCode: null }, deal: { account: { requiresReceptionCode: true } } }] }, orderBy: { createdAt: "asc" }, select: { id: true, code: true, scheduledFor: true, dispatchedAt: true, deliveredAt: true, customerHoldSince: true, customerHoldReason: true, createdAt: true, deal: { select: dealSel } } }),

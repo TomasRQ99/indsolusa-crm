@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
 import { today, dayInput } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
-import { COMMIT_STATUS, DEFAULT_GRACE_DAYS, MILESTONES, ORDER_KINDS, commitmentReading } from "@/lib/commitment-rules";
+import { COMMIT_STATUS, MILESTONES, ORDER_KINDS, commitmentReading } from "@/lib/commitment-rules";
+import { getOpsPolicy } from "@/lib/ops-home";
 import { markOccurred, setOrderKind, updateCommitment } from "@/app/(app)/compras/actions";
 
 // Operaciones O4b · what the supplier promised, by milestone: reported vs committed vs actually occurred, with a
@@ -13,6 +14,7 @@ export async function SpoCommitments({ spoId, lang, editable }: { spoId: string;
   const spo = await db.supplierPO.findUnique({ where: { id: spoId }, select: { id: true, releasedAt: true, orderKind: true, commitments: { orderBy: { position: "asc" } } } });
   if (!spo?.releasedAt) return null;
   const T = today();
+  const grace = (await getOpsPolicy()).value.graceDays;
   const label = (c: { type: string; label: string }) => { const m = Object.values(MILESTONES).flat().find((x) => x.key === c.type); return m ? t(m.es, m.en) : c.label; };
   const tone = { DONE: "ok", WAITING: "info", DUE: "attn", MISSED: "risk", NO_DATE: "wait" } as const;
 
@@ -26,7 +28,7 @@ export async function SpoCommitments({ spoId, lang, editable }: { spoId: string;
         </form>
       )}
       {spo.commitments.length === 0 ? <p className="small muted">{t("Elige el tipo de pedido para ver sus hitos: no es lo mismo algo en stock que algo que se fabrica.", "Choose the kind of order to see its milestones: a stock item is not the same as a manufactured one.")}</p> : spo.commitments.map((c) => {
-        const r = commitmentReading(c, T, DEFAULT_GRACE_DAYS);
+        const r = commitmentReading(c, T, grace);
         return (
           <article key={c.id} className="exc-item">
             <header className="exc-head"><b>{label(c)}</b><span className="grow" /><span className={`sig ${tone[r.reading]}`}>{c.status === "OCCURRED" ? t("Ocurrió", "Occurred") : t(COMMIT_STATUS[c.status]?.es ?? c.status, COMMIT_STATUS[c.status]?.en ?? c.status)}</span></header>

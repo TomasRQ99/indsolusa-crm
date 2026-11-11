@@ -44,7 +44,7 @@ export default async function DispatchOrderPage({ params, searchParams }: { para
 
   const okMsg: Record<string, string> = {
     creado: t("Despacho creado.", "Dispatch order created."), requisito: t("Requisito actualizado.", "Requirement updated."), programado: t("Programación guardada.", "Schedule saved."), espera: t("Espera del cliente actualizada.", "Customer wait updated."),
-    despachado: t("Salió hacia el cliente. Lo comprometido de este Journey salió del inventario.", "On its way to the customer. This Journey's committed stock left the warehouse."), fallido: t("Intento fallido registrado. El despacho vuelve a programarse.", "Failed attempt recorded. The order goes back to scheduling."),
+    despachado: t("Salió hacia el cliente. Lo comprometido de este Journey salió del inventario.", "On its way to the customer. This Journey's committed stock left the warehouse."), fallido: t("Intento fallido registrado. El despacho vuelve a programarse y la mercancía vuelve al inventario.", "Failed attempt recorded. The order goes back to scheduling and the goods return to stock."),
     entregado: t("Entregado. Se creó la remisión.", "Delivered. The delivery note was created."), entrada: t("Entrada del cliente registrada.", "Customer entry recorded."), costo: t("Costo guardado.", "Cost saved."), evidencia: t("Evidencia guardada.", "Evidence saved."), cancelado: t("Despacho cancelado.", "Dispatch order cancelled."), perfil: t("Perfil de entrega del cliente actualizado.", "Customer delivery profile updated."),
   };
   const errMsg: Record<string, string> = {

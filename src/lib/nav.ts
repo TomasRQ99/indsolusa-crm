@@ -74,6 +74,7 @@ export const MODULES: NavModule[] = [
       { href: "/operaciones/garantias", es: "Garantías", en: "Warranties" },
       { href: "/operaciones/experiencias", es: "Experiencias", en: "Experiences" },
       { href: "/operaciones/metricas", es: "Métricas", en: "Metrics" },
+      { href: "/operaciones/configuracion", es: "Configuración", en: "Settings" },
     ],
   },
   {
@@ -84,6 +85,7 @@ export const MODULES: NavModule[] = [
       { href: "/administracion/banco", es: "Banco", en: "Bank" },
       { href: "/administracion/pagos-proveedores", es: "Pagos a proveedores", en: "Supplier payments" },
       { href: "/administracion/pagos-exterior", es: "Pagos al exterior", en: "Foreign payments" },
+      { href: "/administracion/economia", es: "Eságara real", en: "Real Eságara" },
       { href: "/administracion/cupos", es: "Cupos de crédito", en: "Credit limits" },
       { href: "/administracion/historial", es: "Historial de cambios", en: "Change history", managerOnly: true },
     ],

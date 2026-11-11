@@ -3,10 +3,10 @@ import { requireUser } from "@/lib/auth";
 import { canFinance } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
-import { addDays, today } from "@/lib/domain";
+import { addDays, invoiceCash, today } from "@/lib/domain";
 import { sumMoney } from "@/lib/money";
 import { CLASSES, matchState, suggest } from "@/lib/bank-csv";
-import { classifyTx, createPaymentFromTx, matchCustomerPayment, matchExecution, removeMatch, saveBankAccount, undoStatement, uploadStatement } from "./actions";
+import { classifyTx, createPaymentForInvoice, createPaymentFromTx, matchCustomerPayment, matchExecution, removeMatch, saveBankAccount, undoStatement, uploadStatement } from "./actions";
 
 // Operaciones O9a · bank statements (module 11 §42): what the bank says happened, next to what SOLU knows.
 // Suggested, confirmed, partial and unmatched are different states; SOLU never confirms a match by itself.
@@ -19,7 +19,8 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
   const edit = canFinance(user);
   const all = sp.ver === "todo";
   const since = addDays(today(), -120);
-  const [accounts, statements, txs, payments, executions, customers] = await Promise.all([
+  const [openInvRaw, accounts, statements, txs, payments, executions, customers] = await Promise.all([
+    db.invoice.findMany({ where: { issuedAt: { gte: addDays(today(), -540) } }, select: { id: true, number: true, amount: true, account: { select: { name: true } }, applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } } } }),
     db.bankAccount.findMany({ where: { active: true }, orderBy: { createdAt: "asc" } }),
     db.bankStatement.findMany({ orderBy: { createdAt: "desc" }, take: 8, include: { bankAccount: { select: { label: true } }, _count: { select: { transactions: true } } } }),
     db.bankTransaction.findMany({ orderBy: [{ date: "desc" }, { createdAt: "desc" }], take: 400, include: { bankAccount: { select: { label: true, currency: true } }, matches: { include: { customerPayment: { select: { id: true, reference: true, account: { select: { name: true } } } }, paymentExecution: { select: { id: true, paymentId: true, payment: { select: { supplierPo: { select: { code: true, supplier: { select: { name: true } } } } } } } } } } } }),
@@ -29,19 +30,20 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
   ]);
   const payC = payments.map((p) => ({ id: p.id, amount: Number(p.amount), date: p.receivedAt, label: `${p.account.name}${p.reference ? ` · ${p.reference}` : ""}`, alreadyMatched: sumMoney(p.bankMatches.map((m) => m.amount)) }));
   const exeC = executions.map((e) => ({ id: e.id, amount: Number(e.amount), date: e.sentAt, label: `${e.payment.supplierPo.supplier.name} · ${e.payment.supplierPo.code}${e.bankRef ? ` · ${e.bankRef}` : ""}`, alreadyMatched: sumMoney(e.bankMatches.map((m) => m.amount)) }));
+  const openInv = openInvRaw.map((inv) => { const c = invoiceCash(inv); return { id: inv.id, number: inv.number, customer: inv.account.name, owes: Math.round((c.balance - c.pendingReconcile) * 100) / 100 }; }).filter((x) => x.owes > 0.005);
   const rows = txs.map((x) => ({ x, s: matchState(Number(x.amount), sumMoney(x.matches.map((m) => m.amount)), x.classifiedAs) }));
   const open = rows.filter((r) => r.s.state === "UNMATCHED" || r.s.state === "PARTIAL");
   const shown = all ? rows : open;
   const last = sp.st ? statements.find((s) => s.id === sp.st) : null;
   const tone = { UNMATCHED: "attn", PARTIAL: "attn", MATCHED: "ok", CLASSIFIED: "wait" } as const;
   const word = { UNMATCHED: t("Sin explicar", "Unmatched"), PARTIAL: t("Explicado en parte", "Partially matched"), MATCHED: t("Explicado", "Matched"), CLASSIFIED: t("Apartado", "Set aside") };
-  const okMsg: Record<string, string> = { cuenta: t("Cuenta guardada.", "Account saved."), deshecho: t("Carga deshecha.", "Upload undone."), cruzado: t("Movimiento cruzado.", "Movement matched."), "pago-creado": t("Pago del cliente registrado desde el banco. Falta aplicarlo a sus facturas en Pagos recibidos.", "Customer payment recorded from the bank. It still has to be applied to its invoices in Payments received."), clasificado: t("Movimiento actualizado.", "Movement updated."), descruzado: t("Cruce quitado.", "Match removed.") };
+  const okMsg: Record<string, string> = { cuenta: t("Cuenta guardada.", "Account saved."), deshecho: t("Carga deshecha.", "Upload undone."), cruzado: t("Movimiento cruzado.", "Movement matched."), "pago-factura": t("Pago registrado y aplicado a la factura. Falta conciliarlo en Pagos recibidos.", "Payment recorded and applied to the invoice. It still has to be reconciled in Payments received."), "pago-creado": t("Pago del cliente registrado desde el banco. Falta aplicarlo a sus facturas en Pagos recibidos.", "Customer payment recorded from the bank. It still has to be applied to its invoices in Payments received."), clasificado: t("Movimiento actualizado.", "Movement updated."), descruzado: t("Cruce quitado.", "Match removed.") };
   const errMsg: Record<string, string> = {
     permiso: t("Esto corresponde a Finanzas, Administración o Gerencia.", "This is for Finance, Administration or Management."), cuenta: t("Indica el nombre de la cuenta.", "Give the account a name."),
     archivo: t("Elige el archivo del banco en formato CSV (hasta 2 MB).", "Choose the bank's file in CSV format (up to 2 MB)."), vacio: t("El archivo está vacío.", "The file is empty."),
     columnas: t("SOLU no reconoció las columnas de fecha, descripción y valor, así que no cargó nada. Títulos que vio: ", "SOLU didn't recognise the date, description and amount columns, so it loaded nothing. Titles it saw: ") + (sp.vi ?? "—"),
     "sin-movimientos": t("El archivo no trae movimientos.", "The file has no movements."), deshacer: t("Ya se trabajó sobre movimientos de esa carga: no se puede deshacer.", "Movements from that upload were already worked on: it can't be undone."),
-    cruce: t("Ese cruce no aplica: revisa el sentido del movimiento y lo que queda por explicar.", "That match doesn't apply: check the direction of the movement and what is left to explain."), clasificar: t("Elige qué es y escribe una nota. Un movimiento ya cruzado no se aparta.", "Choose what it is and write a note. A movement already matched can't be set aside."), movimiento: t("Ese movimiento no existe.", "That movement doesn't exist."),
+    cruce: t("Ese cruce no aplica: revisa el sentido del movimiento y lo que queda por explicar.", "That match doesn't apply: check the direction of the movement and what is left to explain."), clasificar: t("Elige qué es y escribe una nota. Un movimiento ya cruzado no se aparta.", "Choose what it is and write a note. A movement already matched can't be set aside."), movimiento: t("Ese movimiento no existe.", "That movement doesn't exist."), "factura-saldo": t("Esa factura ya no debe ese valor. Revisa su saldo.", "That invoice no longer owes that amount. Check its balance."),
   };
 
   return (
@@ -98,6 +100,7 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
         {shown.map(({ x, s }) => {
           const amt = Number(x.amount), cur = x.bankAccount.currency;
           const isOpen = s.state === "UNMATCHED" || s.state === "PARTIAL";
+          const invSug = isOpen && amt > 0 ? openInv.filter((v) => Math.abs(v.owes - s.open) <= 0.005).slice(0, 3) : [];
           const sug = isOpen ? (amt > 0 ? suggest(amt, x.date, s.open, payC) : suggest(amt, x.date, s.open, exeC)) : [];
           return (
             <article key={x.id} className="exc-item">
@@ -115,6 +118,15 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
                         <input type="hidden" name={amt > 0 ? "paymentId" : "executionId"} value={c.id} />
                         <span className="small" style={{ flex: "1 1 240px" }}>{c.label} · <span className="mono">{cur} {i.n2(c.amount)}</span> · {i.day(c.date)}</span>
                         <button type="submit" className="secondary sm" style={{ flex: "0 0 auto" }}>{t("Sí, es este", "Yes, this one")}</button>
+                      </form>
+                    ))}
+                  </div>}
+                  {sug.length === 0 && invSug.length > 0 && <div className="note" style={{ marginTop: 6 }}><span className="k">{t("SOLU sugiere (una factura debe exactamente este valor)", "SOLU suggests (an invoice owes exactly this amount)")}</span>
+                    {invSug.map((v) => (
+                      <form key={v.id} action={createPaymentForInvoice.bind(null, x.id)} className="qa-row" style={{ alignItems: "center" }}>
+                        <input type="hidden" name="invoiceId" value={v.id} />
+                        <span className="small" style={{ flex: "1 1 240px" }}>{v.customer} · {t("factura", "invoice")} <span className="mono">{v.number}</span> · {t("debe", "owes")} <span className="mono">{cur} {i.n2(v.owes)}</span></span>
+                        <button type="submit" className="secondary sm" style={{ flex: "0 0 auto" }}>{t("Sí: registrar y aplicar", "Yes: record and apply")}</button>
                       </form>
                     ))}
                   </div>}

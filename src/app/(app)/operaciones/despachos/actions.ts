@@ -124,6 +124,8 @@ export async function recordAttempt(id: string, fd: FormData) {
     await db.$transaction([
       db.deliveryAttempt.create({ data: { orderId: id, at, outcome: "FAILED", cause, reason, recordedByName: user.name } }),
       db.dispatchOrder.update({ where: { id }, data: { dispatchedAt: null, dispatchedByName: null, scheduledFor: null, scheduledByName: null, ...(cause === "CUSTOMER" ? { customerHoldReason: reason, customerHoldSince: new Date() } : {}) } }),
+      // The goods came back: what left the warehouse with this order is in stock again, committed to the same Journey.
+      db.stockLot.updateMany({ where: { dealId: o.dealId, outNote: `Despacho ${o.code}`, outAt: { not: null } }, data: { outAt: null, outNote: null } }),
       db.operationalException.create({ data: { dealId: o.dealId, kind: "DELIVERY_FAILED", whatHappened: `Despacho ${o.code}: intento de entrega fallido`, expected: "Entrega recibida por el cliente", actual: reason!, evidence: `Despacho ${o.code}`, options: ["Reprogramar la entrega", "Acordar nueva cita con el cliente", "Cambiar el recurso de entrega"], recommended: cause === "CUSTOMER" ? "Acordar con el cliente cuándo puede recibir" : "Reprogramar y avisar al cliente", impactAreas: [], ownerId: user.id, deadline: today(), createdByName: user.name } }),
     ]);
     to(id, "ok=fallido");
