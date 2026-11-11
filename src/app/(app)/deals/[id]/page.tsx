@@ -750,6 +750,10 @@ export default async function JourneyPage({
         <p className="quiet-p">{t("Todo lo que Comercial ya resolvió, reunido para quien cumple: promesa, alcance, fuente, economía protegida, crédito y riesgos.", "Everything Commercial already settled, gathered for whoever fulfils it: promise, scope, source, protected economics, credit and risks.")}</p>
       </section>
       <section className="jblock">
+        <div className="jbh"><b>{t("AUTORIZACIÓN POR NIVEL", "AUTHORISATION BY LEVEL")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/autorizacion`}>{t("Abrir", "Open")}</Link></div>
+        <p className="quiet-p">{t("Según el valor del negocio y el nivel de quien lo lleva: quién debe autorizarlo y quién lo autorizó.", "By the value of the business and the level of its owner: who must authorise it and who did.")}</p>
+      </section>
+      <section className="jblock">
         <div className="jbh"><b>{t("ESÁGARA REAL", "REAL ESÁGARA")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/economia`}>{t("Abrir", "Open")}</Link></div>
         <p className="quiet-p">{t("Costos reales del Journey, la Eságara protegida frente a la esperada hoy, y por qué cambió.", "The Journey's real costs, protected Eságara against expected today, and why it changed.")}</p>
       </section>

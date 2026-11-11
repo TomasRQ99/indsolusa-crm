@@ -85,6 +85,7 @@ export const MODULES: NavModule[] = [
       { href: "/administracion/banco", es: "Banco", en: "Bank" },
       { href: "/administracion/pagos-proveedores", es: "Pagos a proveedores", en: "Supplier payments" },
       { href: "/administracion/pagos-exterior", es: "Pagos al exterior", en: "Foreign payments" },
+      { href: "/administracion/cierre", es: "Cierre y comisiones", en: "Close and commissions" },
       { href: "/administracion/economia", es: "Eságara real", en: "Real Eságara" },
       { href: "/administracion/cupos", es: "Cupos de crédito", en: "Credit limits" },
       { href: "/administracion/historial", es: "Historial de cambios", en: "Change history", managerOnly: true },
@@ -105,6 +106,7 @@ export const MODULES: NavModule[] = [
       { href: "/gerencia", es: "Insights", en: "Insights", managerOnly: true },
       { href: "/gerencia/comisiones", es: "Comisiones", en: "Commissions" },
       { href: "/gerencia/liquidacion", es: "Liquidación", en: "Settlement" },
+      { href: "/gerencia/rentabilidad", es: "Rentabilidad", en: "Profitability" },
     ],
   },
 ];

@@ -124,3 +124,21 @@ unanswered); the older per-person approve / pay buttons on Comisiones still work
 missing material costs (R-11: ignore for now); role participation is not part of the run (not built by decision).
 **Module 12 status:** R0, R2, R3, R4 built; R1 resolved by decision; R5 not built by decision; R6 (Dirección and
 Administración home views, profitability analytics by customer / supplier / product, goals vs actual) not built.
+## 9. R6 summary screens and authorisation by level — DONE 2026-11-11
+
+**Summary screens.** `src/lib/profit-summary.ts` (one computation over up to 80 accepted Journeys, commissions and runs);
+`/gerencia/rentabilidad` (month's invoiced Eságara, expected Eságara of open business, to collect, commissions by state,
+Eságara after commissions, why it moved, by customer: sale next to what it leaves) and `/administracion/cierre`
+(ready to close, something missing, where Eságara moved most, costs in another currency, commissions ready, runs unpaid, excess).
+Visible to Gerencia, Dirección Comercial, Finanzas and Administración. **Limits:** no goal-vs-actual (the Eságara goal lives in
+Comercial's goals and is not read here); no view by supplier, product, sector or negotiator; sorted by sale on purpose, never a ranking.
+
+**Authorisation by level (user: "work with the 2025 ranges for now, modifiable later").** `User.authLevel`
+(EMPRENDEDOR | JUNIOR | SENIOR), `DealAuthorization`; `src/lib/auth-levels.ts` (`DEFAULT_AUTH_POLICY` = the 2025 table in
+SMLV with SMLV 1,423,500; `authStep`; `cleanAuthPolicy`), `auth-levels-store.ts`; `/profile/autorizaciones` (ranges and each
+person's level, Gerencia edits, versioned) and `/deals/[id]/autorizacion` (sale in USD → pesos at the official TRM of the day →
+step required for the owner's level → who authorised, with mentor and partners notes).
+**My assumptions, to confirm:** the ranges apply to the **sale value of the Journey**; the level is that of the Journey's
+owner; the amount is converted from USD at the official TRM of the day.
+**Limits:** it informs and records, it blocks nothing; mentor and MMS are typed names, not people in SOLU; "partners if relevant
+risk" is a free note; not connected to purchase approval (still by USD amount) nor to the low-Eságara exception.

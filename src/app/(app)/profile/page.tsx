@@ -44,6 +44,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         <div className="card" id="configuracion">
           <h2>{t("Configuración", "Settings")}</h2>
           <p className="small"><a href="/profile/rentabilidad">{t("Modificar números de Rentabilidad", "Change profitability numbers")}</a></p>
+          <p className="small"><a href="/profile/autorizaciones">{t("Rangos de autorización por nivel", "Authorisation ranges by level")}</a></p>
           <p className="src">{t("Comisión, reparto Comercial / Operativo y costo del dinero. Se propone un cambio y Gerencia lo aprueba.", "Commission, Commercial / Operational split and cost of money. A change is proposed and Management approves it.")}</p>
         </div>
         <div className="card">

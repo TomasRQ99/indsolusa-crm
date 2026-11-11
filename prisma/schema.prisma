@@ -68,6 +68,8 @@ model User {
   lang               Lang                  @default(ES)
   // Length of a normal working day, used by Mi Plan to size capacity.
   workdayMinutes     Int                   @default(570)
+  /// Authorisation level of the person (company ranges by level): EMPRENDEDOR | JUNIOR | SENIOR, or null when not set
+  authLevel          String?
   // Outlook calendar of the person's own mailbox (login email), read and written via Microsoft Graph.
   outlookConnectedAt DateTime?
   createdAt          DateTime              @default(now())
@@ -330,6 +332,7 @@ model Deal {
   dispatchOrders        DispatchOrder[]
   costs                 DealCost[]
   commissionAllocations CommissionAllocation[]
+  authorizations        DealAuthorization[]
   /// module 11 §44.2: OPEN | SUBSTANTIAL | FINAL
   economicsState        String                 @default("OPEN")
   economicsNote         String?
@@ -3975,4 +3978,31 @@ model CommissionSettlementRun {
   entries CommissionEntry[]
 
   @@unique([period, version])
+}
+
+// ---------- Authorisation by level (company ranges, 2025 table as the starting policy) ----------
+
+/// Who authorised a Journey of a given size, according to the ranges in force that day. A record of a fact: the
+/// amounts, the exchange rate and the policy version are kept as they were.
+model DealAuthorization {
+  id             String   @id @default(cuid())
+  dealId         String
+  deal           Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  amountUsd      Decimal  @db.Decimal(14, 2)
+  amountCop      Decimal  @db.Decimal(18, 2)
+  trm            Decimal  @db.Decimal(12, 2)
+  trmSource      String
+  /// level of the person who owns the Journey that day
+  level          String
+  /// PERSONAL | PEER | SENIOR_PEER | MMS_MENTOR | GERENCIA
+  step           String
+  authorizedBy   String
+  mentorInformed String?
+  partnersNote   String?
+  note           String?
+  policyVersion  Int
+  recordedByName String
+  createdAt      DateTime @default(now())
+
+  @@index([dealId])
 }
