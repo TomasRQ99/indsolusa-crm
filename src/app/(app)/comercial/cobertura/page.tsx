@@ -50,6 +50,7 @@ export default async function CoveragePage({ searchParams }: { searchParams: Pro
         <div>
           <div className="crumb"><Link href="/deals">{t("Comercial", "Commercial")}</Link></div>
           <h1>{t("Cobertura por ausencia", "Absence coverage")}</h1>
+          <p className="small"><Link href="/equipo/continuidad">{t("Respaldos y sucesores por rol: Equipo → Continuidad y sucesión", "Backups and successors per role: Team → Continuity and succession")}</Link></p>
           <p>{t("Cuando alguien no está, otra persona actúa sobre sus Journeys por un tiempo definido. El dueño sigue siendo responsable; el permiso vence solo. Las aprobaciones por rol (Eságara, crédito, pagos) nunca se delegan.", "When someone is away, another person acts on their Journeys for a set time. The owner stays accountable; the permission expires by itself. Role approvals (Eságara, credit, payments) are never delegated.")}</p>
         </div>
       </div>
@@ -72,6 +73,7 @@ export default async function CoveragePage({ searchParams }: { searchParams: Pro
                 </div>
                 {manage && <label className="chk"><input type="checkbox" name="kind" value="EMERGENCY" defaultChecked={!!scanFor} /> {t("Emergencia (empieza hoy, sin aviso previo)", "Emergency (starts today, no prior notice)")}</label>}
                 <label>{t("Motivo", "Reason")}<input name="reason" required maxLength={300} placeholder={t("Ej.: vacaciones, incapacidad, viaje", "E.g.: vacation, sick leave, travel")} /></label>
+                <label>{t("Qué cubre, si no es todo (función, clientes o proceso)", "What it covers, if not everything (function, customers or process)")}<input name="scopeNote" maxLength={300} placeholder={t("Ej.: solo los clientes de Cali; las compras las cubre otra persona", "E.g.: only the Cali customers; purchasing is covered by someone else")} /></label>
                 <label>{t("Instrucciones para quien cubre (opcional)", "Instructions for the person covering (optional)")}<textarea name="instructions" rows={3} maxLength={1500} /></label>
                 <span className="src block">{t("Al crearla, SOLU guarda una foto de lo pendiente (entrega de turno) para quien cubre.", "When created, SOLU keeps a snapshot of what's pending (handover) for the person covering.")}</span>
                 <button type="submit">{t("Crear cobertura", "Create coverage")}</button>

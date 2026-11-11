@@ -95,7 +95,7 @@ export default async function MyPerformancePage({ searchParams }: { searchParams
           <p className="src">{t("Son todas tus ventas, no solo las de este mes.", "These cover all your sales, not only this month's.")} <Link href="/gerencia/comisiones">{t("Ver el detalle", "See the detail")}</Link></p>
         </section>
       )}
-      <p className="src">{t("El bloque de desarrollo (SER–HACER–TENER, compromisos y check-in) llega con el módulo de Equipo.", "The development block (BE–DO–HAVE, commitments and check-in) arrives with the Team module.")}</p>
+      <p className="src">{t("Tu desarrollo (SER–HACER–TENER, compromisos y próxima conversación) está en", "Your development (BE–DO–HAVE, commitments and next conversation) is in")} <Link href="/equipo/desarrollo">{t("Equipo → Mi desarrollo", "Team → My development")}</Link> · <Link href="/equipo/mi-rol">{t("Mi rol", "My role")}</Link></p>
     </>
   );
 }

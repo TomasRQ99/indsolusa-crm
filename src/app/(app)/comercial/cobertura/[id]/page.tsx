@@ -5,8 +5,9 @@ import { canManageAll } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { addDays, today } from "@/lib/domain";
-import { SCAN_KINDS, coverageScan, isActive, returnBrief, type Handover, type ScanItem } from "@/lib/coverage";
-import { revokeCoverage } from "../actions";
+import { SCAN_KINDS, coverageScan, handBack, isActive, returnBrief, type Handover, type ScanItem } from "@/lib/coverage";
+import { HANDOVER_CLASSES, HANDOVER_ORDER, classifyHandover, classifyJourney } from "@/lib/team-rules";
+import { returnOwnership, revokeCoverage } from "../actions";
 
 // Comercial C8b · one coverage: the delegated authority and its window, the handover snapshot, what is due now,
 // and the Return Brief for the owner when they come back.
@@ -28,8 +29,13 @@ export default async function CoverageDetail({ params, searchParams }: { params:
   const h = c.handover as unknown as Partial<Handover>;
   const live = !ended ? await coverageScan(c.originalUserId, addDays(today(), 2)) : null;
   const back = started ? await returnBrief(c.originalUserId, c.startsAt, c.revokedAt ?? (c.endsAt < now ? c.endsAt : now)) : null;
-  const okMsg: Record<string, string> = { creada: t("Cobertura creada. Quien cubre ya ve la entrega de turno.", "Coverage created. The person covering can already see the handover."), terminada: t("Cobertura terminada. El permiso ya no aplica.", "Coverage ended. The permission no longer applies.") };
-  const errMsg: Record<string, string> = { permiso: t("Solo la dirección, quien se ausenta o quien cubre la terminan.", "Only management, the absent person or the person covering end it.") };
+  // Módulo 16 §8: the handover by class. A snapshot taken before classes existed is classified on reading.
+  const hItems = (h.items ?? []).map((x) => ({ ...x, cls: x.cls ?? classifyHandover(x, c.endsAt) }));
+  const hJourneys = (h.openJourneys ?? []).map((j) => ({ ...j, cls: (j as { cls?: (typeof HANDOVER_ORDER)[number] }).cls ?? classifyJourney(j.nextMoveDate, c.endsAt) })).filter((j) => !hItems.some((x) => x.href === `/deals/${j.id}`));
+  const toReturn = ended ? await handBack(c) : [];
+  const mayReturn = canManageAll(user) || user.id === c.originalUserId;
+  const okMsg: Record<string, string> = { devuelto: t("Listo. Los pendientes abiertos a nombre de quien cubría volvieron a su dueño.", "Done. The to-dos opened in the name of whoever covered are back with their owner."), creada: t("Cobertura creada. Quien cubre ya ve la entrega de turno.", "Coverage created. The person covering can already see the handover."), terminada: t("Cobertura terminada. El permiso ya no aplica.", "Coverage ended. The permission no longer applies.") };
+  const errMsg: Record<string, string> = { "regreso-permiso": t("El regreso lo confirma quien estuvo ausente, o la dirección.", "The return is confirmed by whoever was away, or by management."), "regreso-activa": t("La cobertura sigue activa: termínala primero.", "The coverage is still active: end it first."), permiso: t("Solo la dirección, quien se ausenta o quien cubre la terminan.", "Only management, the absent person or the person covering end it.") };
 
   const Items = ({ rows }: { rows: ScanItem[] }) => rows.length === 0 ? <p className="small muted">{t("Nada pendiente.", "Nothing pending.")}</p> : (
     <div className="tscroll"><table>
@@ -60,6 +66,7 @@ export default async function CoverageDetail({ params, searchParams }: { params:
           <li>{t("No se delegan aprobaciones por rol: excepciones de Eságara, crédito y pagos siguen con quien las tiene.", "Role approvals aren't delegated: Eságara exceptions, credit and payments stay with whoever holds them.")}</li>
           <li>{t(`Vence sola al terminar el ${i.date(addDays(c.endsAt, -1))}. ${c.originalUser.name} sigue siendo responsable.`, `Expires by itself at the end of ${i.date(addDays(c.endsAt, -1))}. ${c.originalUser.name} stays accountable.`)}</li>
         </ul>
+        {c.scopeNote && <p className="small"><b>{t("Qué cubre", "What it covers")}:</b> {c.scopeNote}</p>}
         {c.instructions && <p className="pre small"><b>{t("Instrucciones", "Instructions")}:</b> {c.instructions}</p>}
       </section>
 
@@ -72,10 +79,13 @@ export default async function CoverageDetail({ params, searchParams }: { params:
 
       <details className="jblock" open={!started}>
         <summary className="jbh"><b>{t("ENTREGA DE TURNO", "HANDOVER")}</b><span className="grow" /><span className="src">{h.takenAt ? t(`Foto del ${i.day(new Date(h.takenAt))}`, `Snapshot of ${i.day(new Date(h.takenAt))}`) : ""}</span></summary>
-        <p className="small"><b>{t("Pendiente durante la ausencia", "Due during the absence")}</b></p>
-        <Items rows={h.items ?? []} />
-        <p className="small" style={{ marginTop: 10 }}><b>{t("Journeys abiertos", "Open Journeys")}</b></p>
-        {(h.openJourneys ?? []).length === 0 ? <p className="small muted">—</p> : <ul className="mk-ul small">{(h.openJourneys ?? []).map((j) => <li key={j.id}><Link href={`/deals/${j.id}`}>{j.label}</Link> · {j.account}{j.nextMove ? ` → ${j.nextMove}` : ""}{j.nextMoveDate ? ` · ${i.day(new Date(j.nextMoveDate))}` : ""}</li>)}</ul>}
+        {hItems.length + hJourneys.length === 0 ? <p className="small muted">{t("Nada pendiente.", "Nothing pending.")}</p> : HANDOVER_ORDER.map((cls) => { const rows = hItems.filter((x) => x.cls === cls), js = hJourneys.filter((j) => j.cls === cls); if (!rows.length && !js.length) return null; const k = HANDOVER_CLASSES[cls]; return (
+          <div key={cls} id={`h-${cls}`} style={{ marginTop: 10 }}>
+            <p className="small"><span className={`sig ${k.tone}`}>{t(k.es, k.en)}</span> <b>{rows.length + js.length}</b> <span className="muted">· {t(k.hint.es, k.hint.en)}</span></p>
+            {rows.length > 0 && <Items rows={rows} />}
+            {js.length > 0 && <ul className="mk-ul small">{js.map((j) => <li key={j.id}><Link href={`/deals/${j.id}`}>{j.label}</Link> · {j.account}{j.nextMove ? ` → ${j.nextMove}` : ""}{j.nextMoveDate ? ` · ${i.day(new Date(j.nextMoveDate))}` : ""}</li>)}</ul>}
+          </div>
+        ); })}
       </details>
 
       {back && (
@@ -88,6 +98,23 @@ export default async function CoverageDetail({ params, searchParams }: { params:
               {back.newDeals.map((d) => <li key={d.id}>{t("Journey nuevo", "New Journey")}: <Link href={`/deals/${d.id}`}>{d.code ?? d.title}</Link> · {d.title}</li>)}
               {back.activities.map((a) => <li key={a.id}>{i.day(a.occurredAt)} · {a.user.name}: {a.subject}{a.dealId && <> · <Link href={`/deals/${a.dealId}`}>{a.deal?.code ?? a.deal?.title}</Link></>}</li>)}
             </ul>
+          )}
+          {ended && (
+            <div style={{ marginTop: 10 }}>
+              <p className="small"><b>{t("Trabajo que vuelve a su dueño", "Work that goes back to its owner")}</b> <span className="muted">· {t(`${c.originalUser.name} nunca dejó de ser responsable de sus Journeys y clientes; lo único que cambió de manos son los pendientes abiertos a nombre de ${c.actingUser.name}.`, `${c.originalUser.name} never stopped being accountable for their Journeys and customers; the only thing that changed hands are the to-dos opened in ${c.actingUser.name}'s name.`)}</span></p>
+              {c.returnedAt ? <p className="small"><span className="sig ok">{t("Regreso confirmado", "Return confirmed")}</span> {i.date(c.returnedAt)} · {c.returnedByName}{c.returnNote ? ` · ${c.returnNote}` : ""}</p> : (
+                <>
+                  {toReturn.length === 0 ? <p className="small muted">{t("No quedó ningún pendiente abierto a nombre de quien cubría.", "No to-do was left open in the name of whoever covered.")}</p> : <ul className="mk-ul small">{toReturn.map((x) => <li key={x.id}>{x.title}{x.dueDate ? ` · ${i.day(x.dueDate)}` : ""}{x.dealId ? <> · <Link href={`/deals/${x.dealId}`}>{x.deal?.code ?? x.deal?.title}</Link></> : null}</li>)}</ul>}
+                  {mayReturn && (
+                    <form action={returnOwnership.bind(null, c.id)} className="qa-form" style={{ marginTop: 6 }}>
+                      {toReturn.length > 0 && <label className="chk"><input type="checkbox" name="keep" value="1" /> {t(`Dejar esos pendientes con ${c.actingUser.name}`, `Leave those to-dos with ${c.actingUser.name}`)}</label>}
+                      <label>{t("Nota (opcional)", "Note (optional)")}<input name="note" maxLength={300} /></label>
+                      <div><button type="submit">{toReturn.length ? t("Ya lo leí: recibir mi trabajo de vuelta", "I have read it: take my work back") : t("Ya lo leí: confirmar el regreso", "I have read it: confirm the return")}</button></div>
+                    </form>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </section>
       )}

@@ -1,12 +1,14 @@
 import { db } from "./db";
 import { subMoney } from "./money";
 import { addDays, today } from "./domain";
+import { classifyHandover, classifyJourney, type HandoverClass } from "./team-rules";
 
 // Comercial C8b · Absence Coverage (module 10 v1.3 §59). The emergency scan surfaces what can't wait in the absent
 // person's work: promises, visits, presentations, deliveries, collections and decisions. Derived, never re-typed.
 
 export type ScanKind = "PROMISE" | "VISIT" | "PRESENT" | "DELIVERY" | "COLLECT" | "DECISION" | "NEXT_MOVE" | "COMMITMENT" | "PICKUP" | "SUPPLIER_PAYMENT" | "CUSTOMS" | "EXCEPTION";
-export type ScanItem = { kind: ScanKind; at: string | null; label: string; href: string; account: string | null; amount?: number };
+/** `cls`: where the item belongs in a Responsibility Handover (Módulo 16 §8); set when a handover snapshot is taken. */
+export type ScanItem = { kind: ScanKind; at: string | null; label: string; href: string; account: string | null; amount?: number; cls?: HandoverClass };
 export const SCAN_KINDS: Record<ScanKind, { es: string; en: string }> = {
   PROMISE: { es: "Promesa al cliente", en: "Promise to customer" },
   VISIT: { es: "Visita", en: "Visit" },
@@ -73,7 +75,12 @@ export async function handoverSnapshot(userId: string, endsAt: Date) {
     coverageScan(userId, endsAt),
     db.deal.findMany({ where: { ownerId: userId, stage: { notIn: ["WON", "LOST"] } }, orderBy: { updatedAt: "desc" }, take: 40, select: { id: true, code: true, title: true, nextMove: true, nextMoveDate: true, account: { select: { name: true } } } }),
   ]);
-  return { takenAt: new Date().toISOString(), items, openJourneys: open.map((d) => ({ id: d.id, label: `${d.code ?? d.title} · ${d.title}`, account: d.account.name, nextMove: d.nextMove, nextMoveDate: d.nextMoveDate?.toISOString() ?? null })) };
+  // Responsibility Handover (Módulo 16 §8): every pending item says whether it must move, a decision is likely, it
+  // waits on someone else, it is safe or it can wait for the return.
+  return {
+    takenAt: new Date().toISOString(), items: items.map((x) => ({ ...x, cls: classifyHandover(x, endsAt) })),
+    openJourneys: open.map((d) => ({ id: d.id, label: `${d.code ?? d.title} · ${d.title}`, account: d.account.name, nextMove: d.nextMove, nextMoveDate: d.nextMoveDate?.toISOString() ?? null, cls: classifyJourney(d.nextMoveDate, endsAt) })),
+  };
 }
 export type Handover = Awaited<ReturnType<typeof handoverSnapshot>>;
 
@@ -87,6 +94,13 @@ export async function returnBrief(originalUserId: string, from: Date, to: Date) 
     db.deal.findMany({ where: { createdAt: range, ownerId: originalUserId }, select: { id: true, code: true, title: true } }),
   ]);
   return { activities, decided, pos, newDeals };
+}
+
+/** Módulo 16 §8, AC5 · work that was opened in the name of the person covering while they stood in: open to-dos on
+ *  the Journeys of the owner, created during the coverage and assigned to whoever covered. On return they go back. */
+export async function handBack(c: { originalUserId: string; actingUserId: string; startsAt: Date; endsAt: Date; revokedAt: Date | null }) {
+  const to = c.revokedAt ?? c.endsAt;
+  return db.task.findMany({ where: { assigneeId: c.actingUserId, status: "OPEN", createdAt: { gte: c.startsAt, lt: to }, deal: { ownerId: c.originalUserId } }, orderBy: { dueDate: "asc" }, select: { id: true, title: true, dueDate: true, dealId: true, deal: { select: { code: true, title: true } } } });
 }
 
 export const coverageWindow = (startDay: Date, endDay: Date) => ({ startsAt: startDay, endsAt: addDays(endDay, 1) });

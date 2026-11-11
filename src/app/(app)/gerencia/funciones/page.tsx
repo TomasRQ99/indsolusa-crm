@@ -8,15 +8,15 @@ import { FUNCTIONS, FUNCTION_KEYS, GAP_TEXT, ROLE_PARTS, asPairs, asStrings, can
 import { charterVersions, charterView, chartersInForce, getGerenciaPolicy } from "@/lib/gerencia-store";
 import { Notes } from "../ui";
 import { publishCharter } from "../gobierno-actions";
+import { ROLE_FUNCTION, roleMissing } from "@/lib/team-rules";
+import { baseAssignments, roleData, roleVersions, rolesInForce } from "@/lib/team-store";
 
 // Módulo 15 §23–25 · Function and role governance. Every person reads what each function exists for, what it
 // delivers and decides, and who answers for it. Gerencia sees where the structure has a hole: a function with no
 // owner, a responsibility written twice, an interface only one side names, responsibility without authority or
-// without resources. Role profiles themselves belong to the Team module and are not invented here.
+// without resources. Role agreements are written in the Team module (Módulo 16) and read here.
 
 const FIELDS = ["contribution", "outputs", "responsibilities", "decisionRights", "interfaces", "resources", "ownerId"] as const;
-/** Which function each SOLU role works in (the access role, until role profiles exist). */
-const ROLE_FUNCTION: Record<string, FunctionKey> = { GERENCIA: "GERENCIA", DIRECTOR_COMERCIAL: "COMERCIAL", NEGOCIADOR_COMERCIAL: "COMERCIAL", NEGOCIADOR_OPERATIVO: "OPERACIONES", FINANZAS: "ADMINISTRACION", ADMINISTRACION: "ADMINISTRACION", MARKETING: "MERCADEO" };
 
 export default async function FunctionsPage({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string; f?: string; fn?: string }> }) {
   const user = await requireUser();
@@ -25,11 +25,15 @@ export default async function FunctionsPage({ searchParams }: { searchParams: Pr
   const sp = await searchParams;
   const T = today();
   const manager = canManageAll(user), ger = isGerencia(user);
-  const [all, pol, people, assigned] = await Promise.all([
+  const [all, pol, people, assigned, roleRows, base] = await Promise.all([
     charterVersions(), getGerenciaPolicy(),
-    manager ? db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, role: true } }) : [],
-    manager ? db.personRoleAssignment.findMany({ where: { effectiveTo: null }, select: { userId: true } }) : [],
+    manager ? db.user.findMany({ where: { active: true, role: { not: "JUNTA" } }, orderBy: { name: "asc" }, select: { id: true, name: true, role: true } }) : [],
+    manager ? db.personRoleAssignment.findMany({ where: { effectiveTo: null, acting: false }, select: { userId: true } }) : [],
+    manager ? roleVersions() : [], manager ? baseAssignments() : new Map(),
   ]);
+  // Módulo 16: the role agreements in force, how many people hold each and whether each is clear (§26).
+  const agreements = rolesInForce(roleRows, T).map((r) => { const d = roleData(r); return { key: r.roleKey, title: r.title, version: r.version, functionKey: r.functionKey as FunctionKey, clarity: roleClarity(d), incomplete: roleMissing(d).length, holders: [...base.values()].filter((a) => a.roleProfile?.roleKey === r.roleKey).length }; });
+  const noAgreement = people.filter((p) => !base.get(p.id)?.roleProfile);
   const cur = chartersInForce(all, T);
   const may = canPublish(user.role, pol.value);
   const gaps = charterGaps(cur.map(charterView), T, pol.value.charterReviewDays);
@@ -41,8 +45,7 @@ export default async function FunctionsPage({ searchParams }: { searchParams: Pr
   const err = { autoridad: t(`Solo ${pol.value.publishRoles.map((r) => ROLE_LABEL[r as keyof typeof ROLE_LABEL]?.es ?? r).join(" o ")} publica una carta de función.`, `Only ${pol.value.publishRoles.map((r) => ROLE_LABEL[r as keyof typeof ROLE_LABEL]?.en ?? r).join(" or ")} publishes a function charter.`), faltan: t("Falta lo marcado en rojo: desde cuándo rige y por qué cambia. Las interfaces deben nombrar otra de las cinco funciones (Mercadeo, Comercial, Operaciones, Administración, Gerencia). No se publicó nada.", "What is marked in red is missing: since when it is in force and why it changes. Interfaces must name another of the five functions (Marketing, Commercial, Operations, Administration, Management). Nothing was published.") };
   const hasAssign = new Set(assigned.map((a) => a.userId));
   const noFormal = people.filter((p) => !hasAssign.has(p.id));
-  // No role profile exists yet (they arrive with the Team module): by the rule of §26 no role can be called clear.
-  const clarity = roleClarity(null);
+  const parts = roleClarity(null).missing;
 
   return (
     <>
@@ -108,18 +111,25 @@ export default async function FunctionsPage({ searchParams }: { searchParams: Pr
       {manager && (
         <section className="card" id="roles"><b>{t("ROLES: COBERTURA Y CLARIDAD", "ROLES: COVERAGE AND CLARITY")}</b>
           <p className="small"><b>{t("¿Cada persona entiende cómo su rol contribuye a la dirección elegida, y tiene la autoridad, la capacidad y los recursos para cumplirlo?", "Does each person understand how their role contributes to the chosen direction, and have the authority, capacity and resources to fulfil it?")}</b></p>
-          <p className="small muted">{t("Hoy SOLU puede responder solo una parte. Un rol se considera claro cuando tiene", "Today SOLU can answer only part of it. A role counts as clear when it has")} {clarity.missing.map((m) => t(ROLE_PARTS[m].es, ROLE_PARTS[m].en)).join(", ")}. {t("Esos perfiles de rol se escriben en el módulo de Equipo, que aún no está construido: por eso ningún rol aparece como claro.", "Those role profiles are written in the Team module, not built yet: that is why no role shows as clear.")}</p>
-          <div className="tscroll"><table>
-            <thead><tr><th>{t("Rol en SOLU", "Role in SOLU")}</th><th>{t("Función", "Function")}</th><th className="n">{t("Personas", "People")}</th><th>{t("Perfil de rol vigente", "Role profile in force")}</th><th>{t("Conecta con lo que la función entrega", "Connects to what the function delivers")}</th></tr></thead>
-            <tbody>{ROLES.map((r) => { const fn = ROLE_FUNCTION[r]; const ch = cur.find((x) => x.functionKey === fn); const n = people.filter((p) => p.role === r).length; return (
-              <tr key={r}><td>{t(ROLE_LABEL[r].es, ROLE_LABEL[r].en)}</td><td><a href={`#f-${fn}`}>{fname(fn)}</a></td><td className="n mono">{n === 1 ? <b className="attn-t">1</b> : n}</td><td><span className="sig attn">{t("no existe", "none")}</span></td><td>{ch && asStrings(ch.outputs).length ? <span className="sig ok">{t("sí", "yes")}</span> : <span className="sig attn">{t("la función aún no dice qué entrega", "the function doesn't yet say what it delivers")}</span>}</td></tr>
-            ); })}</tbody>
-          </table></div>
+          <p className="small muted">{t("Un rol se considera claro cuando su acuerdo tiene", "A role counts as clear when its agreement has")} {parts.map((m) => t(ROLE_PARTS[m].es, ROLE_PARTS[m].en)).join(", ")}. <Link href="/equipo/roles">{t("Acuerdos de rol", "Role agreements")}</Link> · <Link href="/equipo/claridad">{t("Claridad de roles", "Role clarity")}</Link></p>
+          {agreements.length === 0 ? <p className="small"><span className="sig attn">{t("Aún no hay acuerdos de rol publicados: ningún rol puede llamarse claro", "No role agreements published yet: no role can be called clear")}</span> {may ? <Link href="/equipo/roles#publicar">{t("Publicar el primero", "Publish the first")}</Link> : null}</p> : (
+            <div className="tscroll"><table>
+              <thead><tr><th>{t("Acuerdo de rol", "Role agreement")}</th><th>{t("Función", "Function")}</th><th>{t("Versión vigente", "Version in force")}</th><th className="n">{t("Personas", "People")}</th><th>{t("Claridad", "Clarity")}</th><th>{t("Conecta con lo que la función entrega", "Connects to what the function delivers")}</th></tr></thead>
+              <tbody>{agreements.map((r) => { const ch = cur.find((x) => x.functionKey === r.functionKey); return (
+                <tr key={r.key}><td><Link href={`/equipo/roles/${r.key}`}>{r.title}</Link></td><td><a href={`#f-${r.functionKey}`}>{fname(r.functionKey)}</a></td><td className="small">v{r.version}</td><td className="n mono">{r.holders === 0 ? <b className="attn-t">0</b> : r.holders === 1 ? <b className="attn-t">1</b> : r.holders}</td>
+                  <td>{!r.clarity.clear ? <span className="sig risk">{t("no claro: falta", "not clear: missing")} {r.clarity.missing.map((m) => t(ROLE_PARTS[m].es, ROLE_PARTS[m].en)).join(", ")}</span> : r.incomplete ? <span className="sig attn">{t(`claro · ${r.incomplete} de 18 por completar`, `clear · ${r.incomplete} of 18 to complete`)}</span> : <span className="sig ok">{t("claro y completo", "clear and complete")}</span>}</td>
+                  <td>{ch && asStrings(ch.outputs).length ? <span className="sig ok">{t("sí", "yes")}</span> : <span className="sig attn">{t("la función aún no dice qué entrega", "the function doesn't yet say what it delivers")}</span>}</td></tr>
+              ); })}</tbody>
+            </table></div>
+          )}
+          <p className="small" style={{ marginTop: 8 }}><b>{t("Roles de acceso en SOLU", "Access roles in SOLU")}</b> <span className="muted">{t("lo que cada persona puede abrir y aprobar; el acuerdo de rol dice qué se espera de ella", "what each person can open and approve; the role agreement says what is expected of them")}</span></p>
+          <ul className="plain small">{ROLES.map((r) => { const fn = ROLE_FUNCTION[r]; const n = people.filter((p) => p.role === r).length; return <li key={r}>{t(ROLE_LABEL[r].es, ROLE_LABEL[r].en)} · <a href={`#f-${fn}`}>{fname(fn)}</a> · {n === 1 ? <b className="attn-t">{t("1 persona", "1 person")}</b> : t(`${n} personas`, `${n} people`)}</li>; })}</ul>
           <ul className="plain small" style={{ marginTop: 8 }}>
             <li>{noFormal.length ? <><span className="sig attn">{t(`${noFormal.length} persona(s) sin cargo formal registrado`, `${noFormal.length} person(s) with no formal position recorded`)}</span> {noFormal.slice(0, 8).map((p) => p.name).join(", ")}{noFormal.length > 8 ? "…" : ""} · <Link href="/administracion/personas">{t("Registrarlo en Administración → Personas", "Record it in Administration → People")}</Link></> : <span className="sig ok">{t("Toda persona activa tiene un cargo formal registrado", "Every active person has a formal position recorded")}</span>}</li>
-            <li>{t("Responsabilidades duplicadas y conflictos de quién decide: se detectan hoy entre funciones (arriba). Entre roles, con el módulo de Equipo.", "Duplicated responsibilities and conflicts over who decides: detected today between functions (above). Between roles, with the Team module.")}</li>
-            {ger && <li>{t("Posiciones críticas sin respaldo o sucesor:", "Critical positions with no backup or successor:")} <Link href="/gerencia/personas#roles">{t("Personas y capacidad", "People and capacity")}</Link></li>}
-            <li>{t("Los principios y valores se mostrarán como conductas esperadas por rol, nunca como una calificación cultural automática.", "Principles and values will be shown as conduct expected per role, never as an automatic culture rating.")} <Link href="/gerencia/identidad">{t("Identidad", "Identity")}</Link></li>
+            <li>{noAgreement.length ? <><span className="sig attn">{t(`Brecha de claridad de rol: ${noAgreement.length} persona(s) sin acuerdo de rol vigente`, `Role clarity gap: ${noAgreement.length} person(s) with no role agreement in force`)}</span> {noAgreement.slice(0, 8).map((p) => p.name).join(", ")}{noAgreement.length > 8 ? "…" : ""} · <Link href="/equipo/claridad">{t("Asignarlo en Equipo → Claridad de roles", "Assign it in Team → Role clarity")}</Link></> : <span className="sig ok">{t("Toda persona activa tiene un acuerdo de rol vigente", "Every active person has a role agreement in force")}</span>}</li>
+            <li>{t("Responsabilidades duplicadas, autoridad insuficiente y conflictos de quién decide: entre funciones, arriba; entre roles, en", "Duplicated responsibilities, insufficient authority and conflicts over who decides: between functions, above; between roles, in")} <Link href="/equipo/claridad#estructura">{t("Equipo → Claridad de roles", "Team → Role clarity")}</Link></li>
+            <li>{t("Roles críticos sin respaldo calificado o sin sucesor:", "Critical roles with no qualified backup or successor:")} <Link href="/equipo/continuidad">{t("Equipo → Continuidad y sucesión", "Team → Continuity and succession")}</Link>{ger ? <> · <Link href="/gerencia/personas#roles">{t("Personas y capacidad", "People and capacity")}</Link></> : null}</li>
+            <li>{t("Los principios y valores se muestran como conductas esperadas en cada acuerdo de rol, nunca como una calificación cultural automática.", "Principles and values are shown as conduct expected in each role agreement, never as an automatic culture rating.")} <Link href="/gerencia/identidad">{t("Identidad", "Identity")}</Link></li>
           </ul>
         </section>
       )}

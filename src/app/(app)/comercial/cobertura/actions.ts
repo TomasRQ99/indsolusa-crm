@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { canEdit, canManageAll } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { today } from "@/lib/domain";
-import { COVERAGE_MAX_DAYS, coverageWindow, handoverSnapshot } from "@/lib/coverage";
+import { COVERAGE_MAX_DAYS, coverageWindow, handBack, handoverSnapshot } from "@/lib/coverage";
 
 // Comercial C8b · Absence Coverage (v1.3 §59). A person arranges cover for their own planned absence; management
 // can also arrange it for anyone, including emergencies. Authority is temporary and ends by itself.
@@ -40,7 +40,7 @@ export async function createCoverage(fd: FormData) {
   const { startsAt, endsAt } = coverageWindow(from!, to!);
   const handover = await handoverSnapshot(originalUserId, endsAt);
   const c = await db.coverageAssignment.create({ data: {
-    originalUserId, actingUserId: actingUserId!, startsAt, endsAt, kind: emergency ? "EMERGENCY" : "PLANNED", reason: reason!, instructions: txt(fd, "instructions", 1500),
+    originalUserId, actingUserId: actingUserId!, startsAt, endsAt, kind: emergency ? "EMERGENCY" : "PLANNED", reason: reason!, instructions: txt(fd, "instructions", 1500), scopeNote: txt(fd, "scopeNote", 300),
     handover: handover as unknown as Prisma.InputJsonValue, createdByName: user.name,
   } });
   go(`${P}/${c.id}`, "ok=creada");
@@ -54,6 +54,24 @@ export async function revokeCoverage(id: string) {
   if (!(canManageAll(user) || user.id === c!.originalUserId || user.id === c!.actingUserId)) go(`/comercial/cobertura/${id}`, "err=permiso");
   if (!c!.revokedAt && c!.endsAt > new Date()) await db.coverageAssignment.update({ where: { id }, data: { revokedAt: new Date(), revokedByName: user.name } });
   go(`/comercial/cobertura/${id}`, "ok=terminada");
+}
+
+/** Módulo 16 §8, AC5 · the owner is back: they confirm they read what happened, and the to-dos opened for whoever
+ *  covered go back to them. Ownership of Journeys and customers never moved, so there is nothing else to restore. */
+export async function returnOwnership(id: string, fd: FormData) {
+  const user = await requireUser();
+  const P = `/comercial/cobertura/${id}`;
+  const c = await db.coverageAssignment.findUnique({ where: { id }, select: { id: true, originalUserId: true, actingUserId: true, startsAt: true, endsAt: true, revokedAt: true, returnedAt: true } });
+  if (!c) go("/comercial/cobertura", "err=cobertura");
+  if (!(canManageAll(user) || user.id === c!.originalUserId)) go(P, "err=regreso-permiso#regreso");
+  if (!(c!.revokedAt || c!.endsAt <= new Date())) go(P, "err=regreso-activa#regreso");
+  if (c!.returnedAt) go(P, "ok=devuelto#regreso");
+  const tasks = fd.get("keep") === "1" ? [] : await handBack(c!);
+  await db.$transaction([
+    ...(tasks.length ? [db.task.updateMany({ where: { id: { in: tasks.map((x) => x.id) } }, data: { assigneeId: c!.originalUserId } })] : []),
+    db.coverageAssignment.update({ where: { id }, data: { returnedAt: new Date(), returnedByName: user.name, returnNote: `${tasks.length} pendiente(s) devuelto(s)${txt(fd, "note", 300) ? ` · ${txt(fd, "note", 300)}` : ""}` } }),
+  ]);
+  go(P, "ok=devuelto#regreso");
 }
 
 /** Relationship backup for one customer: who can step in when the owner is away. */

@@ -158,6 +158,23 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   StrategicAccount: "all",
   CompanyIdentity: "all",
   FunctionCharter: "all",
+  // Módulo 16 · Equipo & Desarrollo. Role agreements, succession and readiness are material. What a person writes
+  // about themselves is theirs: the history keeps that something changed and who changed it, never the text, so a
+  // private reflection, a test result or a piece of feedback cannot be read from the change history.
+  RoleProfile: "all",
+  ProfileEntry: ["userId", "block", "kind", "privacy", "source", "addedByName", "archivedAt"],
+  PersonAssessment: ["userId", "instrument", "privacy", "takenOn"],
+  CharacterEvidence: ["userId", "dimension", "observedOn", "sourceKind", "privacy", "recordedByName", "withdrawnAt"],
+  DevelopmentPlan: ["userId", "cycle", "startsOn", "endsOn", "leaderId", "mentorId", "status", "closedByName", "policyVersion"],
+  DevelopmentObjective: ["planId", "dimension", "reviewOn", "privacy", "origin", "status", "closedAt", "closedByName"],
+  DevelopmentEvidence: ["objectiveId", "observedOn", "kind", "addedByName"],
+  DevelopmentCommitment: ["userId", "ownerId", "kind", "dueOn", "status", "closedAt"],
+  DevelopmentMeeting: ["userId", "withId", "kind", "scheduledOn", "status", "heldOn", "checkpointDay", "closedByName"],
+  Feedback: ["aboutId", "fromId", "relation", "status", "givenAt"],
+  DevelopmentOpportunity: ["userId", "source", "dimension", "status"],
+  ReadinessAssessment: ["userId", "roleKey", "level", "state", "assessedByName", "assessedOn", "supersededAt"],
+  RoleBackup: "all",
+  RoleGapReview: ["userId", "roleKey", "version", "dimension", "result", "reviewedByName", "reviewedOn", "supersededAt"],
 };
 const MASK = new Set(["bankAccount", "docAccount"]);
 const SKIP = new Set(["id", "createdAt", "updatedAt"]);

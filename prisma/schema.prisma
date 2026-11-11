@@ -133,6 +133,24 @@ model User {
   decisionsOwnedAfter ManagementDecision[] @relation("DecisionOwnerAfter")
   strategicAccounts   StrategicAccount[]   @relation("StrategicExecutive")
   chartersOwned       FunctionCharter[]    @relation("CharterOwner")
+
+  // Módulo 16 · Equipo & Desarrollo
+  profileEntries     ProfileEntry[]           @relation("ProfileEntryOf")
+  assessments        PersonAssessment[]       @relation("AssessmentOf")
+  characterEvidence  CharacterEvidence[]      @relation("CharacterEvidenceOf")
+  devPlans           DevelopmentPlan[]        @relation("DevPlanOf")
+  devPlansLed        DevelopmentPlan[]        @relation("DevPlanLeader")
+  devPlansMentored   DevelopmentPlan[]        @relation("DevPlanMentor")
+  devCommitments     DevelopmentCommitment[]  @relation("DevCommitmentFor")
+  devCommitmentsOwed DevelopmentCommitment[]  @relation("DevCommitmentOwner")
+  devMeetings        DevelopmentMeeting[]     @relation("DevMeetingOf")
+  devMeetingsWith    DevelopmentMeeting[]     @relation("DevMeetingWith")
+  feedbackAbout      Feedback[]               @relation("FeedbackAbout")
+  feedbackGiven      Feedback[]               @relation("FeedbackFrom")
+  devOpportunities   DevelopmentOpportunity[] @relation("DevOpportunityOf")
+  readiness          ReadinessAssessment[]    @relation("ReadinessOf")
+  roleBackups        RoleBackup[]             @relation("RoleBackupUser")
+  roleGapReviews     RoleGapReview[]          @relation("RoleGapOf")
 }
 
 model Account {
@@ -2994,6 +3012,12 @@ model CoverageAssignment {
   revokedAt      DateTime?
   revokedByName  String?
   createdAt      DateTime  @default(now())
+  /// E16 §8 · which function, customers or process this cover is for, when it is not everything
+  scopeNote      String?
+  /// E16 §8 · the owner read the return brief and took the work back
+  returnedAt     DateTime?
+  returnedByName String?
+  returnNote     String?
 
   @@index([actingUserId, endsAt])
   @@index([originalUserId, endsAt])
@@ -4472,20 +4496,33 @@ model PersonCompensation {
 /// A14 §23–24 · The formal assignment of a person: contractual title (what the contract says) and operating role
 /// (what the person does in SOLU), unit, formal leader and the dates it holds. A change closes the row and opens another.
 model PersonRoleAssignment {
-  id               String    @id @default(cuid())
+  id               String       @id @default(cuid())
   userId           String
-  user             User      @relation("RoleAssignmentOf", fields: [userId], references: [id], onDelete: Cascade)
+  user             User         @relation("RoleAssignmentOf", fields: [userId], references: [id], onDelete: Cascade)
   contractualTitle String
   operatingRole    String
   unit             String?
   leaderId         String?
-  leader           User?     @relation("RoleAssignmentLeader", fields: [leaderId], references: [id], onDelete: SetNull)
+  leader           User?        @relation("RoleAssignmentLeader", fields: [leaderId], references: [id], onDelete: SetNull)
   location         String?
   effectiveFrom    DateTime
   effectiveTo      DateTime?
   reason           String
   setByName        String
-  createdAt        DateTime  @default(now())
+  createdAt        DateTime     @default(now())
+  /// E16 §22 · the role agreement this assignment was made under, with the function charter and company identity
+  /// versions in force that day. Later versions never rewrite these.
+  roleProfileId    String?
+  roleProfile      RoleProfile? @relation(fields: [roleProfileId], references: [id], onDelete: SetNull)
+  charterVersion   Int?
+  identityVersion  Int?
+  level            String?
+  /// a temporary or acting role: it has an end date and leaves the base assignment untouched
+  acting           Boolean      @default(false)
+  /// the version of the role agreement the person last went through with their leader
+  reviewedVersion  Int?
+  reviewedAt       DateTime?
+  reviewedByName   String?
 
   @@index([userId, effectiveFrom])
 }
@@ -4546,8 +4583,10 @@ model SupportGap {
   id            String    @id @default(cuid())
   userId        String
   user          User      @relation("SupportGapFor", fields: [userId], references: [id], onDelete: Cascade)
-  /// TOOL | ACCESS | ASSET | TRAINING | INFORMATION
+  /// TOOL | ACCESS | ASSET | TRAINING | INFORMATION | AUTHORITY
   kind          String
+  /// E16 §26 · the expectation of the role agreement that cannot be met while this is missing
+  expectation   String?
   what          String
   impact        String?
   ownerId       String
@@ -4830,4 +4869,398 @@ model ManagementSnapshot {
   day       String   @unique
   data      Json
   createdAt DateTime @default(now())
+}
+
+// ---------- Módulo 16 · Equipo & Desarrollo ----------
+
+/// E16 §20 · Role Profile / Acuerdo de Rol. Not a task list: the functional and development contract of a role.
+/// Versioned: publishing writes a new row and every earlier version stays, so the agreement a person worked under
+/// is never rewritten later. `identityVersion` and `charterVersion` are what was in force when it was published.
+model RoleProfile {
+  id                 String   @id @default(cuid())
+  /// stable key of the role across versions, e.g. "negociador-comercial"
+  roleKey            String
+  version            Int
+  title              String
+  /// MERCADEO | COMERCIAL | OPERACIONES | ADMINISTRACION | GERENCIA
+  functionKey        String
+  /// the access role in SOLU a holder is expected to have (what the authority engines read); null when none fits
+  soluRole           String?
+  /// a critical role asks for a qualified backup; without one it is a continuity risk
+  critical           Boolean  @default(false)
+  purpose            String
+  /// [string]
+  outcomes           Json     @default("[]")
+  /// [string]
+  functions          Json     @default("[]")
+  /// [string]
+  responsibilities   Json     @default("[]")
+  /// [{kind: AUTONOMOUS | CONDITIONED | APPROVAL, text}]
+  decisionRights     Json     @default("[]")
+  /// [string] authority the role needs from the engines of SOLU (see AUTHORITY in team-rules)
+  authorityDomains   Json     @default("[]")
+  /// [string]
+  boundaries         Json     @default("[]")
+  /// [string]
+  inputs             Json     @default("[]")
+  /// [string]
+  outputs            Json     @default("[]")
+  /// [{kind: INTERNAL | EXTERNAL, who, expects}]
+  customers          Json     @default("[]")
+  /// [string]
+  qualityStandards   Json     @default("[]")
+  /// [{principle, conduct}] principles and values as observable conduct of this role
+  behaviors          Json     @default("[]")
+  /// [string]
+  methodologies      Json     @default("[]")
+  /// [{kind: RESULT | PROCESS | QUALITY | DEVELOPMENT, text}]
+  performance        Json     @default("[]")
+  /// [{kind: TECHNICAL | COMMERCIAL | RELATIONAL | MANAGEMENT | LEADERSHIP | OTHER, text}]
+  competencies       Json     @default("[]")
+  /// [string]
+  risks              Json     @default("[]")
+  /// [{kind: DAILY | WEEKLY | MONTHLY | PERIODIC, text}]
+  rhythm             Json     @default("[]")
+  /// [string]
+  successSignals     Json     @default("[]")
+  /// [string]
+  attentionSignals   Json     @default("[]")
+  /// [{name, ser, hacer, tener}] the route of the role, lowest level first
+  careerLevels       Json     @default("[]")
+  /// [string] evidence that shows readiness for the next level
+  careerExpectations Json     @default("[]")
+  /// [{kind: TOOL | INFORMATION | AUTHORITY | TRAINING | SUPPORT | OTHER, text}]
+  companyCommitments Json     @default("[]")
+  identityVersion    Int?
+  charterVersion     Int?
+  effectiveFrom      DateTime
+  reason             String
+  publishedById      String?
+  publishedByName    String
+  publishedAt        DateTime @default(now())
+
+  assignments PersonRoleAssignment[]
+
+  @@unique([roleKey, version])
+  @@index([functionKey])
+}
+
+/// E16 §2 · One line of the 360 of a person: who they are (SER), talents, what they do (HACER), what they hold
+/// (TENER), their story, or a reflection. Each line carries its own privacy level, chosen by the person.
+model ProfileEntry {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation("ProfileEntryOf", fields: [userId], references: [id], onDelete: Cascade)
+  /// SER | TALENT | HACER | TENER | STORY | REFLECTION
+  block       String
+  kind        String
+  text        String
+  detail      String?
+  /// PRIVATE (only the person) | SHARED (leader and mentor) | ORG (leader and Gerencia; talent map)
+  privacy     String    @default("PRIVATE")
+  /// SELF | LEADER
+  source      String    @default("SELF")
+  addedById   String?
+  addedByName String
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, block])
+}
+
+/// E16 §2 · An optional assessment the person chose to keep (CliftonStrengths, DISC, Enneagram, other), with its
+/// source and date. Zodiac is playful only. Nothing here ever becomes character evidence or an evaluation.
+model PersonAssessment {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("AssessmentOf", fields: [userId], references: [id], onDelete: Cascade)
+  /// CLIFTON | DISC | ENNEAGRAM | ZODIAC | OTHER
+  instrument  String
+  label       String?
+  result      String
+  source      String
+  takenOn     DateTime
+  /// PRIVATE | SHARED (never ORG)
+  privacy     String   @default("PRIVATE")
+  addedByName String
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// E16 §3 · Character shown in a decision: what the person did, in which situation, on which day, and how it is
+/// known. Never created from a personality test. Always visible to the person it is about.
+model CharacterEvidence {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation("CharacterEvidenceOf", fields: [userId], references: [id], onDelete: Cascade)
+  dimension      String
+  behavior       String
+  context        String
+  observedOn     DateTime
+  /// OBSERVATION | SELF | FEEDBACK | WORK
+  sourceKind     String
+  sourceRef      String?
+  /// SHARED | ORG (PRIVATE only when the person wrote it about themselves)
+  privacy        String    @default("SHARED")
+  recordedById   String?
+  recordedByName String
+  withdrawnAt    DateTime?
+  withdrawnNote  String?
+  createdAt      DateTime  @default(now())
+
+  @@index([userId, dimension])
+}
+
+/// E16 §5 · One development cycle of a person (90 days by policy), with its checkpoints. A closed cycle stays as
+/// history and the next one points back to it.
+model DevelopmentPlan {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation("DevPlanOf", fields: [userId], references: [id], onDelete: Cascade)
+  cycle         Int       @default(1)
+  startsOn      DateTime
+  endsOn        DateTime
+  /// "para qué quiero desarrollarme"
+  purpose       String?
+  leaderId      String?
+  leader        User?     @relation("DevPlanLeader", fields: [leaderId], references: [id], onDelete: SetNull)
+  mentorId      String?
+  mentor        User?     @relation("DevPlanMentor", fields: [mentorId], references: [id], onDelete: SetNull)
+  /// TECHNICAL | COMMERCIAL | LEADERSHIP | CHARACTER | CAREER
+  mentorKind    String?
+  /// ACTIVE | CLOSED
+  status        String    @default("ACTIVE")
+  closedAt      DateTime?
+  closeNote     String?
+  closedByName  String?
+  previousId    String?
+  /// the policy version the cycle was opened under (cycle length, checkpoints, limits)
+  policyVersion Int       @default(0)
+  createdByName String
+  createdAt     DateTime  @default(now())
+
+  objectives DevelopmentObjective[]
+
+  @@index([userId, status])
+}
+
+/// E16 §5 · A development priority (SER, HACER or TENER). It always says what evidence will show it, its next
+/// movement and when it is reviewed; it closes only with evidence or with an explicit reason.
+model DevelopmentObjective {
+  id               String          @id @default(cuid())
+  planId           String
+  plan             DevelopmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  /// SER | HACER | TENER
+  dimension        String
+  title            String
+  why              String?
+  expectedEvidence String
+  nextMovement     String
+  reviewOn         DateTime
+  /// SHARED | ORG | PRIVATE
+  privacy          String          @default("SHARED")
+  /// SELF | LEADER | FEEDBACK | ROLE_GAP | IMPROVEMENT
+  origin           String          @default("SELF")
+  originRef        String?
+  /// OPEN | ACHIEVED | CLOSED
+  status           String          @default("OPEN")
+  closeReason      String?
+  closedAt         DateTime?
+  closedByName     String?
+  createdByName    String
+  createdAt        DateTime        @default(now())
+
+  evidence DevelopmentEvidence[]
+
+  @@index([planId])
+}
+
+model DevelopmentEvidence {
+  id          String               @id @default(cuid())
+  objectiveId String
+  objective   DevelopmentObjective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  what        String
+  ref         String?
+  observedOn  DateTime
+  /// SELF | LEADER | MENTOR | WORK (a work record the person chose to attach)
+  kind        String               @default("SELF")
+  addedById   String?
+  addedByName String
+  createdAt   DateTime             @default(now())
+
+  @@index([objectiveId])
+}
+
+/// E16 §6 · A development commitment: who does what, what will show it and by when. It may be shared between
+/// the person and their mentor or leader.
+model DevelopmentCommitment {
+  id               String    @id @default(cuid())
+  /// the person whose development it serves
+  userId           String
+  user             User      @relation("DevCommitmentFor", fields: [userId], references: [id], onDelete: Cascade)
+  /// who must do it (the person, the leader or the mentor)
+  ownerId          String
+  owner            User      @relation("DevCommitmentOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  sharedWithId     String?
+  objectiveId      String?
+  meetingId        String?
+  /// LEARNING | PRACTICE | STRETCH | SHADOWING | MENTORING | REFLECTION | FEEDBACK | TEACHING
+  kind             String
+  what             String
+  expectedEvidence String
+  dueOn            DateTime
+  /// OPEN | DONE | DROPPED
+  status           String    @default("OPEN")
+  closedAt         DateTime?
+  closeNote        String?
+  createdByName    String
+  createdAt        DateTime  @default(now())
+
+  @@index([userId, status])
+  @@index([ownerId, status])
+}
+
+/// E16 §6 · A development conversation between a person and their leader or mentor. The agenda is built from
+/// earlier commitments, evidence and current focus; closing it asks for the next one.
+model DevelopmentMeeting {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation("DevMeetingOf", fields: [userId], references: [id], onDelete: Cascade)
+  withId        String
+  with          User      @relation("DevMeetingWith", fields: [withId], references: [id], onDelete: Cascade)
+  /// ONE_ON_ONE | MENTORING | CHECKPOINT | PERFORMANCE | CAREER | SUCCESSION | FEEDBACK
+  kind          String
+  scheduledOn   DateTime
+  /// PLANNED | HELD | CANCELLED
+  status        String    @default("PLANNED")
+  heldOn        DateTime?
+  notes         String?
+  /// the agenda as it stood when the meeting was closed
+  agenda        Json?
+  planId        String?
+  /// 0 | 30 | 60 | 90 when it is a checkpoint of the cycle
+  checkpointDay Int?
+  nextMeetingId String?
+  noNextReason  String?
+  cancelReason  String?
+  createdByName String
+  closedByName  String?
+  createdAt     DateTime  @default(now())
+
+  @@index([userId, scheduledOn])
+  @@index([withId, scheduledOn])
+}
+
+/// E16 §10 · Feedback 360 in the format Continue / Start / Improve / Reduce.
+model Feedback {
+  id              String    @id @default(cuid())
+  aboutId         String
+  about           User      @relation("FeedbackAbout", fields: [aboutId], references: [id], onDelete: Cascade)
+  fromId          String
+  from            User      @relation("FeedbackFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  /// SELF | LEADER | PEER | MENTOR | CROSS
+  relation        String
+  /// REQUESTED | GIVEN | DECLINED
+  status          String    @default("REQUESTED")
+  topic           String?
+  continueText    String?
+  startText       String?
+  improveText     String?
+  reduceText      String?
+  requestedByName String
+  givenAt         DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([aboutId])
+  @@index([fromId, status])
+}
+
+/// E16 §10, §24 · Something worth developing, born from feedback, a role gap or a pattern in the work. It is an
+/// opportunity, never a label on the person; it becomes an objective only when the person and leader take it.
+model DevelopmentOpportunity {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation("DevOpportunityOf", fields: [userId], references: [id], onDelete: Cascade)
+  /// FEEDBACK | ROLE_GAP | IMPROVEMENT | SELF | LEADER
+  source       String
+  sourceRef    String?
+  /// SER | HACER | TENER
+  dimension    String?
+  what         String
+  /// OPEN | IN_PLAN | DISMISSED
+  status       String   @default("OPEN")
+  objectiveId  String?
+  dismissNote  String?
+  raisedById   String?
+  raisedByName String
+  createdAt    DateTime @default(now())
+
+  @@index([userId, status])
+}
+
+/// E16 §7 · Readiness of a person for a role or level: Ready Now / Developing / Not Yet Ready, always with the
+/// evidence behind it. A new assessment supersedes the earlier one, which stays as history.
+model ReadinessAssessment {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation("ReadinessOf", fields: [userId], references: [id], onDelete: Cascade)
+  roleKey        String
+  level          String?
+  /// READY_NOW | DEVELOPING | NOT_YET
+  state          String
+  gaps           String?
+  evidence       String
+  plan           String?
+  assessedById   String?
+  assessedByName String
+  assessedOn     DateTime
+  supersededAt   DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([userId, roleKey])
+}
+
+/// E16 §7 · Who stands behind a role: a backup (can step in now) or a successor (is being prepared).
+model RoleBackup {
+  id             String    @id @default(cuid())
+  roleKey        String
+  /// when the backup is for one holder of the role; null = for the role as a whole
+  holderId       String?
+  backupUserId   String
+  backupUser     User      @relation("RoleBackupUser", fields: [backupUserId], references: [id], onDelete: Cascade)
+  /// BACKUP | SUCCESSOR
+  kind           String    @default("BACKUP")
+  /// what shows this person can do the role (confirmed by whoever names them)
+  capabilityNote String?
+  note           String?
+  setByName      String
+  endedAt        DateTime?
+  endedByName    String?
+  createdAt      DateTime  @default(now())
+
+  @@index([roleKey])
+  @@index([backupUserId])
+}
+
+/// E16 §24 · Role Gap Analysis: one dimension of the role agreement compared with real evidence of the person.
+/// Without evidence the result is always "not enough evidence". No score.
+model RoleGapReview {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation("RoleGapOf", fields: [userId], references: [id], onDelete: Cascade)
+  roleKey        String
+  version        Int
+  dimension      String
+  /// STRONG | DEVELOPING | GAP | NOT_ENOUGH
+  result         String
+  evidence       String?
+  reviewedById   String?
+  reviewedByName String
+  reviewedOn     DateTime
+  supersededAt   DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([userId, roleKey])
 }

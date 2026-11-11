@@ -677,6 +677,7 @@ export async function loadDemo(adminId: string) {
   if (pao) await seedComercialC8a(pao.id);
   if (pao) await seedComercialC8b(pao.id, adminId);
   if (pao) await seedGerenciaDemo({ id: pao.id, name: `Paola Gómez${TAG}` }, adminId);
+  if (pao) await seedEquipoDemo({ id: pao.id, name: `Paola Gómez${TAG}` }, adminId);
 }
 
 
@@ -987,6 +988,8 @@ async function topUpMarketDemo(adminId: string) {
   await seedComercialC8b(paola.id, adminId);
   // Módulo 15 sample if missing.
   await seedGerenciaDemo(paola, adminId);
+  // Módulo 16 sample if missing.
+  await seedEquipoDemo(paola, adminId);
 }
 
 /** Comercial C8b sample: Paola's planned vacation next week, covered by the person who loaded the demo, with the
@@ -1063,6 +1066,12 @@ export async function removeDemo() {
       await tx.managementDecision.deleteMany({ where: { OR: [{ code: { startsWith: "DG-EJ-" } }, { requestedById: { in: ids } }] } });
       await tx.scenario.deleteMany({ where: { OR: [{ createdByName: { endsWith: TAG } }, { createdById: { in: ids } }] } });
       await tx.strategicPriority.deleteMany({ where: { OR: [{ createdByName: { endsWith: TAG } }, { ownerId: { in: ids } }] } });
+      // Módulo 16: the sample role agreement and who was named behind it. Everything a sample person wrote about
+      // themselves (profile, cycle, conversations, feedback) leaves with that person.
+      await tx.roleBackup.deleteMany({ where: { OR: [{ setByName: { endsWith: TAG } }, { roleKey: EQUIPO_ROLE_KEY }] } });
+      await tx.readinessAssessment.deleteMany({ where: { roleKey: EQUIPO_ROLE_KEY } });
+      await tx.roleGapReview.deleteMany({ where: { roleKey: EQUIPO_ROLE_KEY } });
+      await tx.roleProfile.deleteMany({ where: { roleKey: EQUIPO_ROLE_KEY } });
       if (ids.length) {
         await tx.task.deleteMany({ where: { assigneeId: { in: ids } } });
         await tx.cashBlocker.deleteMany({ where: { responsibleId: { in: ids } } });
@@ -1116,4 +1125,92 @@ async function seedGerenciaDemo(paola: { id: string; name: string }, adminId: st
     status: "DECIDED", decision: "Comprar cuatro unidades.", chosen: "Comprar cuatro unidades", rationale: "La rapidez es nuestro atributo y el riesgo de caja es bajo.", authority: "Gerencia", decidedById: admin.id, decidedByName: admin.name, decidedAt: d(-35),
     expectedConsequence: "Vender al menos dos unidades en 30 días con entrega inmediata.", followUpOn: d(-2), ownerAfterId: paola.id,
   } });
+}
+
+const EQUIPO_ROLE_KEY = "negociador-comercial-ejemplo";
+
+/** Módulo 16 sample (added if missing): one role agreement, assigned to the sample negotiator with the person who
+ *  loaded the data as her leader; a development cycle in course with objectives, evidence, a commitment and two
+ *  conversations; feedback; a few lines of her 360 and one piece of character evidence; a named backup. */
+async function seedEquipoDemo(paola: { id: string; name: string }, adminId: string) {
+  if (paola.id === adminId || (await db.roleProfile.count({ where: { roleKey: EQUIPO_ROLE_KEY } }))) return;
+  const by = `Datos de ejemplo${TAG}`;
+  const admin = await db.user.findUnique({ where: { id: adminId }, select: { id: true, name: true } });
+  if (!admin) return;
+  const T = today();
+  const d = (n: number) => addDays(T, n);
+  const [identity, charter] = await Promise.all([
+    db.companyIdentity.findFirst({ where: { effectiveFrom: { lte: T } }, orderBy: { version: "desc" }, select: { version: true } }),
+    db.functionCharter.findFirst({ where: { functionKey: "COMERCIAL", effectiveFrom: { lte: T } }, orderBy: { version: "desc" }, select: { version: true } }),
+  ]);
+  const role = await db.roleProfile.create({ data: {
+    roleKey: EQUIPO_ROLE_KEY, version: 1, title: "Negociador Comercial" + TAG, functionKey: "COMERCIAL", soluRole: "NEGOCIADOR_COMERCIAL", critical: true,
+    purpose: "Ayudar a que la planta del cliente no se detenga, llevando cada necesidad desde que se entiende hasta que el cliente logra su resultado y el dinero entra.",
+    outcomes: ["Necesidades escritas con el resultado que busca el cliente", "Soluciones presentadas, no solo enviadas", "Eságara dentro de la política", "Cartera de sus clientes al día"],
+    functions: ["Explorar la necesidad con quien la vive", "Presentar la solución y acompañar la decisión", "Mantener el próximo movimiento de cada Journey", "Acompañar el cobro"],
+    responsibilities: ["La promesa hecha al cliente, aunque Operaciones ejecute la entrega", "Que cada Journey tenga próximo movimiento o espera controlada", "El contexto registrado para que otra persona pueda continuar"],
+    decisionRights: [
+      { kind: "AUTONOMOUS", text: "Qué solución presentar y cómo presentarla" },
+      { kind: "CONDITIONED", text: "Prometer una fecha de entrega, cuando Operaciones la validó" },
+      { kind: "APPROVAL", text: "Vender con Eságara por debajo de la política" },
+    ],
+    authorityDomains: [],
+    boundaries: ["No promete fecha sin validación operativa", "No compromete crédito por encima del cupo del cliente", "No aprueba su propia excepción de Eságara"],
+    inputs: ["Señales y necesidades que llegan de Mercadeo", "Opciones de suministro y tiempos de Operaciones"], outputs: ["Cotización presentada con su promesa", "Orden de compra del cliente aceptada y completa"],
+    customers: [{ kind: "EXTERNAL", who: "Compras y mantenimiento del cliente", expects: "respuesta rápida, información oportuna y acompañamiento hasta el resultado" }, { kind: "INTERNAL", who: "Operaciones", expects: "una orden aceptada sin ambigüedades y con la promesa validada" }],
+    qualityStandards: ["La cotización dice qué incluye y qué no", "El cliente sabe siempre cuál es el siguiente paso y cuándo"],
+    behaviors: [
+      { principle: "Verdad", conduct: "no prometer fecha sin validación operativa" },
+      { principle: "Responsabilidad", conduct: "avisar antes de incumplir y mantener el próximo movimiento" },
+      { principle: "Cristalinidad", conduct: "registrar contexto para que otro pueda continuar" },
+      { principle: "Trabajo en Equipo", conduct: "involucrar a Operaciones antes de compromisos críticos" },
+      { principle: "Humildad", conduct: "pedir ayuda cuando falta conocimiento o autoridad" },
+      { principle: "Respeto", conduct: "cuidar la relación aun en cobro, negociación o desacuerdo" },
+    ],
+    methodologies: ["ECSA: Explorar, Conectar, Solucionar, Acompañar"],
+    performance: [{ kind: "RESULT", text: "Eságara ganada frente a la meta del mes" }, { kind: "PROCESS", text: "Soluciones presentadas frente a cotizaciones enviadas" }, { kind: "QUALITY", text: "Órdenes aceptadas sin diferencias materiales frente a la cotización" }, { kind: "DEVELOPMENT", text: "Un ciclo de desarrollo en curso con evidencia" }],
+    competencies: [{ kind: "COMMERCIAL", text: "Explorar la necesidad antes de proponer" }, { kind: "TECHNICAL", text: "Leer una placa y una ficha técnica" }, { kind: "RELATIONAL", text: "Conversaciones de cobro que cuidan la relación" }],
+    risks: ["Prometer una fecha que Operaciones no puede cumplir", "Bajar el precio antes de entender el impacto de la parada"],
+    rhythm: [{ kind: "DAILY", text: "Revisar Mi Día y mover lo que vence" }, { kind: "WEEKLY", text: "Cierre semanal y plan de visitas" }, { kind: "MONTHLY", text: "Revisión de metas y de cartera con su líder" }],
+    successSignals: ["Tus clientes te llaman antes de que la parada ocurra", "Tus Journeys no tienen próximos pasos vencidos"], attentionSignals: ["Cotizaciones enviadas sin presentar", "Clientes que solo se enteran de un atraso cuando preguntan"],
+    careerLevels: [
+      { name: "Emprendedor", ser: "Cumple lo que dice", hacer: "Sigue el método con acompañamiento", tener: "Conoce las líneas principales" },
+      { name: "Junior", ser: "Avisa antes de incumplir", hacer: "Lleva sus Journeys sin supervisión diaria", tener: "Maneja sus cuentas y su cartera" },
+      { name: "Senior", ser: "Enseña con el ejemplo", hacer: "Abre cuentas nuevas y acompaña a otros", tener: "Relaciones con quienes deciden en planta" },
+    ],
+    careerExpectations: ["Tres meses seguidos con sus Journeys sin compromisos incumplidos", "Haber acompañado a un compañero nuevo en sus primeras presentaciones"],
+    companyCommitments: [{ kind: "TOOL", text: "SOLU con la información del cliente al día" }, { kind: "INFORMATION", text: "Tiempos y costos reales de Operaciones antes de prometer" }, { kind: "SUPPORT", text: "Una conversación de desarrollo al mes con su líder" }],
+    identityVersion: identity?.version ?? null, charterVersion: charter?.version ?? null, effectiveFrom: d(-60), reason: "Acuerdo de rol de ejemplo, para ver cómo se lee uno completo.", publishedByName: by,
+  } });
+  const cur = await db.personRoleAssignment.findFirst({ where: { userId: paola.id, effectiveTo: null, acting: false }, select: { id: true } });
+  const link = { roleProfileId: role.id, charterVersion: charter?.version ?? null, identityVersion: identity?.version ?? null, level: "Junior", leaderId: admin.id };
+  if (cur) await db.personRoleAssignment.update({ where: { id: cur.id }, data: link });
+  else await db.personRoleAssignment.create({ data: { userId: paola.id, contractualTitle: "Negociadora Comercial" + TAG, operatingRole: "NEGOCIADOR_COMERCIAL", effectiveFrom: d(-60), reason: "Asignación de ejemplo", setByName: by, ...link } });
+
+  const plan = await db.developmentPlan.create({ data: { userId: paola.id, cycle: 1, startsOn: d(-35), endsOn: d(55), purpose: "Quiero llegar a Senior acompañando a mis clientes antes de que tengan la urgencia, no después (ejemplo).", leaderId: admin.id, createdByName: paola.name } });
+  const objs = await Promise.all([
+    db.developmentObjective.create({ data: { planId: plan.id, dimension: "SER", title: "Avisar antes de incumplir, siempre (ejemplo)", expectedEvidence: "Ningún cliente se entera de un atraso por su cuenta durante el ciclo", nextMovement: "Revisar cada lunes las promesas de la semana", reviewOn: d(-3), createdByName: paola.name } }),
+    db.developmentObjective.create({ data: { planId: plan.id, dimension: "SER", title: "Pedir ayuda cuando no sé (ejemplo)", expectedEvidence: "Dos casos técnicos resueltos con apoyo de Operaciones", nextMovement: "Llevar el caso de los variadores a Operaciones", reviewOn: d(12), createdByName: paola.name } }),
+    db.developmentObjective.create({ data: { planId: plan.id, dimension: "HACER", title: "Presentar toda cotización, no solo enviarla (ejemplo)", expectedEvidence: "Cinco presentaciones registradas en el Caso de solución", nextMovement: "Agendar la presentación de la solución de dosificación", reviewOn: d(9), createdByName: paola.name } }),
+    db.developmentObjective.create({ data: { planId: plan.id, dimension: "TENER", title: "Aprender a leer curvas de bombas (ejemplo)", expectedEvidence: "Una selección de bomba hecha por mí y revisada por Operaciones", nextMovement: "Sesión con Operaciones sobre curvas", reviewOn: d(20), createdByName: paola.name } }),
+  ]);
+  await db.developmentEvidence.create({ data: { objectiveId: objs[2].id, what: "Presenté la solución de variadores al jefe de mantenimiento y registré sus dos objeciones (ejemplo).", observedOn: d(-8), kind: "SELF", addedById: paola.id, addedByName: paola.name } });
+  const held = await db.developmentMeeting.create({ data: { userId: paola.id, withId: admin.id, kind: "CHECKPOINT", scheduledOn: d(-35), status: "HELD", heldOn: d(-35), planId: plan.id, checkpointDay: 0, notes: "Acordamos el foco del ciclo: presentar siempre y avisar antes de incumplir (ejemplo).", createdByName: by, closedByName: by } });
+  const next = await db.developmentMeeting.create({ data: { userId: paola.id, withId: admin.id, kind: "ONE_ON_ONE", scheduledOn: d(3), planId: plan.id, createdByName: by } });
+  await db.developmentMeeting.update({ where: { id: held.id }, data: { nextMeetingId: next.id } });
+  await db.developmentCommitment.createMany({ data: [
+    { userId: paola.id, ownerId: paola.id, objectiveId: objs[3].id, meetingId: held.id, kind: "LEARNING", what: "Estudiar el manual de selección de bombas (ejemplo)", expectedEvidence: "Un resumen de una página compartido con el equipo", dueOn: d(-2), createdByName: by },
+    { userId: paola.id, ownerId: admin.id, sharedWithId: paola.id, objectiveId: objs[2].id, meetingId: held.id, kind: "SHADOWING", what: "Acompañar a Paola en una presentación a un comité de compras (ejemplo)", expectedEvidence: "Notas de la presentación con lo que funcionó", dueOn: d(10), createdByName: by },
+  ] });
+  await db.feedback.create({ data: { aboutId: paola.id, fromId: admin.id, relation: "LEADER", status: "GIVEN", topic: "Presentación de variadores (ejemplo)", continueText: "Preguntar por el impacto de la parada antes de hablar de precio.", improveText: "Cerrar la reunión acordando la fecha en que el cliente decide.", requestedByName: paola.name, givenAt: d(-7) } });
+  await db.feedback.create({ data: { aboutId: admin.id, fromId: paola.id, relation: "PEER", status: "REQUESTED", topic: "Cómo te acompaño en las visitas (ejemplo)", requestedByName: admin.name } });
+  await db.profileEntry.createMany({ data: [
+    { userId: paola.id, block: "TALENT", kind: "NATURAL", text: "Escuchar hasta entender el problema real (ejemplo)", privacy: "ORG", addedById: paola.id, addedByName: paola.name },
+    { userId: paola.id, block: "TENER", kind: "KNOWLEDGE", text: "Variadores de velocidad (ejemplo)", privacy: "ORG", addedById: paola.id, addedByName: paola.name },
+    { userId: paola.id, block: "TENER", kind: "LANGUAGE", text: "Inglés técnico (ejemplo)", privacy: "ORG", addedById: paola.id, addedByName: paola.name },
+    { userId: paola.id, block: "SER", kind: "MOTIVATION", text: "Que el cliente me busque antes de la urgencia (ejemplo)", privacy: "SHARED", addedById: paola.id, addedByName: paola.name },
+    { userId: paola.id, block: "REFLECTION", kind: "REFLECTION", text: "Me cuesta decir que no sé delante del cliente (ejemplo)", privacy: "PRIVATE", addedById: paola.id, addedByName: paola.name },
+  ] });
+  await db.characterEvidence.create({ data: { userId: paola.id, dimension: "Verdad", behavior: "Llamó al cliente para decirle que la entrega se movía dos días, antes de que él preguntara (ejemplo).", context: "El proveedor confirmó tarde el despacho de los rodamientos.", observedOn: d(-12), sourceKind: "OBSERVATION", privacy: "SHARED", recordedById: admin.id, recordedByName: admin.name } });
+  await db.roleBackup.create({ data: { roleKey: EQUIPO_ROLE_KEY, holderId: paola.id, backupUserId: admin.id, kind: "BACKUP", capabilityNote: "Llevó esas cuentas antes de entregárselas (ejemplo)", setByName: by } });
 }

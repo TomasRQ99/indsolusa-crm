@@ -11,6 +11,7 @@ import { buildMiDia } from "./midia";
 import { forwardOf } from "./logistics";
 import { APPROVER_ROLES } from "./esagara-gate";
 import { adminAttention } from "./admin-attention";
+import { teamAttention } from "./team-attention";
 
 // Attention for the shell: a module shows a counter only when it holds objects that
 // need THIS person (amber = needs movement or clarity, red = result at risk).
@@ -42,7 +43,7 @@ export async function shellAttention(user: SessionUser, i: I18n) {
     db.invoice.findMany({ where: { deal: mineDeal, steps: { some: { kind: "REJECTED" } } }, include: { steps: true, account: { select: { name: true } }, applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } } } }),
     db.cashBlocker.findMany({ where: { responsibleId: user.id, resolvedAt: null, expectedResolution: { lt: today() } }, include: { deal: { select: { code: true, account: { select: { name: true } } } } } }),
   ]);
-  const adm = await adminAttention(user, i);
+  const [adm, team] = await Promise.all([adminAttention(user, i), teamAttention(user, i)]);
   // Módulo 15: decisions asked of Gerencia, and decided ones whose follow-up date arrived (for Gerencia or for
   // whoever was left in charge).
   const ger = isGerencia(user);
@@ -77,6 +78,8 @@ export async function shellAttention(user: SessionUser, i: I18n) {
   else if (decider && counters.administracion) counters.administracion.n += reviews.length + (manager ? 0 : creditDecisions.length);
   // Módulo 14: obligations to decide, internal purchases, absences and support owed by this person.
   if (adm.alerts.length) { if (counters.administracion) { counters.administracion.n += adm.alerts.length; if (adm.risk) counters.administracion.tone = "risk"; } else set("administracion", adm.alerts.length, adm.risk ? "risk" : "attn"); }
+  // Módulo 16: feedback asked of this person, conversations to close, their own commitments and cycle, an unplanned absence nobody covers.
+  set("equipo", team.alerts.length, team.risk ? "risk" : "attn");
   set("comercial", excToDecide.length + excBack.length + rejected.length + lateBlockers.length, rejected.length ? "risk" : "attn");
 
   const alerts: Alert[] = [
@@ -91,6 +94,7 @@ export async function shellAttention(user: SessionUser, i: I18n) {
     ...lateBlockers.map((b) => ({ key: `k${b.id}`, tone: "attn" as const, href: `/comercial/dinero?scope=mine`, text: t(`Bloqueo vencido: ${b.deal.code} · ${b.deal.account.name} · ${b.nextMovement}`, `Blocker past its date: ${b.deal.code} · ${b.deal.account.name} · ${b.nextMovement}`) })),
     ...reviews.map((r) => ({ key: `q${r.id}`, tone: "attn" as const, href: `/administracion/cupos#solicitudes`, text: t(`Decidir solicitud de cupo: ${r.account.name}`, `Decide credit request: ${r.account.name}`) })),
     ...adm.alerts,
+    ...team.alerts,
     ...mgmtAsked.map((d) => ({ key: `md${d.id}`, tone: (d.deadline && d.deadline < today() ? "risk" : "attn") as "attn" | "risk", href: `/gerencia/decisiones/${d.id}`, text: t(`Te piden una decisión (${d.code}): ${d.question}`, `A decision is asked of you (${d.code}): ${d.question}`) })),
     ...mgmtReview.map((d) => ({ key: `mr${d.id}`, tone: "attn" as const, href: `/gerencia/decisiones/${d.id}#revision`, text: t(`Toca revisar qué pasó con la decisión ${d.code}: ${d.question}`, `Time to review what happened with decision ${d.code}: ${d.question}`) })),
     ...creditDecisions.map(({ a, d }) => ({ key: `c${d.id}`, tone: "attn" as const, href: `/administracion/cupos#${a.id}`, text: t(`Decidir el cupo de ${a.name}`, `Decide ${a.name}'s credit limit`) })),

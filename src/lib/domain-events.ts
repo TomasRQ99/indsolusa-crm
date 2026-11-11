@@ -107,6 +107,36 @@ export function eventsOf(r: AuditRow): EventOut[] {
     case "AbsenceRecord":
       if (U && became(ch, "status", "APPROVED")) emit("absence.approved");
       break;
+    // Módulo 16 · names only what the organisation may know: never the content of the development of a person.
+    case "RoleProfile":
+      if (C) emit("role_profile.published", pick(ch, ["roleKey", "version", "functionKey", "effectiveFrom"]));
+      break;
+    case "PersonRoleAssignment":
+      if (C && now(ch, "roleProfileId") != null) emit(now(ch, "acting") === true ? "role.acting_assigned" : "role.assigned", pick(ch, ["userId", "roleProfileId", "level", "effectiveFrom", "effectiveTo"]));
+      else if (U && gotSet(ch, "reviewedAt")) emit("role.expectations_reviewed", pick(ch, ["reviewedVersion"]));
+      break;
+    case "DevelopmentPlan":
+      if (C) emit("development.cycle_opened", pick(ch, ["userId", "cycle", "startsOn", "endsOn"]));
+      else if (U && became(ch, "status", "CLOSED")) emit("development.cycle_closed");
+      break;
+    case "DevelopmentObjective":
+      if (U && (became(ch, "status", "ACHIEVED") || became(ch, "status", "CLOSED"))) emit("development.objective_closed", pick(ch, ["status"]));
+      break;
+    case "DevelopmentMeeting":
+      if (U && became(ch, "status", "HELD")) emit("development.conversation_held", pick(ch, ["heldOn"]));
+      break;
+    case "ReadinessAssessment":
+      if (C) emit("readiness.assessed", pick(ch, ["userId", "roleKey", "state"]));
+      break;
+    case "RoleBackup":
+      if (C) emit("succession.backup_named", pick(ch, ["roleKey", "backupUserId", "kind"]));
+      else if (U && gotSet(ch, "endedAt")) emit("succession.backup_ended");
+      break;
+    case "CoverageAssignment":
+      if (C) emit("coverage.assigned", pick(ch, ["originalUserId", "actingUserId", "startsAt", "endsAt", "kind"]));
+      else if (U && gotSet(ch, "revokedAt")) emit("coverage.ended_early");
+      else if (U && gotSet(ch, "returnedAt")) emit("coverage.ownership_returned");
+      break;
   }
   return out;
 }
@@ -157,4 +187,19 @@ export const EVENT_NAMES: Record<string, { es: string; en: string }> = {
   "risk.material_changed": { es: "Un riesgo cambió de forma material", en: "A risk changed materially" },
   "future_pulse.material_change": { es: "El futuro visible cambió de forma material", en: "The visible future changed materially" },
   "strategic_account.attention": { es: "Una cuenta estratégica pide atención", en: "A strategic account asks for attention" },
+  // Módulo 16
+  "role_profile.published": { es: "Acuerdo de rol publicado", en: "Role agreement published" },
+  "role.assigned": { es: "Acuerdo de rol asignado a una persona", en: "Role agreement assigned to a person" },
+  "role.acting_assigned": { es: "Rol temporal asignado", en: "Temporary role assigned" },
+  "role.expectations_reviewed": { es: "Expectativas del rol revisadas", en: "Role expectations reviewed" },
+  "development.cycle_opened": { es: "Ciclo de desarrollo abierto", en: "Development cycle opened" },
+  "development.cycle_closed": { es: "Ciclo de desarrollo cerrado", en: "Development cycle closed" },
+  "development.objective_closed": { es: "Objetivo de desarrollo cerrado", en: "Development objective closed" },
+  "development.conversation_held": { es: "Conversación de desarrollo realizada", en: "Development conversation held" },
+  "readiness.assessed": { es: "Preparación para un rol evaluada", en: "Readiness for a role assessed" },
+  "succession.backup_named": { es: "Respaldo o sucesor nombrado", en: "Backup or successor named" },
+  "succession.backup_ended": { es: "Respaldo o sucesor retirado", en: "Backup or successor removed" },
+  "coverage.assigned": { es: "Cobertura por ausencia asignada", en: "Absence coverage assigned" },
+  "coverage.ended_early": { es: "Cobertura terminada antes de tiempo", en: "Coverage ended early" },
+  "coverage.ownership_returned": { es: "Trabajo devuelto a su dueño al regresar", en: "Work handed back to its owner on return" },
 };

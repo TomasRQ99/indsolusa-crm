@@ -259,7 +259,7 @@ export const overlaps = (rows: { status: string; startsOn: Date; endsOn: Date }[
 
 // ---------- Support gaps (§25) ----------
 
-export const GAP_KINDS: Record<string, Txt> = { TOOL: { es: "Herramienta", en: "Tool" }, ACCESS: { es: "Acceso", en: "Access" }, ASSET: { es: "Equipo o activo", en: "Equipment or asset" }, TRAINING: { es: "Formación", en: "Training" }, INFORMATION: { es: "Información", en: "Information" } };
+export const GAP_KINDS: Record<string, Txt> = { TOOL: { es: "Herramienta", en: "Tool" }, ACCESS: { es: "Acceso", en: "Access" }, ASSET: { es: "Equipo o activo", en: "Equipment or asset" }, TRAINING: { es: "Formación", en: "Training" }, INFORMATION: { es: "Información", en: "Information" }, AUTHORITY: { es: "Autoridad", en: "Authority" } };
 
 // ---------- Travel: advance and settlement (§14, §18) ----------
 

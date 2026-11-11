@@ -34,14 +34,16 @@ export async function addRoleAssignment(userId: string, fd: FormData) {
   const title = fText(fd, "contractualTitle", 160), from = fDay(fd, "effectiveFrom"), reason = fText(fd, "reason", 300);
   const person = await db.user.findUnique({ where: { id: userId }, select: { role: true } });
   if (!person || !title || !from || !reason) go(userId, "err=cargo#cargo");
-  const current = await db.personRoleAssignment.findFirst({ where: { userId, effectiveTo: null }, orderBy: { effectiveFrom: "desc" } });
+  const current = await db.personRoleAssignment.findFirst({ where: { userId, effectiveTo: null, acting: false }, orderBy: { effectiveFrom: "desc" } });
   if (current && from! <= current.effectiveFrom) go(userId, "err=cargo-fecha#cargo");
   const leaderId = fText(fd, "leaderId", 40);
   const leader = leaderId && leaderId !== userId ? await db.user.findFirst({ where: { id: leaderId, active: true }, select: { id: true } }) : null;
   await db.$transaction([
     ...(current ? [db.personRoleAssignment.update({ where: { id: current.id }, data: { effectiveTo: from! } })] : []),
     // The operating role is the role the person has in SOLU that day: written down so the history shows both identities.
-    db.personRoleAssignment.create({ data: { userId, contractualTitle: title!, operatingRole: person!.role, unit: fText(fd, "unit", 120), leaderId: leader?.id ?? null, location: fText(fd, "location", 120), effectiveFrom: from!, reason: reason!, setByName: user.name } }),
+    db.personRoleAssignment.create({ data: { userId, contractualTitle: title!, operatingRole: person!.role, unit: fText(fd, "unit", 120), leaderId: leader?.id ?? null, location: fText(fd, "location", 120), effectiveFrom: from!, reason: reason!, setByName: user.name,
+      // Módulo 16: a change of title, unit or leader keeps the role agreement the person already had.
+      roleProfileId: current?.roleProfileId ?? null, charterVersion: current?.charterVersion ?? null, identityVersion: current?.identityVersion ?? null, level: current?.level ?? null, reviewedVersion: current?.reviewedVersion ?? null, reviewedAt: current?.reviewedAt ?? null, reviewedByName: current?.reviewedByName ?? null } }),
   ]);
   go(userId, "ok=cargo#cargo");
 }

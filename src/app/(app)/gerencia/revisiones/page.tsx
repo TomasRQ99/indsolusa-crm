@@ -64,7 +64,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         {r.decided.length > 0 && <p className="small">{t("Decidido este mes", "Decided this month")}: {r.decided.map((d, k) => <span key={d.id}>{k ? " · " : ""}<Link href={`/gerencia/decisiones/${d.id}`}>{d.code}</Link> {d.question.slice(0, 60)}</span>)}</p>}
         <p className="small"><Link href={`/gerencia/decisiones?area=${area}#pedir`}>{t("Abrir una decisión sobre esta función", "Open a decision about this function")}</Link></p>
       </section>
-      <p className="src">{t("Las cifras son las mismas del Pulso del negocio (Informes); aquí se ordenan para decidir.", "The figures are the same as the Business pulse (Reports); here they are arranged to decide.")} {area === "EQUIPO" ? t("Desarrollo, sucesión y preparación para el siguiente rol llegan con el módulo de Equipo.", "Development, succession and readiness for the next role arrive with the Team module.") : ""}</p>
+      <p className="src">{t("Las cifras son las mismas del Pulso del negocio (Informes); aquí se ordenan para decidir.", "The figures are the same as the Business pulse (Reports); here they are arranged to decide.")} {area === "EQUIPO" ? t("Desarrollo, sucesión y preparación para el siguiente rol: Equipo → Desarrollo organizacional.", "Development, succession and readiness for the next role: Team → Organizational development.") : ""}</p>
     </>
   );
 }

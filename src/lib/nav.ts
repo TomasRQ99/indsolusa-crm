@@ -19,6 +19,10 @@ export const NAV_GROUPS = {
   direccion: { es: "Dirección", en: "Direction" },
   revision: { es: "Revisión", en: "Review" },
   gobierno: { es: "Gobierno", en: "Governance" },
+  // Equipo & Desarrollo (Módulo 16)
+  yo: { es: "Mi desarrollo", en: "My development" },
+  miequipo: { es: "Mi equipo", en: "My team" },
+  organizacion: { es: "Organización", en: "Organisation" },
 } as const;
 export type NavModule = { key: ModuleKey; es: string; en: string; match: string[]; tabs: NavTab[] };
 
@@ -117,11 +121,23 @@ export const MODULES: NavModule[] = [
   },
   { key: "proyectos", es: "PROYECTOS", en: "PROJECTS", match: ["/proyectos"], tabs: [{ href: "/proyectos", es: "Proyectos", en: "Projects" }] },
   {
-    key: "equipo", es: "EQUIPO", en: "TEAM", match: ["/admin", "/profile"],
+    key: "equipo", es: "EQUIPO", en: "TEAM", match: ["/equipo", "/admin", "/profile"],
+    // Módulo 16: the person first (my role, my development), then the people they accompany, then the organisation.
     tabs: [
-      { href: "/admin/users", es: "Personas y datos", en: "People & data", adminOnly: true },
-      { href: "/admin/trabajos", es: "Trabajos en segundo plano", en: "Background work", adminOnly: true },
-      { href: "/profile", es: "Mi perfil", en: "My profile" },
+      { href: "/equipo/mi-rol", es: "Mi rol", en: "My role", group: "yo" },
+      { href: "/equipo/desarrollo", es: "Mi desarrollo", en: "My development", group: "yo" },
+      { href: "/equipo/perfil", es: "Mi 360", en: "My 360", group: "yo" },
+      { href: "/equipo/reuniones", es: "Conversaciones", en: "Conversations", group: "yo" },
+      { href: "/equipo/feedback", es: "Feedback 360", en: "Feedback 360", group: "yo" },
+      { href: "/equipo/mi-equipo", es: "Desarrollo de mi equipo", en: "My team's development", group: "miequipo" },
+      { href: "/equipo/claridad", es: "Claridad de roles", en: "Role clarity", group: "miequipo" },
+      { href: "/equipo/continuidad", es: "Continuidad y sucesión", en: "Continuity and succession", group: "miequipo" },
+      { href: "/equipo/talentos", es: "Mapa de talentos", en: "Talent map", group: "miequipo" },
+      { href: "/equipo/roles", es: "Acuerdos de rol", en: "Role agreements", group: "organizacion" },
+      { href: "/equipo/organizacion", es: "Desarrollo organizacional", en: "Organizational development", group: "organizacion", adminOnly: true },
+      { href: "/admin/users", es: "Personas y datos", en: "People & data", group: "ajustes", adminOnly: true },
+      { href: "/admin/trabajos", es: "Trabajos en segundo plano", en: "Background work", group: "ajustes", adminOnly: true },
+      { href: "/profile", es: "Mi perfil", en: "My profile", group: "ajustes" },
     ],
   },
   {
