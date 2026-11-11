@@ -46,6 +46,13 @@ export async function setLanguage(formData: FormData) {
   refreshApp();
 }
 
+/** On-screen guide (training) on or off, for this person only. */
+export async function setGuide(formData: FormData) {
+  const user = await requireUser();
+  await db.user.update({ where: { id: user.id }, data: { guideOn: formData.get("on") === "1" } });
+  refreshApp();
+}
+
 export async function setWorkday(formData: FormData) {
   const user = await requireUser();
   const hours = z.coerce.number().min(1).max(14).parse(formData.get("hours"));

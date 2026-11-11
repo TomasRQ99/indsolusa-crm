@@ -1,6 +1,10 @@
-/* SOLU visual language: deep blue + white + neutral grays.
-   Green = protected/achieved, amber = attention, red = material risk (solid red only for
-   "Compromiso incumplido"), purple ONLY for AI. No decorative colour. */
+/* SOLU visual language (colour system v2, 2026-11-11, at the user's request for more colour).
+   Three families of colour, each with one job:
+   1. STATE (inside the content): green = protected/achieved, amber = attention, red = material risk
+      (solid red only for "Compromiso incumplido"), purple ONLY for AI.
+   2. ACTION: the vivid blue (--brand) means "you can click this": links, buttons, selected things.
+   3. PLACE: one colour per module (--mod), used only in the frame: menu, top line, module band, tabs.
+   The rules for 2 and 3 are at the end of this file ("Colour system v2"). */
 :root {
   --bg: #f6f8fb;
   --surface: #ffffff;
@@ -10,11 +14,13 @@
   --ink: #0f1b2d;
   --ink-2: #46546a;
   --ink-3: #637089;
-  --brand: #0f4c75;
-  --brand-strong: #0a3754;
-  --brand-soft: #e5f1f8;
+  --brand: #1463d6;
+  --brand-strong: #0f4fb0;
+  --brand-soft: #e7f0fd;
+  --brand-line: #b5d0f6;
+  --navy: #0f4c75;
   --on-brand: #fff;
-  --focus: #1670b8;
+  --focus: #1463d6;
   --ok: #1e7a4c;
   --ok-soft: #e6f4ec;
   --attn: #a34a07;
@@ -54,7 +60,7 @@ p { margin: 0; }
 .app[data-side="collapsed"] { --sw: 64px; }
 
 .hdr { grid-column: 1 / -1; position: sticky; top: 0; z-index: 30; height: var(--hh); display: flex; align-items: center; gap: 12px; padding: 0 16px 0 12px; background: var(--surface); border-bottom: 1px solid var(--line); }
-.wordmark { display: block; width: 208px; flex: none; padding-left: 12px; font-family: var(--font-display), sans-serif; font-weight: 700; font-size: 20px; line-height: 22px; letter-spacing: 0.08em; color: var(--brand); text-decoration: none !important; }
+.wordmark { display: block; width: 208px; flex: none; padding-left: 12px; font-family: var(--font-display), sans-serif; font-weight: 700; font-size: 20px; line-height: 22px; letter-spacing: 0.08em; color: var(--navy); text-decoration: none !important; }
 .wordmark small { display: block; font: 400 11px/14px var(--font-sans), sans-serif; letter-spacing: 0; color: var(--ink-3); }
 .cur-module { display: none; font: 600 12px/16px var(--font-sans), sans-serif; letter-spacing: 0.04em; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hdr .grow { flex: 1; }
@@ -1767,3 +1773,178 @@ button.linkish { background: none; border: 0; padding: 0; color: var(--brand); f
 .eq-acts { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: flex-start; margin-top: 8px; }
 .eq-acts > details[open] { flex: 1 1 100%; }
 .eq td details > form { margin-top: 6px; }
+
+/* ==========================================================================================
+   Colour system v2 (2026-11-11). See the note at the top of this file.
+   PLACE = one colour per module, only in the frame. ACTION = vivid blue, "you can click this".
+   STATE colours (green / amber / red / purple) are untouched and live inside the content.
+   Module hues were chosen away from the state hues and all pass 4.5:1 on white.
+   ========================================================================================== */
+:root { --mod: var(--brand); --mod-soft: var(--brand-soft); --mod-line: var(--brand-line); }
+[data-mod="midia"] { --mod: #0f4c75; }
+[data-mod="mercado"] { --mod: #0a7d8c; }
+[data-mod="comercial"] { --mod: #b3246f; }
+[data-mod="operaciones"] { --mod: #8a6400; }
+[data-mod="administracion"] { --mod: #4f7a12; }
+[data-mod="proyectos"] { --mod: #4a4fc4; }
+[data-mod="equipo"] { --mod: #9c5536; }
+[data-mod="informes"] { --mod: #0878b3; }
+[data-mod="gerencia"] { --mod: #3f4a5c; }
+[data-mod] { --mod-soft: color-mix(in srgb, var(--mod) 10%, #fff); --mod-line: color-mix(in srgb, var(--mod) 32%, #fff); }
+
+/* Frame: a line of the module's colour under the top bar */
+.hdr { border-bottom: 0; box-shadow: inset 0 -3px 0 var(--mod); }
+.cur-module { color: var(--mod); }
+.topbar-progress { background: var(--mod); }
+
+/* Menu: every module always shows its colour; the one you are in is filled */
+.mico { width: 28px; height: 28px; flex: none; display: grid; place-items: center; border-radius: 7px; background: var(--mod-soft); color: var(--mod); transition: background 120ms, color 120ms; }
+.mico svg { width: 18px; height: 18px; }
+.nav a { gap: 10px; padding: 0 10px 0 6px; }
+.nav a:hover { background: var(--mod-soft); color: var(--mod); }
+.nav a:hover .mico { background: var(--mod-line); }
+.nav a.on { background: var(--mod-soft); color: var(--mod); box-shadow: inset 3px 0 0 var(--mod); }
+.nav a.on .mico { background: var(--mod); color: #fff; }
+.bottombar > a.on { color: var(--mod); }
+
+/* Module band at the top of every screen: icon + module + where you are, then its sections */
+.main { --mp: 32px; --mpt: 24px; }
+.modhead { max-width: none !important; margin: calc(-1 * var(--mpt)) calc(-1 * var(--mp)) 24px; padding: 12px var(--mp) 0; background: var(--mod-soft); border-bottom: 1px solid var(--mod-line); }
+.modrib { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-bottom: 12px; font-size: 13px; line-height: 18px; color: var(--ink-2); }
+.modrib .mico { width: 30px; height: 30px; border-radius: 8px; background: var(--mod); color: #fff; margin-right: 2px; }
+.modrib b { font: 700 13px/18px var(--font-sans), sans-serif; letter-spacing: 0.06em; color: var(--mod); }
+.modrib i { font-style: normal; color: var(--mod); opacity: 0.55; }
+.modrib .here { color: var(--ink); font-weight: 600; }
+.modhead .tab-groups { margin: 0 0 10px; }
+.modhead .tab-groups a { border-color: var(--mod-line); color: var(--mod); background: #fff; }
+.modhead .tab-groups a:hover { border-color: var(--mod); color: var(--mod); background: #fff; }
+.modhead .tab-groups a.on { background: var(--mod); border-color: var(--mod); color: #fff; }
+.modhead .tabs { margin: 0 0 -1px; border-bottom: 0; gap: 2px; }
+.modhead .tabs a { padding: 8px 12px 9px; border: 1px solid transparent; border-top-width: 3px; border-bottom: 0; margin-bottom: 0; border-radius: 6px 6px 0 0; color: var(--ink-2); }
+.modhead .tabs a:hover { color: var(--mod); background: color-mix(in srgb, var(--mod) 16%, #fff); }
+.modhead .tabs a.on { background: var(--bg); color: var(--mod); border-color: var(--mod-line); border-top-color: var(--mod); font-weight: 600; }
+.tabs a.on { color: var(--mod); border-bottom-color: var(--mod); }
+.tab-groups a.on { background: var(--mod); border-color: var(--mod); }
+@media (max-width: 1439px) { .main { --mp: 24px; } }
+@media (max-width: 1023px) { .main { --mp: 16px; --mpt: 20px; } .modhead .tabs a { padding: 10px 12px 11px; } }
+@media (max-width: 599px) { .main { --mpt: 16px; } .modrib b { display: none; } .modrib b + i { display: none; } }
+
+/* The summary strip at the top of a screen wears the module's colour */
+.sum { border-top: 3px solid var(--mod); }
+
+/* ACTION: what you can click.
+   Blue text = link. Filled blue = the main action. White with blue text = a secondary action. */
+.main a:not([class]) { font-weight: 500; }
+button.secondary, .btn.secondary { color: var(--brand); border-color: var(--brand-line); }
+button.secondary:hover, .btn.secondary:hover { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-strong); }
+.qa-btn, details.qa > summary.qa-btn { color: var(--brand); border-color: var(--brand-line); }
+.qa-btn:hover, details.qa > summary.qa-btn:hover { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-strong); }
+button:not(:disabled):active, .btn:active { transform: translateY(1px); }
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(20, 99, 214, 0.16); outline: none; }
+.search input:focus, .ask-form input:focus { box-shadow: none; }
+/* A table row that leads somewhere lights up in blue; a row that leads nowhere stays grey. */
+tbody tr:has(a[href]):hover td { background: var(--brand-soft); }
+tbody tr.grpr:hover td { background: var(--surface-sunken); }
+a.card, a.deal, a.att { color: inherit; transition: border-color 120ms, box-shadow 120ms; }
+a.card:hover, a.deal:hover, a.att:hover { text-decoration: none; border-color: var(--brand); box-shadow: 0 2px 10px rgba(20, 99, 214, 0.14); }
+.deal:has(a[href]):hover { border-color: var(--brand-line); box-shadow: 0 2px 8px rgba(15, 27, 45, 0.08); }
+.wrow:hover { background: var(--brand-soft); }
+
+/* NEXT: the next useful movement is always the blue box with the arrow */
+.att .next { background: var(--brand-soft); border-top: 0; border-radius: 6px; padding: 12px 14px; }
+.next-text .k { color: var(--brand); }
+.next-text .k::before { content: "→ "; }
+/* A card that needs you wears the colour of its signal on its left edge */
+.att:has(.tsig.risk) { border-left: 4px solid var(--risk); }
+.att:has(.tsig.move) { border-left: 4px solid var(--attn); }
+.att:has(.tsig.clarity) { border-left: 4px dashed var(--attn); }
+.att.calm { border-left: 4px solid var(--ok); }
+
+/* Areas of action. act = needs you (amber) · risk = a promise or money at risk (red) · flow = move it forward (blue) · calm = protected, nothing to do (green) · plan = context (grey) */
+[data-zone] { --z: var(--ink-2); }
+[data-zone="act"] { --z: var(--attn); }
+[data-zone="flow"] { --z: var(--brand); }
+[data-zone="calm"] { --z: var(--ok); }
+[data-zone="risk"] { --z: var(--risk); }
+.card[data-zone] { border-left: 4px solid var(--z); }
+.card[data-zone] > b:first-child, .card[data-zone] > :first-child > b:first-child { color: var(--z); letter-spacing: 0.03em; }
+.mblock[data-zone] > .bhead { border-bottom: 2px solid var(--z); }
+.mblock[data-zone] > .bhead > b { color: var(--z); display: inline-flex; align-items: center; gap: 7px; }
+.mblock[data-zone] > .bhead > b::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--z); flex: none; }
+
+/* Pipeline: the columns get deeper in blue as a Journey advances; won is green, lost is grey */
+.kanban .column { border-top: 3px solid var(--line-strong); }
+.kanban .column:nth-child(1) { border-top-color: #a9c8f5; }
+.kanban .column:nth-child(2) { border-top-color: #73a6ee; }
+.kanban .column:nth-child(3) { border-top-color: #3f84e3; }
+.kanban .column:nth-child(4) { border-top-color: #1463d6; }
+.kanban .column[data-stage="WON"] { border-top-color: var(--ok); background: color-mix(in srgb, var(--ok) 6%, var(--surface-sunken)); }
+.kanban .column[data-stage="LOST"] { border-top-color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { .mico, a.card, a.deal, a.att { transition: none; } button:not(:disabled):active, .btn:active { transform: none; } }
+
+/* ---------- On-screen guide (search bar -> Guía de campo steps over the real screen) ---------- */
+/* Suggestions under the search box */
+.search-sug { position: absolute; top: 42px; left: 0; width: max(100%, 560px); max-width: calc(100vw - 24px); z-index: 46; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 16px 40px rgba(15, 27, 45, 0.18); padding: 6px; max-height: min(70vh, 560px); overflow-y: auto; color: var(--ink); }
+.ss-head { padding: 8px 10px 6px; font: 700 11px/16px var(--font-sans), sans-serif; letter-spacing: 0.05em; text-transform: uppercase; color: var(--brand); }
+.ss-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px; }
+.ss-item:hover, .ss-item.sel { background: var(--brand-soft); }
+.ss-item .mico { width: 30px; height: 30px; border-radius: 8px; }
+.ss-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ss-txt b { font-size: 13.5px; line-height: 18px; font-weight: 600; }
+.ss-txt small { font-size: 11.5px; line-height: 15px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ss-act { display: flex; gap: 6px; flex: none; }
+.ss-foot { padding: 8px 10px 4px; margin-top: 4px; border-top: 1px solid var(--line); font-size: 12px; color: var(--ink-3); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; }
+@media (max-width: 1023px) { .search-sug { top: 48px; width: 100%; } .ss-item { flex-wrap: wrap; } .ss-act { width: 100%; padding-left: 40px; } }
+
+/* Rings around what the current step names. Solid + number = do this now. Dashed = the way to get there. */
+.guide-rings { position: fixed; inset: 0; z-index: 43; pointer-events: none; }
+.g-ring { position: fixed; border-radius: 9px; box-sizing: border-box; }
+.g-ring.step { border: 3px solid var(--brand); box-shadow: 0 0 0 4px rgba(20, 99, 214, 0.22); animation: gpulse 1.6s ease-in-out infinite; }
+.g-ring.way { border: 2px dashed var(--brand); }
+.g-ring b { position: absolute; top: -11px; left: -11px; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: #fff; font: 700 12px/22px var(--font-sans), sans-serif; font-style: normal; text-align: center; box-shadow: 0 1px 4px rgba(15, 27, 45, 0.3); }
+@keyframes gpulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(20, 99, 214, 0.28); } 50% { box-shadow: 0 0 0 9px rgba(20, 99, 214, 0.08); } }
+@media (prefers-reduced-motion: reduce) { .g-ring.step { animation: none; } }
+
+/* The guide panel: stays in the corner while the person works */
+.guide-panel { position: fixed; right: 16px; bottom: 16px; z-index: 44; width: 372px; max-width: calc(100vw - 24px); max-height: min(72vh, 640px); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--brand-line); border-top: 4px solid var(--brand); border-radius: 12px; box-shadow: 0 18px 48px rgba(15, 27, 45, 0.24); font-size: 13px; line-height: 18px; }
+.g-head { display: flex; align-items: center; gap: 8px; padding: 10px 8px 8px 12px; }
+.g-compass { width: 28px; height: 28px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--brand); color: #fff; font-size: 14px; }
+.g-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.g-title small { font: 700 10.5px/14px var(--font-sans), sans-serif; letter-spacing: 0.05em; text-transform: uppercase; color: var(--brand); }
+.g-title b { font-size: 14px; line-height: 19px; font-weight: 600; }
+.g-head .ibtn { width: 30px; height: 30px; font-size: 18px; }
+.g-stages { list-style: none; margin: 0; padding: 2px 12px 10px; display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); }
+.g-stages button { width: 28px; height: 28px; padding: 0; border-radius: 50%; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line-strong); font-size: 12px; font-weight: 600; }
+.g-stages button:hover { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
+.g-stages button.done { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+.g-stages button.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.g-body { padding: 12px 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.g-stage { display: flex; flex-direction: column; gap: 2px; padding-left: 10px; border-left: 3px solid var(--mod); }
+.g-stage small { font-size: 11px; color: var(--ink-3); font-weight: 600; }
+.g-stage b { font-size: 14px; line-height: 19px; }
+.g-path { font-size: 11.5px; line-height: 15px; color: var(--mod); font-weight: 600; }
+.g-stage p { color: var(--ink-2); margin-top: 2px; }
+.g-tip { font-size: 12px; line-height: 17px; color: var(--ink-2); background: var(--surface-sunken); border-radius: 6px; padding: 7px 10px; }
+.g-where { background: var(--attn-soft); color: var(--attn); border-radius: 8px; padding: 9px 11px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.g-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.g-steps button { width: 100%; display: flex; gap: 9px; align-items: flex-start; text-align: left; white-space: normal; padding: 7px 8px; background: none; border: 1px solid transparent; border-radius: 8px; color: var(--ink-2); font-weight: 400; font-size: 13px; line-height: 18px; justify-content: flex-start; }
+.g-steps button:hover { background: var(--surface-sunken); }
+.g-steps button i { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--line-strong); font: 600 11px/17px var(--font-sans), sans-serif; font-style: normal; text-align: center; color: var(--ink-3); }
+.g-steps li.on button { background: var(--brand-soft); border-color: var(--brand-line); color: var(--ink); }
+.g-steps li.on button i { background: var(--brand); border-color: var(--brand); color: #fff; }
+.g-steps li.done button i { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+.g-ui { display: inline-block; padding: 0 6px; border-radius: 4px; background: var(--surface); border: 1px solid var(--brand-line); color: var(--brand); font-weight: 600; font-size: 12px; line-height: 17px; }
+.g-miss { font-size: 12px; line-height: 17px; color: var(--ink-3); }
+.g-expect { font-size: 12.5px; line-height: 18px; background: var(--ok-soft); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
+.g-expect b { display: block; font: 700 10.5px/15px var(--font-sans), sans-serif; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ok); }
+.g-also { font-size: 12.5px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+.g-foot { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.g-foot .grow { flex: 1; }
+.guide-min { position: fixed; right: 16px; bottom: 16px; z-index: 44; height: 40px; padding: 0 14px 0 6px; border-radius: 999px; gap: 8px; box-shadow: 0 10px 28px rgba(15, 27, 45, 0.24); max-width: calc(100vw - 24px); }
+.guide-min .g-compass { background: #fff; color: var(--brand); }
+.guide-min span:not(.g-compass) { overflow: hidden; text-overflow: ellipsis; }
+.guide-min b { font-weight: 700; opacity: 0.85; }
+@media (max-width: 599px) {
+  .guide-panel { left: 8px; right: 8px; bottom: 72px; width: auto; max-width: none; max-height: 46vh; }
+  .guide-min { bottom: 76px; right: 8px; }
+}

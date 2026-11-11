@@ -68,6 +68,8 @@ model User {
   role               Role                  @default(NEGOCIADOR_COMERCIAL)
   active             Boolean               @default(true)
   lang               Lang                  @default(ES)
+  /// On-screen guide (training): the search bar offers step-by-step guides and marks buttons on screen. Each person turns it off in Mi perfil.
+  guideOn            Boolean               @default(true)
   // Length of a normal working day, used by Mi Plan to size capacity.
   workdayMinutes     Int                   @default(570)
   /// Authorisation level of the person (company ranges by level): EMPRENDEDOR | JUNIOR | SENIOR, or null when not set

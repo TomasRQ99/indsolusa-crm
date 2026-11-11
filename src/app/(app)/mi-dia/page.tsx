@@ -256,7 +256,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
       <Popovers />
 
       {cash && cashCases > 0 && (
-        <section className="mblock" aria-labelledby="h-cash" style={{ marginBottom: 16 }}>
+        <section className="mblock" data-zone="flow" aria-labelledby="h-cash" style={{ marginBottom: 16 }}>
           <div className="bhead"><b id="h-cash">{t("DINERO QUE DEBO MOVER", "MONEY I NEED TO MOVE")}</b><span>{t("de mercancía lista a dinero conciliado · primero lo que necesita un movimiento, luego lo de más valor", "from ready goods to reconciled cash · first what needs a move, then the highest value")}</span><span className="grow" /><Link className="small" href="/comercial/dinero?scope=mine">{t("Abrir", "Open")}</Link></div>
           <CashBags j={cash} i={i} compact />
         </section>
@@ -265,7 +265,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
       <div className="cols">
         {/* 50 % — NECESITA DE TI */}
         <div className="col">
-          <section className="mblock" aria-labelledby="h-need">
+          <section className="mblock" data-zone="act" aria-labelledby="h-need">
             <div className="bhead"><b id="h-need">{t("NECESITA DE TI", "NEEDS YOU")}</b><span>{t("tu criterio puede cambiar el resultado hoy", "your judgment can change the result today")}</span></div>
             {m.needs.length === 0 ? (
               <div className="att calm"><b>{t("Nada requiere tu criterio hoy", "Nothing needs your judgment today")}</b><span>{t("Buen momento para mover el futuro: lo que actúes antes sale más barato que reaccionar después.", "Good time to move the future: acting early costs less than reacting later.")}</span></div>
@@ -283,7 +283,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
 
         <div className="col">
           {/* TU AGENDA — today and tomorrow, managed right here */}
-          <section className="mblock" aria-labelledby="h-ag">
+          <section className="mblock" data-zone="plan" aria-labelledby="h-ag">
             <div className="bhead">
               <b id="h-ag">{t("TU AGENDA", "YOUR AGENDA")}</b>
               <span>{m.agenda.connected ? (m.agenda.error ? t("Outlook no respondió", "Outlook didn't respond") : t("sincronizada con Outlook", "synced with Outlook")) : t("solo SOLU · Outlook sin conectar", "SOLU only · Outlook not connected")}</span>
@@ -320,7 +320,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
           </section>
 
           {/* 20 % — FUTURO */}
-          <section className="mblock" aria-labelledby="h-fut">
+          <section className="mblock" data-zone="flow" aria-labelledby="h-fut">
             <div className="bhead"><b id="h-fut">{t("FUTURO QUE VALE LA PENA MOVER", "FUTURE WORTH MOVING")}</b><span>{t("actuar antes mejora el resultado", "acting early improves the result")}</span></div>
             {m.future.length === 0 ? (
               <p className="quiet-p">{t("No hay ventanas que se cierren en las próximas 3 semanas.", "No windows closing in the next 3 weeks.")}</p>
@@ -366,7 +366,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
           </section>
 
           {/* 15 % — ESPERANDO CON CONTROL */}
-          <section className="mblock" aria-labelledby="h-wait">
+          <section className="mblock" data-zone="calm" aria-labelledby="h-wait">
             <div className="bhead"><b id="h-wait">{t("ESPERANDO CON CONTROL", "WAITING UNDER CONTROL")}</b><span>{t("SOLU vigila; no necesitas hacer nada", "SOLU watches; nothing for you to do")}</span></div>
             {m.waits.length > 0 ? (
               <details className="waits">
@@ -396,7 +396,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
 
           {/* 10 % — SEÑALES */}
           {m.signals.length > 0 && (
-            <section className="mblock" aria-labelledby="h-sig">
+            <section className="mblock" data-zone="plan" aria-labelledby="h-sig">
               <div className="bhead"><b id="h-sig">{t("SEÑALES", "SIGNALS")}</b><span>{t("pueden cambiar cómo negocias", "may change how you negotiate")}</span></div>
               <div className="sigl">
                 {m.signals.map((s) => (

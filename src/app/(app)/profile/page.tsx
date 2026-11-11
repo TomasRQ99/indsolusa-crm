@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { OutlookNote } from "@/components/OutlookNote";
 import { PasswordForm } from "./PasswordForm";
-import { connectOutlook, disconnectOutlook, setWorkday } from "./actions";
+import { connectOutlook, disconnectOutlook, setGuide, setWorkday } from "./actions";
 
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ cal?: string }> }) {
   const { cal } = await searchParams;
@@ -46,6 +46,22 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           <p className="small"><a href="/profile/rentabilidad">{t("Modificar números de Rentabilidad", "Change profitability numbers")}</a></p>
           <p className="small"><a href="/profile/autorizaciones">{t("Rangos de autorización por nivel", "Authorisation ranges by level")}</a></p>
           <p className="src">{t("Comisión, reparto Comercial / Operativo y costo del dinero. Se propone un cambio y Gerencia lo aprueba.", "Commission, Commercial / Operational split and cost of money. A change is proposed and Management approves it.")}</p>
+        </div>
+        <div className="card" id="guia">
+          <h2>{t("Guía en pantalla (entrenamiento)", "On-screen guide (training)")}</h2>
+          <p className="small" style={{ marginBottom: 8 }}>
+            <span className={`sig ${user.guideOn ? "ok" : "wait"}`}>{user.guideOn ? t("Encendida", "On") : t("Apagada", "Off")}</span>
+          </p>
+          <p className="small muted" style={{ marginBottom: 12 }}>
+            {user.guideOn
+              ? t("Al escribir lo que necesitas en la barra de búsqueda, SOLU te ofrece una guía paso a paso y marca en la pantalla dónde hacer clic. Cuando ya conozcas SOLU puedes apagarla: la búsqueda de registros sigue igual.", "When you type what you need in the search bar, SOLU offers a step-by-step guide and marks on screen where to click. Once you know SOLU you can turn it off: record search stays the same.")
+              : t("La barra de búsqueda solo busca registros y no aparecen guías ni marcas en pantalla. Puedes encenderla de nuevo cuando quieras.", "The search bar only searches records, and no guides or marks appear on screen. You can turn it back on any time.")}
+          </p>
+          <form action={setGuide}>
+            <input type="hidden" name="on" value={user.guideOn ? "0" : "1"} />
+            <button type="submit" className={user.guideOn ? "secondary sm" : "sm"}>{user.guideOn ? t("Apagar la guía de entrenamiento", "Turn off the training guide") : t("Encender la guía de entrenamiento", "Turn on the training guide")}</button>
+          </form>
+          <p className="src" style={{ marginTop: 8 }}>{t("Solo cambia para ti. No se usa para medir a nadie.", "It only changes for you. It is never used to measure anyone.")}</p>
         </div>
         <div className="card">
           <h2>{t("Mi jornada", "My working day")}</h2>

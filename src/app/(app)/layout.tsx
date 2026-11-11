@@ -27,7 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const role = t(ROLE_LABEL[user.role].es, ROLE_LABEL[user.role].en);
 
   return (
-    <ShellClient lang={user.lang} user={{ name: user.name, role, initials }} modules={modules}>
+    <ShellClient lang={user.lang} guideOn={user.guideOn} user={{ name: user.name, role, initials }} modules={modules}>
       {children}
     </ShellClient>
   );

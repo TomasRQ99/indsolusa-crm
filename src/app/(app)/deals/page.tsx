@@ -106,7 +106,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
           };
           const CAP = 8;
           return (
-            <section className="column" key={s}>
+            <section className="column" key={s} data-stage={s}>
               <h2><span>{stageLabel(i, s)} ({column.length})</span><span className="muted">{i.n(total)}</span></h2>
               {column.slice(0, CAP).map(card)}
               {column.length > CAP && (

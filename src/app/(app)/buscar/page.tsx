@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { universalSearch, type Hit } from "@/lib/search";
+import { searchGuides } from "@/lib/guide";
+import { GuideStart } from "@/components/shell/GuideStart";
 
 // One search box for customers (name or NIT), Journeys (code, title, customer PO), invoices,
 // supplier POs, delivery notes and suppliers. Exactly one result opens it directly.
@@ -11,7 +13,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const { t } = makeI18n(user.lang);
   const q = ((await searchParams).q ?? "").trim();
   const hits = await universalSearch(q);
-  if (hits.length === 1) redirect(hits[0].href);
+  // "hacer factura" is a request for help, not a record: offer the on-screen guides first.
+  const guides = user.guideOn && q.length >= 3 ? searchGuides(q, user) : [];
+  if (hits.length === 1 && guides.length === 0) redirect(hits[0].href);
 
   const groups: { kind: Hit["kind"]; title: string; mono?: boolean }[] = [
     { kind: "journey", title: "Journeys" },
@@ -31,6 +35,24 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           <p>{q ? t(`${hits.length} resultados para "${q}"`, `${hits.length} results for "${q}"`) : t("Escribe o pega en la barra superior: pedido, OC, factura, cliente, NIT o proveedor.", "Type or paste in the top bar: order, PO, invoice, customer, tax ID or supplier.")}</p>
         </div>
       </div>
+      {guides.length > 0 && (
+        <section className="card" data-zone="flow">
+          <b>{t("TE GUÍO EN PANTALLA", "I'LL GUIDE YOU ON SCREEN")}</b>
+          <p className="src">{t("Los pasos de la Guía de campo, sobre la pantalla donde se hacen.", "The steps of the field guide, on the screen where they are done.")}</p>
+          <div className="items">
+            {guides.map((g) => (
+              <div className="item" key={g.id}>
+                <span className="t">{g.title}</span>
+                <span className="a">
+                  {g.routeLen > 0 && <GuideStart id={g.id} route className="sm">{t(`Desde el inicio · ${g.routeLen} etapas`, `From the start · ${g.routeLen} stages`)}</GuideStart>}
+                  <GuideStart id={g.id} route={false} className={g.routeLen > 0 ? "sm secondary" : "sm"}>{g.routeLen > 0 ? t("Solo esta parte", "Only this part") : t("Guíame", "Guide me")}</GuideStart>
+                </span>
+                <span className="d">{g.why} <span className="src">{g.path}</span></span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       {q && (
         <div className="grid cols-2">
           {groups.map((g) => {

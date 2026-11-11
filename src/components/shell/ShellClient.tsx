@@ -9,6 +9,8 @@ import type { Alert, Counter } from "@/lib/attention";
 import { setLanguage } from "@/app/(app)/profile/actions";
 import { logout } from "@/app/login/actions";
 import { ReportSignal } from "@/components/ReportSignal";
+import { GuideOverlay, startGuide } from "./GuideOverlay";
+import type { GuideMatch } from "@/lib/guide";
 import { IconBell, IconChevron, IconClose, IconMenu, IconSearch, IconSparkle, MODULE_ICONS } from "./Icons";
 
 export type ShellModule = {
@@ -24,6 +26,8 @@ type Hit = { kind: string; id: string; label: string; sub: string; href: string 
 
 export type ShellProps = {
   lang: "ES" | "EN";
+  /** On-screen guide (training). Each person turns it off in Mi perfil. */
+  guideOn: boolean;
   user: { name: string; role: string; initials: string };
   modules: ShellModule[];
   children: React.ReactNode;
@@ -31,7 +35,7 @@ export type ShellProps = {
 
 type Side = "" | "expanded" | "collapsed";
 
-export function ShellClient({ lang, user, modules: baseModules, children }: ShellProps) {
+export function ShellClient({ lang, guideOn, user, modules: baseModules, children }: ShellProps) {
   const [att, setAtt] = useState<{ counters: Partial<Record<ModuleKey, Counter>>; alerts: Alert[] }>({ counters: {}, alerts: [] });
   const path = usePathname() ?? "/";
   // Counters and bell load after the page is visible. They refresh whenever the server
@@ -96,6 +100,45 @@ export function ShellClient({ lang, user, modules: baseModules, children }: Shel
   }, []);
   useEffect(closeAll, [path, closeAll]);
 
+  // The search box also answers "what do I need to do": as the person types, SOLU offers the
+  // matching guides of the Guía de campo, to be followed on screen.
+  const [sq, setSq] = useState("");
+  const [sug, setSug] = useState<GuideMatch[]>([]);
+  const [sugOpen, setSugOpen] = useState(false);
+  const [sugSel, setSugSel] = useState(-1);
+  const [starters, setStarters] = useState<GuideMatch[] | null>(null);
+  useEffect(() => {
+    const q = sq.trim();
+    setSugSel(-1);
+    if (!guideOn) { setSug([]); return; }
+    // Nothing typed: the everyday work, loaded the first time the box is opened.
+    if (!q) { setSug(starters ?? []); return; }
+    if (q.length < 3) { setSug([]); return; }
+    const ctl = new AbortController();
+    const id = setTimeout(() => {
+      fetch(`/guia?q=${encodeURIComponent(q)}`, { signal: ctl.signal, cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : { guides: [] }))
+        .then((d) => setSug(d.guides ?? []))
+        .catch(() => {});
+    }, 180);
+    return () => { clearTimeout(id); ctl.abort(); };
+  }, [sq, starters, guideOn]);
+  // Training guide turned off: a guide left open goes away with it.
+  useEffect(() => {
+    if (!guideOn) try { sessionStorage.removeItem("solu.guide"); } catch {}
+  }, [guideOn]);
+  useEffect(() => {
+    if (!guideOn || !sugOpen || starters) return;
+    fetch("/guia", { cache: "no-store" }).then((r) => (r.ok ? r.json() : { guides: [] })).then((d) => setStarters(d.guides ?? [])).catch(() => {});
+  }, [sugOpen, starters, guideOn]);
+  const pickGuide = (g: GuideMatch, route: boolean) => {
+    setSugOpen(false);
+    setSearchOpen(false);
+    setSq("");
+    searchRef.current?.blur();
+    startGuide(g.id, route);
+  };
+
   const openSearch = useCallback(() => {
     setSearchOpen(true);
     setTimeout(() => searchRef.current?.focus(), 0);
@@ -134,8 +177,8 @@ export function ShellClient({ lang, user, modules: baseModules, children }: Shel
         const on = current?.key === m.key;
         return (
           <li key={m.key}>
-            <Link href={m.href} className={on ? "on" : undefined} aria-current={on ? "page" : undefined} title={inDrawer ? undefined : m.label}>
-              {MODULE_ICONS[m.key]}
+            <Link href={m.href} data-mod={m.key} className={on ? "on" : undefined} aria-current={on ? "page" : undefined} title={inDrawer ? undefined : m.label}>
+              <span className="mico">{MODULE_ICONS[m.key]}</span>
               <span className="lbl">{m.label.replace("/", "/​")}</span>
               {pill(m.counter)}
             </Link>
@@ -153,7 +196,7 @@ export function ShellClient({ lang, user, modules: baseModules, children }: Shel
   );
 
   return (
-    <div className="app" data-side={side || undefined}>
+    <div className="app" data-side={side || undefined} data-mod={current?.key}>
       <Suspense fallback={null}>
         <PendingFeedback lang={lang} />
       </Suspense>
@@ -166,18 +209,62 @@ export function ShellClient({ lang, user, modules: baseModules, children }: Shel
         </Link>
         {current && <span className="cur-module">{current.label}</span>}
 
-        <form className={`search${searchOpen ? " open" : ""}`} action="/buscar" role="search">
+        <form
+          className={`search${searchOpen ? " open" : ""}`}
+          action="/buscar"
+          role="search"
+          onSubmit={(e) => { if (sugSel >= 0 && sug[sugSel]) { e.preventDefault(); pickGuide(sug[sugSel], sug[sugSel].routeLen > 0); } }}
+        >
           <IconSearch />
           <input
             ref={searchRef}
             name="q"
             type="search"
             autoComplete="off"
-            placeholder={t("Buscar o pegar: pedido, AWB, cliente, proveedor, NIT…", "Search or paste: order, AWB, customer, supplier, tax ID…")}
-            aria-label={t("Buscar", "Search")}
-            onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+            value={sq}
+            onChange={(e) => { setSq(e.target.value); setSugOpen(true); }}
+            onFocus={() => setSugOpen(true)}
+            onKeyDown={(e) => {
+              if (!sugOpen || !sug.length) return;
+              if (e.key === "ArrowDown") { e.preventDefault(); setSugSel((v) => Math.min(sug.length - 1, v + 1)); }
+              else if (e.key === "ArrowUp") { e.preventDefault(); setSugSel((v) => Math.max(-1, v - 1)); }
+              else if (e.key === "Escape") setSugOpen(false);
+            }}
+            placeholder={guideOn ? t("Busca un registro o escribe qué necesitas hacer: «hacer factura»…", "Search a record or type what you need to do: “make invoice”…") : t("Buscar o pegar: pedido, AWB, cliente, proveedor, NIT…", "Search or paste: order, AWB, customer, supplier, tax ID…")}
+            aria-label={t("Buscar o pedir una guía", "Search or ask for a guide")}
+            aria-expanded={sugOpen && sug.length > 0}
+            aria-controls="search-sug"
+            onBlur={() => setTimeout(() => { setSearchOpen(false); setSugOpen(false); }, 180)}
           />
           <kbd>Ctrl K</kbd>
+          {sugOpen && sug.length > 0 && (
+            <div className="search-sug" id="search-sug" role="listbox" aria-label={t("Guías", "Guides")} onMouseDown={(e) => e.preventDefault()}>
+              <div className="ss-head">{sq.trim() ? t("Te guío en pantalla, paso a paso", "I'll guide you on screen, step by step") : t("¿Qué necesitas hacer? El trabajo de todos los días, con guía en pantalla", "What do you need to do? Everyday work, with an on-screen guide")}</div>
+              {sug.map((g, k) => (
+                <div key={g.id} className={`ss-item${k === sugSel ? " sel" : ""}`} data-mod={g.mod ?? undefined} role="option" aria-selected={k === sugSel}>
+                  <span className="mico">{g.mod ? MODULE_ICONS[g.mod] : <IconSearch />}</span>
+                  <div className="ss-txt">
+                    <b>{g.title}</b>
+                    <small>{g.path}</small>
+                  </div>
+                  <div className="ss-act">
+                    {g.routeLen > 0 && (
+                      <button type="button" className="sm" onClick={() => pickGuide(g, true)} title={t("Desde la primera necesidad del cliente hasta aquí", "From the customer's first need up to here")}>
+                        {t(`Desde el inicio · ${g.routeLen} etapas`, `From the start · ${g.routeLen} stages`)}
+                      </button>
+                    )}
+                    <button type="button" className={`sm${g.routeLen > 0 ? " secondary" : ""}`} onClick={() => pickGuide(g, false)}>
+                      {g.routeLen > 0 ? t("Solo esta parte", "Only this part") : t("Guíame", "Guide me")}
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <div className="ss-foot">
+                <span>{t("Enter busca registros: clientes, Journeys, facturas, repuestos.", "Enter searches records: customers, Journeys, invoices, parts.")}</span>
+                <Link href="/profile#guia">{t("Apagar la guía de entrenamiento", "Turn off the training guide")}</Link>
+              </div>
+            </div>
+          )}
         </form>
         <button type="button" className="ibtn search-btn" onClick={openSearch} aria-label={t("Buscar", "Search")}>
           <IconSearch />
@@ -232,21 +319,32 @@ export function ShellClient({ lang, user, modules: baseModules, children }: Shel
       </aside>
 
       <main className="main" id="contenido">
-        {groups.length > 1 && (
-          <nav className="tab-groups" aria-label={current!.label}>
-            {groups.map((g) => (
-              <Link key={g} href={current!.tabs.find((x) => x.group === g)!.href} className={g === activeGroup ? "on" : undefined} aria-current={g === activeGroup ? "true" : undefined}>{g}</Link>
-            ))}
-          </nav>
-        )}
-        {current && shownTabs.length > 1 && (
-          <nav className="tabs" aria-label={activeGroup ?? current.label}>
-            {shownTabs.map((tab) => (
-              <Link key={tab.href} href={tab.href} className={activeTab?.href === tab.href ? "on" : undefined} aria-current={activeTab?.href === tab.href ? "page" : undefined}>
-                {tab.label}
-              </Link>
-            ))}
-          </nav>
+        {/* Module band: its colour, its name and where you are inside it. One colour per module, everywhere. */}
+        {current && (
+          <div className="modhead">
+            <div className="modrib">
+              <span className="mico">{MODULE_ICONS[current.key]}</span>
+              <b>{current.label}</b>
+              {activeGroup && <><i aria-hidden>›</i><span>{activeGroup}</span></>}
+              {activeTab && <><i aria-hidden>›</i><span className="here">{activeTab.label}</span></>}
+            </div>
+            {groups.length > 1 && (
+              <nav className="tab-groups" aria-label={current.label}>
+                {groups.map((g) => (
+                  <Link key={g} href={current.tabs.find((x) => x.group === g)!.href} className={g === activeGroup ? "on" : undefined} aria-current={g === activeGroup ? "true" : undefined}>{g}</Link>
+                ))}
+              </nav>
+            )}
+            {shownTabs.length > 1 && (
+              <nav className="tabs" aria-label={activeGroup ?? current.label}>
+                {shownTabs.map((tab) => (
+                  <Link key={tab.href} href={tab.href} className={activeTab?.href === tab.href ? "on" : undefined} aria-current={activeTab?.href === tab.href ? "page" : undefined}>
+                    {tab.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
+          </div>
         )}
         {children}
       </main>
@@ -286,6 +384,8 @@ export function ShellClient({ lang, user, modules: baseModules, children }: Shel
       )}
 
       {ask && <AskPanel es={es} where={current ? `${current.label}${activeTab ? ` · ${activeTab.label}` : ""}` : ""} inputRef={askRef} onClose={() => setAsk(false)} />}
+
+      {guideOn && <GuideOverlay lang={lang} path={path} />}
 
       {/* Mobile: bottom bar */}
       <nav className="bottombar" aria-label={t("Accesos", "Shortcuts")}>

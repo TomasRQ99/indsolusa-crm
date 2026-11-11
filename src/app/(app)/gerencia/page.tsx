@@ -43,13 +43,13 @@ export default async function GerenciaHomePage() {
       {(n.later.length > 0 || n.belowMateriality > 0) && <p className="src">{n.later.length > 0 && <>{t(`Hay ${n.later.length} más en la fila. `, `${n.later.length} more in line. `)}</>}{n.belowMateriality > 0 && <>{t(`${n.belowMateriality} asunto(s) por debajo de USD ${i.n2(n.policy.value.decisionMaterialUsd)} no se muestran aquí: se deciden en su módulo. `, `${n.belowMateriality} matter(s) under USD ${i.n2(n.policy.value.decisionMaterialUsd)} are not shown here: they are decided in their module. `)}</>}<Link href="/gerencia/decisiones">{t("Ver todas", "See all")}</Link></p>}
 
       {n.reviewDue.length > 0 && (
-        <section className="card" id="revisar"><b>{t("DECISIONES POR REVISAR CONTRA LO QUE PASÓ", "DECISIONS TO REVIEW AGAINST WHAT HAPPENED")}</b>
+        <section className="card" data-zone="flow" id="revisar"><b>{t("DECISIONES POR REVISAR CONTRA LO QUE PASÓ", "DECISIONS TO REVIEW AGAINST WHAT HAPPENED")}</b>
           <ul className="rp-list">{n.reviewDue.map(({ d, s }) => <li key={d.id}><span><b className="mono">{d.code}</b> {d.question}<span className="src block">{t("Se esperaba", "Expected")}: {d.expectedConsequence} · {t("revisar desde", "review from")} {i.date(s.reviewOn)}</span></span><Link href={`/gerencia/decisiones/${d.id}#revision`}>{tt(DECISION_STAGE.REVIEW_DUE)}</Link></li>)}</ul>
         </section>
       )}
 
       {h.queue.length > 0 && (
-        <section className="card" id="excepciones"><b>{t("EXCEPCIONES MATERIALES", "MATERIAL EXCEPTIONS")}</b> <span className="small muted">{t("promesa al cliente, dinero y riesgo: cada una con su impacto y dónde se resuelve", "customer promise, money and risk: each with its impact and where it is resolved")}</span>
+        <section className="card" data-zone="act" id="excepciones"><b>{t("EXCEPCIONES MATERIALES", "MATERIAL EXCEPTIONS")}</b> <span className="small muted">{t("promesa al cliente, dinero y riesgo: cada una con su impacto y dónde se resuelve", "customer promise, money and risk: each with its impact and where it is resolved")}</span>
           <div className="tscroll"><table>
             <thead><tr><th>{t("Qué pasa", "What is happening")}</th><th className="n">{t("Cuánto pesa", "Impact")}</th><th>{t("Quién lo lleva", "Owner")}</th><th>{t("Qué decidir", "What to decide")}</th></tr></thead>
             <tbody>{h.queue.map((q) => <tr key={q.key}><td><span className="sig attn">{tt(q.kind)}</span> {q.headline}</td><td className="n mono">{q.impact ?? "—"}</td><td className="small">{q.owner ?? "—"}</td><td><Link href={q.href}>{tt(q.decision)}</Link></td></tr>)}</tbody>
@@ -67,14 +67,14 @@ export default async function GerenciaHomePage() {
       <h2 className="gm-h2" id="futuro">{t("Pulso del futuro", "Future pulse")} <span className="src">{t("conteos y valores en su estado real; sin probabilidades", "counts and amounts in their real state; no probabilities")}</span></h2>
       <div className="gm-tiles">{h.future.map((x) => <TileCard key={x.key} tile={x} i={i} />)}</div>
 
-      <section className="card" id="exposicion"><b>{t("RECURSOS Y RIESGO EXPUESTOS", "RESOURCES AND RISK EXPOSED")}</b> <span className="small muted">{t("siete miradas separadas; SOLU no las suma en una calificación", "seven separate views; SOLU does not add them into a rating")}</span>
+      <section className="card" data-zone="plan" id="exposicion"><b>{t("RECURSOS Y RIESGO EXPUESTOS", "RESOURCES AND RISK EXPOSED")}</b> <span className="small muted">{t("siete miradas separadas; SOLU no las suma en una calificación", "seven separate views; SOLU does not add them into a rating")}</span>
         <div className="tscroll"><table>
           <thead><tr><th>{t("Dónde", "Where")}</th><th className="n">{t("Cuánto", "How much")}</th><th>{t("Qué hay detrás", "What is behind it")}</th></tr></thead>
           <tbody>{h.exposure.filter((e) => ger || e.key !== "people").map((e) => <tr key={e.key}><td><Link href={e.href}><b>{tt(e.title)}</b></Link></td><td className="n mono"><span className={e.tone === "risk" ? "risk-t" : e.tone === "attn" ? "attn-t" : ""}>{e.value}</span></td><td className="small">{tt(e.detail)}</td></tr>)}</tbody>
         </table></div>
       </section>
       {entities.length > 1 && (
-        <section className="card" id="empresas"><b>{t("POR EMPRESA VENDEDORA", "BY SELLING COMPANY")}</b> <span className="small muted">{t("un Journey pertenece a la empresa que lo vende", "a Journey belongs to the company that sells it")}</span>
+        <section className="card" data-zone="plan" id="empresas"><b>{t("POR EMPRESA VENDEDORA", "BY SELLING COMPANY")}</b> <span className="small muted">{t("un Journey pertenece a la empresa que lo vende", "a Journey belongs to the company that sells it")}</span>
           <div className="tscroll"><table>
             <thead><tr><th>{t("Empresa", "Company")}</th><th className="n">{t("Venta del mes", "Sales this month")}</th><th className="n">Eságara</th><th className="n">{t("Contratado por facturar", "Contracted, to invoice")}</th><th className="n">{t("Por cobrar", "Outstanding")}</th><th className="n">{t("Journeys abiertos", "Open Journeys")}</th></tr></thead>
             <tbody>{entities.map((e) => <tr key={e.key}><td><Link href={`/gerencia/futuro?empresa=${e.key}`}>{e.name}</Link>{!e.active ? <span className="sig wait" style={{ marginLeft: 6 }}>{t("desactivada", "switched off")}</span> : null}</td><td className="n mono">{i.money(e.sale)}</td><td className="n mono">{i.money(e.esagara)}{e.pct != null ? ` · ${i.pct(e.pct)}` : ""}</td><td className="n mono">{i.money(e.toInvoice)}</td><td className="n mono">{i.money(e.outstanding)}</td><td className="n mono">{e.open}</td></tr>)}</tbody>

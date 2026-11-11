@@ -1,0 +1,1815 @@
+{
+ "modules": [
+  {
+   "id": "midia",
+   "name": "Mi Día",
+   "where": "MI DÍA"
+  },
+  {
+   "id": "mercado",
+   "name": "Mercado",
+   "where": "MERCADO"
+  },
+  {
+   "id": "comercial",
+   "name": "Comercial",
+   "where": "COMERCIAL"
+  },
+  {
+   "id": "operaciones",
+   "name": "Operaciones",
+   "where": "OPERACIONES"
+  },
+  {
+   "id": "administracion",
+   "name": "Administración",
+   "where": "ADMINISTRACIÓN"
+  },
+  {
+   "id": "equipo",
+   "name": "Equipo",
+   "where": "EQUIPO"
+  },
+  {
+   "id": "informes",
+   "name": "Informes",
+   "where": "INFORMES"
+  },
+  {
+   "id": "gerencia",
+   "name": "Gerencia",
+   "where": "GERENCIA"
+  },
+  {
+   "id": "global",
+   "name": "En todas partes",
+   "where": "BARRA SUPERIOR"
+  }
+ ],
+ "features": [
+  {
+   "id": "midia-today",
+   "m": "midia",
+   "t": "Lista de atención de hoy",
+   "path": "MI DÍA → Hoy",
+   "why": "Una sola lista ordenada de lo que te necesita hoy, cada punto con por qué importa, su impacto y el siguiente paso.",
+   "steps": [
+    "Abre [[MI DÍA]]. Lee la primera tarjeta: quién, por qué, qué cambió y el impacto.",
+    "Haz clic en el botón principal de la tarjeta para ir directo al registro.",
+    "O actúa desde la tarjeta: anota lo que pasó con [[Registrar]], pospón con [[Mañana]] / [[En 3 días]] / [[1 semana]], o guarda una promesa del cliente con [[Guardar promesa]].",
+    "Cuando termines algo, haz clic en [[✓ Hecho]] y define qué sigue sin salir de Mi Día."
+   ],
+   "expect": "El número junto a MI DÍA en el menú coincide con la lista. Una tarjeta que ya atendiste desaparece o baja."
+  },
+  {
+   "id": "midia-agenda",
+   "m": "midia",
+   "t": "Tu agenda (bloques de tiempo)",
+   "path": "MI DÍA → Hoy → Tu agenda",
+   "why": "Reserva tiempo para el trabajo que importa hoy y mañana.",
+   "steps": [
+    "En una tarjeta, haz clic en [[Primer espacio libre de hoy]] o elige una hora y haz clic en [[Agendar a esta hora]].",
+    "En Tu agenda, usa [[Mover]] para cambiar la hora de un bloque, o márcalo como hecho o quítalo."
+   ],
+   "expect": "El bloque aparece en Tu agenda a la hora correcta y no se cruza con otro."
+  },
+  {
+   "id": "miplan",
+   "m": "midia",
+   "t": "Mi Plan y archivo para Outlook",
+   "path": "MI DÍA → Mi Plan",
+   "why": "Tu semana de trabajo planeado, y un archivo para pasarla a Outlook.",
+   "steps": [
+    "Abre la pestaña [[Mi Plan]].",
+    "Haz clic en [[Enviar a mi Outlook]]. Se descarga un archivo .ics.",
+    "Abre el archivo. Outlook ofrece agregar los eventos."
+   ],
+   "expect": "Los eventos en Outlook coinciden con los bloques de Mi Plan."
+  },
+  {
+   "id": "tasks",
+   "m": "midia",
+   "t": "Pendientes",
+   "path": "MI DÍA → Pendientes",
+   "why": "Tareas pequeñas que no pertenecen a una tarjeta de Journey.",
+   "steps": [
+    "Escribe la tarea, elige la fecha y haz clic en [[Agregar]].",
+    "Cambia los minutos estimados si hace falta.",
+    "Haz clic en [[Eliminar]] para quitar una."
+   ],
+   "expect": "La tarea aparece en la lista. Eliminar pide confirmación primero."
+  },
+  {
+   "id": "comunicacion",
+   "m": "midia",
+   "t": "Comunicación: registrar y entender mensajes",
+   "path": "MI DÍA → Comunicación",
+   "why": "Guarda en un solo lugar los WhatsApp, llamadas y correos de clientes. SOLU separa lo que dijo el cliente (hecho) de lo que SOLU deduce (inferencia).",
+   "steps": [
+    "Pega un mensaje de WhatsApp o el resumen de una llamada y haz clic en [[Guardar y que SOLU lo lea]].",
+    "Revisa el panel \"SOLU entendió\": hechos e inferencias están marcados. Haz clic en [[Guardar]] para conservar un punto o en [[Descartar]] si no aplica.",
+    "Vincula la conversación a un Journey con [[Vincular]] (o elige \"Nuevo Journey\").",
+    "Responde con [[Enviar desde el correo de la empresa]], o ciérrala con [[Nada más que hacer aquí]]."
+   ],
+   "expect": "Las conversaciones urgentes o sin responder también aparecen en Mi Día. Los correos salen desde sales@indsolusa.com."
+  },
+  {
+   "id": "email",
+   "m": "midia",
+   "t": "Correo desde la dirección de la empresa",
+   "path": "MI DÍA → Correo",
+   "why": "Envía correos desde sales@indsolusa.com con las plantillas de la empresa, en español o inglés, sin salir de SOLU.",
+   "steps": [
+    "Abre la pestaña [[Correo]].",
+    "Elige una plantilla (cotización a proveedor, seguimiento, negociación, entrega, oferta o cobro) y el idioma.",
+    "Elige el contacto, revisa el texto y envía. Si el tono suena brusco, SOLU te avisa, pero no te bloquea."
+   ],
+   "expect": "El correo llega desde sales@indsolusa.com. Pruébalo primero con tu propia dirección. La revisión del dominio (SPF, DKIM y DMARC) debe verse en orden."
+  },
+  {
+   "id": "respuestas",
+   "m": "midia",
+   "t": "Respuestas a lo que enviamos",
+   "path": "MI DÍA → Respuestas",
+   "why": "Las respuestas a las solicitudes que enviamos desde SOLU se emparejan solas con su solicitud. Nadie tiene que buscarlas en el buzón.",
+   "steps": [
+    "Envía una solicitud de cotización desde Localizar repuestos (ver Mercado).",
+    "Abre [[Respuestas]] y busca la solicitud: cada proveedor muestra si respondió y cuándo.",
+    "Abre una respuesta y pasa el precio y el plazo a la fuente del Journey."
+   ],
+   "expect": "Las respuestas automáticas (fuera de oficina) y los rebotes se muestran aparte. SOLU revisa el buzón cada 15 minutos."
+  },
+  {
+   "id": "explorar",
+   "m": "mercado",
+   "t": "Explorar el mercado",
+   "path": "MERCADO → Explorar",
+   "why": "Organiza lo que sabemos de un mercado o una empresa: señales, preguntas abiertas, plantas y necesidades futuras.",
+   "steps": [
+    "Abre [[Explorar]] y entra a «Mercado lácteo colombiano» (ejemplo).",
+    "Revisa las señales y las preguntas abiertas de cada empresa y planta.",
+    "Cuando aparezca una necesidad real, pásala a Comercial: se abre un Journey con todo el contexto.",
+    "Define un siguiente movimiento: se crea una tarea con fecha."
+   ],
+   "expect": "Una señal sola no crea una oportunidad de venta. Solo una necesidad real pasa a Comercial."
+  },
+  {
+   "id": "economia",
+   "m": "mercado",
+   "t": "Economía (datos de Supersociedades)",
+   "path": "MERCADO → Economía",
+   "why": "Explorador de las empresas reportadas a Supersociedades: ventas, crecimiento y señales por sector y tamaño.",
+   "steps": [
+    "Abre [[Economía]].",
+    "Filtra por sector o tamaño.",
+    "Abre una empresa y compárala con otra."
+   ],
+   "expect": "Los datos vienen de la última carga de Supersociedades hecha en Fuentes."
+  },
+  {
+   "id": "fuentes",
+   "m": "mercado",
+   "t": "Fuentes: cargar datos del mercado",
+   "path": "MERCADO → Fuentes (Gerencia, Director Comercial, Mercadeo)",
+   "why": "Carga archivos de datos (Excel o CSV) y revísalos antes de guardarlos.",
+   "steps": [
+    "Abre [[Fuentes]] y elige el archivo.",
+    "Revisa la vista previa: filas nuevas, cambios y errores.",
+    "Confirma la carga."
+   ],
+   "expect": "Nada se guarda sin la revisión. Quien no tiene uno de esos roles no ve esta pestaña."
+  },
+  {
+   "id": "accounts",
+   "m": "mercado",
+   "t": "Clientes y Cliente 360",
+   "path": "MERCADO → Clientes → un cliente",
+   "why": "Todo sobre un cliente: Journeys abiertos, historia, cómo paga y qué equipos tiene.",
+   "steps": [
+    "Abre \"Nuevo cliente\". En \"Documentos del cliente\" elige el RUT (PDF descargado de la DIAN) y, si quieres, el certificado de Cámara de Comercio.",
+    "SOLU llena razón social, RUT/NIT, dirección, teléfono y correo para facturas, marcados \"del RUT\". Revísalos (si el dígito de verificación no cuadra, lo avisa) y haz clic en [[Crear cliente]].",
+    "Haz clic en el nombre del cliente para abrir su vista 360. En \"Documentos\" puedes abrir el RUT, ver lo que SOLU leyó o subir más archivos con [[Subir]].",
+    "Revisa la historia, el patrón de facturación y los equipos instalados.",
+    "Inicia una necesidad nueva desde aquí con [[Crear y abrir]]. Se abre un Journey.",
+    "Perfil de facturación: indica si acepta facturas parciales y quién recibe las facturas, y [[Guardar]]."
+   ],
+   "expect": "Si ya existe un cliente con ese RUT/NIT, SOLU no crea otro y te lleva al existente. Los RUT escaneados o en foto se guardan, pero las casillas se llenan a mano. Las gráficas solo aparecen con al menos 3 datos."
+  },
+  {
+   "id": "contacts",
+   "m": "mercado",
+   "t": "Contactos",
+   "path": "MERCADO → Contactos",
+   "why": "Las personas en cada cliente.",
+   "steps": [
+    "Completa nombre, cliente, correo y teléfono, y haz clic en [[Crear]].",
+    "Usa [[Buscar]] para encontrar a alguien."
+   ],
+   "expect": "El contacto aparece en el 360 del cliente y en la lista de contactos del Journey. Eliminar pide confirmación."
+  },
+  {
+   "id": "relacion",
+   "m": "mercado",
+   "t": "Ficha de relación de una persona",
+   "path": "MERCADO → Contactos → una persona",
+   "why": "Lo que importa para tratar bien a cada persona: notas, compromisos abiertos y mensajes preparados con trato cuidadoso.",
+   "steps": [
+    "Abre la ficha de Jorge Pérez (ejemplo).",
+    "Agrega una nota o un compromiso con fecha.",
+    "Prepara un mensaje: SOLU sugiere un trato amable y directo."
+   ],
+   "expect": "Cada nota muestra quién la escribió y cuándo."
+  },
+  {
+   "id": "suppliers",
+   "m": "mercado",
+   "t": "Proveedores y Proveedor 360",
+   "path": "MERCADO → Proveedores → un proveedor",
+   "why": "Cómo cumple realmente cada proveedor: plazos reales, lo cotizado frente a lo comprado.",
+   "steps": [
+    "Crea un proveedor con [[Crear proveedor]].",
+    "Abre un proveedor: revisa los tiempos reales hasta despacho y lo cotizado frente a lo comprado.",
+    "Inicia una necesidad para uno de sus productos con [[Crear y abrir]]."
+   ],
+   "expect": "Solo hechos; no hay puntajes de proveedores."
+  },
+  {
+   "id": "localizar",
+   "m": "mercado",
+   "t": "Localizar repuestos",
+   "path": "MERCADO → Localizar repuestos",
+   "why": "Encuentra quién tiene un repuesto por código, alias, marca o descripción, en español o inglés, o leyendo el texto de la foto de una placa.",
+   "steps": [
+    "Abre [[Localizar repuestos]] y escribe un código, por ejemplo «1FK7» o «rodamiento 23148».",
+    "O sube la foto de la placa: SOLU lee el texto y lo usa para buscar.",
+    "Revisa la evidencia de cada proveedor: ofertas guardadas, plazos reales y respuestas anteriores.",
+    "Para guardar la oferta de un proveedor, sube su PDF y revisa lo que SOLU leyó antes de guardar."
+   ],
+   "expect": "La lectura del texto de una foto es gratuita y funciona. La búsqueda por foto con IA está apagada hasta tener la llave de la API (ver «Todavía sin conectar»)."
+  },
+  {
+   "id": "rfq",
+   "m": "mercado",
+   "t": "Pedir cotización a varios proveedores",
+   "path": "MERCADO → Localizar repuestos → Solicitar cotización",
+   "why": "Una sola solicitud a varios proveedores desde sales@, en lugar de un correo por proveedor.",
+   "steps": [
+    "En un resultado, haz clic en [[Solicitar cotización]].",
+    "Elige los proveedores y revisa «Qué le preguntamos»: cantidad, plazo y condiciones.",
+    "Envía. Sigue las respuestas en MI DÍA → Respuestas."
+   ],
+   "expect": "La solicitud queda registrada y las respuestas llegan solas a Respuestas."
+  },
+  {
+   "id": "productos",
+   "m": "mercado",
+   "t": "Productos y Producto 360",
+   "path": "MERCADO → Productos → un código",
+   "why": "Lo que sabemos de un producto, por código: alias, empaque, repuestos compatibles y especificaciones, con la fuente de cada dato.",
+   "steps": [
+    "Abre [[Productos]] y haz clic en un código.",
+    "Agrega un dato (alias, empaque, compatibilidad o especificación) con su fuente, y [[Guardar]].",
+    "Inicia una necesidad para este producto con [[Crear y abrir]]."
+   ],
+   "expect": "Cada dato muestra quién lo registró y su fuente."
+  },
+  {
+   "id": "journeys-board",
+   "m": "comercial",
+   "t": "Tablero de Journeys",
+   "path": "COMERCIAL → Journeys",
+   "why": "Cada necesidad abierta por etapa, con monto, Eságara y siguiente movimiento.",
+   "steps": [
+    "Haz clic en \"Nuevo Journey\", completa cliente y necesidad, y haz clic en [[Crear y abrir]].",
+    "En cualquier tarjeta, usa la lista desplegable para moverla a otra etapa.",
+    "Las tarjetas en rojo dicen \"Sin siguiente movimiento\": nadie ha decidido qué sigue."
+   ],
+   "expect": "Se ocultan los Journeys cerrados y las pérdidas de hace más de 90 días. Las columnas largas muestran 8 tarjetas y un botón \"Ver N más\". Al mover una tarjeta, cambia de columna enseguida."
+  },
+  {
+   "id": "journey",
+   "m": "comercial",
+   "t": "Página del Journey",
+   "path": "COMERCIAL → Journeys → una tarjeta",
+   "why": "El único espacio de trabajo para una necesidad: qué pasa ahora, qué viene, y tres fechas lado a lado (ETA del transportista, fecha esperada por SOLU y promesa al cliente).",
+   "steps": [
+    "Lee la señal y su causa en la parte de arriba.",
+    "Define el siguiente movimiento y su fecha, y [[Guardar]]. Pospón con [[Mañana]] / [[3 días]] / [[1 semana]].",
+    "Revisa qué cambió desde tu última visita y haz clic en [[Marcar como visto]].",
+    "Usa las pestañas en orden: Resumen, Necesidad, Fuente, Cotización, Ejecución, Finanzas, Expediente, Resultado."
+   ],
+   "expect": "La fecha esperada por SOLU es la ETA del transportista más 3 días más 1 día. Si la promesa al cliente es anterior, se marca."
+  },
+  {
+   "id": "journey-catchup",
+   "m": "comercial",
+   "t": "¿Qué cambió? y Ponerme al día",
+   "path": "Journey → Resumen",
+   "why": "Entiende un Journey en segundos, aunque no lo hayas visto en días.",
+   "steps": [
+    "Abre el Journey SJ-01842 de ABC Foods.",
+    "Haz clic en [[¿Qué cambió?]] para ver lo nuevo desde tu última visita.",
+    "Haz clic en [[Ponerme al día]] para ver dónde está y qué sigue.",
+    "Usa [[Pregúntale a SOLU]] dentro del Journey para preguntas sobre ese caso."
+   ],
+   "expect": "Las respuestas se arman con los datos del Journey; todavía no es IA."
+  },
+  {
+   "id": "alcance",
+   "m": "comercial",
+   "t": "Matriz de alcance",
+   "path": "Journey → Alcance",
+   "why": "Separa lo pedido, lo requerido, lo cotizado, lo incluido, lo excluido y lo que falta confirmar, para que nadie descubra en la entrega que faltaba algo.",
+   "steps": [
+    "Abre el Journey «Bombas dosificadoras» de Papeles del Sur (ejemplo) y la pestaña Alcance.",
+    "Revisa cada línea y su estado.",
+    "Para una línea «por confirmar», usa el mensaje sugerido para preguntarle al cliente."
+   ],
+   "expect": "Palabras ambiguas como «completo» o «kit» se marcan. La cotización no se puede presentar mientras una línea importante esté por confirmar."
+  },
+  {
+   "id": "need-source",
+   "m": "comercial",
+   "t": "Necesidad y fuente",
+   "path": "Journey → Necesidad / Fuente",
+   "why": "Registra exactamente qué necesita el cliente y de dónde vendrá, antes de cotizar.",
+   "steps": [
+    "Pestaña Necesidad: describe la necesidad y haz clic en [[Guardar necesidad]].",
+    "Pestaña Fuente: proveedor, costo y plazo, y [[Guardar fuente]].",
+    "Anota en el registro de búsqueda las cotizaciones de proveedores y por qué elegiste uno."
+   ],
+   "expect": "La Eságara calculada aparece debajo de la fuente."
+  },
+  {
+   "id": "quote",
+   "m": "comercial",
+   "t": "Crear y presentar una cotización",
+   "path": "Journey → Cotización → Preparar cotización",
+   "why": "Arma la solución, revisa la economía, define la promesa y presenta solo cuando esté completa.",
+   "steps": [
+    "En el Journey, abre la pestaña [[Cotización]] y haz clic en [[Preparar cotización]].",
+    "Agrega las líneas ([[Agregar]]) y los costos del proveedor ([[Guardar costos]]). Mira la Eságara en $ y %, antes y después del costo de financiar el plazo de pago.",
+    "Opcional: ofrece alternativas con [[Agregar escenario]] y marca una con [[Recomendar este]].",
+    "Resuelve cada punto de la lista \"Lista para presentar\".",
+    "Descarga el PDF en inglés o español para revisarlo.",
+    "Haz clic en [[Presentar al cliente]]. Los precios quedan fijos."
+   ],
+   "expect": "Después de presentarla, los cambios requieren [[Crear revisión]] (Rev. 1, mismo número). La cotización pasa a Futuro comercial."
+  },
+  {
+   "id": "solucion",
+   "m": "comercial",
+   "t": "Caso de solución y propuesta imprimible",
+   "path": "Journey → Solución",
+   "why": "Explica al cliente por qué esta solución resuelve su necesidad, solo con atributos de valor que tengan evidencia en este caso.",
+   "steps": [
+    "Abre la pestaña Solución del Journey.",
+    "Elige los atributos de valor que apliquen y su evidencia.",
+    "Abre la propuesta imprimible y revísala."
+   ],
+   "expect": "Un atributo sin evidencia no se puede afirmar en la propuesta."
+  },
+  {
+   "id": "esagara-exc",
+   "m": "comercial",
+   "t": "Excepciones de Eságara",
+   "path": "COMERCIAL → Excepciones de Eságara",
+   "why": "Una cotización con Eságara debajo del 20 % no se presenta sin una excepción aprobada.",
+   "steps": [
+    "En una cotización bajo 20 %, pide la excepción y escribe las razones.",
+    "Director Comercial o Gerencia la revisa en esta pestaña, con el contexto de crédito y pago del cliente.",
+    "Aprueba o rechaza con una nota."
+   ],
+   "expect": "Quien pide la excepción nunca puede aprobarla. La pestaña muestra el patrón de 90 días por cliente."
+  },
+  {
+   "id": "futuro",
+   "m": "comercial",
+   "t": "Futuro comercial",
+   "path": "COMERCIAL → Futuro comercial",
+   "why": "Todas las cotizaciones presentadas que esperan una decisión del cliente, agrupadas según lo que hace falta.",
+   "steps": [
+    "Abre la pestaña y revisa cada zona.",
+    "Si estás esperando al cliente a propósito, abre la cotización y regístralo con [[Guardar espera]] y una fecha.",
+    "Cuando llegue la OC, regístrala en la cotización con [[Registrar y comparar]]."
+   ],
+   "expect": "Una cotización en espera consciente muestra \"Sin acción hoy\" en lugar de insistirte."
+  },
+  {
+   "id": "po",
+   "m": "comercial",
+   "t": "OC del cliente frente a la cotización",
+   "path": "Se abre después de Registrar y comparar",
+   "why": "Detecta diferencias entre lo que pidió el cliente y lo que cotizamos, antes de comprometernos.",
+   "steps": [
+    "Revisa la comparación: cada línea, precio, cantidad, condiciones y vigencia.",
+    "Para cada diferencia importante, elige una solución con [[Elegir esta opción]] y registra la confirmación del cliente con [[Registrar confirmación]].",
+    "Cuando nada bloquee, haz clic en [[Aceptar PO]]."
+   ],
+   "expect": "Aceptar PO sigue desactivado mientras haya una diferencia importante abierta. Una vez aceptada, el registro no se puede editar."
+  },
+  {
+   "id": "promise",
+   "m": "comercial",
+   "t": "Promesa al cliente",
+   "path": "Journey → franja de promesa",
+   "why": "La fecha de entrega comprometida, y un registro honesto cuando cambia.",
+   "steps": [
+    "Define la fecha y haz clic en [[Guardar promesa]].",
+    "Si la cambias después, elige la causa (proveedor, logística, cliente, etc.)."
+   ],
+   "expect": "Insights muestra la fecha original, la revisada y la real, y por qué cambió."
+  },
+  {
+   "id": "resultado",
+   "m": "comercial",
+   "t": "Resultado, Recovery y cierre",
+   "path": "Journey → Resultado",
+   "why": "Confirma que el cliente realmente obtuvo el resultado que necesitaba. Si no, recupéralo.",
+   "steps": [
+    "Registra la evidencia del resultado (lo que confirmó el cliente).",
+    "Si algo salió mal, elige la causa y haz clic en [[Abrir Recovery]]. Escoge una opción con [[Elegir]].",
+    "Termínala con [[Recovery exitosa]], [[No se recuperó]] o [[Ya no aplica]].",
+    "Cierra con [[Cerrar Journey]]. Anota cualquier señal de una necesidad futura (continuidad), con una fecha de seguimiento."
+   ],
+   "expect": "Una señal de continuidad crea una tarea de seguimiento. No crea una oportunidad de venta por sí sola."
+  },
+  {
+   "id": "dinero",
+   "m": "comercial",
+   "t": "Dinero por mover",
+   "path": "COMERCIAL → Dinero por mover",
+   "why": "Todo el dinero bloqueado, en cuatro bolsas, con la causa y quién lo resuelve.",
+   "steps": [
+    "Abre [[Dinero por mover]] y elige un caso.",
+    "Lee el bloqueo, en qué paso está la factura y las promesas de pago.",
+    "Haz el movimiento que corresponde, o pide crédito si hace falta."
+   ],
+   "expect": "Pedir crédito no lo aprueba: lo decide Finanzas o Gerencia."
+  },
+  {
+   "id": "fugas",
+   "m": "comercial",
+   "t": "Fugas de caja",
+   "path": "COMERCIAL → Fugas de caja",
+   "why": "Dónde se demora el dinero, por etapa y por causa.",
+   "steps": [
+    "Abre [[Fugas de caja]].",
+    "Mira la etapa con más días de demora.",
+    "Revisa los Journeys detrás de esa demora."
+   ],
+   "expect": "Las reglas con que se mide están escritas en la pantalla."
+  },
+  {
+   "id": "valor",
+   "m": "comercial",
+   "t": "Atributos de valor",
+   "path": "COMERCIAL → Atributos de valor",
+   "why": "El catálogo de lo que podemos afirmar en una propuesta.",
+   "steps": [
+    "Abre la pestaña y elige un atributo.",
+    "Mira qué evidencia lo respalda."
+   ],
+   "expect": "En una propuesta solo se usa con evidencia de ese caso."
+  },
+  {
+   "id": "foco",
+   "m": "comercial",
+   "t": "Foco de alto valor",
+   "path": "COMERCIAL → Foco de alto valor",
+   "why": "Top 5 por Eságara, decisiones del mes, negocios a proteger, dinero a mover y lo grande que lleva días quieto.",
+   "steps": [
+    "Abre [[Foco de alto valor]].",
+    "Recorre el Top 5 y abre uno.",
+    "Revisa lo grande que lleva días quieto y define un movimiento."
+   ],
+   "expect": "Cada fila lleva a su Journey."
+  },
+  {
+   "id": "visitas",
+   "m": "comercial",
+   "t": "Visitas",
+   "path": "COMERCIAL → Visitas",
+   "why": "Prepara y cierra visitas a clientes sin teclear lo que SOLU ya sabe.",
+   "steps": [
+    "Abre [[Visitas]] y haz clic en [[Planear visita]] para ABC Foods.",
+    "Revisa el resumen automático: necesidades abiertas, cotizaciones esperando, cartera, compromisos y visitas anteriores.",
+    "Después de la visita, ciérrala con los compromisos, fotos y PDF. Puedes dictar las notas por voz.",
+    "Revisa la misión y el presupuesto del viaje."
+   ],
+   "expect": "El borrador de notas con IA está apagado hasta tener la llave. El dinero del viaje (presupuesto, anticipo, gastos y liquidación) se explica en Administración → Viajes."
+  },
+  {
+   "id": "metas",
+   "m": "comercial",
+   "t": "Mis metas",
+   "path": "COMERCIAL → Mis metas",
+   "why": "Cinco metas al mes, medidas con lo que pasó en SOLU.",
+   "steps": [
+    "Abre [[Mis metas]].",
+    "Mira el ritmo que necesitas para llegar.",
+    "Lee «Dónde se estrecha el camino»."
+   ],
+   "expect": "Solo las ves tú y la gerencia. No hay ranking del equipo."
+  },
+  {
+   "id": "cobertura",
+   "m": "comercial",
+   "t": "Cobertura por ausencia",
+   "path": "COMERCIAL → Cobertura",
+   "why": "Cuando te ausentas, otra persona atiende tus Journeys por un tiempo.",
+   "steps": [
+    "Abre [[Cobertura]].",
+    "Elige quién te cubre, las fechas y, si no es todo, para qué es la cobertura.",
+    "Revisa la entrega de turno: cada pendiente dice si debe moverse, si es probable una decisión del cliente, si está en espera, si puede esperar o si está protegido.",
+    "Al regresar, abre la cobertura: lee qué pasó y haz clic en [[Ya lo leí: recibir mi trabajo de vuelta]]."
+   ],
+   "expect": "La cobertura vence sola en la fecha final. Nunca delega aprobaciones. Tú sigues siendo responsable de tus Journeys: al regresar, lo único que vuelve son los pendientes abiertos a nombre de quien te cubrió."
+  },
+  {
+   "id": "mejora",
+   "m": "comercial",
+   "t": "Mi mejora",
+   "path": "COMERCIAL → Mi mejora",
+   "why": "Tu propio embudo de los últimos 90 días frente a los 270 anteriores, en palabras simples.",
+   "steps": [
+    "Abre [[Mi mejora]].",
+    "Lee dónde mejoraste y dónde se perdieron más negocios.",
+    "Lee las sugerencias."
+   ],
+   "expect": "No te compara con el equipo."
+  },
+  {
+   "id": "cierres",
+   "m": "comercial",
+   "t": "Cierres",
+   "path": "COMERCIAL → Cierres",
+   "why": "Cierre diario, semanal y mensual: qué pasó, qué aprendimos, el futuro visible y los próximos movimientos.",
+   "steps": [
+    "Abre [[Cierres]].",
+    "Elige día, semana o mes.",
+    "Revisa los próximos movimientos."
+   ],
+   "expect": "Todo sale de lo que pasó en SOLU; no hay que escribir un reporte."
+  },
+  {
+   "id": "despacho",
+   "m": "operaciones",
+   "t": "Instrucción de despacho",
+   "path": "Journey → Despacho",
+   "why": "Después de aceptar la OC del cliente, dice exactamente qué despachar, a dónde y con qué documentos.",
+   "steps": [
+    "Acepta una OC con [[Aceptar PO]].",
+    "Abre la pestaña Despacho del Journey y revisa la instrucción."
+   ],
+   "expect": "Sale del compromiso aceptado (la OC congelada), no de la cotización editable."
+  },
+  {
+   "id": "compras",
+   "m": "operaciones",
+   "t": "Órdenes de compra a proveedores",
+   "path": "Journey → Ejecución → Preparar Supplier PO desde la cotización",
+   "why": "Compra exactamente lo cotizado, guarda versiones y programa los pagos al proveedor.",
+   "steps": [
+    "En la pestaña Ejecución del Journey, haz clic en [[Preparar Supplier PO desde la cotización]].",
+    "Revísala en [[Compras]]. Guarda cambios con [[Guardar borrador]] o [[Crear versión]].",
+    "Libérala al proveedor.",
+    "Para cada hito de pago, haz clic en [[Solicitar este pago]]."
+   ],
+   "expect": "Las solicitudes de pago van a Administración → Pagos a proveedores para verificación."
+  },
+  {
+   "id": "logistica",
+   "m": "operaciones",
+   "t": "Envíos",
+   "path": "OPERACIONES → Envíos",
+   "why": "Dónde está la mercancía, cuándo llegará de verdad y si el resultado del cliente está en riesgo.",
+   "steps": [
+    "Abre un envío. Actualiza la ETA del transportista con [[Guardar]].",
+    "Si la aduana lo retiene: [[Registrar retención]], y luego [[✓ Liberado por la aduana]] cuando se libere.",
+    "Al llegar: [[Registrar entrega]]. Si algo no cuadra: [[Registrar discrepancia]]."
+   ],
+   "expect": "Confirmar la entrega crea la remisión. Las fechas del Journey se actualizan desde el envío."
+  },
+  {
+   "id": "sin-despachar",
+   "m": "operaciones",
+   "t": "Sin despachar",
+   "path": "OPERACIONES → Sin despachar",
+   "why": "Cada pedido aceptado que aún no sale, con la razón y quién tiene el siguiente paso.",
+   "steps": [
+    "Lee la causa de cada fila (sin compra al proveedor, fuente sin confirmar, en tránsito…).",
+    "Haz clic en el botón para abrir el Journey y resolver lo que falta."
+   ],
+   "expect": "Lo atrasado se muestra como urgente. Las filas en tránsito muestran la fecha estimada de llegada, o dicen que aún no hay fecha del transportista."
+  },
+  {
+   "id": "remisiones",
+   "m": "operaciones",
+   "t": "Remisiones",
+   "path": "OPERACIONES → Remisiones",
+   "why": "La prueba de lo entregado, base para facturar.",
+   "steps": [
+    "Haz clic en [[Nueva remisión]], complétala y haz clic en [[Registrar remisión]].",
+    "Desde la remisión, haz clic en [[Emitir factura]] cuando esté lista."
+   ],
+   "expect": "La remisión aparece en el Expediente del Journey."
+  },
+  {
+   "id": "por-facturar",
+   "m": "operaciones",
+   "t": "Entregado sin facturar",
+   "path": "OPERACIONES → Entregado sin facturar",
+   "why": "Dinero que ya ganamos pero aún no hemos facturado.",
+   "steps": [
+    "Revisa la lista.",
+    "Haz clic en [[Emitir factura]] en cada una que esté lista."
+   ],
+   "expect": "La fila desaparece una vez facturada."
+  },
+  {
+   "id": "ops-inicio",
+   "m": "operaciones",
+   "t": "Inicio de Operaciones",
+   "path": "OPERACIONES → Inicio",
+   "why": "Lo que necesita atención primero, lo que está listo para el siguiente paso, las promesas en riesgo y las esperas sanas. El volumen de órdenes nunca es el titular.",
+   "steps": [
+    "Abre [[Inicio]] en Operaciones.",
+    "Lee primero «Necesita atención» y abre una fila.",
+    "Revisa «Listo para el siguiente paso»: cada fila lleva a la pantalla donde se hace."
+   ],
+   "expect": "Cada fila dice qué falta y de qué Journey es. Lo que va bien aparece como espera, sin alarma."
+  },
+  {
+   "id": "ops-altovalor",
+   "m": "operaciones",
+   "t": "Compromisos de alto valor",
+   "path": "OPERACIONES → Alto valor",
+   "why": "Cada Journey aceptado con Eságara de USD 2.000 o más, visible hasta que se entrega todo y se cobra todo.",
+   "steps": [
+    "Abre [[Alto valor]].",
+    "Lee una tarjeta: promesa, lo que está en juego, dinero ya comprometido, siguiente hito y riesgos.",
+    "Haz clic en el código para abrir el Journey."
+   ],
+   "expect": "Los que tienen riesgo salen primero. «Sin riesgo conocido» significa que SOLU no ve nada material con lo registrado."
+  },
+  {
+   "id": "ops-requerimientos",
+   "m": "operaciones",
+   "t": "Requerimientos y aprobación de compras",
+   "path": "OPERACIONES → Requerimientos",
+   "why": "Antes de comprar: qué se necesita, para qué Journey o para inventario, y si la compra necesita aprobación.",
+   "steps": [
+    "Abre un requerimiento y revisa «¿Lista para comprar?».",
+    "Si pide aprobación, haz clic en [[Pedir aprobación]] y escribe el motivo.",
+    "Quien aprueba (Finanzas o Administración hasta USD 25.000; Gerencia por encima) decide con una nota."
+   ],
+   "expect": "Quien pide no puede aprobar su propia compra. Sin aprobación no se puede crear la orden al proveedor."
+  },
+  {
+   "id": "ops-negociacion",
+   "m": "operaciones",
+   "t": "Confirmación del proveedor y ahorros",
+   "path": "OPERACIONES → Compras → una orden",
+   "why": "Lo que el proveedor confirmó frente a lo que pedimos, y los ahorros reales con su evidencia.",
+   "steps": [
+    "En una orden, registra la primera cotización del proveedor.",
+    "Registra su confirmación: SOLU la compara con la orden.",
+    "Si lograste un mejor precio, agrégalo en ahorros con la evidencia."
+   ],
+   "expect": "Un ahorro sin evidencia no se guarda. Las diferencias entre lo pedido y lo confirmado quedan a la vista hasta resolverlas."
+  },
+  {
+   "id": "ops-compromisos",
+   "m": "operaciones",
+   "t": "Compromisos del proveedor",
+   "path": "OPERACIONES → Compras → una orden → Compromisos",
+   "why": "Los hitos que prometió el proveedor (listo, producción, recogida), cada uno con su fecha y su evidencia.",
+   "steps": [
+    "Elige el tipo de pedido: los hitos cambian según sea de stock, fabricado, servicio o reparación.",
+    "Escribe la fecha que dio el proveedor y de dónde salió.",
+    "Cuando ocurra, márcalo con [[Ocurrió]] y la evidencia."
+   ],
+   "expect": "Antes de su fecha es una espera sana. Pasados los días de gracia sin evidencia, aparece en atención."
+  },
+  {
+   "id": "ops-flete",
+   "m": "operaciones",
+   "t": "Flete: qué mover y con quién",
+   "path": "OPERACIONES → Compras → una orden → Flete",
+   "why": "Peso, medidas y bultos antes de pedir transporte, y la comparación de las opciones de flete.",
+   "steps": [
+    "Completa lo que falte en «¿Listo para mover?».",
+    "Agrega las cotizaciones de flete que recibas.",
+    "Elige una. Si no es la más barata, SOLU pide el motivo."
+   ],
+   "expect": "Sin peso y medidas no se puede elegir flete. La opción elegida queda como base para revisar después la factura del transportador."
+  },
+  {
+   "id": "ops-recepcion",
+   "m": "operaciones",
+   "t": "Recepción en bodega",
+   "path": "OPERACIONES → Compras → una orden → Recepción",
+   "why": "Al recibir se valida que sea el producto correcto, en buen estado, completo y con documentos; no solo la cantidad.",
+   "steps": [
+    "Elige la bodega y escribe las unidades recibidas por línea.",
+    "Si algo no está bien, márcalo y escribe qué viste.",
+    "Agrega peso, medidas y hasta 8 fotos.",
+    "Haz clic en [[Registrar recepción]]."
+   ],
+   "expect": "Lo que queda en duda va a cuarentena y no cuenta como disponible. Una novedad abre una excepción en Operaciones."
+  },
+  {
+   "id": "ops-inventario",
+   "m": "operaciones",
+   "t": "Inventario",
+   "path": "OPERACIONES → Inventario",
+   "why": "Físico, comprometido y disponible son tres números distintos.",
+   "steps": [
+    "Abre [[Inventario]].",
+    "Si hay algo «En duda», decide: [[Liberar: está bien]], [[Dañado]] o [[Devolver al proveedor]], siempre con el motivo.",
+    "Revisa la tabla por bodega y referencia."
+   ],
+   "expect": "Las unidades en cuarentena o dañadas nunca salen hacia un cliente."
+  },
+  {
+   "id": "ops-despachos",
+   "m": "operaciones",
+   "t": "Despachos al cliente",
+   "path": "Journey → Despacho → Entrega física · OPERACIONES → Despachos",
+   "why": "La entrega física al cliente: despachado, entregado y listo para facturar son tres hechos distintos.",
+   "steps": [
+    "En el Journey, abre Despacho y haz clic en [[+ Nuevo despacho]].",
+    "Registra lo que exige el cliente con [[+ Agregar requisito del cliente]] y márcalo cumplido.",
+    "Haz clic en [[Salió hacia el cliente]].",
+    "Al entregar: quién recibió y [[Entregado: crear remisión]]. Si no se pudo: [[No se pudo entregar]].",
+    "Si el cliente da número de entrada (MIGO u otro), guárdalo."
+   ],
+   "expect": "No sale sin la instrucción de Comercial ni con requisitos pendientes. Un intento fallido queda en la historia, devuelve la mercancía al inventario y el despacho vuelve a programarse."
+  },
+  {
+   "id": "ops-auditoria",
+   "m": "operaciones",
+   "t": "Factura del transportador",
+   "path": "OPERACIONES → Envíos → un envío → Factura del transportador",
+   "why": "Compara lo que cobró el transportador con lo cotizado, lo declarado y lo que medimos.",
+   "steps": [
+    "Haz clic en [[+ Registrar factura del transportador]] y completa número, total y peso cobrable.",
+    "Lee el resultado: coincide, dentro de lo normal, revisar diferencia o se recomienda reclamar.",
+    "Si aplica, [[Abrir reclamo al transportador]].",
+    "Cuando llegue la nota crédito, regístrala con [[Crédito recibido]]."
+   ],
+   "expect": "Un «sí» del transportador no es dinero recuperado: cuenta solo con la nota crédito y el valor recibido. Si no hay con qué comparar, SOLU lo dice."
+  },
+  {
+   "id": "ops-aduana",
+   "m": "operaciones",
+   "t": "Caso de aduana",
+   "path": "OPERACIONES → Envíos → un envío internacional → Caso de aduana",
+   "why": "Lo que falta para importar, la clasificación arancelaria con su fuente, tributos esperados frente a reales y retenciones.",
+   "steps": [
+    "Haz clic en [[+ Abrir caso de aduana]].",
+    "Completa clasificación, origen, valor declarado, consignatario y agente.",
+    "Marca la clasificación como validada solo si escribes quién la validó."
+   ],
+   "expect": "Una clasificación usada antes es historia, no validación. La lista «Faltan N para importar» baja a medida que completas."
+  },
+  {
+   "id": "ops-transportadores",
+   "m": "operaciones",
+   "t": "Transportadores y reglas de peso",
+   "path": "OPERACIONES → Transportadores",
+   "why": "Las cuentas de transportadores y la regla con que se calcula el peso cobrable de cada uno.",
+   "steps": [
+    "Revisa la tabla de reglas: divisor, redondeo, tolerancia y umbral de reclamo.",
+    "Gerencia: [[Cambiar o agregar una regla]] con los valores del contrato.",
+    "Marca «Confirmada contra el contrato» solo cuando el tarifario lo diga."
+   ],
+   "expect": "Aquí nunca se escribe una clave: las credenciales viven en la configuración del servidor."
+  },
+  {
+   "id": "ops-garantias",
+   "m": "operaciones",
+   "t": "Garantías y reclamos del cliente",
+   "path": "Journey → Ejecución → Garantía y reclamos · OPERACIONES → Garantías",
+   "why": "Qué quedó cubierto y por cuánto tiempo, y los casos que abre el cliente después de la entrega.",
+   "steps": [
+    "En el Journey, abre «Garantía y reclamos» y haz clic en [[+ Registrar garantía]].",
+    "Si el cliente reporta un problema: [[+ Abrir caso del cliente]].",
+    "Agrega notas a medida que avance y ciérralo con qué se hizo, quién fue responsable y lo que costó."
+   ],
+   "expect": "SOLU dice si estaba dentro de la garantía el día del reporte. El costo del caso entra a los costos reales del Journey."
+  },
+  {
+   "id": "ops-experiencias",
+   "m": "operaciones",
+   "t": "Experiencias de producto",
+   "path": "OPERACIONES → Experiencias",
+   "why": "Lo que aprendimos al suministrar un producto, para que el equipo no lo redescubra.",
+   "steps": [
+    "Haz clic en [[+ Registrar experiencia]] y escribe la referencia y qué aprendimos.",
+    "Si podría publicarse, escribe el borrador público.",
+    "Gerencia, Dirección Comercial o Mercadeo marcan los 7 puntos de confidencialidad."
+   ],
+   "expect": "SOLU no publica nada. Avisa si el borrador parece traer un precio, un serial o el nombre del cliente. Si el borrador cambia, la revisión empieza de nuevo."
+  },
+  {
+   "id": "ops-metricas",
+   "m": "operaciones",
+   "t": "Métricas de Operaciones",
+   "path": "OPERACIONES → Métricas",
+   "why": "Cómo funcionó la operación en los últimos 12 meses, contado de lo registrado.",
+   "steps": [
+    "Abre [[Métricas]].",
+    "Lee cada cifra con el número de casos del que sale."
+   ],
+   "expect": "Con menos de 5 casos muestra el conteo y no un porcentaje. No hay comparación entre personas."
+  },
+  {
+   "id": "ops-config",
+   "m": "operaciones",
+   "t": "Configuración de Operaciones",
+   "path": "OPERACIONES → Configuración (cambia Gerencia)",
+   "why": "Los umbrales con los que SOLU decide qué mostrar como atención, y las bodegas.",
+   "steps": [
+    "Cambia un umbral y haz clic en [[Guardar umbrales]].",
+    "Agrega una bodega con [[+ Agregar bodega]]."
+   ],
+   "expect": "Cada cambio queda como una versión con quién y cuándo. Una bodega con inventario no se puede desactivar."
+  },
+  {
+   "id": "facturacion",
+   "m": "administracion",
+   "t": "Listo para facturar y facturación",
+   "path": "Journey → Finanzas → Facturación",
+   "why": "Emite una factura solo cuando todo lo que exige el cliente esté listo.",
+   "steps": [
+    "Revisa la lista \"¿Listo para facturar?\", construida con el perfil de facturación del cliente.",
+    "Agrega lo que falte: [[Registrar solicitud]], [[Registrar evidencia]].",
+    "Emite la factura cuando la lista esté completa. Descarga el PDF.",
+    "Registra su estado en contabilidad: [[Confirmar ID contable]], [[Enviada, esperando su ID]] o [[No sabemos si se creó]]."
+   ],
+   "expect": "El PDF de la factura todavía no lleva datos bancarios (ver \"Todavía sin conectar\")."
+  },
+  {
+   "id": "cobrar",
+   "m": "administracion",
+   "t": "Cuentas por cobrar",
+   "path": "ADMINISTRACIÓN → Cuentas por cobrar",
+   "why": "Lo que deben los clientes, cuánto está vencido y qué prometieron.",
+   "steps": [
+    "Revisa las facturas abiertas por antigüedad.",
+    "Cuando un cliente se comprometa a una fecha de pago, haz clic en [[Registrar promesa]]."
+   ],
+   "expect": "\"Enviada\" o \"aprobada\" no significa pagada. Una factura está pagada solo después de un pago conciliado."
+  },
+  {
+   "id": "pagos-recibidos",
+   "m": "administracion",
+   "t": "Pagos recibidos",
+   "path": "ADMINISTRACIÓN → Pagos recibidos",
+   "why": "Asigna el dinero que llegó a las facturas correctas.",
+   "steps": [
+    "Registra el pago con [[Registrar]].",
+    "Haz clic en [[Ver facturas]], aplícalo con [[Aplicar]] y luego [[Conciliar]]."
+   ],
+   "expect": "Un comprobante bancario nunca marca una factura como pagada por sí solo. El dinero sin aplicar aparece en un aviso. Los sobrepagos necesitan una nota antes de conciliar."
+  },
+  {
+   "id": "pagos-proveedores",
+   "m": "administracion",
+   "t": "Pagos a proveedores",
+   "path": "ADMINISTRACIÓN → Pagos a proveedores → un pago",
+   "why": "Paga a los proveedores con seguridad: verificación independiente, aprobación dentro de límites y ejecución confirmada.",
+   "steps": [
+    "Alguien distinto a quien lo solicitó revisa los datos bancarios y hace clic en [[Registrar verificación]].",
+    "Un aprobador dentro de su límite hace clic en [[Aprobar solicitud]].",
+    "Después de enviar la transferencia: [[Registrar ejecución]].",
+    "Cuando el banco lo confirme: [[Confirmar: el dinero salió]]."
+   ],
+   "expect": "Solo el último paso lo marca como pagado. Un cambio de cuenta bancaria es un alto total hasta verificarlo por teléfono a un número conocido. Nunca aceptes un cambio de cuenta por correo o WhatsApp."
+  },
+  {
+   "id": "pagos-exterior",
+   "m": "administracion",
+   "t": "Pagos al exterior",
+   "path": "ADMINISTRACIÓN → Pagos al exterior",
+   "why": "Pagos a proveedores en el exterior, para el banco y el contador.",
+   "steps": [
+    "Elige las fechas y haz clic en [[Filtrar]].",
+    "Descarga el CSV."
+   ],
+   "expect": "El CSV abre en Excel con una fila por pago."
+  },
+  {
+   "id": "cupos",
+   "m": "administracion",
+   "t": "Cupos de crédito",
+   "path": "ADMINISTRACIÓN → Cupos de crédito",
+   "why": "Cuánto crédito tiene cada cliente, y las excepciones aprobadas.",
+   "steps": [
+    "Define el cupo de un cliente y [[Guardar]].",
+    "Cuando un pedido lo supere, un gerente puede hacer clic en [[Aprobar excepción]]."
+   ],
+   "expect": "Los clientes por encima de su cupo quedan marcados."
+  },
+  {
+   "id": "adm-banco",
+   "m": "administracion",
+   "t": "Banco: subir el extracto y explicar movimientos",
+   "path": "ADMINISTRACIÓN → Banco",
+   "why": "Lo que dice el banco junto a lo que SOLU ya sabe. SOLU sugiere; una persona confirma.",
+   "steps": [
+    "La primera vez: [[+ Registrar cuenta bancaria]] (nombre y últimos 4 dígitos).",
+    "Descarga los movimientos de Bank of America en CSV, elige el archivo y haz clic en [[Subir y leer]].",
+    "En cada movimiento: acepta una sugerencia con [[Sí, es este]] o usa [[Decir qué es]].",
+    "Los cargos del banco y traslados entre cuentas propias se apartan con una nota."
+   ],
+   "expect": "Subir dos veces el mismo periodo no duplica nada. Si SOLU no reconoce las columnas, no carga nada y muestra los títulos que vio."
+  },
+  {
+   "id": "adm-retenciones",
+   "m": "administracion",
+   "t": "Retenciones",
+   "path": "ADMINISTRACIÓN → Pagos recibidos → un cliente → Retenciones",
+   "why": "Lo que el cliente retiene al pagar: baja lo que debe la factura, pero no es dinero recibido.",
+   "steps": [
+    "Elige el cliente y haz clic en [[Ver facturas]].",
+    "Abajo, en Retenciones: [[+ Registrar retención]], con factura, tipo y valor.",
+    "Agrega el número del certificado cuando llegue."
+   ],
+   "expect": "El saldo de la factura baja en todas las pantallas. La retención aparece en la historia del cliente y nunca en la lista de pagos recibidos."
+  },
+  {
+   "id": "adm-esagara",
+   "m": "administracion",
+   "t": "Eságara real",
+   "path": "ADMINISTRACIÓN → Eságara real · Journey → Ejecución → Eságara real",
+   "why": "Cuánto dejó de verdad cada Journey: la Eságara protegida frente a la esperada hoy con los costos reales, y por qué cambió.",
+   "steps": [
+    "Abre [[Eságara real]] y haz clic en un Journey.",
+    "Lee las tres cifras y la tabla «Por qué cambió».",
+    "Agrega un costo que no esté en otro lado con [[+ Agregar un costo de este Journey]].",
+    "Finanzas, Administración o Gerencia marcan el cierre: abierta, sustancialmente completa o final."
+   ],
+   "expect": "Las líneas de «Por qué cambió» siempre suman el cambio total. «Final» guarda las cifras de ese día y bloquea nuevos costos hasta reabrir."
+  },
+  {
+   "id": "adm-inicio",
+   "m": "administracion",
+   "t": "Inicio de Administración",
+   "path": "ADMINISTRACIÓN → Hoy → Inicio",
+   "why": "Solo lo que necesita a alguien hoy: caja, crédito, cobros, pagos, presupuesto, activos y obligaciones, dinero sin conciliar, y Eságara y comisiones.",
+   "steps": [
+    "Abre [[ADMINISTRACIÓN]]. Arriba están los grupos: Hoy, Dinero, Recursos, Cierre y Configuración.",
+    "Lee cada asunto: qué pasa, cuánto pesa, por qué y qué hacer.",
+    "Haz clic en la acción de la derecha para ir a donde se resuelve."
+   ],
+   "expect": "Lo que está bien aparece en una sola línea verde. Quien no es de Administración, Finanzas, Dirección o Gerencia ve lo suyo: su ficha, sus activos y sus compras."
+  },
+  {
+   "id": "adm-exposicion",
+   "m": "administracion",
+   "t": "Exposición de recursos",
+   "path": "ADMINISTRACIÓN → Hoy → Exposición de recursos",
+   "why": "Siete exposiciones distintas: caja, clientes, proveedores, inventario, moneda, activos y contratos.",
+   "steps": [
+    "Abre [[Exposición de recursos]].",
+    "Recorre los siete bloques; cada uno tiene su enlace al detalle."
+   ],
+   "expect": "No hay un puntaje ni un total que las junte. Lo que está en otra moneda se muestra aparte, sin convertir."
+  },
+  {
+   "id": "adm-tesoreria",
+   "m": "administracion",
+   "t": "Tesorería: de lo que hay en el banco a lo que está libre",
+   "path": "ADMINISTRACIÓN → Dinero → Tesorería",
+   "why": "Lo que muestra el banco no es lo que se puede gastar. SOLU lo baja paso a paso y proyecta la caja a 7, 30, 60 y 90 días.",
+   "steps": [
+    "En «Cuentas y saldos confirmados», escribe el saldo, la fecha y de dónde sale el dato, y haz clic en [[Confirmar]].",
+    "Lee «Liquidez disponible»: bancos, menos restringido, menos reservado, menos comprometido.",
+    "Abre «Apartar dinero» para reservar un valor: para qué es y quién lo decidió.",
+    "En «Lo que SOLU no puede saber solo», agrega la nómina, los impuestos o una cuota de crédito con [[Agregar]].",
+    "Revisa «Caja proyectada» y abre «Lo que viene, por tipo» para ver cada movimiento."
+   ],
+   "expect": "Un saldo confirmado no se edita: uno nuevo lo reemplaza y el anterior queda como historia. Si la caja queda en negativo, SOLU muestra el faltante, la fecha y lo que hoy podría moverse. Lo contratado o entregado sin facturar no cuenta como cartera."
+  },
+  {
+   "id": "adm-pagar",
+   "m": "administracion",
+   "t": "Cuentas por pagar y facturas de proveedores",
+   "path": "ADMINISTRACIÓN → Dinero → Cuentas por pagar",
+   "why": "Qué hay que pagar hoy, en 7 y en 30 días, y cada factura de proveedor comparada con su orden y con lo que se recibió.",
+   "steps": [
+    "Revisa el «Calendario de pagos».",
+    "En «Registrar una factura de proveedor», elige la orden o la compra interna, escribe número, valor, fechas y cómo llegó, y haz clic en [[Registrar]].",
+    "Lee el resultado: coinciden, facturado por encima de la orden, facturado más de lo recibido o servicio sin aceptar.",
+    "Para un servicio: [[Aceptar el servicio]]. Para una diferencia justificada: [[Aceptar la diferencia]] con el motivo.",
+    "Si la factura no es de una orden de cliente: [[Aprobar el pago]] y después [[Registrar el pago]] con la referencia del banco."
+   ],
+   "expect": "El mismo número de factura del mismo proveedor no se registra dos veces. Quien registró la factura no puede aprobar su pago. Aprobar no es pagar. Las facturas de una orden se pagan desde la orden, con sus hitos."
+  },
+  {
+   "id": "adm-presupuesto",
+   "m": "administracion",
+   "t": "Presupuesto y gasto",
+   "path": "ADMINISTRACIÓN → Recursos → Presupuesto",
+   "why": "Lo asignado, lo comprometido, lo gastado, lo que queda y lo que su responsable espera al final.",
+   "steps": [
+    "Gerencia o Finanzas: en «Asignar un presupuesto», escribe nombre, responsable, fechas y valor, y haz clic en [[Asignar]].",
+    "Abre «De dónde salen las cifras» para ver cada compra y cada viaje que lo ocupa.",
+    "El responsable: abre «Actualizar el pronóstico» y escribe el total esperado y en qué se basa."
+   ],
+   "expect": "Una compra aprobada ocupa el presupuesto aunque no se haya pagado. Lo pedido y sin aprobar se muestra aparte y no lo ocupa. Las compras internas y los viajes aparecen solos."
+  },
+  {
+   "id": "adm-compras-internas",
+   "m": "administracion",
+   "t": "Compras internas",
+   "path": "ADMINISTRACIÓN → Recursos → Compras internas",
+   "why": "Lo que la empresa compra para sí misma: uso interno, activos e inversiones. Primero la necesidad; después el presupuesto y quién autoriza.",
+   "steps": [
+    "En «Pedir una compra interna», escribe qué se compra, para qué se necesita, el valor y el presupuesto, y haz clic en [[Pedir]].",
+    "Quien decide la abre desde «Esperan tu decisión» y usa [[Aprobar]], [[Devolver con una pregunta]] o [[No aprobar]].",
+    "Cuando se compre: [[Ya se compró]]. Si es un activo, regístralo desde el enlace."
+   ],
+   "expect": "Nadie decide su propia compra. Sin presupuesto, o por encima de lo que le queda, es una excepción: la decide Gerencia y exige el motivo. Al marcarla comprada pasa de comprometido a gastado."
+  },
+  {
+   "id": "adm-activos",
+   "m": "administracion",
+   "t": "Activos y custodia",
+   "path": "ADMINISTRACIÓN → Recursos → Activos",
+   "why": "Lo que la empresa tiene, quién lo tiene a cargo y lo que necesita pronto: seguro, mantenimiento, garantía.",
+   "steps": [
+    "En «Registrar un activo», escribe nombre, tipo, a nombre de qué empresa está y sus fechas, y haz clic en [[Registrar]].",
+    "Abre el activo y, en «Entregar, trasladar o devolver», elige a quién se entrega.",
+    "Quien lo tiene a cargo registra mantenimientos y kilometraje en «Registrar algo que pasó».",
+    "Lee la «Historia»."
+   ],
+   "expect": "La historia no se edita ni se borra. El kilometraje no puede bajar. Cada persona ve los activos que tiene a cargo; Administración los ve todos."
+  },
+  {
+   "id": "adm-obligaciones",
+   "m": "administracion",
+   "t": "Contratos y obligaciones",
+   "path": "ADMINISTRACIÓN → Recursos → Contratos y obligaciones",
+   "why": "Con quién, para qué, hasta cuándo, cuándo hay que avisar y qué se paga o se cobra.",
+   "steps": [
+    "En «Registrar un contrato u obligación», escribe con quién, para qué, las fechas, los días de aviso y quién responde.",
+    "Cuando aparezca en «Necesitan una decisión», abre «Decidir: renovar o terminar» y haz clic en [[Guardar decisión]].",
+    "Después de pagar una cuota: [[Ya se pagó: pasar a la siguiente fecha]]."
+   ],
+   "expect": "SOLU avisa solo mientras decidir todavía cambia lo que pasa. Un contrato que se renueva solo deja de avisar cuando pasa la fecha de aviso. Los pagos del contrato entran en la caja proyectada."
+  },
+  {
+   "id": "adm-personas",
+   "m": "administracion",
+   "t": "Personas: datos administrativos y ausencias",
+   "path": "ADMINISTRACIÓN → Recursos → Personas",
+   "why": "Vínculo, cargo formal, remuneración, ausencias, activos a cargo y el soporte que la empresa le debe a cada rol.",
+   "steps": [
+    "Administración o Gerencia: abre una persona y completa «Vínculo con la empresa» y «Cargo formal y rol».",
+    "Cada persona abre su propia ficha y pide una ausencia con [[Pedir]].",
+    "Administración o Gerencia la decide con [[Aprobar]] o [[No aprobar]].",
+    "Si a alguien le falta una herramienta o un acceso, regístralo en «Registrar algo que falta», con quién lo resuelve y el próximo paso."
+   ],
+   "expect": "La remuneración la ven solo Gerencia, Finanzas y la propia persona, y solo Gerencia la registra. Nadie decide su propia ausencia. Una ausencia aprobada deja ese día sin capacidad en Mi Plan y aparece en Cobertura. Aquí no hay evaluaciones."
+  },
+  {
+   "id": "adm-autoridad",
+   "m": "administracion",
+   "t": "Autoridad prestada",
+   "path": "ADMINISTRACIÓN → Recursos → Autoridad prestada",
+   "why": "Cuando alguien que aprueba va a estar ausente, puede prestar esa autoridad a otra persona por un tiempo.",
+   "steps": [
+    "Gerencia: en «Prestar autoridad», elige qué autoridad, de quién, a quién, las fechas, el tope y el motivo, y haz clic en [[Prestar]].",
+    "Quien la recibe decide como siempre: la pantalla dice que actúa con autoridad prestada.",
+    "Para quitarla antes de tiempo: [[Retirar]] con el motivo."
+   ],
+   "expect": "Termina sola en la fecha final. Más tiempo es una versión nueva. Nunca sirve para aprobar lo que pidió quien la prestó ni lo propio. La decisión guarda de quién era la autoridad."
+  },
+  {
+   "id": "adm-viajes",
+   "m": "administracion",
+   "t": "Viajes: anticipo, gastos y liquidación",
+   "path": "COMERCIAL → Visitas → una misión",
+   "why": "La misión da el propósito; Administración autoriza y controla el dinero del viaje.",
+   "steps": [
+    "Quien viaja pide el presupuesto; Gerencia lo aprueba y elige a qué presupuesto se carga.",
+    "Finanzas o Gerencia registran el anticipo con [[Registrar anticipo]].",
+    "Quien viaja carga los gastos con su soporte y los envía a revisión.",
+    "Finanzas o Gerencia marcan cada gasto [[Válido]] o [[No aceptar]], y luego [[Legalizar gastos]].",
+    "En «Liquidación del viaje», [[Cerrar la liquidación]] con la referencia del pago o de la devolución."
+   ],
+   "expect": "Ningún gasto cuenta hasta que alguien lo revisa. Aceptar un gasto sin soporte exige el motivo. La liquidación es gastos válidos menos anticipo: la empresa paga la diferencia o quien viajó la devuelve."
+  },
+  {
+   "id": "adm-contabilidad",
+   "m": "administracion",
+   "t": "Contabilidad: archivos para el contador",
+   "path": "ADMINISTRACIÓN → Cierre → Contabilidad (descargan Gerencia y Finanzas)",
+   "why": "SOLU entrega hechos confiables al sistema contable; no lo reemplaza.",
+   "steps": [
+    "Elige el archivo: facturas a clientes, facturas de proveedores, dinero recibido, pagos hechos, costos o activos.",
+    "Elige las fechas y haz clic en [[Descargar]].",
+    "Revisa «Archivos descargados»: queda quién sacó qué y cuándo."
+   ],
+   "expect": "El archivo abre en Excel y dice arriba el periodo y quién lo descargó. Descargar no cambia nada en SOLU."
+  },
+  {
+   "id": "adm-politicas",
+   "m": "administracion",
+   "t": "Políticas y eventos",
+   "path": "ADMINISTRACIÓN → Configuración → Políticas · Eventos",
+   "why": "Un solo lugar para ver cada regla con números: qué versión rige, desde cuándo, quién la definió y dónde se cambia.",
+   "steps": [
+    "Abre [[Políticas]] y revisa el registro; cada nombre lleva a donde se cambia.",
+    "Gerencia: cambia la política de Administración, escribe por qué y haz clic en [[Guardar como versión nueva]].",
+    "Abre [[Eventos]] para ver lo que pasó con nombre de negocio."
+   ],
+   "expect": "Un cambio nunca recalcula lo que ya se decidió. Los eventos aparecen solos cuando alguien registra, aprueba o concilia algo."
+  },
+  {
+   "id": "users",
+   "m": "equipo",
+   "t": "Personas y datos de ejemplo",
+   "path": "EQUIPO → Configuración → Personas y datos (solo Gerencia)",
+   "why": "Crea cuentas de usuario y administra los datos de ejemplo.",
+   "steps": [
+    "Completa nombre, correo y rol, y haz clic en [[Crear usuario]].",
+    "Carga o quita los datos de ejemplo con [[Cargar datos de ejemplo]] / [[Quitar datos de ejemplo]]."
+   ],
+   "expect": "La persona nueva puede iniciar sesión. Los registros de ejemplo dicen (ejemplo)."
+  },
+  {
+   "id": "trabajos",
+   "m": "equipo",
+   "t": "Trabajos en segundo plano",
+   "path": "EQUIPO → Configuración → Trabajos en segundo plano",
+   "why": "Lo que SOLU hace solo cada 15 minutos: leer respuestas de correo, ordenar el catálogo de repuestos y enviar recordatorios.",
+   "steps": [
+    "Abre la pestaña.",
+    "Mira la última ronda y si algo falló."
+   ],
+   "expect": "Aparece una ronda nueva cada 15 minutos."
+  },
+  {
+   "id": "profile",
+   "m": "equipo",
+   "t": "Mi perfil",
+   "path": "EQUIPO → Configuración → Mi perfil",
+   "why": "Tus datos, idioma y conexión del calendario.",
+   "steps": [
+    "Actualiza tus datos, tu idioma y tu jornada, y [[Guardar]].",
+    "Haz clic en [[Conectar mi calendario]] e inicia sesión con tu propia cuenta de Microsoft."
+   ],
+   "expect": "El calendario conectado es solo el de tu propio buzón de Outlook. Después de conectarlo, los bloques de tu agenda aparecen en Outlook."
+  },
+  {
+   "id": "eq-mirol",
+   "m": "equipo",
+   "t": "Mi rol",
+   "path": "EQUIPO → Mi desarrollo → Mi rol",
+   "why": "Qué espera la compañía de tu rol y qué puedes esperar tú de la compañía, en seis bloques, y la línea que une el propósito de la empresa con lo que haces hoy.",
+   "steps": [
+    "Abre [[EQUIPO]]: llegas a Mi rol. Arriba están los grupos: Mi desarrollo, Mi equipo, Organización y Configuración.",
+    "Lee «Mi línea de contribución»: propósito de la compañía, función, rol, resultados esperados y acciones del día.",
+    "Recorre los seis bloques en orden: nuestra compañía, mi función, mi rol, cómo se espera que lo haga, cómo sé si voy bien y cómo puedo crecer.",
+    "Cuando lo hayas conversado con tu líder, haz clic en [[Ya las revisé con mi líder]].",
+    "Si una expectativa no se puede cumplir porque falta algo, ábrelo abajo: qué expectativa, qué falta, quién lo resuelve y el próximo paso."
+   ],
+   "expect": "Con los datos de ejemplo, entra como Paola para verlo completo. El acuerdo muestra su versión y desde cuándo rige. Si aún no tienes acuerdo de rol, SOLU lo dice como «brecha de claridad de rol» y muestra la compañía y la función. Las metas del mes son las mismas de Comercial → Mis metas."
+  },
+  {
+   "id": "eq-desarrollo",
+   "m": "equipo",
+   "t": "Mi desarrollo: el ciclo de 90 días",
+   "path": "EQUIPO → Mi desarrollo → Mi desarrollo",
+   "why": "Pocas prioridades bien acompañadas: quién necesito llegar a ser (SER), qué necesito hacer mejor (HACER) y qué conocimiento o experiencia necesito construir (TENER).",
+   "steps": [
+    "Escribe para qué quieres desarrollarte, elige quién te acompaña y haz clic en [[Abrir el ciclo]].",
+    "En «Agregar un objetivo», escribe el objetivo, qué evidencia mostrará que se logró, el próximo movimiento y la fecha de revisión. Elige quién lo ve.",
+    "Cuando pase algo que lo muestre, usa «Agregar evidencia».",
+    "Para terminarlo: «Cerrar el objetivo» y [[Logrado, con la evidencia registrada]], o escribe el motivo y [[Cerrar con este motivo]].",
+    "En «Compromisos», anota quién hace qué, qué lo mostrará y para cuándo."
+   ],
+   "expect": "Un objetivo sin evidencia esperada, próximo movimiento o fecha de revisión no se guarda. No se da por logrado sin evidencia. Cada dimensión tiene un máximo de prioridades. «Qué pide atención» avisa si falta una conversación o pasó una fecha."
+  },
+  {
+   "id": "eq-360",
+   "m": "equipo",
+   "t": "Mi 360 y quién ve cada línea",
+   "path": "EQUIPO → Mi desarrollo → Mi 360",
+   "why": "Quién eres, tus talentos, lo que haces y lo que tienes. Tú decides quién ve cada línea.",
+   "steps": [
+    "En cada bloque (SER, Talentos, HACER, TENER, Historia, Reflexiones), abre «Agregar», escribe y elige quién lo ve.",
+    "Para cambiarlo después: «cambiar quién lo ve o quitar».",
+    "Si quieres, agrega un assessment (CliftonStrengths, DISC, Eneagrama u otro) con su fuente y su fecha.",
+    "En «Carácter: evidencia», registra una conducta: qué hiciste, en qué situación y qué día."
+   ],
+   "expect": "Privado lo ves solo tú. Compartido lo ven tu líder y tu mentor. Organización lo ve además Gerencia y cuenta en el mapa de talentos. Una reflexión nace privada. Un assessment nunca es organizacional, y el zodiaco aparece como «solo lúdico». Una evidencia de carácter que se apoya en un test no se guarda."
+  },
+  {
+   "id": "eq-conversaciones",
+   "m": "equipo",
+   "t": "Conversaciones de desarrollo",
+   "path": "EQUIPO → Mi desarrollo → Conversaciones",
+   "why": "El 1:1, la mentoría y los puntos de control de los días 0, 30, 60 y 90, con la agenda ya armada.",
+   "steps": [
+    "En «Programar una conversación», elige el tipo, la fecha y con quién, y haz clic en [[Programar]].",
+    "Ábrela: la agenda trae los compromisos pendientes, el foco actual y la evidencia nueva desde la última vez.",
+    "Durante la conversación, agrega los compromisos que salgan.",
+    "Al terminar, escribe lo conversado, la fecha de la próxima y haz clic en [[Cerrar]]."
+   ],
+   "expect": "No se cierra sin la próxima conversación o el motivo de que no haga falta. La agenda queda guardada como estaba. Solo las dos personas de la conversación pueden abrirla."
+  },
+  {
+   "id": "eq-feedback",
+   "m": "equipo",
+   "t": "Feedback 360",
+   "path": "EQUIPO → Mi desarrollo → Feedback 360",
+   "why": "Pedir y dar feedback en cuatro partes: continuar, empezar, mejorar y reducir.",
+   "steps": [
+    "En «Pedir feedback», elige a quién y qué es esa persona para ti (líder, par, mentor, otra función), y haz clic en [[Pedir]].",
+    "Quien lo recibe lo ve en su campana y lo responde en «Te pidieron feedback».",
+    "Para darlo sin que lo pidan: «Dar feedback sin que lo pidan».",
+    "En un feedback recibido, abre «Convertir en oportunidad de desarrollo»."
+   ],
+   "expect": "Hay que escribir al menos una de las cuatro partes. El feedback lleva el nombre de quien lo da. Lo leen la persona y su líder."
+  },
+  {
+   "id": "eq-miequipo",
+   "m": "equipo",
+   "t": "Desarrollo de mi equipo (para quien lidera)",
+   "path": "EQUIPO → Mi equipo → Desarrollo de mi equipo",
+   "why": "Cada persona que acompañas: su foco, la última y la próxima conversación, los compromisos y qué pide atención.",
+   "steps": [
+    "Abre [[Mi equipo]].",
+    "Lee la columna «Atención» de cada persona.",
+    "Haz clic en el nombre para abrir su desarrollo, o en «programar» para agendar la conversación."
+   ],
+   "expect": "Aparecen las personas de las que eres líder formal o líder de equipo. Van en orden alfabético. Nunca muestra reflexiones privadas, assessments ni objetivos que la persona dejó en privado."
+  },
+  {
+   "id": "eq-claridad",
+   "m": "equipo",
+   "t": "Claridad de roles",
+   "path": "EQUIPO → Mi equipo → Claridad de roles",
+   "why": "Por persona: su rol, nivel, versión del acuerdo, si revisó las expectativas, brechas clave, problemas de autoridad y próximo desarrollo. Y dónde la estructura tiene un hueco.",
+   "steps": [
+    "Gerencia: en la fila de una persona, abre «Asignar», elige el acuerdo de rol, el nivel, el líder, la fecha y el motivo, y haz clic en [[Guardar]].",
+    "Para un encargo por un tiempo, marca «Es un rol temporal» y pon la fecha final.",
+    "Lee «Dónde la estructura de roles tiene un hueco».",
+    "En «Brechas clave», usa «ver o registrar» para comparar el acuerdo con la evidencia."
+   ],
+   "expect": "Quien no tiene acuerdo aparece arriba como brecha de claridad de rol. El rol temporal no borra el rol base. Un resultado de brecha sin evidencia queda como «sin evidencia suficiente». El líder ve solo a su gente y no asigna."
+  },
+  {
+   "id": "eq-continuidad",
+   "m": "equipo",
+   "t": "Continuidad y sucesión",
+   "path": "EQUIPO → Mi equipo → Continuidad y sucesión",
+   "why": "Quién tiene cada rol, quién puede entrar si falta y a quién se está preparando.",
+   "steps": [
+    "Abre [[Continuidad y sucesión]].",
+    "En un rol, abre «Nombrar un respaldo o un sucesor», elige la persona y escribe qué muestra que puede hacer el rol.",
+    "Lee las cuatro respuestas: capacidad, autoridad, acceso y disponibilidad, cada una con su razón.",
+    "Arriba, revisa las ausencias de los próximos 30 días y quién cubre."
+   ],
+   "expect": "Un rol crítico, o de una sola persona, sin respaldo calificado aparece como riesgo de continuidad. Son cuatro respuestas, no un puntaje. No se muestra el motivo de una ausencia. Una ausencia sin aviso y sin cobertura le llega al líder en la campana."
+  },
+  {
+   "id": "eq-talentos",
+   "m": "equipo",
+   "t": "Mapa de talentos",
+   "path": "EQUIPO → Mi equipo → Mapa de talentos",
+   "why": "De qué está hecho el equipo y dónde un conocimiento depende de una sola persona.",
+   "steps": [
+    "Abre [[Mapa de talentos]].",
+    "Lee «Conocimiento que depende de una sola persona».",
+    "Revisa talentos, competencias y conocimientos, con quiénes los tienen."
+   ],
+   "expect": "Solo incluye lo que cada persona marcó como Organización. Agrupa lo escrito con las mismas palabras. No es una etiqueta sobre nadie."
+  },
+  {
+   "id": "eq-roles",
+   "m": "equipo",
+   "t": "Acuerdos de rol",
+   "path": "EQUIPO → Organización → Acuerdos de rol (todos los leen; publica Gerencia)",
+   "why": "El acuerdo de cada cargo: no es una lista de tareas, es lo que el rol debe lograr, por qué responde, qué decide, sus límites y lo que la compañía le debe.",
+   "steps": [
+    "Abre [[Acuerdos de rol]] y entra al de ejemplo para ver uno completo.",
+    "Gerencia: en «Crear un acuerdo de rol», completa al menos propósito, resultados, responsabilidades, qué puede decidir y límites, una cosa por línea.",
+    "Escribe los principios como conductas: «Verdad: no prometer fecha sin validación operativa».",
+    "Escribe desde cuándo rige y por qué, y haz clic en [[Publicar el acuerdo de rol]].",
+    "Para cambiarlo, ábrelo y usa «Publicar una versión nueva de este acuerdo»."
+   ],
+   "expect": "Sin las cinco partes no se publica. Una conducta escrita como calificación (por ejemplo «4/5») se rechaza. Publicar nunca borra: la versión anterior queda en la historia. Si el acuerdo pide una autoridad que las políticas no le dan a ese rol, SOLU lo señala."
+  },
+  {
+   "id": "eq-organizacion",
+   "m": "equipo",
+   "t": "Desarrollo organizacional y política",
+   "path": "EQUIPO → Organización → Desarrollo organizacional (solo Gerencia)",
+   "why": "Si la compañía está acompañando el crecimiento de su gente y si tiene quién continúe cada rol.",
+   "steps": [
+    "Abre [[Desarrollo organizacional]].",
+    "Lee «Desarrollo por función»: cuántas personas tienen acuerdo de rol y ciclo activo.",
+    "Lee «Sucesión y roles sin respaldo».",
+    "Abajo, en la política, cambia un valor, escribe por qué y haz clic en [[Guardar como versión nueva]]."
+   ],
+   "expect": "Son conteos, sin nombres ni contenido del desarrollo de nadie. La política empieza con los valores del documento oficial. Los ciclos ya abiertos conservan sus fechas."
+  },
+  {
+   "id": "inf-desempeno",
+   "m": "informes",
+   "t": "Mi desempeño",
+   "path": "INFORMES → Mi desempeño",
+   "why": "Cómo vas, qué necesita movimiento y si estás construyendo futuro suficiente, en una sola página.",
+   "steps": [
+    "Abre [[INFORMES]] en el menú.",
+    "Lee «Resultado y futuro»: lo de este mes, la meta, el ritmo y el mes anterior.",
+    "Haz clic en [[¿Cómo se calcula?]] junto a cualquier cifra.",
+    "Revisa «Dinero que debo mover» y «Riesgos y lo que viene»; cada línea lleva al Journey."
+   ],
+   "expect": "Dice si el mes está cerrado o es provisional y la fecha de cálculo. Nada se escribe para este informe."
+  },
+  {
+   "id": "inf-equipo",
+   "m": "informes",
+   "t": "Equipo (para quien lidera)",
+   "path": "INFORMES → Equipo",
+   "why": "Quién necesita ayuda y en qué, para preparar la conversación con evidencia.",
+   "steps": [
+    "Gerencia: en «Armar equipos», crea el equipo, elige su líder y agrega las personas.",
+    "El líder abre [[Equipo]] y ve a cada persona con su ritmo en cada meta.",
+    "Haz clic en una persona para ver su informe completo."
+   ],
+   "expect": "Las personas van en orden alfabético; no hay puntaje ni ranking. No se muestran las comisiones de cada persona. El equipo no da permiso para editar ni aprobar."
+  },
+  {
+   "id": "inf-diccionario",
+   "m": "informes",
+   "t": "Diccionario de métricas",
+   "path": "INFORMES → Diccionario de métricas",
+   "why": "Cada cifra tiene una sola definición: qué significa, cómo se calcula, de dónde sale y quién responde.",
+   "steps": [
+    "Abre [[Diccionario de métricas]].",
+    "Busca una métrica y lee su fórmula y su fuente."
+   ],
+   "expect": "La misma métrica significa lo mismo en todas las pantallas."
+  },
+  {
+   "id": "inf-pulso",
+   "m": "informes",
+   "t": "Pulso del negocio",
+   "path": "INFORMES → Pulso del negocio (Gerencia, Dirección, Finanzas, Administración)",
+   "why": "El mes por función: qué descubrimos, qué transamos, qué cumplimos y qué recursos cuidamos, frente al mes anterior.",
+   "steps": [
+    "Abre [[Pulso del negocio]]: muestra el último mes terminado.",
+    "Haz clic en cualquier línea para ir a su detalle.",
+    "Gerencia: cuando el mes esté revisado, haz clic en [[Cerrar el mes con estas cifras]]."
+   ],
+   "expect": "Las cifras marcadas «foto de hoy» no se comparan con el mes anterior. Un mes cerrado no se recalcula solo; reabrirlo pide un motivo."
+  },
+  {
+   "id": "inf-futuro",
+   "m": "informes",
+   "t": "Pulso del futuro y dónde intervenir",
+   "path": "INFORMES → Pulso del futuro",
+   "why": "Lo que viene, en cuatro futuros que no se suman: mercado, comercial, contratado y financiero. Y una lista corta de asuntos donde Gerencia debe decidir.",
+   "steps": [
+    "Abre [[Pulso del futuro]].",
+    "Empieza por «Dónde debe intervenir Gerencia»: cada asunto dice su impacto, quién lo lleva y qué decidir.",
+    "Revisa cada futuro por plazo: ya pasó, 30 días, 31 a 90 y más."
+   ],
+   "expect": "No hay probabilidades ni pronósticos inventados: son conteos y valores en su estado real."
+  },
+  {
+   "id": "inf-emitir",
+   "m": "informes",
+   "t": "Emitir el informe del mes y descargarlo",
+   "path": "INFORMES → Pulso del negocio (emite Gerencia; descargan Gerencia y Finanzas)",
+   "why": "Al terminar cada mes, Gerencia recibe un correo que avisa que el informe está listo. Gerencia lo revisa y lo emite desde SOLU; las cifras quedan guardadas como el informe oficial del mes.",
+   "steps": [
+    "En la primera semana del mes llega a Gerencia el correo «SOLU: el informe de … está listo para emitir». El correo no trae cifras.",
+    "Abre [[Pulso del negocio]] y revisa el mes.",
+    "Abajo, en «Emitir el informe del mes», haz clic en [[Emitir el informe de … con estas cifras]].",
+    "Para sacar el archivo, haz clic en [[Descargar este informe (archivo para Excel)]]. El mismo enlace está en el Constructor."
+   ],
+   "expect": "Si el mes ya se emitió, no llega correo. El archivo dice arriba el periodo, cuándo se calculó, quién lo descargó y los filtros. Quien no es Gerencia ni Finanzas no ve el enlace de descarga."
+  },
+  {
+   "id": "inf-funcion",
+   "m": "informes",
+   "t": "Revisión de la función Comercial",
+   "path": "INFORMES → Función Comercial (Gerencia, Dirección, Finanzas, Administración)",
+   "why": "Cómo le fue a Comercial en el mes, por qué la Eságara está bajo la meta y qué encontró SOLU en los datos.",
+   "steps": [
+    "Abre [[Función Comercial]].",
+    "Lee «Lo que SOLU encontró»: cada hallazgo dice si es un hecho o una inferencia; haz clic en [[Ver la evidencia]].",
+    "En «Por qué la Eságara está bajo la meta» revisa cuánto explican las ventas bajo el umbral y cuánto queda sin explicar.",
+    "Usa las flechas del mes para ver un mes anterior."
+   ],
+   "expect": "La causa y la parte sin explicar suman exactamente la diferencia frente a la meta. Las personas van en orden alfabético y suman la cifra de la función. Sin metas fijadas, SOLU no inventa una."
+  },
+  {
+   "id": "inf-administracion",
+   "m": "informes",
+   "t": "Administración: recursos y exposición",
+   "path": "INFORMES → Administración (Gerencia, Dirección, Finanzas, Administración)",
+   "why": "En una sola página: la cartera por edad, lo que debe entrar y salir, los clientes sobre su cupo, lo que el banco muestra sin explicar, la Eságara y las comisiones.",
+   "steps": [
+    "Abre [[Administración]] dentro de INFORMES.",
+    "Revisa la cartera por edad: sin vencer, 1 a 30, 31 a 60 y más de 60 días.",
+    "Haz clic en el enlace de cada bloque para ir a donde se trabaja."
+   ],
+   "expect": "El total por cobrar es el mismo que en Cuentas por cobrar. Es una foto de hoy. El saldo en bancos, la caja proyectada y el presupuesto están en Administración."
+  },
+  {
+   "id": "inf-constructor",
+   "m": "informes",
+   "t": "Constructor de informes y vistas guardadas",
+   "path": "INFORMES → Constructor",
+   "why": "Arma tu propio informe de ventas y Eságara por mes, por cliente o por negociador, y guarda la pregunta para volver a ella.",
+   "steps": [
+    "Abre [[Constructor]].",
+    "Elige [[Desde]], [[Hasta]] y [[Agrupar por]]; si quieres, filtra por negociador o cliente.",
+    "Haz clic en [[Ver informe]].",
+    "Escribe un nombre y haz clic en [[Guardar vista]]. Gerencia, Dirección y los roles de dinero pueden marcar [[Compartir con todos]].",
+    "Abre la vista desde «Vistas guardadas»; bórrala con [[Borrar]] si es tuya."
+   ],
+   "expect": "Las filas suman el total. Una vista guarda la pregunta, no las cifras: cada persona ve solo sus Journeys y los de los equipos que lidera. El orden es alfabético, no un ranking."
+  },
+  {
+   "id": "ger-inicio",
+   "m": "gerencia",
+   "t": "Inicio de Gerencia",
+   "path": "GERENCIA → Hoy → Inicio (Gerencia y Dirección)",
+   "why": "En menos de un minuto: qué espera una decisión tuya, cómo va el negocio, qué viene y dónde están expuestos los recursos.",
+   "steps": [
+    "Abre [[GERENCIA]]. Arriba están los grupos: Hoy, Dirección, Revisión, Gobierno y Dinero.",
+    "Empieza por «Decisiones que te esperan»: cada una dice la pregunta, por qué ahora, cuánto pesa, las opciones, los hechos y los supuestos.",
+    "Recorre el «Pulso del negocio» (seis bloques) y el «Pulso del futuro»: cada cifra lleva a donde está su detalle.",
+    "Abajo, «Recursos y riesgo expuestos»: siete miradas separadas."
+   ],
+   "expect": "Con los datos de ejemplo cargados verás una decisión pedida por Paola y otra por revisar. Lo normal no aparece: solo lo que tu autoridad puede cambiar. No hay probabilidades ni un puntaje que junte los riesgos. Las cifras son las mismas de Informes y Administración. Dirección no ve el bloque de personas."
+  },
+  {
+   "id": "ger-decisiones",
+   "m": "gerencia",
+   "t": "Pedir una decisión a Gerencia y decidir",
+   "path": "GERENCIA → Hoy → Decisiones (todos piden; decide Gerencia)",
+   "why": "Cuando algo supera lo que puedes resolver, lo pides aquí con lo que Gerencia necesita para decidir sin preguntarte. Lo decidido queda escrito con su porqué.",
+   "steps": [
+    "Abre [[Decisiones]] y baja a «Pedir una decisión a Gerencia».",
+    "Escribe la pregunta, el contexto, cuánto pesa, al menos dos opciones (una por línea), los hechos y, aparte, los supuestos. Haz clic en [[Pedir la decisión]].",
+    "Gerencia: ábrela, escribe qué se decide, por qué, qué se espera que pase, cuándo se revisa y quién queda a cargo, y haz clic en [[Registrar la decisión]].",
+    "Si ya no hace falta, quien la pidió la retira con el motivo.",
+    "También desde un Journey: arriba, [[Pedir a Gerencia]] abre la solicitud con el Journey ya enlazado."
+   ],
+   "expect": "Con una sola opción no se guarda: no hacer nada cuenta como opción. Una decisión tomada no se edita ni se borra. Cada persona ve las que pidió o las que le quedaron a cargo; Gerencia y Dirección las ven todas. La campana le avisa a Gerencia."
+  },
+  {
+   "id": "ger-revisar-decision",
+   "m": "gerencia",
+   "t": "Revisar una decisión contra lo que pasó",
+   "path": "GERENCIA → Hoy → Decisiones → una decisión",
+   "why": "Una decisión se aprende cuando se compara lo que se esperaba con lo que pasó de verdad.",
+   "steps": [
+    "Cuando llega la fecha de seguimiento, la decisión aparece en el Inicio y en la campana.",
+    "Ábrela y, en «Lo que pasó de verdad», escribe qué pasó y elige cómo resultó. Haz clic en [[Guardar la revisión]].",
+    "Si la decisión cambió, abre «La decisión cambió: escribir una versión nueva», escribe por qué y [[Guardar como versión nueva]]."
+   ],
+   "expect": "Si todavía es pronto, SOLU pide la nueva fecha de revisión. La versión anterior queda a la vista, marcada como reemplazada, con lo que decía."
+  },
+  {
+   "id": "ger-cierre",
+   "m": "gerencia",
+   "t": "Cierre ejecutivo",
+   "path": "GERENCIA → Hoy → Cierre ejecutivo",
+   "why": "El día, la semana o el mes, empezando por el futuro: qué hay que decidir y qué viene; después resultado, mayor valor, riesgos, caja y cumplimiento, y capacidad.",
+   "steps": [
+    "Abre [[Cierre ejecutivo]] y elige Día, Semana, Mes o Trimestre.",
+    "Usa «anterior» y «siguiente» para moverte entre periodos.",
+    "En Trimestre, lee además «Revisión del trimestre: dirección y recursos»: cada prioridad y si se revisó, y las decisiones de asignación de recursos."
+   ],
+   "expect": "Los bloques de futuro, resultado, valor y caja cuentan lo que ocurrió dentro del periodo. Decisiones, riesgos y capacidad muestran cómo están las cosas hoy. Son totales de la empresa, sin lista de personas."
+  },
+  {
+   "id": "ger-puente",
+   "m": "gerencia",
+   "t": "Puente al futuro",
+   "path": "GERENCIA → Dirección → Puente al futuro",
+   "why": "De lo que alguien vio venir hasta el dinero en el banco, en ocho etapas. Y lo de más valor que merece tu atención.",
+   "steps": [
+    "Abre [[Puente al futuro]] y lee las ocho etapas de izquierda a derecha.",
+    "En «Eságara futura visible», mira cada bolsa con la base con que se calcula.",
+    "En «Foco de alto valor», cada fila dice por qué está en la lista.",
+    "Abajo, «Riesgo de concentración»: qué parte depende de un solo cliente o proveedor."
+   ],
+   "expect": "No hay un total: las etapas no se suman porque no tienen la misma certeza. Las oportunidades y las necesidades se cuentan, no se valoran. Lo por cobrar es igual al de Cuentas por cobrar."
+  },
+  {
+   "id": "ger-prioridades",
+   "m": "gerencia",
+   "t": "Prioridades estratégicas",
+   "path": "GERENCIA → Dirección → Prioridades estratégicas (define Gerencia)",
+   "why": "La dirección elegida: por qué, qué resultado se busca, qué señales lo anuncian, quién responde y qué registros reales la llevan.",
+   "steps": [
+    "Gerencia: en «Nueva prioridad», escribe el título, por qué, el resultado, el horizonte, el responsable y al menos una señal temprana. Haz clic en [[Crear la prioridad]].",
+    "Vincúlala a un cliente, un Journey, una exploración, una decisión o un escenario con [[Vincular]].",
+    "El responsable escribe cómo va de verdad en «Revisar» y [[Guardar la revisión]].",
+    "Al terminar: «Cerrarla: lograda o abandonada», con el porqué."
+   ],
+   "expect": "Sin ningún registro vinculado, SOLU dice que es solo una intención. Las señales atadas a una métrica muestran su valor de hoy o del mes. No es una lista de tareas."
+  },
+  {
+   "id": "ger-cuentas",
+   "m": "gerencia",
+   "t": "Cuentas estratégicas",
+   "path": "GERENCIA → Dirección → Cuentas estratégicas (elige Gerencia)",
+   "why": "Los clientes que Gerencia decide seguir de cerca: por qué importan, quién los cubre, qué hay en curso, cómo pagan, sus riesgos, dónde pueden crecer y el próximo movimiento directivo.",
+   "steps": [
+    "Gerencia: en «Elegir una cuenta estratégica», elige el cliente, escribe por qué y haz clic en [[Elegir como estratégica]].",
+    "Abre «Actualizar» y escribe el próximo movimiento directivo con su fecha.",
+    "Haz clic en el nombre para ir a la ficha completa del cliente."
+   ],
+   "expect": "Aquí solo se guarda el porqué y el próximo movimiento; todo lo demás se lee de la ficha del cliente. Sin próximo movimiento, o con la fecha pasada, la cuenta «pide atención»."
+  },
+  {
+   "id": "ger-escenarios",
+   "m": "gerencia",
+   "t": "Escenarios",
+   "path": "GERENCIA → Dirección → Escenarios",
+   "why": "Comparar opciones antes de decidir: aceptar un negocio de Eságara baja, subir un cupo, financiar una compra, comprar inventario, asignar personas o acelerar una importación.",
+   "steps": [
+    "En «Nuevo escenario», escribe la pregunta y los hechos que valen para todas las opciones.",
+    "Para cada opción escribe sus supuestos y un rango (mínimo y máximo) de lo que puede dejar.",
+    "Haz clic en [[Guardar el escenario]] y luego en [[Llevarlo a una decisión]]."
+   ],
+   "expect": "Una cifra única no se acepta: un escenario no es un pronóstico. Si los rangos se cruzan, SOLU lo dice y no nombra una ganadora. Con la decisión tomada, el escenario queda como estaba."
+  },
+  {
+   "id": "ger-revision",
+   "m": "gerencia",
+   "t": "Revisión por función",
+   "path": "GERENCIA → Revisión → Revisión por función",
+   "why": "El recorrido del mes: mercado, comercial, operaciones, administración y equipo. En cada una, las mismas tres preguntas.",
+   "steps": [
+    "Abre [[Revisión por función]] y elige la función.",
+    "Lee «Qué cambió» frente al mes anterior.",
+    "Lee «Por qué»: cada causa dice si es un hecho o una inferencia.",
+    "Lee «Qué requiere decisión» y abre la que corresponda."
+   ],
+   "expect": "Las cifras son las del Pulso del negocio. Cuando SOLU no encuentra una causa en los registros, lo dice. La revisión de Equipo la ve solo Gerencia."
+  },
+  {
+   "id": "ger-sistema",
+   "m": "gerencia",
+   "t": "Desempeño del sistema",
+   "path": "GERENCIA → Revisión → Desempeño del sistema",
+   "why": "No es el resultado del mes: es si la empresa está mejorando en generar, convertir, ganar, cumplir y cobrar.",
+   "steps": [
+    "Abre [[Desempeño del sistema]].",
+    "Lee cada fila: los últimos 90 días frente a los 270 anteriores, con el número de casos."
+   ],
+   "expect": "Con menos de 5 casos dice «pocos datos». Compara a la empresa consigo misma: no aparece ninguna persona."
+  },
+  {
+   "id": "ger-personas",
+   "m": "gerencia",
+   "t": "Personas y capacidad",
+   "path": "GERENCIA → Revisión → Personas y capacidad (solo Gerencia)",
+   "why": "Dónde la empresa depende de una sola persona, y dónde alguien falta sin que otro cubra.",
+   "steps": [
+    "Abre [[Personas y capacidad]].",
+    "Revisa las ausencias de los próximos 30 días y quién cubre.",
+    "Revisa las relaciones clave sin respaldo y los roles con un solo titular.",
+    "Usa los enlaces para asignar cobertura o definir un respaldo."
+   ],
+   "expect": "No muestra el motivo de una ausencia, la remuneración ni notas personales. La lista de carga va en orden alfabético y cuenta trabajo abierto, no actividad."
+  },
+  {
+   "id": "ger-identidad",
+   "m": "gerencia",
+   "t": "Identidad de la compañía",
+   "path": "GERENCIA → Gobierno → Identidad (todos la leen; publica Gerencia)",
+   "why": "Para qué existimos, qué ofrecemos y cómo nos comportamos. Es el punto de partida de cada función y de cada rol.",
+   "steps": [
+    "Abre [[Identidad]] y lee el propósito, la propuesta de valor, los atributos y los principios.",
+    "Gerencia: en «Publicar una versión nueva», cambia el texto, escribe desde cuándo rige y por qué, y haz clic en [[Publicar como versión nueva]].",
+    "En «Historia», lee qué cambió entre versiones."
+   ],
+   "expect": "Empieza con la identidad oficial como versión 1. Publicar no borra nada. Los principios aún no dicen qué conducta se espera: se escribe al lado de cada uno, después de dos puntos."
+  },
+  {
+   "id": "ger-funciones",
+   "m": "gerencia",
+   "t": "Funciones y roles",
+   "path": "GERENCIA → Gobierno → Funciones y roles (todos las leen; publica Gerencia)",
+   "why": "Para qué existe cada función, qué entrega, qué decide por sí misma, qué le entrega a las otras y quién responde. Y dónde la estructura tiene un hueco.",
+   "steps": [
+    "Abre [[Funciones y roles]] y lee las cinco funciones.",
+    "Gerencia: en una función, abre «Publicar una versión nueva de esta carta», elige quién responde y completa qué entrega, por qué responde, qué decide, con qué cuenta y sus interfaces.",
+    "Arriba, «Dónde la estructura tiene un hueco» baja a medida que completas."
+   ],
+   "expect": "El propósito de cada función es el texto oficial y no se edita. Una interfaz que solo nombra un lado aparece como ambigua. Abajo, la tabla de acuerdos de rol dice cuáles están claros; se escriben en Equipo → Acuerdos de rol."
+  },
+  {
+   "id": "ger-politicas",
+   "m": "gerencia",
+   "t": "Políticas y autoridad",
+   "path": "GERENCIA → Gobierno → Políticas y autoridad",
+   "why": "Qué reglas rigen, qué excepciones esperan, qué aprobó el nivel más alto y qué excepciones se repiten tanto que la regla merece revisarse.",
+   "steps": [
+    "Abre [[Políticas y autoridad]].",
+    "Lee «Excepciones que se repiten» y abre los casos de un patrón.",
+    "Gerencia: abajo, en «Política de Gerencia», cambia un valor, escribe por qué y haz clic en [[Guardar como versión nueva]]."
+   ],
+   "expect": "Desde aquí no se cambian números de operación: cada política se cambia en su pantalla. Gerencia siempre queda entre quienes publican la identidad y las funciones."
+  },
+  {
+   "id": "ger-junta",
+   "m": "gerencia",
+   "t": "Vista de Junta (rol de solo lectura)",
+   "path": "GERENCIA → Hoy → Vista de Junta · EQUIPO → Personas y datos",
+   "why": "Para socios o miembros de junta: ven la dirección, cómo va el negocio, qué viene, los riesgos y lo que decidió la gerencia, sin poder cambiar nada.",
+   "steps": [
+    "Gerencia: en EQUIPO → Personas y datos, crea la persona y elige el rol «Junta o asamblea (solo lectura)».",
+    "Gerencia puede ver lo mismo que verá esa persona en [[Vista de Junta]].",
+    "La persona inicia sesión y llega directo a su vista. También puede leer Identidad y Funciones, y cambiar su perfil."
+   ],
+   "expect": "No ve personas, remuneración, comisiones ni la ficha de ningún cliente. Si intenta abrir otra pantalla, SOLU la devuelve a su vista. No puede guardar nada ni descargar archivos."
+  },
+  {
+   "id": "ger-empresas",
+   "m": "gerencia",
+   "t": "Por empresa vendedora",
+   "path": "GERENCIA → Inicio · GERENCIA → Dirección → Puente al futuro",
+   "why": "Cuando vende más de una empresa, las mismas cifras separadas por empresa.",
+   "steps": [
+    "En el Inicio de Gerencia, baja a «Por empresa vendedora».",
+    "Haz clic en una empresa: abre el Puente al futuro solo con sus Journeys, facturas y compras.",
+    "Vuelve a «Todas las empresas» con la pestaña de arriba."
+   ],
+   "expect": "Solo aparece cuando hay más de una empresa con datos o activada; hoy vende solo la de Estados Unidos, así que es normal no verlo. Las empresas suman el total. Las oportunidades futuras no pertenecen a una empresa."
+  },
+  {
+   "id": "ger-correo",
+   "m": "gerencia",
+   "t": "Correo: el cierre ejecutivo está listo",
+   "path": "GERENCIA → Gobierno → Políticas y autoridad → Política de Gerencia",
+   "why": "SOLU le avisa a Gerencia por correo cuando el cierre está listo, para no tener que acordarse de abrirlo.",
+   "steps": [
+    "Gerencia: en «Política de Gerencia», elige el ritmo del correo: los lunes, cada día hábil si algo espera, o nunca.",
+    "Escribe por qué y haz clic en [[Guardar como versión nueva]].",
+    "El lunes en la mañana llega el correo «SOLU: el cierre ejecutivo de la semana pasada está listo», con el enlace."
+   ],
+   "expect": "El correo trae conteos y el enlace, nunca valores ni nombres. Llega solo a las personas con rol Gerencia, después de las 7 de la mañana y nunca en fin de semana. Empieza en «los lunes»."
+  },
+  {
+   "id": "insights",
+   "m": "gerencia",
+   "t": "Insights",
+   "path": "GERENCIA → Revisión → Insights (Gerencia y Dirección)",
+   "why": "Cada gráfica responde una pregunta de gerencia: ¿los clientes obtienen resultados?, ¿cumplimos las promesas?, ¿qué viene y con qué certeza?, ¿dónde se pierde Eságara?, ¿qué Recoveries están abiertas?",
+   "steps": [
+    "Cambia de vista: Mes, Forward, Causas, Recovery.",
+    "Filtra por persona, sector o certeza, y [[Aplicar]].",
+    "Haz clic en una barra o un nombre para entrar al Journey o la causa.",
+    "Usa los botones de \"Pregúntale a SOLU\" para ver causas y dependencias."
+   ],
+   "expect": "Durante los primeros 7 días del mes, Mes muestra el mes anterior. No hay conteos de mensajes, llamadas ni tiempo conectado. Es intencional."
+  },
+  {
+   "id": "comisiones",
+   "m": "gerencia",
+   "t": "Comisiones",
+   "path": "GERENCIA → Dinero → Comisiones",
+   "why": "Comisiones sobre resultados confirmados, divididas 50/50 por ahora.",
+   "steps": [
+    "Elige la persona y el periodo, y haz clic en [[Ver]].",
+    "Revisa y haz clic en [[Enviar a Gerencia]].",
+    "Las correcciones crean una nueva versión con [[Crear versión]]."
+   ],
+   "expect": "Las versiones anteriores se conservan."
+  },
+  {
+   "id": "m12-reparto",
+   "m": "gerencia",
+   "t": "Quién recibe la comisión de una venta",
+   "path": "Journey → Ejecución → Eságara real → Quién recibe la comisión",
+   "why": "El fondo de comisión se reparte entre Comercial y Operativo, y Gerencia nombra a las personas de cada función.",
+   "steps": [
+    "Abre la página Eságara real de un Journey.",
+    "Mira quién recibe hoy y qué porcentaje del fondo.",
+    "Gerencia: [[Cambiar el reparto]], nombra hasta tres personas por función con su porcentaje y el motivo, y [[Guardar reparto]]."
+   ],
+   "expect": "Sin nadie nombrado, quien lleva el Journey recibe todo. Dentro de cada función los porcentajes deben sumar 100. Lo ya aprobado o pagado no cambia."
+  },
+  {
+   "id": "m12-liquidacion",
+   "m": "gerencia",
+   "t": "Liquidación de comisiones",
+   "path": "GERENCIA → Dinero → Liquidación",
+   "why": "Todo lo que hoy se puede pagar, persona por persona, con su cálculo; se aprueba junto y se registra el pago.",
+   "steps": [
+    "Abre [[Liquidación]] y revisa «Por aprobar hoy».",
+    "Gerencia o Dirección Comercial: elige el mes y haz clic en [[Aprobar liquidación]].",
+    "Cuando se pague: escribe la referencia y [[Registrar pago]]."
+   ],
+   "expect": "La comisión de recaudo aparece por partes, a medida que el cliente paga. Nadie aprueba sus propias líneas. Aprobar dos veces no duplica nada."
+  },
+  {
+   "id": "m12-numeros",
+   "m": "equipo",
+   "t": "Modificar números de Rentabilidad",
+   "path": "EQUIPO → Mi perfil → Configuración → Modificar números de Rentabilidad",
+   "why": "La tasa de comisión, el reparto Comercial / Operativo y el costo del dinero se cambian aquí, con aprobación de Gerencia.",
+   "steps": [
+    "Abre Mi perfil y, en Configuración, haz clic en el enlace.",
+    "Finanzas, Administración o Gerencia: escribe los valores nuevos, desde cuándo rigen y el motivo, y [[Enviar propuesta a Gerencia]].",
+    "Gerencia: [[Aprobar cambio]] o [[Rechazar]]."
+   ],
+   "expect": "Nada cambia hasta que Gerencia aprueba. Una fecha anterior a hoy se rechaza. Lo ya calculado no se recalcula."
+  },
+  {
+   "id": "m12-rentabilidad",
+   "m": "gerencia",
+   "t": "Rentabilidad (resumen de Dirección)",
+   "path": "GERENCIA → Dinero → Rentabilidad",
+   "why": "Lo que deja el mes y lo que dejan los negocios abiertos, cuánto va a comisiones, qué queda después y por qué cambió la Eságara.",
+   "steps": [
+    "Abre [[Rentabilidad]].",
+    "Lee las tres cifras de arriba y haz clic en una para ver su detalle.",
+    "Revisa «Por cliente»: la venta junto a lo que deja."
+   ],
+   "expect": "Está ordenado por venta, no es un ranking. Solo lo ven Gerencia, Dirección, Finanzas y Administración."
+  },
+  {
+   "id": "m12-cierre",
+   "m": "administracion",
+   "t": "Cierre y comisiones (inicio de Administración)",
+   "path": "ADMINISTRACIÓN → Cierre y comisiones",
+   "why": "Qué Journeys se pueden cerrar hoy, qué falta en los demás y qué comisiones están listas.",
+   "steps": [
+    "Abre [[Cierre y comisiones]].",
+    "En «Listos para cerrar», abre uno y márcalo como final.",
+    "En «Falta algo para cerrar», lee qué falta y abre el Journey para resolverlo."
+   ],
+   "expect": "Cada línea lleva a la pantalla donde se resuelve."
+  },
+  {
+   "id": "auth-rangos",
+   "m": "equipo",
+   "t": "Rangos de autorización por nivel",
+   "path": "EQUIPO → Mi perfil → Configuración → Rangos de autorización · Journey → Ejecución → Autorización por nivel",
+   "why": "Hasta qué valor puede autorizar cada persona sola, y quién debe autorizar por encima: compañero, MMS y mentor, o Gerencia.",
+   "steps": [
+    "Gerencia: abre los rangos, revisa los valores (hoy son los de 2025) y asigna el nivel de cada persona.",
+    "En un Journey, abre «Autorización por nivel»: SOLU convierte la venta a pesos con la TRM del día y dice quién debe autorizar.",
+    "Haz clic en [[+ Registrar autorización]] y escribe quién autorizó."
+   ],
+   "expect": "SOLU informa y guarda el registro; no bloquea ningún paso. Si quien lleva el Journey no tiene nivel, lo dice."
+  },
+  {
+   "id": "search",
+   "m": "global",
+   "t": "Búsqueda",
+   "path": "Barra superior · Ctrl K o /",
+   "why": "Salta a cualquier cliente, Journey, cotización o pantalla.",
+   "steps": [
+    "Presiona [[Ctrl K]] y escribe parte de un nombre, código o pantalla.",
+    "Presiona Enter o haz clic en un resultado."
+   ],
+   "expect": "Los resultados aparecen mientras escribes."
+  },
+  {
+   "id": "ask",
+   "m": "global",
+   "t": "Pregúntale a SOLU y reportar un defecto",
+   "path": "Barra superior · Pregúntale a SOLU",
+   "why": "Encuentra registros rápido, y avísanos cuando SOLU te hizo repetir trabajo o mostró ruido.",
+   "steps": [
+    "Haz clic en [[Pregúntale a SOLU]] y escribe una pregunta o un nombre.",
+    "Abajo, abre \"Reportar un defecto de SOLU\", describe lo que pasó y envía."
+   ],
+   "expect": "Los reportes aparecen en Insights, en la salud del producto."
+  },
+  {
+   "id": "bell-lang",
+   "m": "global",
+   "t": "Alertas, idioma y carga",
+   "path": "Barra superior",
+   "why": "Saber qué necesita atención en todas partes y trabajar en tu idioma.",
+   "steps": [
+    "Haz clic en la campana para ver las alertas de todos los módulos.",
+    "Cambia [[ES | EN]].",
+    "Una barra azul delgada arriba se muestra mientras carga una página o se guarda un formulario, y el botón presionado dice \"Guardando…\" para que no se pueda presionar dos veces."
+   ],
+   "expect": "El cambio de idioma aplica a todas las pantallas; en los PDF eliges EN o ES."
+  }
+ ]
+}

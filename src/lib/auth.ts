@@ -7,7 +7,7 @@ import { coveringNow } from "./coverage";
 import { BOARD_HOME, boardMayAct, boardMayOpen, isBoard } from "./permissions";
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, signSessionToken, verifySessionToken } from "./session-token";
 
-export type SessionUser = { id: string; name: string; email: string; role: Role; lang: Lang; workdayMinutes: number; outlookConnectedAt: Date | null; covering: string[] };
+export type SessionUser = { id: string; name: string; email: string; role: Role; lang: Lang; guideOn: boolean; workdayMinutes: number; outlookConnectedAt: Date | null; covering: string[] };
 
 export async function createSession(userId: string) {
   const token = await signSessionToken(userId);
@@ -31,7 +31,7 @@ const loadUser = cache(async (): Promise<SessionUser | null> => {
   if (!userId) return null;
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true, role: true, active: true, lang: true, workdayMinutes: true, outlookConnectedAt: true },
+    select: { id: true, name: true, email: true, role: true, active: true, lang: true, guideOn: true, workdayMinutes: true, outlookConnectedAt: true },
   });
   if (!user || !user.active) return null;
   // Comercial C8b: whose Journeys this person covers right now. Read on every request, so delegated authority
@@ -43,6 +43,7 @@ const loadUser = cache(async (): Promise<SessionUser | null> => {
     email: user.email,
     role: user.role,
     lang: user.lang,
+    guideOn: user.guideOn,
     workdayMinutes: user.workdayMinutes,
     outlookConnectedAt: user.outlookConnectedAt,
   };

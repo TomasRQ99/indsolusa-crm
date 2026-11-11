@@ -49,7 +49,7 @@ export default async function OpsHomePage({ searchParams }: { searchParams: Prom
       {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
 
-      <section className="card" id="atencion">
+      <section className="card" data-zone="act" id="atencion">
         <div className="jbh"><b>{t("NECESITA ATENCIÓN", "NEEDS ATTENTION")}</b><span className="grow" />
           <details className="qa" id="excepcion" open={sp.err === "exc-campos" || sp.err === "exc-journey"}><summary className="qa-btn">{t("+ Registrar excepción", "+ Record exception")}</summary>
             <div className="qa-pop wide right">
@@ -109,9 +109,9 @@ export default async function OpsHomePage({ searchParams }: { searchParams: Prom
         )}
       </section>
 
-      <section className="card" id="listo"><b>{t("LISTO PARA EL SIGUIENTE PASO", "READY FOR NEXT STEP")}</b><List rows={h.ready} empty={t("Nada esperando un paso nuestro.", "Nothing waiting on a step from us.")} /></section>
+      <section className="card" data-zone="flow" id="listo"><b>{t("LISTO PARA EL SIGUIENTE PASO", "READY FOR NEXT STEP")}</b><List rows={h.ready} empty={t("Nada esperando un paso nuestro.", "Nothing waiting on a step from us.")} /></section>
 
-      <section className="card" id="promesas">
+      <section className="card" data-zone="risk" id="promesas">
         <b>{t("PROMESA AL CLIENTE EN RIESGO", "CUSTOMER PROMISE AT RISK")}</b>
         <p className="src">{t(`La promesa al cliente se compara con lo que hoy se espera; la fecha del transportador informa, no reemplaza la promesa. ${h.protectedCount === 1 ? "1 promesa protegida no se lista" : `${h.protectedCount} promesas protegidas no se listan`}.`, `The customer promise is compared with what is expected today; the carrier's date informs, it doesn't replace the promise. ${h.protectedCount === 1 ? "1 protected promise is not listed" : `${h.protectedCount} protected promises are not listed`}.`)}</p>
         {h.atRisk.length === 0 ? <p className="small muted">{t("Ninguna promesa en riesgo.", "No promise at risk.")}</p> : (
@@ -122,9 +122,9 @@ export default async function OpsHomePage({ searchParams }: { searchParams: Prom
         )}
       </section>
 
-      <section className="card" id="espera"><b>{t("ESPERA CON CONTROL", "WAITING WITH CONTROL")}</b><p className="src">{t("Esperas sanas con fecha: no generan tareas hasta que la fecha llegue sin evidencia.", "Healthy, dated waits: they create no tasks until the date arrives without evidence.")}</p><List rows={h.waiting} empty={t("Sin esperas con fecha.", "No dated waits.")} /></section>
+      <section className="card" data-zone="calm" id="espera"><b>{t("ESPERA CON CONTROL", "WAITING WITH CONTROL")}</b><p className="src">{t("Esperas sanas con fecha: no generan tareas hasta que la fecha llegue sin evidencia.", "Healthy, dated waits: they create no tasks until the date arrives without evidence.")}</p><List rows={h.waiting} empty={t("Sin esperas con fecha.", "No dated waits.")} /></section>
 
-      <section className="card" id="recursos">
+      <section className="card" data-zone="plan" id="recursos">
         <b>{t("RECURSOS COMPROMETIDOS", "RESOURCE EXPOSURE")}</b>
         <div className="goal-grid">
           <div className="goal-card"><span className="small muted">{t("Compras abiertas a proveedores", "Open supplier purchases")}</span><b className="tv">USD {i.n2(x.openPurchases)}</b>{x.otherCurrencyPos > 0 && <span className="small">{t(`+ ${x.otherCurrencyPos} en otra moneda`, `+ ${x.otherCurrencyPos} in another currency`)}</span>}</div>
