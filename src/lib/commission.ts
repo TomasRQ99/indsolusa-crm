@@ -9,11 +9,12 @@ import { addDays, esagra, invoiceCash, today } from "./domain";
 //   Collection half = (final esagra × tier) − sale half, once the invoice is fully reconciled
 // If the invoice goes `lossDays` past due unpaid, the collection half is not earned.
 
-export type HalfState = "ESTIMATED" | "EARNED" | "APPROVED" | "PAID" | "AT_RISK" | "LOST";
+export type HalfState = "ESTIMATED" | "PARTIAL" | "EARNED" | "APPROVED" | "PAID" | "AT_RISK" | "LOST";
 
 export type Half = {
   state: HalfState;
-  amount: number; // best value (upper bound when at risk)
+  amount: number; // best value (upper bound when at risk; earned so far when partial)
+  full?: number; // PARTIAL only: the whole collection half once everything is collected
   calc: string;
   entryId?: string;
 };
@@ -111,7 +112,10 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
       const received = inv.applications.length > 0;
       const fully = cmpMoney(cash.balance, 0) <= 0;
       const overdue = now > inv.dueAt && !fully;
-      const lost = !fully && policy != null && now > addDays(inv.dueAt, policy.lossDays);
+      const prop = !!policy?.proportionalCollection;
+      // Módulo 12 §13.2–13.4: share of the invoice already settled by reconciled cash or withholdings.
+      const ratio = amount > 0 ? Math.min(1, Math.max(0, subMoney(amount, cash.balance) / amount)) : 0;
+      const lost = !prop && !fully && policy != null && now > addDays(inv.dueAt, policy.lossDays);
 
       const entry = (h: "SALE" | "COLLECTION") => inv.commissions.find((c) => c.half === h);
       const fromEntry = (h: "SALE" | "COLLECTION", fallback: Half): Half => {
@@ -128,6 +132,11 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
       let coll: Half;
       if (fully) {
         coll = { state: "EARNED", amount: collAmt, calc: `${f(finalE)} × ${rFinal} % − ${f(saleAmt)}` };
+      } else if (prop && ratio > 0.0001) {
+        // Released in proportion to what is really collected; it becomes approvable when the invoice is settled in full.
+        coll = { state: "PARTIAL", amount: mulMoney(collAmt, ratio), full: collAmt, calc: `(${f(finalE)} × ${rFinal} % − ${f(saleAmt)}) × ${Math.round(ratio * 1000) / 10} %` };
+      } else if (prop) {
+        coll = { state: "ESTIMATED", amount: collAmt, calc: `${f(finalE)} × ${rFinal} % − ${f(saleAmt)}` };
       } else if (lost) {
         coll = { state: "LOST", amount: 0, calc: `+${policy?.lossDays} d` };
       } else if (overdue) {
@@ -217,6 +226,7 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
     policy: policies.sort((a, b) => b.version - a.version)[0] ?? null,
     totals: {
       estimated: sum((h) => h.state === "ESTIMATED" || h.state === "AT_RISK"),
+      partial: sum((h) => h.state === "PARTIAL"),
       earned: sum((h) => h.state === "EARNED"),
       approved: sum((h) => h.state === "APPROVED"),
       paid: sum((h) => h.state === "PAID"),

@@ -79,7 +79,9 @@ export async function createPolicyVersion(formData: FormData) {
       tiers: requiredText,
       newClientBonus: z.coerce.number().min(0).max(20),
       salePercent: z.coerce.number().int().min(0).max(100),
-      lossDays: z.coerce.number().int().min(1).max(720),
+      lossDays: z.coerce.number().int().min(0).max(720).default(0),
+      commercialPct: z.coerce.number().int().min(0).max(100),
+      proportionalCollection: z.string().optional().transform((v) => v === "1"),
       approvedBy: requiredText,
       notes: z.string().optional(),
     }),
@@ -95,7 +97,8 @@ export async function createPolicyVersion(formData: FormData) {
     });
   const last = await db.commissionPolicy.findFirst({ orderBy: { version: "desc" }, select: { version: true } });
   await db.commissionPolicy.create({
-    data: { ...data, tiers, version: (last?.version ?? 0) + 1, notes: data.notes || null },
+    // The two functions always add up to the whole fund.
+    data: { ...data, operationalPct: 100 - data.commercialPct, tiers, version: (last?.version ?? 0) + 1, notes: data.notes || null },
   });
   refreshApp();
 }

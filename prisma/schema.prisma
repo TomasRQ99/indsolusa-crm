@@ -1056,17 +1056,22 @@ model PaymentPromise {
 // ---------- Commissions ----------
 
 model CommissionPolicy {
-  id             String   @id @default(cuid())
-  version        Int      @unique
-  effectiveFrom  DateTime
+  id                     String   @id @default(cuid())
+  version                Int      @unique
+  effectiveFrom          DateTime
   // [{ "min": 0, "rate": 0 }, { "min": 12, "rate": 8 }, { "min": 18, "rate": 10 }]  (percent)
-  tiers          Json
-  newClientBonus Decimal  @default(2) @db.Decimal(5, 2)
-  salePercent    Int      @default(50)
-  lossDays       Int      @default(90)
-  approvedBy     String
-  notes          String?
-  createdAt      DateTime @default(now())
+  tiers                  Json
+  newClientBonus         Decimal  @default(2) @db.Decimal(5, 2)
+  salePercent            Int      @default(50)
+  lossDays               Int      @default(90)
+  /// Módulo 12: share of the commission fund for each function (they add up to 100)
+  commercialPct          Int      @default(100)
+  operationalPct         Int      @default(0)
+  /// true = the collection half is released in proportion to reconciled collection and is never lost for lateness
+  proportionalCollection Boolean  @default(false)
+  approvedBy             String
+  notes                  String?
+  createdAt              DateTime @default(now())
 }
 
 // Snapshot written when management approves a half; paid when payroll confirms it.
@@ -3890,4 +3895,26 @@ model ProductExperience {
   updatedAt        DateTime @updatedAt
 
   @@index([code])
+}
+
+// ---------- Módulo 12 · changing the profitability numbers (§33) ----------
+
+/// A proposed change to the commission numbers or the cost of money. Nothing changes until Gerencia approves it;
+/// approval creates new policy VERSIONS, so history is never recalculated.
+model PolicyChangeRequest {
+  id              String    @id @default(cuid())
+  /// the numbers as they were when the change was proposed
+  current         Json
+  /// the numbers proposed
+  proposed        Json
+  effectiveFrom   DateTime
+  reason          String
+  /// PENDING | APPROVED | REJECTED
+  status          String    @default("PENDING")
+  requestedById   String
+  requestedByName String
+  requestedAt     DateTime  @default(now())
+  decidedByName   String?
+  decidedAt       DateTime?
+  decisionNote    String?
 }

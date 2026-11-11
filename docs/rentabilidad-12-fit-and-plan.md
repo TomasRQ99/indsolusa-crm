@@ -29,7 +29,7 @@ nothing and says what is missing.
 
 | # | Conflict | Decision |
 |---|---|---|
-| R-01 | Sale half today is earned when the **invoice is issued**; the spec recommends when the **PO is accepted** | **User 2026-11-11: when the PO is accepted.** Kept as a policy option (`saleTrigger`) |
+| R-01 | Sale half today is earned when the **invoice is issued**; the spec recommends when the **PO is accepted** | First answer 2026-11-11 was PO accepted; **reversed the same day and confirmed: at invoicing** (how SOLU already works). No change to the trigger |
 | R-02 | Today the collection half is all-or-nothing when the invoice is fully reconciled, and is **lost 90 days** past due; the spec releases it in proportion to reconciled collection with no expiry | **User 2026-11-11: follow the document.** Proportional release; `lossDays` retired |
 | R-03 | Today the whole commission goes to the Journey owner; the spec splits a pool between Commercial and Operational functions and between people | Build allocations; until a split is defined for a Journey, 100 % of the Commercial pool goes to its owner and the Operational pool is unassigned (shown as a blocker, not paid) |
 | R-04 | Existing tiers by Eságara % and new-client bonus are placeholders | Kept as the shape of the rate (spec §33 allows "rate/tier"); values are Gerencia's |
@@ -63,3 +63,27 @@ caps; double participation; closure materiality; adjustment window; financing an
   profitability by customer / supplier / product with context, goals vs actual (AC35–39).
 
 Existing commission screens keep working until R2–R4 replace them; historical `CommissionEntry` rows are never recalculated (AC40).
+
+## 5. Policy values given by the user on 2026-11-11 (answers to §39)
+
+| # | Decision |
+|---|---|
+| R-06 | Commission = **10 % of Eságara**, flat. **No new-customer bonus.** |
+| R-07 | Fund split **50 % Commercial / 50 % Operational**. |
+| R-08 | **Gerencia** sets splits between people. For now the Journey's negotiator does both functions and receives both parts (100 %). |
+| R-09 | Eságara under the threshold: the commission **is paid** (normal), but the sale needs approval by Gerencia, or by levels (group leader first, then Gerencia). The level structure is not defined yet (see the 2025 authorisation ranges the user shared, to be validated). |
+| R-10 | Paid **50 % at invoicing, 50 % at collection**; collection half in proportion to reconciled collection, no 90-day loss (R-02). |
+| R-11 | Closure materiality: ignore for now (stays 0, nothing blocked). |
+| R-12 | **No monthly role participation for now** (R5 not to be built until asked). A Director may receive commission and participation when it exists. |
+| R-13 | **Cost of money 6 % a year.** No FX treatment: settlement is in USD, a purchase in another currency counts at the rate on the day it is paid (already how `dealEconomics` reads it), customers should pay in USD. |
+| R-14 | The numbers must be changeable in SOLU: **Perfil → Configuración → Modificar números de Rentabilidad**; a change is proposed and Gerencia approves it. |
+
+**Built 2026-11-11:** migration `20261225120000_m12_commission_policy_decisions` (columns `commercialPct`, `operationalPct`,
+`proportionalCollection`; new `CommissionPolicy` version with R-06/07/10 effective 2026-11-11; `financeRate` 6 %);
+`commission.ts` proportional collection with state `PARTIAL` (earned so far "X de Y"; approvable when the invoice is settled
+in full); `PolicyChangeRequest` + `src/lib/rentabilidad-config.ts`, `src/lib/rentabilidad.ts`, `/profile/rentabilidad`
+(propose: Finanzas / Administración / Gerencia; approve: Gerencia; approval writes new versions, never edits).
+**Limits:** a partial collection half can't be paid out until settlement lines exist (R4); the pool split shows in the policy
+but all of it still goes to the Journey owner (allocations per person are R2); advances, returns and warranty effect on
+commission were not answered; Gerencia may approve its own proposal (single-manager company) and the record shows it;
+the new policy applies to Journeys whose PO is accepted from 2026-11-11, older ones keep the earlier tiers.

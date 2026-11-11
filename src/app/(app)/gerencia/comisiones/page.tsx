@@ -40,7 +40,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
     const l = halfLabel(i, h.state);
     return (
       <td style={{ borderLeft: "1px solid var(--line)" }}>
-        <span className="val" style={{ marginRight: 6 }}>{h.state === "AT_RISK" ? `0 – ${i.n2(h.amount)}` : h.state === "LOST" ? "0" : `${h.state === "ESTIMATED" ? "≈ " : ""}${i.n2(h.amount)}`}</span>
+        <span className="val" style={{ marginRight: 6 }}>{h.state === "AT_RISK" ? `0 – ${i.n2(h.amount)}` : h.state === "LOST" ? "0" : h.state === "PARTIAL" ? `${i.n2(h.amount)} ${t("de", "of")} ${i.n2(h.full ?? h.amount)}` : `${h.state === "ESTIMATED" ? "≈ " : ""}${i.n2(h.amount)}`}</span>
         <span className={`sig ${l.cls}`}>{l.text}</span>
         {h.calc && <span className="src mono">{h.calc}</span>}
       </td>
@@ -78,7 +78,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
           <div className="row" style={{ justifyContent: "space-between" }}>
             <span><b>{t("Política", "Policy")} v{policy.version}</b> · {t("vigente desde", "in force since")} {i.date(policy.effectiveFrom)} · {t("aprobada por", "approved by")} {policy.approvedBy}</span>
             <span className="mono small">{t("venta", "sale")}: {t("eságara al facturar", "eságara at invoicing")} × {t("tramo", "tier")} × {salePct} % · {t("recaudo", "collection")}: ({t("eságara final", "final eságara")} × {t("tramo", "tier")}) − {t("lo ganado a la venta", "sale half")}</span>
-            <span>{t("Tramos", "Tiers")}: {tiers.map((tr, k) => `${tr.min}${tiers[k + 1] ? `–${tiers[k + 1].min}` : "+"} % → ${tr.rate} %`).join(" · ")} · {t("cliente nuevo", "new customer")} +{i.n2(policy.newClientBonus)} pts · {t(`${policy.lossDays} días vencida: no se gana el recaudo`, `${policy.lossDays} days overdue: collection half not earned`)}</span>
+            <span>{t("Tramos", "Tiers")}: {tiers.map((tr, k) => `${tr.min}${tiers[k + 1] ? `–${tiers[k + 1].min}` : "+"} % → ${tr.rate} %`).join(" · ")} {Number(policy.newClientBonus) > 0 && <> · {t("cliente nuevo", "new customer")} +{i.n2(policy.newClientBonus)} pts</>} · {policy.proportionalCollection ? t("el recaudo se gana en proporción a lo cobrado y conciliado (las retenciones cuentan)", "the collection half is earned in proportion to what is collected and reconciled (withholdings count)") : t(`${policy.lossDays} días vencida: no se gana el recaudo`, `${policy.lossDays} days overdue: collection half not earned`)} · {t(`fondo: Comercial ${policy.commercialPct} % · Operativo ${policy.operationalPct} %`, `fund: Commercial ${policy.commercialPct} % · Operational ${policy.operationalPct} %`)}</span>
           </div>
         ) : (
           <span className="attn-t">{t("Aún no hay política de comisiones. Administración la crea abajo.", "No commission policy yet. Admin creates it below.")}</span>
@@ -176,7 +176,9 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
             <div className="row">
               <label>{t("Bono cliente nuevo (pts)", "New customer bonus (pts)")}<input name="newClientBonus" type="number" step="0.5" defaultValue={policy ? Number(policy.newClientBonus) : 2} /></label>
               <label>{t("% a la venta", "% at sale")}<input name="salePercent" type="number" min="0" max="100" defaultValue={policy?.salePercent ?? 50} /></label>
-              <label>{t("Días vencida para perder el recaudo", "Days overdue to lose collection half")}<input name="lossDays" type="number" defaultValue={policy?.lossDays ?? 90} /></label>
+              <label>{t("% del fondo para Comercial (el resto es Operativo)", "% of the fund for Commercial (the rest is Operational)")}<input name="commercialPct" type="number" min="0" max="100" defaultValue={policy?.commercialPct ?? 50} /></label>
+              <label className="chk"><input type="checkbox" name="proportionalCollection" value="1" defaultChecked={policy?.proportionalCollection ?? true} /> {t("El recaudo se gana en proporción a lo cobrado (sin pérdida por mora)", "Collection half earned in proportion to what is collected (no loss for lateness)")}</label>
+              <label>{t("Si no es proporcional: días vencida para perder el recaudo", "If not proportional: days overdue to lose collection half")}<input name="lossDays" type="number" min="0" defaultValue={policy?.lossDays ?? 0} /></label>
             </div>
             <label>{t("Aprobada por", "Approved by")}<input name="approvedBy" required /></label>
             <label>{t("Notas", "Notes")}<input name="notes" /></label>

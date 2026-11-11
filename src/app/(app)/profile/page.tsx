@@ -41,6 +41,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             </>
           )}
         </div>
+        <div className="card" id="configuracion">
+          <h2>{t("Configuración", "Settings")}</h2>
+          <p className="small"><a href="/profile/rentabilidad">{t("Modificar números de Rentabilidad", "Change profitability numbers")}</a></p>
+          <p className="src">{t("Comisión, reparto Comercial / Operativo y costo del dinero. Se propone un cambio y Gerencia lo aprueba.", "Commission, Commercial / Operational split and cost of money. A change is proposed and Management approves it.")}</p>
+        </div>
         <div className="card">
           <h2>{t("Mi jornada", "My working day")}</h2>
           <p className="small muted" style={{ marginBottom: 10 }}>{t("Mi Plan y Outlook usan este dato para saber cuánto cabe en cada día (desde las 08:00). No se usa para medir a nadie.", "My Plan and Outlook use this to know how much fits in each day (from 08:00). It is never used to measure anyone.")}</p>
