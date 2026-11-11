@@ -8,7 +8,7 @@ import { dayInput, today } from "@/lib/domain";
 import { GAP_KINDS } from "@/lib/admin-rules";
 import { FUNCTIONS, asPairs, asStrings } from "@/lib/gerencia-rules";
 import { GOAL_METRICS, METRIC_KEYS } from "@/lib/goal-rules";
-import { AUTHORITY, COMMITMENT_KINDS, COMPETENCY_KINDS, DECISION_KINDS, DIMS, DIM_KEYS, GAP_RESULTS, PERFORMANCE_KINDS, READINESS, RHYTHM_KINDS, anyRelation } from "@/lib/team-rules";
+import { APPROVAL_DOMAINS, AUTHORITY, COMMITMENT_KINDS, COMPETENCY_KINDS, DECISION_KINDS, DIMS, DIM_KEYS, GAP_RESULTS, PERFORMANCE_KINDS, READINESS, RHYTHM_KINDS, anyRelation } from "@/lib/team-rules";
 import { viewablePeople } from "@/lib/team-store";
 import { myRoleView } from "@/lib/team-views";
 import { Lines, NoAccess, Notes, PersonSwitch, PrivacyTag, qp, tOf } from "../ui";
@@ -19,7 +19,7 @@ import { raiseRoleSupport, reviewExpectations, saveGapReview } from "../role-act
 // today. The agreement shows its version and the date it is in force from; goals and the development plan are read
 // from where they live, never copied.
 
-export default async function MyRolePage({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string; p?: string; a?: string }> }) {
+export default async function MyRolePage({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string; p?: string; a?: string; d?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
@@ -50,6 +50,7 @@ export default async function MyRolePage({ searchParams }: { searchParams: Promi
   };
   const err = {
     permiso: t("No tienes permiso para esto.", "You don't have permission for this."),
+    "acuerdo-autoridad": t(`No se guardó la aprobación. La política te autoriza, pero tu acuerdo de rol no nombra esta autoridad${sp.d && AUTHORITY[sp.d === "PAYMENT_APPROVAL" ? "PURCHASE_APPROVAL" : sp.d] ? `: «${AUTHORITY[sp.d === "PAYMENT_APPROVAL" ? "PURCHASE_APPROVAL" : sp.d].es}»` : ""}. Gerencia pidió que las dos coincidan. Puede decidirlo Gerencia, o Gerencia puede publicar una versión de tu acuerdo de rol que la nombre.`, `The approval was not saved. The policy authorises you, but your role agreement does not name this authority${sp.d && AUTHORITY[sp.d === "PAYMENT_APPROVAL" ? "PURCHASE_APPROVAL" : sp.d] ? `: “${AUTHORITY[sp.d === "PAYMENT_APPROVAL" ? "PURCHASE_APPROVAL" : sp.d].en}”` : ""}. Management asked for both to agree. Management can decide it, or publish a version of your role agreement that names it.`),
     soporte: t("Faltan datos: qué expectativa no se puede cumplir, qué falta, quién lo resuelve y el próximo paso. No se guardó nada.", "Missing data: which expectation can't be met, what is missing, who resolves it and the next step. Nothing was saved."),
     "brecha-permiso": t("El análisis de brechas lo escribe quien acompaña a la persona (su líder) o Gerencia, y la persona siempre lo ve.", "The gap analysis is written by whoever accompanies the person (their leader) or Management, and the person always sees it."),
     brecha: t("Elige la dimensión del acuerdo. No se guardó nada.", "Choose the dimension of the agreement. Nothing was saved."),
@@ -141,7 +142,7 @@ export default async function MyRolePage({ searchParams }: { searchParams: Promi
               <div><h3>{t("Límites: qué no puede decidir ni comprometer", "Boundaries: what it may not decide or commit")}</h3><Lines items={p.boundaries} i={i} /></div>
               <div id="autoridad-solu"><h3>{t("Lo que SOLU le permite hoy a este rol", "What SOLU allows this role today")}</h3>
                 {p.authorityDomains.length === 0 && v.granted.length === 0 ? <p className="small muted">{t("El acuerdo no pide autoridad especial en SOLU.", "The agreement asks for no special authority in SOLU.")}</p> : (
-                  <ul className="plain">{[...new Set([...p.authorityDomains, ...v.granted])].map((d) => { const need = p.authorityDomains.includes(d), has = v.granted.includes(d); return <li key={d}><span className={`sig ${need && !has ? "risk" : has ? "ok" : "wait"}`}>{need && !has ? t("falta", "missing") : need ? t("sí", "yes") : t("la tiene", "has it")}</span> {AUTHORITY[d] ? tx(AUTHORITY[d]) : d}{need && !has ? <span className="src block">{t("El acuerdo la pide y las políticas vigentes no se la dan a este rol de acceso.", "The agreement asks for it and the policies in force do not grant it to this access role.")}</span> : !need && has ? <span className="src block">{t("Las políticas se la dan, aunque el acuerdo no la nombra.", "Policies grant it, though the agreement does not name it.")}</span> : null}</li>; })}</ul>
+                  <ul className="plain">{[...new Set([...p.authorityDomains, ...v.granted])].map((d) => { const need = p.authorityDomains.includes(d), has = v.granted.includes(d); return <li key={d}><span className={`sig ${need && !has ? "risk" : has ? "ok" : "wait"}`}>{need && !has ? t("falta", "missing") : need ? t("sí", "yes") : t("la tiene", "has it")}</span> {AUTHORITY[d] ? tx(AUTHORITY[d]) : d}{need && !has ? <span className="src block">{t("El acuerdo la pide y las políticas vigentes no se la dan a este rol de acceso.", "The agreement asks for it and the policies in force do not grant it to this access role.")}</span> : !need && has ? <span className="src block">{v.authorityMode === "ENFORCE" && d in APPROVAL_DOMAINS && v.person.role !== "GERENCIA" ? <b className="attn-t">{t("Las políticas se la dan, pero el acuerdo no la nombra y Gerencia pidió que coincidan: hoy no puede usarla.", "Policies grant it, but the agreement does not name it and Management asked for both to agree: it cannot be used today.")}</b> : t("Las políticas se la dan, aunque el acuerdo no la nombra.", "Policies grant it, though the agreement does not name it.")}</span> : null}</li>; })}</ul>
                 )}
                 {v.roleMismatch ? <p className="small"><span className="sig attn">{t(`El acuerdo espera el rol de acceso «${ROLE_LABEL[p.soluRole as keyof typeof ROLE_LABEL]?.es ?? p.soluRole}» y la persona tiene «${ROLE_LABEL[v.person.role].es}»`, `The agreement expects the access role “${ROLE_LABEL[p.soluRole as keyof typeof ROLE_LABEL]?.en ?? p.soluRole}” and the person has “${ROLE_LABEL[v.person.role].en}”`)}</span></p> : null}
                 <p className="src">{t("Lo que se puede aprobar en SOLU lo deciden las políticas vigentes; aquí se compara con lo que el acuerdo dice.", "What can be approved in SOLU is decided by the policies in force; here it is compared with what the agreement says.")} <Link href="/gerencia/politicas">{t("Políticas", "Policies")}</Link></p>

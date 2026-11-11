@@ -4,6 +4,8 @@ import { makeI18n } from "@/lib/i18n";
 import { FUNCTIONS } from "@/lib/gerencia-rules";
 import { DIMS, DIM_KEYS, READINESS } from "@/lib/team-rules";
 import { orgDevView } from "@/lib/team-views";
+import { AUTHORITY } from "@/lib/team-rules";
+import { narrowedByAgreement } from "@/lib/role-authority";
 import { Notes, tOf } from "../ui";
 import { saveTeamPolicy } from "../role-actions";
 
@@ -17,12 +19,12 @@ export default async function OrgDevPage({ searchParams }: { searchParams: Promi
   const { t } = i;
   const tx = tOf(i);
   const sp = await searchParams;
-  const v = await orgDevView();
+  const [v, narrowed] = await Promise.all([orgDevView(), narrowedByAgreement()]);
   const P = v.policy.value;
   const tot = (k: "people" | "withPlan" | "withProfile") => v.byFunction.reduce((s, f) => s + f[k], 0);
   const ready = v.readiness.filter((r) => r.state === "READY_NOW");
   const ok = { guardada: t("Guardada como una versión nueva. Los ciclos ya abiertos conservan sus fechas.", "Saved as a new version. Cycles already open keep their dates."), igual: t("No hubo cambios.", "No changes.") };
-  const err = { gerencia: t("Solo Gerencia cambia esta política.", "Only Management changes this policy."), valores: t("Revisa los valores: el ciclo entre 30 y 365 días, los puntos de control dentro del ciclo, mínimos no mayores que máximos y al menos una dimensión de carácter. No se guardó nada.", "Check the values: cycle between 30 and 365 days, checkpoints inside the cycle, minimums not above maximums and at least one character dimension. Nothing was saved."), motivo: t("Escribe por qué se cambia. No se guardó nada.", "Write why it is changed. Nothing was saved.") };
+  const err = { gerencia: t("Solo Gerencia cambia esta política.", "Only Management changes this policy."), valores: t("Revisa los valores (y elige una de las dos opciones de aprobaciones): el ciclo entre 30 y 365 días, los puntos de control dentro del ciclo, mínimos no mayores que máximos y al menos una dimensión de carácter. No se guardó nada.", "Check the values: cycle between 30 and 365 days, checkpoints inside the cycle, minimums not above maximums and at least one character dimension. Nothing was saved."), motivo: t("Escribe por qué se cambia. No se guardó nada.", "Write why it is changed. Nothing was saved.") };
 
   return (
     <div className="eq">
@@ -65,6 +67,19 @@ export default async function OrgDevPage({ searchParams }: { searchParams: Promi
             <div key={d} className="qa-row"><span className="small"><b>{tx(DIMS[d])}</b></span><label>{t("mínimo", "minimum")}<input name={`${d}_min`} inputMode="numeric" required defaultValue={P.limits[d].min} style={{ width: 70 }} /></label><label>{t("máximo", "maximum")}<input name={`${d}_max`} inputMode="numeric" required defaultValue={P.limits[d].max} style={{ width: 70 }} /></label></div>
           ))}</div>
           <label>{t("Dimensiones de carácter (una por línea)", "Character dimensions (one per line)")}<textarea name="dimensions" rows={7} required defaultValue={P.dimensions.join("\n")} /></label>
+          <label id="autoridad">{t("Aprobaciones y acuerdo de rol", "Approvals and the role agreement")}
+            <select name="roleAuthority" defaultValue={P.roleAuthority}>
+              <option value="INFORM">{t("Solo informar: aprueba quien la política autoriza, y SOLU muestra dónde el acuerdo de rol dice otra cosa", "Inform only: whoever the policy authorises approves, and SOLU shows where the role agreement differs")}</option>
+              <option value="ENFORCE">{t("Exigir las dos: para aprobar, la política debe autorizarlo y el acuerdo de rol de la persona debe nombrar esa autoridad", "Require both: to approve, the policy must authorise it and the person's role agreement must name that authority")}</option>
+            </select></label>
+          <div className="small" id="afectados">
+            {narrowed.length === 0 ? <span className="sig ok">{P.roleAuthority === "ENFORCE" ? t("Nadie queda sin una aprobación que la política le da", "Nobody is left without an approval the policy gives them") : t("Si se exigen las dos hoy, nadie pierde una aprobación", "If both were required today, nobody would lose an approval")}</span> : (
+              <><span className={`sig ${P.roleAuthority === "ENFORCE" ? "risk" : "attn"}`}>{P.roleAuthority === "ENFORCE" ? t(`${narrowed.length} persona(s) no pueden usar una aprobación que la política les da`, `${narrowed.length} person(s) cannot use an approval the policy gives them`) : t(`Si se exigen las dos hoy, ${narrowed.length} persona(s) dejarían de poder aprobar algo`, `If both were required today, ${narrowed.length} person(s) would stop being able to approve something`)}</span>
+                <ul className="plain">{narrowed.map((n) => <li key={n.userId}><b>{n.name}</b> · <Link href={`/equipo/roles/${n.roleKey}`}>{n.title}</Link>: {n.domains.map((d) => AUTHORITY[d] ? tx(AUTHORITY[d]) : d).join("; ")}</li>)}</ul>
+                <span className="src">{t("Para que puedan, publica una versión del acuerdo de rol que nombre esa autoridad. Para que no puedan, cambia la política que se la da.", "To let them, publish a version of the role agreement that names that authority. To stop them, change the policy that grants it.")}</span></>
+            )}
+            <span className="src block">{t("El acuerdo de rol nunca concede una aprobación: solo puede limitar lo que la política da. Gerencia nunca queda limitada, ni quien aún no tiene acuerdo de rol. La autoridad prestada sigue siendo de quien la prestó.", "The role agreement never grants an approval: it can only narrow what the policy gives. Management is never narrowed, nor is anyone with no role agreement yet. Lent authority remains the lender's.")}</span>
+          </div>
           <label>{t("Por qué se cambia", "Why it is changed")}<input name="reason" required maxLength={300} /></label>
           <div><button type="submit" className="secondary">{t("Guardar como versión nueva", "Save as a new version")}</button></div>
         </form>

@@ -41,7 +41,8 @@ export async function myRoleView(viewer: U, personId: string, actingId?: string 
   const charter = functionKey ? chartersInForce(charters, T).find((c) => c.functionKey === functionKey) ?? null : null;
   const seeGoals = rel.self || canManageAll(viewer);
   const levels = readableLevels(rel);
-  const [goals, plan, gaps, readiness, support, tasksToday, granted] = await Promise.all([
+  const [authorityPolicy, goals, plan, gaps, readiness, support, tasksToday, granted] = await Promise.all([
+    getTeamPolicy(),
     seeGoals ? goalBoard(personId, periodOf(T)) : null,
     levels.length ? db.developmentPlan.findFirst({ where: { userId: personId, status: "ACTIVE" }, include: { objectives: { where: { status: "OPEN", ...privacyWhere(rel) }, orderBy: { reviewOn: "asc" } } } }) : null,
     profile && mayGuide(rel) ? db.roleGapReview.findMany({ where: { userId: personId, roleKey: profile.roleKey }, orderBy: { createdAt: "desc" } }) : [],
@@ -56,7 +57,7 @@ export async function myRoleView(viewer: U, personId: string, actingId?: string 
     identity, charter, functionKey, profileRow, profile,
     agreedVersion: agreed?.version ?? null, reviewedVersion: assignment?.reviewedVersion ?? null, reviewedAt: assignment?.reviewedAt ?? null, reviewedByName: assignment?.reviewedByName ?? null,
     missingFields: profile ? roleMissing(profile) : [], clarity: roleClarity(profile),
-    granted: mine, authorityGap: profile ? authorityMissing(profile.authorityDomains, mine) : [], roleMismatch: !!profile?.soluRole && profile.soluRole !== person.role,
+    authorityMode: authorityPolicy.value.roleAuthority, granted: mine, authorityGap: profile ? authorityMissing(profile.authorityDomains, mine) : [], roleMismatch: !!profile?.soluRole && profile.soluRole !== person.role,
     goals, plan, gapRows: profile ? gapTable(profile, gaps) : [], gapHistory: gaps, readiness, support, tasksToday,
     roleTitles: Object.fromEntries(rolesInForce(allRoles, T).map((r) => [r.roleKey, r.title])) as Record<string, string>,
   };

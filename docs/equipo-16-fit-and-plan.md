@@ -101,7 +101,7 @@ Also fixed: a dropdown inside a labelled field of a form row was drawn too tall 
 | §26.1 Every active person has an agreement or is a Role Clarity Gap | Claridad de roles, Mi rol, Gerencia → Funciones y roles | Built |
 | §26.2 Role profile shows version and date | Mi rol, role page | Built |
 | §26.3 Changing the identity does not rewrite earlier profiles | Each version and assignment keeps the identity version it was made under | Built |
-| §26.4 Decision rights and boundaries readable and used by the engines | Readable; compared with the engines; used by the suitability check | Partly: approvals still decide from their own policies (E-08) |
+| §26.4 Decision rights and boundaries readable and used by the engines | Readable; compared with the engines; used by the suitability check; and, when Gerencia requires it, every approval also needs the role agreement to name that authority (section 7) | Built; the rule starts in "inform only" |
 | §26.5 Principles as observable examples, no automatic rating | `behaviors` as conduct; ratings and test references refused | Built |
 | §26.6 What the company expects and what the person can expect | Mi rol blocks 3–6, company commitments, support gaps | Built |
 | §26.7 Leader can acknowledge an unsupported expectation | Support gap with its expectation, from Mi rol | Built |
@@ -113,8 +113,7 @@ Also fixed: a dropdown inside a labelled field of a form row was drawn too tall 
 
 - **Role agreements are empty until Gerencia writes them.** Only a sample one exists (sample data). Until then every
   person shows as a role clarity gap, said openly.
-- **Authority (AC §26.4):** the role agreement does not drive approvals. Making the engines read it would mean
-  rewriting the purchase, payment, credit and Eságara rules; it is a decision for Gerencia.
+- **Authority (AC §26.4):** closed in section 7. What remains: the agreement narrows, it never grants; boundaries are free text and are not enforced.
 - **Coverage by function, customer or process (§8):** a coverage still gives the cover permission over all of the
   owner's Journeys; what it is for is written and shown, not enforced.
 - **Handover classes** are assigned by rule from dates and kinds; a person cannot move an item to another class.
@@ -130,3 +129,35 @@ Also fixed: a dropdown inside a labelled field of a form row was drawn too tall 
 - **Succession** has no "what if this person leaves" simulation; readiness has no history view beyond the list.
 - **A form that is refused comes back empty** (same as other modules); the role agreement form is long.
 - **Informes:** "pair view" and development figures in reports are not built.
+
+## 7. Second round — 2026-11-11
+
+The user confirmed decisions E-01 to E-14 as built, and asked to close one gap; the open acceptance criterion
+(§26.4) was chosen. The production deploy of commit 68c91e9 was verified from outside: the site answers and serves
+the Module 16 styles.
+
+Decision E-15 (mine): **the role agreement can narrow an approval, never grant one.** A switch in the development
+policy (Equipo → Desarrollo organizacional), changed by Gerencia with a reason:
+
+- *Solo informar* (starting value): an approval follows the policy alone; Mi rol and Claridad de roles show where
+  the agreement differs. Nothing changes for anyone.
+- *Exigir las dos*: to approve a purchase, a supplier payment, a payable, an internal purchase, a credit request or
+  limit, or a low-Eságara exception, the policy must authorise the access role AND the person's role agreement in
+  force must name that authority.
+
+Never narrowed: Gerencia (someone must always be able to decide), a person with no role agreement yet, and an
+authority someone lent (it is the lender's). Before switching, the screen lists who would lose which approval.
+
+Built: `src/lib/role-authority.ts`; `agreementVerdict` and `APPROVAL_DOMAINS` in `team-rules.ts`; `actWith`
+(`admin-store.ts`) asks it, so every approval that already went through it is covered, and the screens that ask
+`actWith` whether to show the approve buttons hide them for a narrowed person; the credit actions and the Eságara
+decision call it directly and explain on Mi rol.
+
+Checked: type check clean; build passes; 25 rule and database checks (both modes, each kind of approval, Gerencia,
+no agreement, lent authority, a new agreement version opening the authority without reassigning, the policy left as
+it was); the changed screens open on the local production build. Not checked in a browser: switching the rule on
+and attempting an approval by clicking.
+
+Limits: with the rule on, a narrowed approver still sees the matter in the bell and in Gerencia's line of
+decisions, and still sees the buttons on the Eságara and credit screens (the save is refused with the explanation).
+Changing the Eságara policy numbers and the cash policy are not approvals and are not narrowed.

@@ -23,7 +23,13 @@ export async function delegationsTo(userId: string, now = new Date()): Promise<D
 /** May this person act in `domain` for this amount, with their own role or with one lent to them? `test` is the
  *  module's own rule applied to a role. Returns which delegation was used, so the decision can record it. */
 export async function actWith(u: { id: string; role: string }, domain: string, amountUsd: number | null, requesterId: string | null, test: (role: string) => boolean) {
-  if (test(u.role)) return { ok: true, delegationId: null as string | null, fromName: null as string | null };
+  if (test(u.role)) {
+    // Módulo 16 §26 AC4: the policy says yes; when Gerencia switched the rule on, the role agreement must name it too.
+    // This answers and never redirects, because screens ask the same question to decide whether to show the buttons.
+    // An authority someone lent (below) is the lender's, so it is not narrowed by the receiver's agreement.
+    const { roleAuthority } = await import("./role-authority");
+    if (!(await roleAuthority(u, domain)).blocked) return { ok: true, delegationId: null as string | null, fromName: null as string | null };
+  }
   const now = new Date();
   const hit = actingAs(u, domain, amountUsd, await delegationsTo(u.id, now), now, requesterId).find((c) => c.delegationId && test(c.role));
   return hit ? { ok: true, delegationId: hit.delegationId, fromName: hit.fromName } : { ok: false, delegationId: null, fromName: null };

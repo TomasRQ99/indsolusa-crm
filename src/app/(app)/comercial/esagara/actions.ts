@@ -53,6 +53,7 @@ export async function decideException(id: string, fd: FormData) {
   const back = backOf(fd, "/comercial/esagara");
   const e = await db.esagaraException.findUniqueOrThrow({ where: { id } });
   if (!canApprove(user, e)) go(back, "err=exc-autoridad");
+  await (await import("@/lib/role-authority")).assertRoleAuthority(user, "ESAGARA");
   if (e.status !== "REQUESTED") go(back, "err=exc-decidida");
   const action = txt(fd, "action", 10);
   const comments = txt(fd, "comments", 800);

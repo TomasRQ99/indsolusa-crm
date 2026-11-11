@@ -31,6 +31,7 @@ async function requireManager() {
 async function requireCreditAuthority() {
   const user = await requireUser();
   if (!canDecideCredit(user)) throw new Error("Solo Finanzas o Gerencia deciden sobre crédito / Only Finance or Management decide on credit.");
+  await (await import("@/lib/role-authority")).assertRoleAuthority(user, "CREDIT");
   return user;
 }
 

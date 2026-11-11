@@ -24,12 +24,16 @@ export type TeamPolicy = {
   limits: Record<Dim, { min: number; max: number }>;
   /** character dimensions evidence can be recorded for (§3) */
   dimensions: string[];
+  /** §26 AC4 · INFORM: an approval follows the policy alone and SOLU shows where the role agreement differs.
+   *  ENFORCE: an approval also needs the person's role agreement to name that authority. */
+  roleAuthority: "INFORM" | "ENFORCE";
 };
 /** The values the official document gives (§3, §5). Gerencia may change them; nothing here is invented. */
 export const DEFAULT_TEAM_POLICY: TeamPolicy = {
   cycleDays: 90, checkpoints: [0, 30, 60, 90],
   limits: { SER: { min: 2, max: 3 }, HACER: { min: 2, max: 3 }, TENER: { min: 1, max: 2 } },
   dimensions: ["Verdad", "Responsabilidad", "Humildad", "Respeto", "Cristalinidad / Transparencia", "Servicio", "Trabajo en Equipo"],
+  roleAuthority: "INFORM",
 };
 const int = (x: unknown) => { const s = String(x ?? "").trim(); const n = Number(s); return s !== "" && Number.isInteger(n) ? n : NaN; };
 export function cleanTeamPolicy(v: unknown): TeamPolicy | null {
@@ -49,7 +53,9 @@ export function cleanTeamPolicy(v: unknown): TeamPolicy | null {
   const dims = Array.isArray(o.dimensions) ? o.dimensions.map(String).map((s) => s.trim()).filter(Boolean) : parseLines(String(o.dimensions ?? ""), 20, 80);
   const unique = dims.filter((d, k) => dims.findIndex((x) => norm(x) === norm(d)) === k).map((d) => d.slice(0, 80));
   if (unique.length < 1 || unique.length > 20) return null;
-  return { cycleDays: cycle, checkpoints: cps, limits, dimensions: unique };
+  const ra = String(o.roleAuthority ?? "INFORM");
+  if (ra !== "INFORM" && ra !== "ENFORCE") return null;
+  return { cycleDays: cycle, checkpoints: cps, limits, dimensions: unique, roleAuthority: ra };
 }
 export const readTeamPolicy = (v: unknown): TeamPolicy => cleanTeamPolicy(v) ?? DEFAULT_TEAM_POLICY;
 
@@ -387,6 +393,23 @@ export function grantedAuthority(role: string, s: AuthoritySources): string[] {
   if (role === "GERENCIA" || role === "ADMINISTRACION") out.push("PEOPLE_ADMIN");
   if (s.publishRoles.includes(role)) out.push("PUBLISH");
   return out;
+}
+/** The approvals a role agreement can narrow, and the names the engines use for them. */
+export const APPROVAL_DOMAINS: Record<string, string[]> = {
+  PURCHASE_APPROVAL: ["PURCHASE_APPROVAL", "PURCHASE_APPROVAL_TOP"], PAYMENT_APPROVAL: ["PURCHASE_APPROVAL", "PURCHASE_APPROVAL_TOP"], PURCHASE_APPROVAL_TOP: ["PURCHASE_APPROVAL_TOP"],
+  ESAGARA: ["ESAGARA"], CREDIT: ["CREDIT"],
+};
+/** §26 AC4 · what the role agreement says about one approval the policy already grants. The agreement can only
+ *  narrow: with the rule on, an authority it does not name cannot be used. Nobody is narrowed without an agreement,
+ *  and Gerencia never is, so there is always someone who can decide. */
+export function agreementVerdict(x: { mode: string; role: string; agreementDomains: string[] | null; domain: string }): { named: boolean; blocked: boolean; why: "NO_AGREEMENT" | "GERENCIA" | "NAMED" | "NOT_NAMED" | "NOT_AN_APPROVAL" } {
+  const accepted = APPROVAL_DOMAINS[x.domain];
+  if (!accepted) return { named: true, blocked: false, why: "NOT_AN_APPROVAL" };
+  if (x.agreementDomains === null) return { named: true, blocked: false, why: "NO_AGREEMENT" };
+  const named = x.agreementDomains.some((d) => accepted.includes(d));
+  if (named) return { named: true, blocked: false, why: "NAMED" };
+  if (x.role === "GERENCIA") return { named: false, blocked: false, why: "GERENCIA" };
+  return { named: false, blocked: x.mode === "ENFORCE", why: "NOT_NAMED" };
 }
 /** Lent authority (Módulo 14) expressed in the same words. */
 export const LENT_TO_AUTHORITY: Record<string, string> = { PURCHASE_APPROVAL: "PURCHASE_APPROVAL", PAYMENT_APPROVAL: "PURCHASE_APPROVAL", CREDIT: "CREDIT" };
