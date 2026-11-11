@@ -1092,8 +1092,11 @@ model CommissionEntry {
   paidAt       DateTime?
   payrollRef   String?
 
-  // Módulo 12: one sale can pay several people, so an entry is unique per invoice, half AND person.
-  @@unique([invoiceId, half, userId])
+  /// Módulo 12 R3: the collection half is paid in parts as the customer pays; each part is its own entry (0, 1, 2…).
+  seq Int @default(0)
+
+  // Módulo 12: one sale can pay several people, and the collection half in several parts.
+  @@unique([invoiceId, half, userId, seq])
   @@index([userId])
 }
 

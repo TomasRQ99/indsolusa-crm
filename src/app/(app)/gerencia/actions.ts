@@ -26,6 +26,7 @@ export async function approveEarned(userId: string) {
             invoiceId: r.invoiceId!,
             half,
             userId: r.ownerId,
+            seq: half === "COLLECTION" ? h.seq ?? 0 : 0,
             amount: h.amount,
             calculation: `v${r.policyVersion ?? "?"} · ${h.calc}`,
             approvedById: user.id,

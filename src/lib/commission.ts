@@ -2,7 +2,7 @@ import type { CommissionPolicy } from "@prisma/client";
 import { cmpMoney, money2, mulMoney, percentOf, subMoney, sumMoney } from "./money";
 import { db } from "./db";
 import { addDays, esagra, invoiceCash, today } from "./domain";
-import { shareText, sharesOf } from "./commission-split";
+import { collectionRelease, shareText, sharesOf } from "./commission-split";
 
 // Business rule (D-05): the commission is earned 50 % at the sale (invoice issued)
 // and 50 % at collection (payment reconciled).
@@ -15,7 +15,10 @@ export type HalfState = "ESTIMATED" | "PARTIAL" | "EARNED" | "APPROVED" | "PAID"
 export type Half = {
   state: HalfState;
   amount: number; // best value (upper bound when at risk; earned so far when partial)
-  full?: number; // PARTIAL only: the whole collection half once everything is collected
+  full?: number; // the whole collection half once everything is collected (proportional policy)
+  approved?: number; // already approved in earlier parts
+  over?: number; // approved above what the final figures support: reported, never taken back automatically
+  seq?: number; // which part this approval would be
   calc: string;
   entryId?: string;
 };
@@ -153,7 +156,14 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
       } else {
         coll = { state: "ESTIMATED", amount: collAmt, calc: `${f(finalE)} × ${rFinal} % − ${f(saleAmt)}` };
       }
-      coll = fromEntry("COLLECTION", coll);
+      if (prop) {
+        // Paid in parts: what is newly collected becomes payable; earlier parts stay exactly as approved.
+        const parts = inv.commissions.filter((c) => c.half === "COLLECTION" && c.userId === sh.userId);
+        // Never negative: if the final Eságara fell below what the sale half already paid, nothing is taken back here.
+        const fullS = Math.max(0, whole(sh) ? collAmt : mulMoney(collAmt, sh.frac));
+        const rel = collectionRelease(fullS, ratio, sumMoney(parts.map((c) => c.amount)), parts.some((c) => !c.paidAt));
+        coll = { state: rel.state, amount: rel.amount, full: fullS, approved: rel.approved, over: rel.over, seq: parts.length, calc: `(${f(finalE)} × ${rFinal} % − ${f(saleAmt)})${whole(sh) ? "" : ` × ${shareText(sh)}`} × ${Math.round(ratio * 1000) / 10} % cobrado${rel.approved > 0 ? ` − ${f(rel.approved)} ya aprobado` : ""}` };
+      } else coll = fromEntry("COLLECTION", coll);
 
       rows.push({
         key: whole(sh) ? inv.id : `${inv.id}:${sh.userId}`,

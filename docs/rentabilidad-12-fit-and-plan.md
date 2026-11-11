@@ -99,3 +99,15 @@ half (by design, AC33) and SOLU does not yet show the resulting difference as an
 (Gerencia is the only editor); fractions are rounded per person, so totals can differ by a cent.
 **Not built, by user decision:** role participation (R5). **Next:** R1 (commission treatment on the low-Eságara exception;
 approval levels wait for the validated authorisation ranges), R3/R4 (four states, monthly settlement with partial collection payouts).
+## 7. R3 — collection half paid in parts — DONE 2026-11-11
+
+`CommissionEntry.seq` (unique per invoice + half + person + seq); `collectionRelease` in `commission-split.ts`: what is newly
+collected (reconciled cash or withholdings) becomes payable as a new part; earlier parts are never edited; if the final
+figure ends below what was approved, the excess is reported ("aprobado de más") and nothing is taken back. Applies to
+Journeys under a policy with `proportionalCollection` (from 2026-11-11). Verified on a live sale: 300 Eságara → sale half 15
+at invoicing; 40 % collected → 6 payable; rest settled by a withholding → 9 payable as part 2, the 6 untouched.
+**R1 resolved by decision R-09:** the commission is paid normally under the threshold, so no treatment selector is built;
+a negative Eságara pays nothing (the tier starts at 0 %). Approval by levels waits for the validated authorisation ranges.
+**Still not built:** a monthly settlement run with frozen inputs and an idempotency key (today approval and payment are per
+person, on demand); adjustment lines for returns / warranty / excess (rules unanswered); the Dirección and Administración
+home views; profitability analytics by customer / supplier / product; role participation (by decision).

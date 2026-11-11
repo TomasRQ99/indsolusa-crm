@@ -40,7 +40,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
     const l = halfLabel(i, h.state);
     return (
       <td style={{ borderLeft: "1px solid var(--line)" }}>
-        <span className="val" style={{ marginRight: 6 }}>{h.state === "AT_RISK" ? `0 – ${i.n2(h.amount)}` : h.state === "LOST" ? "0" : h.state === "PARTIAL" ? `${i.n2(h.amount)} ${t("de", "of")} ${i.n2(h.full ?? h.amount)}` : `${h.state === "ESTIMATED" ? "≈ " : ""}${i.n2(h.amount)}`}</span>
+        <span className="val" style={{ marginRight: 6 }}>{h.state === "AT_RISK" ? `0 – ${i.n2(h.amount)}` : h.state === "LOST" ? "0" : h.state === "PARTIAL" ? `${i.n2(h.amount)} ${t("de", "of")} ${i.n2(h.full ?? h.amount)}` : `${h.state === "ESTIMATED" ? "≈ " : ""}${i.n2(h.amount)}${h.full != null && h.state !== "ESTIMATED" && Math.abs(h.full - h.amount) > 0.005 ? ` ${t("de", "of")} ${i.n2(h.full)}` : ""}${h.approved && h.state === "EARNED" ? ` · ${t("ya aprobado", "already approved")} ${i.n2(h.approved)}` : ""}${h.over ? ` · ${t("aprobado de más", "approved in excess")} ${i.n2(h.over)}` : ""}`}</span>
         <span className={`sig ${l.cls}`}>{l.text}</span>
         {h.calc && <span className="src mono">{h.calc}</span>}
       </td>

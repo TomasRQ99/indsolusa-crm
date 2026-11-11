@@ -41,3 +41,18 @@ export function splitProblem(rows: SplitRow[]): "POOL" | "PCT" | "DUPLICATE" | "
   }
   return null;
 }
+
+// ---------- Módulo 12 R3 · releasing the collection half as the customer pays (§13.2–13.4, §15) ----------
+
+export type Release = { state: "ESTIMATED" | "EARNED" | "APPROVED" | "PAID"; amount: number; earned: number; approved: number; over: number };
+/** `full` = this person's whole collection half; `ratio` = share of the invoice settled by reconciled cash or
+ *  withholdings; `approved` = what earlier parts already approved. What is new becomes payable; what was approved is
+ *  never edited. If the final figure ends below what was approved, the difference is reported, not taken back. */
+export function collectionRelease(full: number, ratio: number, approved: number, anyUnpaid: boolean): Release {
+  const r = (n: number) => Math.round(n * 100) / 100;
+  const earned = r(full * Math.min(1, Math.max(0, ratio)));
+  const payable = r(earned - approved);
+  if (payable > 0.005) return { state: "EARNED", amount: payable, earned, approved: r(approved), over: 0 };
+  if (approved > 0.005) return { state: anyUnpaid ? "APPROVED" : "PAID", amount: r(approved), earned, approved: r(approved), over: payable < -0.005 ? r(-payable) : 0 };
+  return { state: "ESTIMATED", amount: r(full), earned, approved: 0, over: 0 };
+}
