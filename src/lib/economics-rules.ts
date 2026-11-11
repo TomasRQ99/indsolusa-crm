@@ -17,7 +17,7 @@ export const zeroCosts = (): Costs => ({ SUPPLIER: 0, FREIGHT: 0, DUTY: 0, DELIV
 // ---------- shared costs (§43.1) ----------
 
 export const SPLIT_METHODS: Record<string, Txt> = {
-  VALUE: { es: "Por valor de venta de cada Journey", en: "By sale value of each Journey" }, UNITS: { es: "Por unidades", en: "By units" }, MANUAL: { es: "A mano, con el motivo", en: "By hand, with the reason" },
+  VALUE: { es: "Por valor de venta de cada Journey", en: "By sale value of each Journey" }, EQUAL: { es: "En partes iguales", en: "In equal parts" }, UNITS: { es: "Por unidades", en: "By units" }, MANUAL: { es: "A mano, con el motivo", en: "By hand, with the reason" },
 };
 export type Part = { id: string; sale: number; units: number; manual?: number | null };
 /** Split a shared cost. The parts always add up to the total to the cent. Returns null when the method can't apply. */
@@ -27,9 +27,9 @@ export function splitShared(total: number, parts: Part[], method: string): { id:
     if (parts.some((p) => p.manual == null || p.manual < 0)) return null;
     return Math.abs(r2(parts.reduce((s, p) => s + p.manual!, 0)) - r2(total)) <= 0.005 ? parts.map((p) => ({ id: p.id, amount: r2(p.manual!) })) : null;
   }
-  const w = parts.map((p) => (method === "UNITS" ? p.units : p.sale));
+  const w = parts.map((p) => (method === "UNITS" ? p.units : method === "EQUAL" ? 1 : p.sale));
   const sum = w.reduce((a, b) => a + b, 0);
-  if (!(method === "VALUE" || method === "UNITS") || sum <= 0 || w.some((x) => x <= 0)) return null;
+  if (!(method === "VALUE" || method === "UNITS" || method === "EQUAL") || sum <= 0 || w.some((x) => x <= 0)) return null;
   const out = parts.map((p, k) => ({ id: p.id, amount: r2((total * w[k]) / sum) }));
   // Rounding leftovers go to the largest part, so the split matches the invoice exactly.
   const diff = r2(total - out.reduce((s, x) => s + x.amount, 0));
@@ -82,6 +82,43 @@ export function economics(e: EconIn) {
   add("CLAIM", "Recuperado de reclamos a transportadores", "Recovered from carrier claims", e.claimRecovered);
   const explained = r2(lines.reduce((s, l) => s + l.usd, 0));
   return { prot, expected, facts, lines, explained, gap: r2(expected.esagara - prot.esagara) };
+}
+
+// ---------- Módulo 12 R0 · Eságara policy and closure readiness (§3, §8) ----------
+
+export const ESAGARA_POLICY_KEY = "esagaraPolicy";
+/** Which cost categories count towards Eságara, and below what difference a Journey is not kept open (§8). */
+export type EsagaraPolicy = { counts: Record<Cat, boolean>; materialityUsd: number };
+// Starting point: every direct-cost category counts and no difference is treated as immaterial. Gerencia changes it.
+export const DEFAULT_ESAGARA_POLICY: EsagaraPolicy = { counts: { SUPPLIER: true, FREIGHT: true, DUTY: true, DELIVERY: true, BANK_FEE: true, TRAVEL: true, OTHER: true }, materialityUsd: 0 };
+export function cleanEsagaraPolicy(raw: Record<string, unknown>): EsagaraPolicy | null {
+  const m = Number(String(raw.materialityUsd ?? "").replace(",", "."));
+  if (!Number.isFinite(m) || m < 0 || m > 1e6) return null;
+  const counts = Object.fromEntries(CATS.map((c) => [c, raw[`c_${c}`] === "1" || raw[`c_${c}`] === true])) as Record<Cat, boolean>;
+  // The supplier cost is what was bought to sell: an Eságara that ignores it would not be an Eságara.
+  if (!counts.SUPPLIER) return null;
+  return { counts, materialityUsd: Math.round(m * 100) / 100 };
+}
+
+export type ReadyIn = {
+  hasQuote: boolean; supplierOrders: number; supplierOrdersUnreleased: number; shipments: number; shipmentsWithoutInvoice: number; intlWithoutDuties: number;
+  unitsOrdered: number; unitsDelivered: number; deliveriesNotInvoiced: number; invoiced: number; openFreightClaims: number; openCustomerClaims: number; otherCurrency: number;
+};
+export type Criterion = { key: string; ok: boolean; text: Txt; fix: Txt };
+/** §8 What must be known before the economics can be called final. Derived from facts; a person still decides. */
+export function closureReadiness(i: ReadyIn): { criteria: Criterion[]; ready: boolean } {
+  const c = (key: string, ok: boolean, es: string, en: string, fes: string, fen: string): Criterion => ({ key, ok, text: { es, en }, fix: { es: fes, en: fen } });
+  const criteria = [
+    c("quote", i.hasQuote, "Eságara protegida al aceptar la cotización", "Eságara protected when the quote was accepted", "Falta una cotización aceptada con su Eságara protegida", "An accepted quote with its protected Eságara is missing"),
+    c("supplier", i.supplierOrdersUnreleased === 0, "Costos de proveedor registrados", "Supplier costs recorded", `${i.supplierOrdersUnreleased} compra(s) aún sin liberar`, `${i.supplierOrdersUnreleased} purchase(s) not released yet`),
+    c("delivered", i.unitsOrdered > 0 && i.unitsDelivered >= i.unitsOrdered, "Todo entregado", "Everything delivered", `Entregadas ${i.unitsDelivered} de ${i.unitsOrdered} unidades`, `${i.unitsDelivered} of ${i.unitsOrdered} units delivered`),
+    c("freight", i.shipmentsWithoutInvoice === 0, "Flete conocido", "Freight known", `${i.shipmentsWithoutInvoice} envío(s) sin la factura del transportador`, `${i.shipmentsWithoutInvoice} shipment(s) without the carrier invoice`),
+    c("customs", i.intlWithoutDuties === 0, "Tributos de aduana conocidos", "Customs duties known", `${i.intlWithoutDuties} envío(s) internacional(es) sin tributos reales en su caso de aduana (si no hubo, registra 0)`, `${i.intlWithoutDuties} international shipment(s) without actual duties on the customs case (if there were none, record 0)`),
+    c("revenue", i.invoiced > 0 && i.deliveriesNotInvoiced === 0, "Venta facturada", "Sale invoiced", i.invoiced > 0 ? `${i.deliveriesNotInvoiced} entrega(s) sin facturar` : "Aún no hay factura", i.invoiced > 0 ? `${i.deliveriesNotInvoiced} delivery(ies) not invoiced` : "No invoice yet"),
+    c("claims", i.openFreightClaims === 0 && i.openCustomerClaims === 0, "Reclamos resueltos", "Claims resolved", `${i.openFreightClaims} reclamo(s) a transportador y ${i.openCustomerClaims} caso(s) de cliente abiertos`, `${i.openFreightClaims} carrier claim(s) and ${i.openCustomerClaims} customer case(s) open`),
+    c("currency", i.otherCurrency === 0, "Sin costos en otra moneda por convertir", "No costs in another currency left to convert", `${i.otherCurrency} registro(s) en otra moneda sin su valor en USD`, `${i.otherCurrency} record(s) in another currency without their USD value`),
+  ];
+  return { criteria, ready: criteria.every((x) => x.ok) };
 }
 
 export const ECON_STATES: Record<string, Txt & { tone: string }> = {

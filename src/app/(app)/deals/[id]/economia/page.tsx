@@ -75,14 +75,26 @@ export default async function DealEconomicsPage({ params, searchParams }: { para
         </>
       )}
 
+      <section className="jblock" id="ingresos">
+        <div className="jbh"><b>{t("EL LADO DE LA VENTA", "THE REVENUE SIDE")}</b><span className="grow" /><span className="src">{t("vender no es facturar, y facturar no es cobrar", "selling is not invoicing, and invoicing is not collecting")}</span></div>
+        <dl className="qv-dl tight">
+          <dt>{t("Venta protegida", "Protected sale")}</dt><dd className="mono">{e.revenue.sale != null ? usd(e.revenue.sale) : "—"}</dd>
+          <dt>{t("Facturado", "Invoiced")}</dt><dd className="mono">{usd(e.revenue.invoiced)}</dd>
+          <dt>{t("Cobrado y conciliado", "Collected and reconciled")}</dt><dd className="mono">{usd(e.revenue.cash)}</dd>
+          <dt>{t("Recibido, por conciliar", "Received, to reconcile")}</dt><dd className="mono">{usd(e.revenue.pending)}</dd>
+          <dt>{t("Retenido por el cliente", "Withheld by the customer")}</dt><dd className="mono">{usd(e.revenue.withheld)}</dd>
+          <dt>{t("Por cobrar", "Outstanding")}</dt><dd className="mono"><b>{usd(e.revenue.outstanding)}</b></dd>
+        </dl>
+      </section>
+
       <section className="jblock" id="costos">
         <div className="jbh"><b>{t("COSTOS REALES", "REAL COSTS")}</b><span className="grow" /><span className="src">{e.invoiced != null ? t(`facturado ${usd(e.invoiced)}`, `invoiced ${usd(e.invoiced)}`) : t("aún sin facturar", "not invoiced yet")}</span></div>
         {e.facts.length === 0 && <p className="quiet-p">{t("Aún no hay costos reales registrados.", "No real costs recorded yet.")}</p>}
-        {CATS.filter((c) => e.known[c]).map((c) => (
+        {CATS.filter((c) => e.facts.some((f) => f.cat === c)).map((c) => (
           <div key={c} style={{ marginTop: 8 }}>
             <span className="k">{t(COST_CATS[c].es, COST_CATS[c].en)} · <span className="mono">{usd(e.sums[c])}</span></span>
             <ul className="plain small">{e.facts.filter((f) => f.cat === c).map((f, k) => (
-              <li key={k}><span className="mono">{i.n2(f.amount)}</span> · {f.href ? <Link href={f.href}>{f.what}</Link> : f.what}{f.shared && <span className="muted"> · {t("su parte de un costo compartido", "its share of a shared cost")}{f.shared.total != null ? ` (${t("total", "total")} ${i.n2(f.shared.total)})` : ""} · {t(SPLIT_METHODS[f.shared.method]?.es ?? f.shared.method, SPLIT_METHODS[f.shared.method]?.en ?? f.shared.method)}{f.shared.note ? ` · ${f.shared.note}` : ""}</span>}{f.ledgerId && canCost && <form action={removeDealCost.bind(null, f.ledgerId)} className="inline-f"><button type="submit" className="linkb">{t("quitar", "remove")}</button></form>}</li>
+              <li key={k} className={f.counts ? undefined : "muted"}><span className="mono">{i.n2(f.amount)}</span> · {!f.counts && <span className="sig wait">{t("no cuenta en la Eságara según la política", "not counted in Eságara per the policy")}</span>} {f.href ? <Link href={f.href}>{f.what}</Link> : f.what}{f.shared && <span className="muted"> · {t("su parte de un costo compartido", "its share of a shared cost")}{f.shared.total != null ? ` (${t("total", "total")} ${i.n2(f.shared.total)})` : ""} · {t(SPLIT_METHODS[f.shared.method]?.es ?? f.shared.method, SPLIT_METHODS[f.shared.method]?.en ?? f.shared.method)}{f.shared.note ? ` · ${f.shared.note}` : ""}</span>}{f.ledgerId && canCost && <form action={removeDealCost.bind(null, f.ledgerId)} className="inline-f"><button type="submit" className="linkb">{t("quitar", "remove")}</button></form>}</li>
             ))}</ul>
           </div>
         ))}
@@ -129,6 +141,9 @@ export default async function DealEconomicsPage({ params, searchParams }: { para
       <section className="jblock" id="cierre">
         <div className="jbh"><b>{t("CIERRE DE LA ECONOMÍA", "ECONOMICS CLOSE")}</b><span className="grow" /><span className={`sig ${S.tone}`}>{t(S.es, S.en)}</span></div>
         {d.economicsAt && <p className="small">{d.economicsByName} · {i.day(d.economicsAt)}{d.economicsNote ? ` · ${d.economicsNote}` : ""}</p>}
+        <ul className="qv-checks">{e.readiness.criteria.map((c) => <li key={c.key} className={c.ok ? "ok" : "no"}><span className="ic" aria-hidden>{c.ok ? "✓" : "!"}</span><span>{t(c.text.es, c.text.en)}{!c.ok && <span className="muted small"> · {t(c.fix.es, c.fix.en)}</span>}</span></li>)}</ul>
+        <p className="small">{e.readiness.ready ? <span className="sig ok">{t("Todo lo necesario está: se puede cerrar como final", "Everything needed is in: it can be closed as final")}</span> : t("Falta lo marcado arriba para un cierre final. Si lo que falta es pequeño, usa «Sustancialmente completa».", "The items marked above are missing for a final close. If what is missing is small, use \"Substantially complete\".")}</p>
+        {!e.readiness.ready && econ?.facts && e.materialityUsd > 0 && Math.abs(econ.expected.esagara - econ.facts.esagara) <= e.materialityUsd && <p className="small"><span className="sig attn">{t(`Lo que falta mueve la Eságara en USD ${i.n2(Math.abs(econ.expected.esagara - econ.facts.esagara))}, menos que el umbral de USD ${i.n2(e.materialityUsd)}: se puede marcar «Sustancialmente completa»`, `What is missing moves Eságara by USD ${i.n2(Math.abs(econ.expected.esagara - econ.facts.esagara))}, below the USD ${i.n2(e.materialityUsd)} threshold: it can be marked "Substantially complete"`)}</span></p>}
         <p className="src">{t("«Sustancialmente completa» sirve para no dejar un Journey abierto por diferencias pequeñas. «Final» guarda las cifras de ese día y bloquea nuevos costos hasta reabrir.", "\"Substantially complete\" avoids keeping a Journey open over small differences. \"Final\" keeps that day's figures and blocks new costs until reopened.")}</p>
         {canFinance(user) && (
           <form action={setEconomicsState.bind(null, d.id)} className="qa-row" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
