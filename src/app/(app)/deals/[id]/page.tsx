@@ -4,7 +4,7 @@ import { ValueKindSelect } from "@/components/ValueKindSelect";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canEdit } from "@/lib/permissions";
+import { canEdit, canManageAll } from "@/lib/permissions";
 import { CAUSE_KEYS, causeLabel } from "@/lib/causes";
 import { makeI18n } from "@/lib/i18n";
 import { bankDiscrepancies, dayInput, paymentState } from "@/lib/domain";
@@ -1051,6 +1051,14 @@ export default async function JourneyPage({
               <b className="pop-t">{t("En 20 segundos", "In 20 seconds")}</b>
               <div className="story">{J.story.map((s, k) => <p key={k}>{s}</p>)}</div>
               <span className="src">{t("Armado con los datos de este Journey.", "Built from this Journey's data.")}</span>
+            </QA>
+            <QA label={t("Pedir a Gerencia", "Ask Management")} wide right>
+              <b className="pop-t">{t("Cuando esto supera lo que puedes resolver", "When this is beyond what you can resolve")}</b>
+              <ul className="plain small">
+                <li><Link href={`/gerencia/decisiones?${new URLSearchParams({ href: self, label: `${deal.code ?? ""} · ${deal.title}`.trim(), area: "COMERCIAL" })}#pedir`}>{t("Pedir una decisión sobre este Journey", "Ask for a decision about this Journey")}</Link></li>
+                {canManageAll(user) && <li><Link href={`/gerencia/escenarios?${new URLSearchParams({ href: self, label: `${deal.code ?? ""} · ${deal.title}`.trim() })}#nuevo`}>{t("Comparar opciones en un escenario", "Compare options in a scenario")}</Link></li>}
+              </ul>
+              <span className="src">{t("La solicitud lleva el enlace a este Journey. Escribe los hechos y las opciones: Gerencia decide con eso.", "The request carries the link to this Journey. Write the facts and the options: Management decides with that.")}</span>
             </QA>
             <QA label={<><Spark /> {t("Pregúntale a SOLU", "Ask SOLU")}</>} wide right cls="ask">
               <b className="pop-t"><Spark /> {t("Sobre este Journey", "About this Journey")}</b>

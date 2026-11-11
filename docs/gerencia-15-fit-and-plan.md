@@ -155,3 +155,38 @@ follow-up date arrived; Historial de cambios names the new records; the events s
   sent by email.
 - **Supplier / capacity constraints (§2B):** shown as supplier concentration and exposure, not as supplier capacity.
 - **No sample data** was added for this module.
+
+## 7. Second round — 2026-11-11
+
+Deploy: the first push failed on Render with "JavaScript heap out of memory" in the type check of `next build`
+(Render's default heap is about 2 GB). `npm run build` now runs `scripts/build.mjs`, which gives the build workers
+4 GB. The database migration had already been applied by that failed deploy.
+
+Built:
+
+- **Sample data for Gerencia** (`seedGerenciaDemo` in `demo.ts`, added on load and as a top-up): one strategic
+  account, one priority linked to a sample customer and exploration, one scenario, one decision waiting (DG-EJ-0001)
+  and one decided whose follow-up date has arrived (DG-EJ-0002). `removeDemo` now also removes decisions, scenarios and
+  priorities that are sample data or belong to a sample person; without that, a sample person who had asked for a
+  decision or owned a priority could not be removed.
+- **Quarterly review** in Cierre ejecutivo (§10): the same blocks over the calendar quarter, plus direction and
+  resources (each priority and whether it was reviewed in the quarter, resource-allocation decisions, links to
+  trends, capability and risk concentration).
+- **From a Journey:** "Pedir a Gerencia" opens a decision request, or a scenario for management roles, already linked
+  to the Journey.
+- **From an approval in the decision line:** "Dejar también un registro de decisión" opens a decision record already
+  filled in, so an approval decided in its module can also leave a Management Decision Record.
+- **Event:** `policy.exception_escalated` is also written for a second-level internal purchase.
+
+Checked: type check clean; production build passes, also with the heap limited to 2 GB; 7 database checks (sample
+data top-up, removal with a sample person owning a priority and a request, fresh load, no duplicates on a second
+load, the new event); 33 browser checks, no browser errors. These cover the three items left unchecked in the first
+round: the decision line fed by a real second-level internal purchase, the "what changed" note against yesterday's
+picture, and the review-due block on the Home.
+
+Still not checked in a browser: the decision line fed by a second-level customer purchase, an Eságara exception or
+a supplier payment above the first level's amount (same code path as the internal purchase and the credit requests,
+which were checked).
+
+Limits closed by this round: no sample data; no quarterly screen; `policy.exception_escalated` for purchases only
+(now also internal purchases). The other limits of section 6 stand.

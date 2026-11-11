@@ -58,7 +58,9 @@ export function NeededCard({ x, i, now }: { x: NeededItem; i: I18n; now: Date })
         <dt>{i.t("Ventana", "Window")}</dt><dd>{x.deadline ? <>{i.date(x.deadline)}{late && <b className="risk-t"> · {i.t("ya pasó", "already past")}</b>}</> : <span className="muted">{i.t("Sin fecha límite", "No deadline")}</span>}</dd>
         <dt>{i.t("Quién sigue después", "Owner afterwards")}</dt><dd>{x.ownerAfter ?? <span className="muted">{i.t("Se define al decidir", "Set when deciding")}</span>}</dd>
       </dl>
-      <div className="gm-dec-f"><Link className="btn secondary sm" href={x.href}>{x.source === "REQUEST" ? i.t("Decidir", "Decide") : i.t("Abrir y decidir donde vive", "Open and decide where it lives")}</Link>{x.askedBy && !x.recommendation ? <span className="src">{i.t("Pidió", "Asked by")}: {x.askedBy}</span> : null}</div>
+      <div className="gm-dec-f"><Link className="btn secondary sm" href={x.href}>{x.source === "REQUEST" ? i.t("Decidir", "Decide") : i.t("Abrir y decidir donde vive", "Open and decide where it lives")}</Link>{x.askedBy && !x.recommendation ? <span className="src">{i.t("Pidió", "Asked by")}: {x.askedBy}</span> : null}
+        {/* An approval is decided in its own module and leaves no management record: this opens one, already filled in. */}
+        {x.source !== "REQUEST" && <Link className="small" href={`/gerencia/decisiones?${new URLSearchParams({ pregunta: t(x.question), href: x.href, label: t(SOURCE[x.source]), area: x.area })}#pedir`}>{i.t("Dejar también un registro de decisión", "Also keep a decision record")}</Link>}</div>
     </article>
   );
 }

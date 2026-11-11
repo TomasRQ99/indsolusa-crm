@@ -66,6 +66,8 @@ export function eventsOf(r: AuditRow): EventOut[] {
       if (U && gotSet(ch, "classifiedAs")) emit("bank_transaction.reconciled", { classifiedAs: now(ch, "classifiedAs") ?? null });
       break;
     case "InternalPurchase":
+      // Módulo 15 §14: a purchase that only the highest level may decide.
+      if (C && Number(now(ch, "level")) >= 2) emit("policy.exception_escalated", { policy: "adminPolicy", ...pick(ch, ["code", "amountUsd", "level"]) });
       if (U && became(ch, "status", "APPROVED")) { emit("budget.committed", pick(ch, ["decidedByName"])); if (now(ch, "overBudget") != null) emit("budget.exceeded", { over: now(ch, "overBudget") ?? null }); }
       break;
     case "BudgetEntry":

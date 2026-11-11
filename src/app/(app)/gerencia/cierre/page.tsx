@@ -15,7 +15,12 @@ import { decisionsNeeded } from "@/lib/gerencia-store";
 // dates), and it starts with the future: what Gerencia must decide and what is coming, then result, value, risks,
 // cash and fulfilment, and capacity. Company totals only: no list of people.
 
-const KINDS: Record<string, CloseKind> = { dia: "day", semana: "week", mes: "month" };
+type Kind = CloseKind | "quarter";
+const KINDS: Record<string, Kind> = { dia: "day", semana: "week", mes: "month", trimestre: "quarter" };
+// The quarter (§10): calendar quarters, end exclusive, in the same UTC days as the other closes.
+const quarterBounds = (ref: Date) => { const q = Math.floor(ref.getUTCMonth() / 3) * 3; return { start: new Date(Date.UTC(ref.getUTCFullYear(), q, 1)), end: new Date(Date.UTC(ref.getUTCFullYear(), q + 3, 1)) }; };
+const boundsOf = (kind: Kind, ref: Date) => (kind === "quarter" ? quarterBounds(ref) : closeBounds(kind, ref));
+const shift = (kind: Kind, ref: Date, n: number) => (kind === "quarter" ? new Date(Date.UTC(ref.getUTCFullYear(), Math.floor(ref.getUTCMonth() / 3) * 3 + n * 3, 1)) : shiftClose(kind, ref, n));
 
 export default async function ExecutiveClosePage({ searchParams }: { searchParams: Promise<{ tipo?: string; ref?: string }> }) {
   const user = await requireRole("GERENCIA", "DIRECTOR_COMERCIAL");
@@ -26,19 +31,20 @@ export default async function ExecutiveClosePage({ searchParams }: { searchParam
   const kind = KINDS[tipo];
   const T = today();
   const ref = sp.ref && /^\d{4}-\d{2}-\d{2}$/.test(sp.ref) && !isNaN(+new Date(`${sp.ref}T00:00:00Z`)) ? new Date(`${sp.ref}T00:00:00Z`) : T;
-  const { start, end } = closeBounds(kind, ref);
+  const { start, end } = boundsOf(kind, ref);
   const ger = isGerencia(user);
   const fpol = await getFocusPolicy();
   const [rep, needed, queue, decided, deliveries, people] = await Promise.all([
     closeReport(null, start, end), decisionsNeeded(user), interventionQueue(user.id, 5),
-    db.managementDecision.findMany({ where: { status: "DECIDED", decidedAt: { gte: start, lt: end } }, orderBy: { decidedAt: "asc" }, select: { id: true, code: true, version: true, question: true, decision: true } }),
+    db.managementDecision.findMany({ where: { status: "DECIDED", decidedAt: { gte: start, lt: end } }, orderBy: { decidedAt: "asc" }, select: { id: true, code: true, version: true, question: true, decision: true, kind: true, impactUsd: true } }),
     db.delivery.findMany({ where: { deliveredAt: { gte: start, lt: end }, deal: { internal: false } }, select: { deliveredAt: true, deal: { select: { promisedDate: true } } } }),
     ger ? peopleCapacity(T) : null,
   ]);
-  const state = closeState(kind, ref, new Date(), fpol.value.closeTime);
+  const state = kind === "quarter" ? (new Date() >= end ? "FINAL" as const : new Date() < start ? "FUTURE" as const : "OPEN" as const) : closeState(kind, ref, new Date(), fpol.value.closeTime);
+  const priorities = kind === "quarter" ? await db.strategicPriority.findMany({ where: { OR: [{ status: "ACTIVE" }, { closedAt: { gte: start, lt: end } }] }, orderBy: { createdAt: "asc" }, select: { id: true, title: true, status: true, narrative: true, narrativeAt: true, nextReviewOn: true, closedNote: true, owner: { select: { name: true } }, _count: { select: { links: true } } } }) : [];
   const withPromise = deliveries.filter((d) => d.deal.promisedDate), onTime = withPromise.filter((d) => +d.deliveredAt <= +d.deal.promisedDate! + 864e5 - 1);
   const link = (k: string, d: Date) => `/gerencia/cierre?tipo=${k}&ref=${dayInput(d)}`;
-  const label = kind === "day" ? i.date(start) : kind === "week" ? `${i.day(start)} – ${i.day(new Date(+end - 864e5))}` : new Intl.DateTimeFormat(i.es ? "es-CO" : "en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(start);
+  const label = kind === "quarter" ? `T${Math.floor(start.getUTCMonth() / 3) + 1} ${start.getUTCFullYear()}` : kind === "day" ? i.date(start) : kind === "week" ? `${i.day(start)} – ${i.day(new Date(+end - 864e5))}` : new Intl.DateTimeFormat(i.es ? "es-CO" : "en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(start);
   const topValue = [...rep.happened.decided].filter((q) => q.status === "ACCEPTED").sort((a, b) => Number(b.protEsagra ?? 0) - Number(a.protEsagra ?? 0)).slice(0, 3);
   const stateTxt = { FINAL: t("Periodo terminado", "Period ended"), DUE: t(`Cierre del día: ya pasaron las ${fpol.value.closeTime}`, `Day close: it is past ${fpol.value.closeTime}`), OPEN: t("Periodo en curso: cifras provisionales", "Period in progress: provisional figures"), FUTURE: t("Periodo futuro", "Future period") }[state];
 
@@ -47,8 +53,8 @@ export default async function ExecutiveClosePage({ searchParams }: { searchParam
       <div className="ph"><div>
         <h1>{t("Cierre ejecutivo", "Executive close")}</h1>
         <p>{t("Lo que pasó en el periodo, empezando por el futuro: qué hay que decidir y qué viene; después resultado, valor, riesgos, caja y cumplimiento, y capacidad.", "What happened in the period, starting with the future: what must be decided and what is coming; then result, value, risks, cash and fulfilment, and capacity.")}</p>
-        <nav className="iv-tabs" aria-label={t("Periodo", "Period")}>{Object.keys(KINDS).map((k) => <Link key={k} href={link(k, ref)} className={k === tipo ? "on" : ""}>{{ dia: t("Día", "Day"), semana: t("Semana", "Week"), mes: t("Mes", "Month") }[k]}</Link>)}</nav>
-        <p className="small"><Link href={link(tipo, shiftClose(kind, ref, -1))}>← {t("anterior", "previous")}</Link> · <b>{label}</b> · <span className={`sig ${state === "FINAL" ? "ok" : state === "DUE" ? "attn" : "wait"}`}>{stateTxt}</span>{end <= T ? <> · <Link href={link(tipo, shiftClose(kind, ref, 1))}>{t("siguiente", "next")} →</Link></> : null}</p>
+        <nav className="iv-tabs" aria-label={t("Periodo", "Period")}>{Object.keys(KINDS).map((k) => <Link key={k} href={link(k, ref)} className={k === tipo ? "on" : ""}>{{ dia: t("Día", "Day"), semana: t("Semana", "Week"), mes: t("Mes", "Month"), trimestre: t("Trimestre", "Quarter") }[k]}</Link>)}</nav>
+        <p className="small"><Link href={link(tipo, shift(kind, ref, -1))}>← {t("anterior", "previous")}</Link> · <b>{label}</b> · <span className={`sig ${state === "FINAL" ? "ok" : state === "DUE" ? "attn" : "wait"}`}>{stateTxt}</span>{end <= T ? <> · <Link href={link(tipo, shift(kind, ref, 1))}>{t("siguiente", "next")} →</Link></> : null}</p>
       </div></div>
 
       <section className="card" id="decidir"><b>{t("1 · DECISIONES QUE SE REQUIEREN DE GERENCIA", "1 · DECISIONS REQUIRED FROM MANAGEMENT")}</b> <span className="small muted">{t("hoy, no del periodo", "today, not of the period")}</span>
@@ -96,6 +102,17 @@ export default async function ExecutiveClosePage({ searchParams }: { searchParam
             <dt>{t("Ausentes hoy", "Away today")}</dt><dd>{people.away.filter((a) => a.now).length ? people.away.filter((a) => a.now).map((a) => `${a.name}${a.coveredBy ? ` (${t("cubre", "covered by")} ${a.coveredBy})` : ` (${t("sin cubrir", "uncovered")})`}`).join(" · ") : t("Nadie", "Nobody")}</dd>
             <dt>{t("Ausencias próximas sin cubrir", "Upcoming absences uncovered")}</dt><dd>{people.uncovered.length}</dd>
             <dt>{t("Relaciones clave sin respaldo", "Key relationships with no backup")}</dt><dd>{people.noBackup.length} · <Link href="/gerencia/personas">{t("Personas y capacidad", "People and capacity")}</Link></dd>
+          </dl>
+        </section>
+      )}
+      {kind === "quarter" && (
+        <section className="card" id="trimestre"><b>{t("REVISIÓN DEL TRIMESTRE: DIRECCIÓN Y RECURSOS", "QUARTERLY REVIEW: DIRECTION AND RESOURCES")}</b>
+          <dl className="qv-dl">
+            <dt>{t("Estrategia", "Strategy")}</dt><dd>{priorities.length === 0 ? <span className="muted">{t("No hay prioridades estratégicas definidas.", "No strategic priorities defined.")} <Link href="/gerencia/prioridades">{t("Definirlas", "Define them")}</Link></span> : <ul className="plain">{priorities.map((p) => <li key={p.id}><Link href={`/gerencia/prioridades?ver=todas#p-${p.id}`}><b>{p.title}</b></Link> · {p.owner.name} · {p.status === "ACTIVE" ? (p.narrativeAt && p.narrativeAt >= start ? t("revisada este trimestre", "reviewed this quarter") : <b className="attn-t">{t("sin revisar este trimestre", "not reviewed this quarter")}</b>) : p.status === "ACHIEVED" ? t("lograda", "achieved") : t("abandonada", "dropped")}{p._count.links === 0 ? <b className="attn-t"> · {t("sin registros vinculados", "no linked records")}</b> : null}<span className="src block">{p.status === "ACTIVE" ? p.narrative ?? t("Nadie ha escrito cómo va.", "Nobody has written how it is going.") : p.closedNote}</span></li>)}</ul>}</dd>
+            <dt>{t("Asignación de recursos", "Resource allocation")}</dt><dd>{decided.filter((d) => d.kind === "RESOURCE_ALLOCATION").length === 0 ? <span className="muted">{t("Ninguna decisión de asignación de recursos en el trimestre.", "No resource-allocation decision in the quarter.")}</span> : <ul className="plain">{decided.filter((d) => d.kind === "RESOURCE_ALLOCATION").map((d) => <li key={d.id}><Link href={`/gerencia/decisiones/${d.id}`}><b className="mono">{d.code}</b></Link> {d.question}{d.impactUsd != null ? <span className="mono"> · {i.money(d.impactUsd)}</span> : null}<span className="src block">{d.decision}</span></li>)}</ul>}</dd>
+            <dt>{t("Tendencias", "Trends")}</dt><dd><Link href="/gerencia/sistema">{t("Desempeño del sistema: 90 días frente a los 270 anteriores", "System performance: 90 days against the 270 before")}</Link> · <Link href="/gerencia/revisiones">{t("Revisión por función", "Functional review")}</Link></dd>
+            <dt>{t("Capacidad", "Capability")}</dt><dd>{ger ? <Link href="/gerencia/personas">{t("Personas y capacidad", "People and capacity")}</Link> : null}{ger ? " · " : ""}<Link href="/gerencia/funciones#huecos">{t("Huecos en la estructura de funciones", "Holes in the function structure")}</Link></dd>
+            <dt>{t("Concentración del riesgo", "Risk concentration")}</dt><dd><Link href="/gerencia/futuro#concentracion">{t("Qué parte depende de un solo cliente o proveedor", "What share depends on a single customer or supplier")}</Link> · <Link href="/gerencia/politicas#patrones">{t("Excepciones que se repiten", "Exceptions that repeat")}</Link></dd>
           </dl>
         </section>
       )}

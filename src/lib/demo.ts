@@ -676,6 +676,7 @@ export async function loadDemo(adminId: string) {
   if (pao) await seedComercialC7(pao.id);
   if (pao) await seedComercialC8a(pao.id);
   if (pao) await seedComercialC8b(pao.id, adminId);
+  if (pao) await seedGerenciaDemo({ id: pao.id, name: `Paola Gómez${TAG}` }, adminId);
 }
 
 
@@ -984,6 +985,8 @@ async function topUpMarketDemo(adminId: string) {
   await seedComercialC8a(paola.id);
   // Comercial C8b sample if missing.
   await seedComercialC8b(paola.id, adminId);
+  // Módulo 15 sample if missing.
+  await seedGerenciaDemo(paola, adminId);
 }
 
 /** Comercial C8b sample: Paola's planned vacation next week, covered by the person who loaded the demo, with the
@@ -1055,6 +1058,11 @@ export async function removeDemo() {
       await tx.futureOpportunity.deleteMany({ where: { capturedByName: { endsWith: TAG } } });
       await tx.plant.deleteMany({ where: { capturedByName: { endsWith: TAG } } });
       if (ids.length) await tx.exploration.deleteMany({ where: { ownerId: { in: ids } } });
+      // Módulo 15: sample decisions, scenarios and priorities. Anything a sample person asked for or owns goes too,
+      // otherwise that person could not be removed (strategic accounts leave with their sample customer).
+      await tx.managementDecision.deleteMany({ where: { OR: [{ code: { startsWith: "DG-EJ-" } }, { requestedById: { in: ids } }] } });
+      await tx.scenario.deleteMany({ where: { OR: [{ createdByName: { endsWith: TAG } }, { createdById: { in: ids } }] } });
+      await tx.strategicPriority.deleteMany({ where: { OR: [{ createdByName: { endsWith: TAG } }, { ownerId: { in: ids } }] } });
       if (ids.length) {
         await tx.task.deleteMany({ where: { assigneeId: { in: ids } } });
         await tx.cashBlocker.deleteMany({ where: { responsibleId: { in: ids } } });
@@ -1069,4 +1077,43 @@ export async function removeDemo() {
     },
     { timeout: 60000 },
   );
+}
+
+/** Módulo 15 sample (added if missing): one strategic account, one priority that points at real sample records, one
+ *  scenario, one decision waiting for Gerencia and one already decided whose follow-up date has arrived. */
+async function seedGerenciaDemo(paola: { id: string; name: string }, adminId: string) {
+  if (await db.managementDecision.count({ where: { code: { startsWith: "DG-EJ-" } } })) return;
+  const by = `Datos de ejemplo${TAG}`;
+  const [lacteos, pacifico, expl, admin] = await Promise.all([
+    db.account.findFirst({ where: { isDemo: true, name: "Lácteos del Valle" + TAG }, select: { id: true } }),
+    db.account.findFirst({ where: { isDemo: true, name: "Alimentos del Pacífico" + TAG }, select: { id: true, name: true } }),
+    db.exploration.findFirst({ where: { ownerId: paola.id }, select: { id: true } }),
+    db.user.findUnique({ where: { id: adminId }, select: { id: true, name: true } }),
+  ]);
+  if (!lacteos || !pacifico || !admin) return;
+  const T = today();
+  const d = (n: number) => addDays(T, n);
+  await db.strategicAccount.upsert({ where: { accountId: lacteos.id }, update: {}, create: { accountId: lacteos.id, reason: "Tres plantas y un plan de inversión a dos años: es la puerta de entrada al sector lácteo.", growthNote: "Hoy solo atendemos la planta de Tuluá.", nextMove: "Visita del gerente al director de mantenimiento", nextMoveOn: d(6), executiveId: admin.id, setByName: by } });
+  const pr = await db.strategicPriority.create({ data: {
+    title: "Crecer en el sector lácteo colombiano" + TAG, rationale: "Es un sector estable, con plantas que no pueden detenerse y que valoran la rapidez.", desiredOutcome: "Tres cuentas lácteas comprando de forma recurrente.",
+    horizon: "18 meses", indicators: [{ text: "Necesidades nuevas", metric: "NEEDS_CREATED" }, { text: "Visitas a plantas lácteas con una necesidad escrita", metric: null }], ownerId: admin.id, nextReviewOn: d(20), createdByName: by,
+  } });
+  await db.strategicPriorityLink.createMany({ data: [{ priorityId: pr.id, kind: "ACCOUNT", refId: lacteos.id, note: "cuenta ancla", addedByName: by }, ...(expl ? [{ priorityId: pr.id, kind: "EXPLORATION", refId: expl.id, note: null, addedByName: by }] : [])] });
+  const sc = await db.scenario.create({ data: {
+    title: `Entrar a ${pacifico.name.replace(TAG, "")} con Eságara baja${TAG}`, question: "¿Aceptamos el primer pedido con Eságara del 12 % para entrar a la cuenta?", kind: "LOW_ESAGARA_ENTRY",
+    facts: "Primer pedido: venta USD 12.000, costo USD 10.560. El cliente compra hoy a un competidor. La política pide 20 %.", measure: "Eságara en 12 meses, USD",
+    options: [{ name: "Aceptar una vez", description: "Vender este pedido al 12 %", assumptions: "El cliente repite entre una y cuatro veces en el año a Eságara normal.", low: 1440, high: 9000, risks: "Que el precio bajo se vuelva la referencia." }, { name: "No aceptar", description: "Mantener el 20 %", assumptions: "El cliente quizá compre repuestos menores más adelante.", low: 0, high: 2000, risks: "Perder la entrada a la cuenta." }],
+    createdById: paola.id, createdByName: paola.name,
+  } });
+  await db.managementDecision.create({ data: {
+    code: "DG-EJ-0001", area: "COMERCIAL", kind: "POLICY_EXCEPTION", question: sc.question, context: "Alimentos del Pacífico pidió precio para un primer pedido. Con el precio que acepta, la Eságara queda en 12 %.", whyNow: "El cliente decide esta semana.",
+    impact: "Entrar a una cuenta nueva del sector de alimentos", impactUsd: 12000, alternatives: [{ name: "Aceptar una vez", detail: "Vender este pedido al 12 %" }, { name: "No aceptar", detail: "Mantener el 20 %" }], facts: sc.facts,
+    assumptions: "Que el cliente repita la compra a Eságara normal.", risks: "Que el precio bajo se vuelva la referencia.", recommendation: "Aceptar una vez, dejando escrito que es precio de entrada.", deadline: d(4), scenarioId: sc.id, requestedById: paola.id, requestedByName: paola.name,
+  } });
+  await db.managementDecision.create({ data: {
+    code: "DG-EJ-0002", area: "OPERACIONES", kind: "RESOURCE_ALLOCATION", question: "¿Compramos inventario de rodamientos 23148 para entrega inmediata?", context: "Dos clientes los pidieron con urgencia en el último trimestre y el proveedor tarda seis semanas.", impact: "USD 8.000 de caja en inventario", impactUsd: 8000,
+    alternatives: [{ name: "Comprar cuatro unidades", detail: "" }, { name: "No comprar", detail: "Seguir comprando contra pedido" }], facts: "Dos pedidos urgentes en 90 días. Plazo del proveedor: seis semanas.", assumptions: "Que la demanda se repita.", requestedById: paola.id, requestedByName: paola.name, requestedAt: d(-40),
+    status: "DECIDED", decision: "Comprar cuatro unidades.", chosen: "Comprar cuatro unidades", rationale: "La rapidez es nuestro atributo y el riesgo de caja es bajo.", authority: "Gerencia", decidedById: admin.id, decidedByName: admin.name, decidedAt: d(-35),
+    expectedConsequence: "Vender al menos dos unidades en 30 días con entrega inmediata.", followUpOn: d(-2), ownerAfterId: paola.id,
+  } });
 }

@@ -13,7 +13,7 @@ import { archiveScenario, saveScenario } from "./actions";
 
 const ROWS = 4;
 
-export default async function ScenariosPage({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string; f?: string; ver?: string }> }) {
+export default async function ScenariosPage({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string; f?: string; ver?: string; href?: string; label?: string }> }) {
   const user = await requireRole("GERENCIA", "DIRECTOR_COMERCIAL");
   const i = makeI18n(user.lang);
   const { t } = i;
@@ -53,8 +53,8 @@ export default async function ScenariosPage({ searchParams }: { searchParams: Pr
           ))}
         </div>
         <div className="qa-row">
-          <label style={{ flex: "1 1 240px" }}>{t("Registro de SOLU del que trata (dirección que empieza por /, opcional)", "SOLU record it is about (address starting with /, optional)")}<input name="sourceHref" maxLength={300} defaultValue={s?.sourceHref ?? ""} placeholder="/deals/…" /></label>
-          <label style={{ flex: "1 1 200px" }}>{t("Nombre de ese registro", "Name of that record")}<input name="sourceLabel" maxLength={160} defaultValue={s?.sourceLabel ?? ""} /></label>
+          <label style={{ flex: "1 1 240px" }}>{t("Registro de SOLU del que trata (dirección que empieza por /, opcional)", "SOLU record it is about (address starting with /, optional)")}<input name="sourceHref" maxLength={300} defaultValue={s?.sourceHref ?? (s ? "" : sp.href ?? "")} placeholder="/deals/…" /></label>
+          <label style={{ flex: "1 1 200px" }}>{t("Nombre de ese registro", "Name of that record")}<input name="sourceLabel" maxLength={160} defaultValue={s?.sourceLabel ?? (s ? "" : sp.label ?? "")} /></label>
         </div>
         <div><button type="submit" className={s ? "secondary" : ""}>{s ? t("Guardar cambios", "Save changes") : t("Guardar el escenario", "Save the scenario")}</button></div>
       </form>
