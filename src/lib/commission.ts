@@ -2,6 +2,7 @@ import type { CommissionPolicy } from "@prisma/client";
 import { cmpMoney, money2, mulMoney, percentOf, subMoney, sumMoney } from "./money";
 import { db } from "./db";
 import { addDays, esagra, invoiceCash, today } from "./domain";
+import { shareText, sharesOf } from "./commission-split";
 
 // Business rule (D-05): the commission is earned 50 % at the sale (invoice issued)
 // and 50 % at collection (payment reconciled).
@@ -74,10 +75,12 @@ const f = (v: number) => r2(v).toFixed(2);
 export async function computeCommissions(opts: { userId?: string } = {}) {
   const now = today();
   const [policies, deals] = await Promise.all([db.commissionPolicy.findMany(), db.deal.findMany({
-    where: { stage: "WON", ...(opts.userId ? { ownerId: opts.userId } : {}) },
+    // A person sees the sales they own and those where Gerencia gave them a share.
+    where: { stage: "WON", ...(opts.userId ? { OR: [{ ownerId: opts.userId }, { commissionAllocations: { some: { userId: opts.userId, supersededAt: null } } }] } : {}) },
     include: {
       account: { select: { name: true, createdAt: true } },
       owner: { select: { id: true, name: true } },
+      commissionAllocations: { where: { supersededAt: null }, select: { userId: true, pool: true, splitPct: true, user: { select: { name: true } } } },
       deliveries: { select: { id: true } },
       invoices: {
         orderBy: { issuedAt: "asc" },
@@ -96,6 +99,10 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
     const salePct = policy?.salePercent ?? 50;
     const eg = esagra(d);
     const isNew = (when: Date) => when.getTime() - d.account.createdAt.getTime() < 365 * 864e5;
+    // Módulo 12 §11–12: the fund split by function (policy) and by person (Gerencia). Nobody named = the negotiator.
+    const shares = sharesOf(policy, d.commissionAllocations.map((a) => ({ userId: a.userId, userName: a.user.name, pool: a.pool, splitPct: Number(a.splitPct) })), d.owner).filter((s) => !opts.userId || s.userId === opts.userId);
+    const whole = (s: { frac: number }) => Math.abs(s.frac - 1) < 1e-6;
+    const part = (h: Half, s: (typeof shares)[number]): Half => (whole(s) ? h : { ...h, amount: mulMoney(h.amount, s.frac), full: h.full != null ? mulMoney(h.full, s.frac) : undefined, calc: h.calc ? `(${h.calc}) × ${shareText(s)}` : h.calc });
 
     for (const inv of d.invoices) {
       const cash = invoiceCash(inv);
@@ -117,8 +124,10 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
       const ratio = amount > 0 ? Math.min(1, Math.max(0, subMoney(amount, cash.balance) / amount)) : 0;
       const lost = !prop && !fully && policy != null && now > addDays(inv.dueAt, policy.lossDays);
 
-      const entry = (h: "SALE" | "COLLECTION") => inv.commissions.find((c) => c.half === h);
-      const fromEntry = (h: "SALE" | "COLLECTION", fallback: Half): Half => {
+      for (const sh of shares) {
+      const entry = (h: "SALE" | "COLLECTION") => inv.commissions.find((c) => c.half === h && c.userId === sh.userId);
+      const fromEntry = (h: "SALE" | "COLLECTION", fallback0: Half): Half => {
+        const fallback = part(fallback0, sh);
         const e = entry(h);
         if (!e) return fallback;
         return { state: e.paidAt ? "PAID" : "APPROVED", amount: money2(e.amount), calc: e.calculation, entryId: e.id };
@@ -147,13 +156,14 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
       coll = fromEntry("COLLECTION", coll);
 
       rows.push({
-        key: inv.id,
+        key: whole(sh) ? inv.id : `${inv.id}:${sh.userId}`,
         dealId: d.id,
         dealCode: d.code,
         dealTitle: d.title,
         account: d.account.name,
-        ownerId: d.owner.id,
-        ownerName: d.owner.name,
+        // The person this row pays (the negotiator, or whoever Gerencia gave a share to).
+        ownerId: sh.userId,
+        ownerName: sh.userName,
         invoiceId: inv.id,
         invoiceNumber: inv.number,
         sale: amount,
@@ -171,6 +181,7 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
         collectionHalf: coll,
         projected: false,
       });
+      }
     }
 
     // Part of the Deal not invoiced yet: both halves are estimates.
@@ -180,15 +191,17 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
       const e = eg.pct == null ? 0 : mulMoney(pending, eg.pct / 100);
       const newClient = isNew(now);
       const rate = rateFor(policy, eg.pct, newClient);
-      const half = mulMoney(e, (rate * salePct) / 10000);
+      const half0 = mulMoney(e, (rate * salePct) / 10000);
+      for (const sh of shares) {
+      const half = mulMoney(half0, sh.frac);
       rows.push({
-        key: `${d.id}-pending`,
+        key: whole(sh) ? `${d.id}-pending` : `${d.id}-pending:${sh.userId}`,
         dealId: d.id,
         dealCode: d.code,
         dealTitle: d.title,
         account: d.account.name,
-        ownerId: d.owner.id,
-        ownerName: d.owner.name,
+        ownerId: sh.userId,
+        ownerName: sh.userName,
         invoiceId: null,
         invoiceNumber: null,
         sale: pending,
@@ -203,9 +216,10 @@ export async function computeCommissions(opts: { userId?: string } = {}) {
         trace: { delivered: d.deliveries.length > 0, invoiced: false, collected: false, reconciled: false, problem: false },
         dueAt: null,
         saleHalf: { state: "ESTIMATED", amount: half, calc: `≈ ${f(e)} × ${rate} % × ${salePct} %` },
-        collectionHalf: { state: "ESTIMATED", amount: subMoney(percentOf(e, rate), half), calc: "" },
+        collectionHalf: { state: "ESTIMATED", amount: subMoney(mulMoney(percentOf(e, rate), sh.frac), half), calc: "" },
         projected: true,
       });
+      }
     }
   }
 

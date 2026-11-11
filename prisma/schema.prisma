@@ -86,25 +86,26 @@ model User {
   opsExceptions    OperationalException[] @relation("ExceptionOwner")
   purchaseRequests PurchaseRequirement[]  @relation("PrRequester")
 
-  paymentsRequested   SupplierPayment[]   @relation("PaymentRequester")
-  paymentsVerified    SupplierPayment[]   @relation("PaymentVerifier")
-  paymentsApproved    SupplierPayment[]   @relation("PaymentApprover")
-  paymentsExecuted    SupplierPayment[]   @relation("PaymentExecutor")
+  paymentsRequested   SupplierPayment[]      @relation("PaymentRequester")
+  paymentsVerified    SupplierPayment[]      @relation("PaymentVerifier")
+  paymentsApproved    SupplierPayment[]      @relation("PaymentApprover")
+  paymentsExecuted    SupplierPayment[]      @relation("PaymentExecutor")
   invoicesIssued      Invoice[]
   promisesRecorded    PaymentPromise[]
-  cashRecorded        CustomerPayment[]   @relation("CashRecorder")
+  cashRecorded        CustomerPayment[]      @relation("CashRecorder")
   billingRequests     BillingRequest[]
-  cashReconciled      CustomerPayment[]   @relation("CashReconciler")
-  commissionsEarned   CommissionEntry[]   @relation("CommissionOwner")
-  commissionsApproved CommissionEntry[]   @relation("CommissionApprover")
-  creditExceptions    Deal[]              @relation("CreditException")
+  cashReconciled      CustomerPayment[]      @relation("CashReconciler")
+  commissionsEarned   CommissionEntry[]      @relation("CommissionOwner")
+  commissionShares    CommissionAllocation[] @relation("CommissionShare")
+  commissionsApproved CommissionEntry[]      @relation("CommissionApprover")
+  creditExceptions    Deal[]                 @relation("CreditException")
   suppliersVerified   Supplier[]
   journeyViews        JourneyView[]
   commMessages        CommMessage[]
   commDecisions       CommItem[]
   quotesCreated       Quote[]
-  explorations        Exploration[]       @relation("ExplorationOwner")
-  futuresOwned        FutureOpportunity[] @relation("FutureOwner")
+  explorations        Exploration[]          @relation("ExplorationOwner")
+  futuresOwned        FutureOpportunity[]    @relation("FutureOwner")
 }
 
 model Account {
@@ -294,52 +295,53 @@ model Deal {
   technicalFacts     TechnicalFact[]
   scopeConfirmations ScopeConfirmation[]
 
-  resultEvidence       ResultEvidence[]
-  recoveries           Recovery[]
-  continuity           ContinuitySignal[]
-  tasks                Task[]
-  views                JourneyView[]
-  threads              CommThread[]
-  quotes               Quote[]
-  customerPos          CustomerPO[]
-  activities           Activity[]
-  items                DealItem[]
-  supplierPos          SupplierPO[]
-  rfqs                 Rfq[]
-  shipments            Shipment[]
-  deliveries           Delivery[]
-  invoices             Invoice[]
-  billingRequests      BillingRequest[]
-  cashBlockers         CashBlocker[]
-  creditReviews        CreditReviewRequest[]
+  resultEvidence        ResultEvidence[]
+  recoveries            Recovery[]
+  continuity            ContinuitySignal[]
+  tasks                 Task[]
+  views                 JourneyView[]
+  threads               CommThread[]
+  quotes                Quote[]
+  customerPos           CustomerPO[]
+  activities            Activity[]
+  items                 DealItem[]
+  supplierPos           SupplierPO[]
+  rfqs                  Rfq[]
+  shipments             Shipment[]
+  deliveries            Delivery[]
+  invoices              Invoice[]
+  billingRequests       BillingRequest[]
+  cashBlockers          CashBlocker[]
+  creditReviews         CreditReviewRequest[]
   // Comercial C5 · Solution Case & Proposal
-  solutionCase         SolutionCase?
+  solutionCase          SolutionCase?
   // Comercial C6 · PO allocations and dispatch
-  poAllocations        PoAllocation[]
-  dispatches           DispatchInstruction[]
+  poAllocations         PoAllocation[]
+  dispatches            DispatchInstruction[]
   // Comercial C4 · Sourcing & Supply
-  sourcingSearches     SourcingSearch[]
-  supplyOptions        SupplyOption[]
-  supplyBases          SupplyBasis[]
-  opsExceptions        OperationalException[]
-  purchaseRequirements PurchaseRequirement[]
-  purchaseAllocations  PurchaseAllocation[]
-  savings              SavingsEntry[]
-  stockLots            StockLot[]
-  dispatchOrders       DispatchOrder[]
-  costs                DealCost[]
+  sourcingSearches      SourcingSearch[]
+  supplyOptions         SupplyOption[]
+  supplyBases           SupplyBasis[]
+  opsExceptions         OperationalException[]
+  purchaseRequirements  PurchaseRequirement[]
+  purchaseAllocations   PurchaseAllocation[]
+  savings               SavingsEntry[]
+  stockLots             StockLot[]
+  dispatchOrders        DispatchOrder[]
+  costs                 DealCost[]
+  commissionAllocations CommissionAllocation[]
   /// module 11 §44.2: OPEN | SUBSTANTIAL | FINAL
-  economicsState       String                 @default("OPEN")
-  economicsNote        String?
-  economicsByName      String?
-  economicsAt          DateTime?
+  economicsState        String                 @default("OPEN")
+  economicsNote         String?
+  economicsByName       String?
+  economicsAt           DateTime?
   /// the three views and the bridge as they were when marked FINAL
-  economicsFinal       Json?
+  economicsFinal        Json?
   /// module 11 §40: UPON_ORDER | UPON_DELIVERY | UPON_ACCEPTANCE | MILESTONE | ADVANCE_BALANCE | RECURRING
-  billingBasis         String                 @default("UPON_DELIVERY")
-  warranties           Warranty[]
-  customerClaims       CustomerClaim[]
-  productExperiences   ProductExperience[]
+  billingBasis          String                 @default("UPON_DELIVERY")
+  warranties            Warranty[]
+  customerClaims        CustomerClaim[]
+  productExperiences    ProductExperience[]
 
   @@index([stage])
   @@index([ownerId])
@@ -1090,7 +1092,8 @@ model CommissionEntry {
   paidAt       DateTime?
   payrollRef   String?
 
-  @@unique([invoiceId, half])
+  // Módulo 12: one sale can pay several people, so an entry is unique per invoice, half AND person.
+  @@unique([invoiceId, half, userId])
   @@index([userId])
 }
 
@@ -3917,4 +3920,26 @@ model PolicyChangeRequest {
   decidedByName   String?
   decidedAt       DateTime?
   decisionNote    String?
+}
+
+// ---------- Módulo 12 R2 · who shares a sale's commission (§12) ----------
+
+/// One person's share of one function's part of a Journey's commission fund. Set by Gerencia. A change supersedes the
+/// current rows (kept as history) and only affects what has not been approved for payment yet.
+model CommissionAllocation {
+  id           String    @id @default(cuid())
+  dealId       String
+  deal         Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User      @relation("CommissionShare", fields: [userId], references: [id])
+  /// COMMERCIAL | OPERATIONAL
+  pool         String
+  splitPct     Decimal   @db.Decimal(5, 2)
+  reason       String
+  setByName    String
+  createdAt    DateTime  @default(now())
+  supersededAt DateTime?
+
+  @@index([dealId])
+  @@index([userId])
 }

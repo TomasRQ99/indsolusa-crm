@@ -87,3 +87,15 @@ in full); `PolicyChangeRequest` + `src/lib/rentabilidad-config.ts`, `src/lib/ren
 but all of it still goes to the Journey owner (allocations per person are R2); advances, returns and warranty effect on
 commission were not answered; Gerencia may approve its own proposal (single-manager company) and the record shows it;
 the new policy applies to Journeys whose PO is accepted from 2026-11-11, older ones keep the earlier tiers.
+## 6. R2 — commission shares between people — DONE 2026-11-11
+
+`CommissionAllocation` (dealId, userId, pool COMMERCIAL | OPERATIONAL, splitPct, reason, setByName, supersededAt);
+`CommissionEntry` is now unique per invoice + half + person; `src/lib/commission-split.ts` (`sharesOf`, `shareText`,
+`splitProblem`); `computeCommissions` emits one row per person with their fraction and the formula; a person sees sales they
+own and sales where Gerencia gave them a share; `saveAllocations` (Gerencia, with a reason; earlier split kept as history) and
+the "QUIÉN RECIBE LA COMISIÓN DE ESTA VENTA" block on `/deals/[id]/economia`.
+**Limits:** up to three people per function on the form; a split changed after a half was approved or paid does not move that
+half (by design, AC33) and SOLU does not yet show the resulting difference as an adjustment (R4); no edit-deadline rule
+(Gerencia is the only editor); fractions are rounded per person, so totals can differ by a cent.
+**Not built, by user decision:** role participation (R5). **Next:** R1 (commission treatment on the low-Eságara exception;
+approval levels wait for the validated authorisation ranges), R3/R4 (four states, monthly settlement with partial collection payouts).

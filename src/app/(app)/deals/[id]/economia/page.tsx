@@ -6,7 +6,10 @@ import { makeI18n } from "@/lib/i18n";
 import { dayInput, today } from "@/lib/domain";
 import { CATS, COST_CATS, ECON_STATES, SPLIT_METHODS, type View } from "@/lib/economics-rules";
 import { dealEconomics } from "@/lib/economics";
-import { addDealCost, addSharedCost, removeDealCost, setEconomicsState } from "./actions";
+import { addDealCost, addSharedCost, removeDealCost, saveAllocations, setEconomicsState } from "./actions";
+import { db } from "@/lib/db";
+import { isGerencia } from "@/lib/permissions";
+import { POOLS, sharesOf, shareText, type Pool } from "@/lib/commission-split";
 
 // Operaciones O9c · protected vs expected vs facts (module 11 §44): what the Eságara was when we committed, what we
 // expect today, what the facts say so far, and why it moved.
@@ -20,12 +23,20 @@ export default async function DealEconomicsPage({ params, searchParams }: { para
   const e = await dealEconomics(id);
   if (!e) notFound();
   const { d, econ } = e;
+  const [allocs, people, lastPolicy, owner, allocHistory] = await Promise.all([
+    db.commissionAllocation.findMany({ where: { dealId: id, supersededAt: null }, orderBy: { createdAt: "asc" }, include: { user: { select: { name: true } } } }),
+    db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    db.commissionPolicy.findFirst({ orderBy: { version: "desc" }, select: { commercialPct: true, operationalPct: true, version: true } }),
+    db.user.findUnique({ where: { id: d.ownerId }, select: { id: true, name: true } }),
+    db.commissionAllocation.count({ where: { dealId: id, supersededAt: { not: null } } }),
+  ]);
+  const shares = owner ? sharesOf(lastPolicy, allocs.map((a) => ({ userId: a.userId, userName: a.user.name, pool: a.pool, splitPct: Number(a.splitPct) })), owner) : [];
   const final = d.economicsState === "FINAL";
   const canCost = !final && (canEditOps(user, d.ownerId) || canFinance(user));
   const S = ECON_STATES[d.economicsState] ?? ECON_STATES.OPEN;
   const usd = (n: number) => `USD ${i.n2(n)}`;
   const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${i.n2(Math.abs(n))}`;
-  const okMsg: Record<string, string> = { costo: t("Costo agregado.", "Cost added."), compartido: t("Costo compartido repartido entre los Journeys.", "Shared cost split between the Journeys."), quitado: t("Costo quitado.", "Cost removed."), estado: t("Estado de la economía actualizado.", "Economics state updated.") };
+  const okMsg: Record<string, string> = { costo: t("Costo agregado.", "Cost added."), compartido: t("Costo compartido repartido entre los Journeys.", "Shared cost split between the Journeys."), quitado: t("Costo quitado.", "Cost removed."), estado: t("Estado de la economía actualizado.", "Economics state updated."), reparto: t("Reparto guardado. Aplica a lo que aún no se ha aprobado para pago.", "Split saved. It applies to what has not been approved for payment yet.") };
   const errMsg: Record<string, string> = {
     permiso: t("No tienes permiso para registrar costos de este Journey.", "You don't have permission to record costs on this Journey."), final: t("La economía está cerrada como final. Para cambiar costos, primero se reabre.", "Economics are closed as final. To change costs, reopen first."),
     costo: t("Indica el tipo, el valor y qué es.", "Give the type, the amount and what it is."), compartido: t("Indica el tipo, el valor total, qué es y los códigos de los otros Journeys.", "Give the type, the total, what it is and the codes of the other Journeys."),
@@ -33,6 +44,7 @@ export default async function DealEconomicsPage({ params, searchParams }: { para
     "compartido-final": t("Uno de esos Journeys ya tiene la economía cerrada como final.", "One of those Journeys already has economics closed as final."), "compartido-suma": t("Los valores a mano deben sumar exactamente el total, uno por cada Journey.", "The amounts typed by hand must add up exactly to the total, one per Journey."),
     "compartido-base": t("No se puede repartir así: algún Journey no tiene venta protegida (o unidades). Reparte a mano.", "It can't be split that way: a Journey has no protected sale (or units). Split by hand."),
     "permiso-cierre": t("El estado de la economía lo cambian Finanzas, Administración o Gerencia.", "The economics state is changed by Finance, Administration or Management."), estado: t("Elige un estado distinto al actual.", "Choose a state different from the current one."),
+    "reparto-permiso": t("El reparto de la comisión lo define Gerencia.", "The commission split is set by Management."), "reparto-motivo": t("Escribe el motivo del reparto.", "Write the reason for the split."), "reparto-pct": t("Cada persona nombrada necesita un porcentaje mayor que 0.", "Each person named needs a percentage above 0."), "reparto-sum": t("Dentro de cada función, los porcentajes deben sumar exactamente 100.", "Within each function, the percentages must add up to exactly 100."), "reparto-duplicate": t("Una persona aparece dos veces en la misma función.", "A person appears twice in the same function."), "reparto-persona": t("Alguna persona ya no está activa.", "A person is no longer active."), "reparto-pool": t("Función no válida.", "Invalid function."),
     reabrir: t("Para reabrir una economía final, escribe por qué.", "To reopen final economics, write why."), "sin-factura": t("No se puede cerrar como final sin una cotización aceptada y al menos una factura.", "It can't be closed as final without an accepted quote and at least one invoice."),
   };
   const Col = ({ title, v, sub }: { title: string; v: View | null; sub: string }) => (
@@ -135,6 +147,32 @@ export default async function DealEconomicsPage({ params, searchParams }: { para
               </form>
             </details>
           </>
+        )}
+      </section>
+
+      <section className="jblock" id="reparto">
+        <div className="jbh"><b>{t("QUIÉN RECIBE LA COMISIÓN DE ESTA VENTA", "WHO RECEIVES THIS SALE'S COMMISSION")}</b><span className="grow" /><span className="src">{lastPolicy ? t(`fondo: Comercial ${lastPolicy.commercialPct} % · Operativo ${lastPolicy.operationalPct} %`, `fund: Commercial ${lastPolicy.commercialPct} % · Operational ${lastPolicy.operationalPct} %`) : t("sin política de comisión", "no commission policy")}</span></div>
+        <ul className="plain small">{shares.map((s) => <li key={s.userId}><b>{s.userName}</b> · <span className="mono">{i.pct(s.frac * 100)}</span> {t("del fondo", "of the fund")} <span className="muted">· {shareText(s, i.es)}</span></li>)}</ul>
+        {allocs.length === 0 ? <p className="src">{t("Gerencia no ha nombrado a nadie: quien lleva el Journey hace las dos funciones y recibe todo.", "Management has named nobody: the Journey's owner does both functions and receives everything.")}</p> : <p className="src">{t(`Definido por ${allocs[0].setByName} el ${i.day(allocs[0].createdAt)}: ${allocs[0].reason}`, `Set by ${allocs[0].setByName} on ${i.day(allocs[0].createdAt)}: ${allocs[0].reason}`)}{allocHistory > 0 ? t(` · ${allocHistory} reparto(s) anterior(es) guardado(s)`, ` · ${allocHistory} earlier split(s) kept`) : ""}</p>}
+        {isGerencia(user) && (
+          <details className="qa"><summary className="qa-btn">{t("Cambiar el reparto", "Change the split")}</summary>
+            <form action={saveAllocations.bind(null, d.id)} className="qa-form" style={{ marginTop: 8, maxWidth: 680 }}>
+              {(Object.keys(POOLS) as Pool[]).map((pool) => (
+                <div key={pool}>
+                  <span className="k">{t(POOLS[pool].es, POOLS[pool].en)} · {t("deja vacío para que lo reciba quien lleva el Journey", "leave empty for the Journey's owner to receive it")}</span>
+                  {[0, 1, 2].map((k) => { const cur = allocs.filter((a) => a.pool === pool)[k]; return (
+                    <div className="qa-row" key={k}>
+                      <label>{t("Persona", "Person")}<select name={`${pool}_u${k}`} defaultValue={cur?.userId ?? ""}><option value="">—</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+                      <label style={{ flex: "0 0 140px" }}>%<input name={`${pool}_p${k}`} inputMode="decimal" defaultValue={cur ? String(Number(cur.splitPct)) : ""} /></label>
+                    </div>
+                  ); })}
+                </div>
+              ))}
+              <label>{t("Motivo", "Reason")}<input name="reason" required maxLength={300} /></label>
+              <button type="submit">{t("Guardar reparto", "Save split")}</button>
+              <span className="src">{t("Dentro de cada función los porcentajes suman 100. Lo ya aprobado o pagado no cambia.", "Within each function the percentages add up to 100. What is already approved or paid doesn't change.")}</span>
+            </form>
+          </details>
         )}
       </section>
 

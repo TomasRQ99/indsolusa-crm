@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canEditOps, canFinance } from "@/lib/permissions";
+import { canEditOps, canFinance, isGerencia } from "@/lib/permissions";
+import { splitProblem, type SplitRow } from "@/lib/commission-split";
 import { refreshApp } from "@/lib/revalidate";
 import { today } from "@/lib/domain";
 import { money2 } from "@/lib/money";
@@ -97,4 +98,30 @@ export async function setEconomicsState(dealId: string, fd: FormData) {
   }
   await db.deal.update({ where: { id: dealId }, data: { economicsState: state, economicsNote: note, economicsByName: user.name, economicsAt: new Date(), ...(state === "FINAL" ? { economicsFinal: snap } : {}) } });
   back(dealId, "ok=estado");
+}
+
+/** Módulo 12 §12 · who shares this sale's commission. Gerencia decides, always with a reason. The earlier split is
+ *  kept as history; halves already approved or paid are not touched. */
+export async function saveAllocations(dealId: string, fd: FormData) {
+  const user = await requireUser();
+  const go = (qs: string): never => { refreshApp(); redirect(`/deals/${dealId}/economia?${qs}#reparto`); };
+  if (!isGerencia(user)) go("err=reparto-permiso");
+  const reason = txt(fd, "reason", 300);
+  const rows: SplitRow[] = [];
+  for (const pool of ["COMMERCIAL", "OPERATIONAL"]) for (let k = 0; k < 3; k++) {
+    const userId = String(fd.get(`${pool}_u${k}`) ?? "");
+    if (!userId) continue;
+    const raw = String(fd.get(`${pool}_p${k}`) ?? "").trim().replace(",", ".");
+    rows.push({ userId, pool, splitPct: raw && Number.isFinite(Number(raw)) ? Math.round(Number(raw) * 100) / 100 : null });
+  }
+  if (!reason) go("err=reparto-motivo");
+  const problem = splitProblem(rows);
+  if (problem) go(`err=reparto-${problem.toLowerCase()}`);
+  const users = await db.user.findMany({ where: { id: { in: rows.map((r) => r.userId) }, active: true }, select: { id: true } });
+  if (users.length !== new Set(rows.map((r) => r.userId)).size) go("err=reparto-persona");
+  await db.$transaction([
+    db.commissionAllocation.updateMany({ where: { dealId, supersededAt: null }, data: { supersededAt: new Date() } }),
+    db.commissionAllocation.createMany({ data: rows.map((r) => ({ dealId, userId: r.userId, pool: r.pool, splitPct: r.splitPct!, reason: reason!, setByName: user.name })) }),
+  ]);
+  go("ok=reparto");
 }
