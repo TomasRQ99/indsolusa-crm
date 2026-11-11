@@ -1,8 +1,8 @@
-// SOLU global navigation. Exactly 8 modules, in this order, never more.
+// SOLU global navigation. Nine modules, in this order (the ninth, Informes, by user decision I-01 of 2026-11-11).
 // Sections inside a module are tabs at the top of the content, so the
 // hierarchy is unequivocal: sidebar = module, tabs = section.
 
-export type ModuleKey = "midia" | "mercado" | "comercial" | "operaciones" | "administracion" | "proyectos" | "equipo" | "gerencia";
+export type ModuleKey = "midia" | "mercado" | "comercial" | "operaciones" | "administracion" | "proyectos" | "equipo" | "informes" | "gerencia";
 
 /** `group`: when a module has many sections, tabs are shown one group at a time (group row on top, its tabs below). */
 export type NavTab = { href: string; es: string; en: string; managerOnly?: boolean; adminOnly?: boolean; roles?: string[]; group?: keyof typeof NAV_GROUPS };
@@ -101,7 +101,15 @@ export const MODULES: NavModule[] = [
     ],
   },
   {
-    key: "gerencia", es: "GERENCIA/INSIGHTS", en: "MANAGEMENT/INSIGHTS", match: ["/gerencia"],
+    key: "informes", es: "INFORMES", en: "REPORTS", match: ["/informes"],
+    tabs: [
+      { href: "/informes", es: "Mi desempeño", en: "My performance" },
+      { href: "/informes/equipo", es: "Equipo", en: "Team" },
+      { href: "/informes/metricas", es: "Diccionario de métricas", en: "Metric dictionary" },
+    ],
+  },
+  {
+    key: "gerencia", es: "GERENCIA", en: "MANAGEMENT", match: ["/gerencia"],
     tabs: [
       { href: "/gerencia", es: "Insights", en: "Insights", managerOnly: true },
       { href: "/gerencia/comisiones", es: "Comisiones", en: "Commissions" },

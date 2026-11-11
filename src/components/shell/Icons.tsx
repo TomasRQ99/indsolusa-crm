@@ -17,6 +17,7 @@ export const MODULE_ICONS: Record<ModuleKey, React.ReactNode> = {
   equipo: (
     <svg {...base}><circle cx="9" cy="8.5" r="3.5" /><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5" /><circle cx="17" cy="9.5" r="2.5" /><path d="M17 14.5c2.4 0 4 1.5 4.5 4" /></svg>
   ),
+  informes: <svg {...base}><path d="M4 19h16M7 16v-5M12 16V6M17 16v-8" /></svg>,
   gerencia: <svg {...base}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>,
 };
 
