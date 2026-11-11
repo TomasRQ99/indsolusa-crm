@@ -23,6 +23,7 @@ export const ROLE_LABEL: Record<Role, { es: string; en: string }> = {
   FINANZAS: { es: "Finanzas", en: "Finance" },
   ADMINISTRACION: { es: "Administración", en: "Administration" },
   MARKETING: { es: "Mercadeo", en: "Marketing" },
+  JUNTA: { es: "Junta o asamblea (solo lectura)", en: "Board or assembly (read-only)" },
 };
 export const ROLES = Object.keys(ROLE_LABEL) as Role[];
 
@@ -88,3 +89,15 @@ export const canSetPay = (u: U) => u.role === "GERENCIA";
 export function canImportData(u: U) {
   return canManageAll(u) || u.role === "MARKETING";
 }
+
+// ---------- Junta o asamblea (Módulo 15 §13) ----------
+// A read-only role with a curated view. It opens only the addresses below, can change nothing except its own
+// profile (password, language), and never sees people data, commissions or the records of a customer.
+export const isBoard = (u: { role: string }) => u.role === "JUNTA";
+export const BOARD_HOME = "/gerencia/junta";
+const BOARD_PATHS = [BOARD_HOME, "/gerencia/identidad", "/gerencia/funciones", "/profile", "/shell-attention"];
+export const boardMayOpen = (path: string) => BOARD_PATHS.some((p) => path === p || path.startsWith(p + "/"));
+/** The only place a board member may save something: their own profile. */
+export const boardMayAct = (path: string) => path === "/profile" || path.startsWith("/profile/");
+/** Roles that work in SOLU every day (everything except the board). */
+export const WORK_ROLES = ROLES.filter((r) => r !== "JUNTA");

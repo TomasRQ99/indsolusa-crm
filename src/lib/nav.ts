@@ -143,6 +143,7 @@ export const MODULES: NavModule[] = [
     // the company identity and the function charters are open to every person.
     tabs: [
       { href: "/gerencia", es: "Inicio", en: "Home", group: "hoy", managerOnly: true },
+      { href: "/gerencia/junta", es: "Vista de Junta", en: "Board view", group: "hoy", roles: ["JUNTA", "GERENCIA"] },
       { href: "/gerencia/decisiones", es: "Decisiones", en: "Decisions", group: "hoy" },
       { href: "/gerencia/cierre", es: "Cierre ejecutivo", en: "Executive close", group: "hoy", managerOnly: true },
       { href: "/gerencia/futuro", es: "Puente al futuro", en: "Future bridge", group: "direccion", managerOnly: true },

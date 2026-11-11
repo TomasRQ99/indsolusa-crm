@@ -190,3 +190,42 @@ which were checked).
 
 Limits closed by this round: no sample data; no quarterly screen; `policy.exception_escalated` for purchases only
 (now also internal purchases). The other limits of section 6 stand.
+
+## 8. Third round — 2026-11-11 (the three open items of §13 and §10)
+
+Decisions (my defaults, G-11 to G-13):
+
+| # | Decision |
+|---|---|
+| G-11 | **Junta o asamblea** is a new role, `JUNTA`, read-only. It opens only `/gerencia/junta`, the identity, the function charters and its own profile; it can save nothing except its own profile. It sees no person, pay, commission or customer record. Gerencia assigns it in Equipo → Personas y datos and can preview the view. |
+| G-12 | **Selling company:** a Journey, its invoices and its purchases belong to the company that sells it (`Deal.sellerKey`). The per-company table and the filter on the bridge appear only when more than one company has data or is switched on. Future opportunities belong to no company. |
+| G-13 | **Email of closes:** to active Gerencia people only, with counts and a link and never amounts or names (same rule as the monthly reminder, I-06). Cadence in the Gerencia policy: Mondays (starting value), every working day only when something waits, or never. From 7:00 company time, never on weekends. |
+
+Built:
+
+- Migration `20270106120000_m15_junta_role` (adds the role value). `permissions.ts`: `isBoard`, `boardMayOpen`,
+  `boardMayAct`, `WORK_ROLES`. The middleware passes the address being opened to the server (`x-solu-path`, always
+  overwritten there); `requireUser()` keeps the role inside its pages and refuses any server action outside the
+  profile; `getCurrentUser()` answers "nobody" for it outside its pages, so the download and data routes refuse by
+  themselves. The menu shows it only its pages; its bell is empty.
+- `/gerencia/junta`: purpose, strategic priorities, five pulse blocks and six exposure lines (no people), the eight
+  stages, concentration as percentages without names, per-company table, decisions of the last 90 days. No links
+  into the modules.
+- `entityBreakdown` (`gerencia-views.ts`), the "Por empresa vendedora" card on the Home, and `?empresa=` on the
+  bridge (`futureBridge(seller)`, `focusItems(..., { sellerKey })`).
+- `gerencia-brief.ts` (job `GERENCIA_BRIEF`, one slot per local working day, a single attempt), `briefDue`,
+  `briefText`, `briefWorthSending`; `closeEmail` in the Gerencia policy and its form.
+
+Checked: type check clean; build passes, also at 2 GB; 31 rule and database checks (cadence by local day and hour,
+email text, board paths, companies add up to the pulse and to the whole bridge stage by stage, a board member is
+not in people and capacity, the job in dry-run for off / weekly / daily); 43 browser checks, no browser errors
+(the board member is sent to its view from thirteen addresses, cannot download report or accounting files or read
+a data route, a real publish attempt sent with a board session is refused and publishes nothing, the menu and the
+view link only to board pages; Gerencia previews it; company card and filter; email setting saved).
+
+Not checked: a real email leaving through Microsoft Graph (the job ran in dry-run); the board member changing its
+own password or language on the profile (the profile opens and the rule allows it).
+
+Limits: a board member can still be picked in lists of people elsewhere in SOLU (as an owner or a cover); the
+board view is in the company's main currency only; the per-company figures are not a permission (nobody is limited
+to one company); the email is plain text.

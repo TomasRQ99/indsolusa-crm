@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
-import { canManageAll, isGerencia, ROLE_LABEL } from "@/lib/permissions";
+import { boardMayOpen, canManageAll, isBoard, isGerencia, ROLE_LABEL } from "@/lib/permissions";
 import { MODULES, NAV_GROUPS } from "@/lib/nav";
 import { ShellClient, type ShellModule } from "@/components/shell/ShellClient";
 
@@ -11,12 +11,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const i = makeI18n(user.lang);
   const { t, es } = i;
   const manager = canManageAll(user);
+  // Junta o asamblea: only its curated pages, and only the modules that hold one.
+  const board = isBoard(user);
   // Counters and alerts are fetched by the shell itself (/shell-attention) after the page is
   // on screen. A promise streamed in the layout made the router wait seconds after each save.
 
-  const modules: ShellModule[] = MODULES.map((m) => {
+  const modules: ShellModule[] = MODULES.filter((m) => !board || m.tabs.some((tab) => boardMayOpen(tab.href))).map((m) => {
     const tabs = m.tabs
-      .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || isGerencia(user)) && (!tab.roles || tab.roles.includes(user.role)))
+      .filter((tab) => (!tab.managerOnly || manager) && (!tab.adminOnly || isGerencia(user)) && (!tab.roles || tab.roles.includes(user.role)) && (!board || boardMayOpen(tab.href)))
       .map((tab) => ({ href: tab.href, label: es ? tab.es : tab.en, ...(tab.group ? { group: es ? NAV_GROUPS[tab.group].es : NAV_GROUPS[tab.group].en } : {}) }));
     return { key: m.key, label: es ? m.es : m.en, href: tabs[0]?.href ?? m.match[0], match: m.match, tabs };
   });

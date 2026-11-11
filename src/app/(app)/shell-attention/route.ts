@@ -6,6 +6,8 @@ import { shellAttention } from "@/lib/attention";
 // Kept out of the page payload so neither page loads nor saves ever wait for them.
 export async function GET() {
   const user = await requireUser();
+  // Junta o asamblea: nothing in SOLU waits for a read-only role.
+  if (user.role === "JUNTA") return Response.json({ counters: {}, alerts: [] }, { headers: { "Cache-Control": "private, no-store" } });
   const data = await shellAttention(user, makeI18n(user.lang));
   return Response.json(data, { headers: { "Cache-Control": "private, no-store" } });
 }

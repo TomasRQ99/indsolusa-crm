@@ -133,21 +133,23 @@ const usdTxt = (n: number) => `USD ${n < 0 ? "−" : ""}${Math.abs(n).toLocaleSt
 
 export type BridgeStage = { key: BridgeKey; n: number; usd: number | null; esagara: number | null; basis: Txt; href: string };
 
-export async function futureBridge() {
+export async function futureBridge(seller: string | null = null) {
+  // One selling company (§13): a Journey, its invoices and its purchases belong to the company that sells it.
+  const own = seller ? { sellerKey: seller } : {};
   const T = today();
   const [fpol, gpol] = await Promise.all([getFocusPolicy(), getGerenciaPolicy()]);
   const [views, hv, opportunities, accepted, invoices, openPos] = await Promise.all([
-    focusViews(null, fpol.value), highValueCommitments(),
+    focusViews(null, fpol.value, own), highValueCommitments(),
     db.futureOpportunity.count({ where: { status: "OPEN" } }),
-    db.deal.findMany({ where: { internal: false, poAcceptedAt: { not: null }, stage: { not: "LOST" } }, select: {
+    db.deal.findMany({ where: { internal: false, poAcceptedAt: { not: null }, stage: { not: "LOST" }, ...own }, select: {
       id: true, code: true, title: true, account: { select: { id: true, name: true } },
       quotes: { where: { status: "ACCEPTED" }, orderBy: { decidedAt: "desc" }, take: 1, select: { protSale: true, protEsagra: true } },
       invoices: { select: { amount: true } },
       deliveries: { where: { invoice: null }, select: { lines: { select: { qty: true, dealItem: { select: { unitPrice: true } } } } } },
       supplierPos: { where: { releasedAt: { not: null } }, select: { id: true }, take: 1 }, dispatchOrders: { where: { cancelledAt: null }, select: { id: true }, take: 1 }, stockLots: { where: { state: "COMMITTED" }, select: { id: true }, take: 1 },
     } }),
-    db.invoice.findMany({ select: { amount: true, esagraAtIssue: true, accountId: true, account: { select: { name: true } }, applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } } } }),
-    db.supplierPO.findMany({ where: { releasedAt: { not: null }, receivedAt: null, currency: "USD" }, select: { amount: true, supplierId: true, supplier: { select: { name: true } } } }),
+    db.invoice.findMany({ where: seller ? { deal: own } : {}, select: { amount: true, esagraAtIssue: true, accountId: true, account: { select: { name: true } }, applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } } } }),
+    db.supplierPO.findMany({ where: { releasedAt: { not: null }, receivedAt: null, currency: "USD", ...(seller ? { deal: own } : {}) }, select: { amount: true, supplierId: true, supplier: { select: { name: true } } } }),
   ]);
   const items = views.items;
   const needs = items.filter((x) => !x.quoteStatus), drafts = items.filter((x) => x.quoteStatus === "DRAFT"), presented = items.filter((x) => x.quoteStatus === "PRESENTED");
@@ -195,6 +197,8 @@ export async function futureBridge() {
     customerAr: concentration(list(arBy), gpol.value.concentrationPct),
     supplier: concentration(list(bySupplier), gpol.value.concentrationPct),
   };
-  return { asOf: new Date(), stages, views, hv, conc, focus: fpol.value, now: T };
+  // High-value commitments are read for the whole company: keep those of this selling company.
+  const mine = new Set(accepted.map((d) => d.id));
+  return { asOf: new Date(), stages, views, hv: seller ? { ...hv, rows: hv.rows.filter((r) => mine.has(r.deal.id)) } : hv, conc, focus: fpol.value, now: T, seller };
 }
 export type FutureBridge = Awaited<ReturnType<typeof futureBridge>>;

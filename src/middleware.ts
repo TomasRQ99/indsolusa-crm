@@ -7,7 +7,11 @@ export async function middleware(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith("/login")) return NextResponse.next();
   const userId = await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!userId) return NextResponse.redirect(new URL("/login", req.url));
-  return NextResponse.next();
+  // The address being opened travels with the request, so requireUser() can keep a read-only role (Junta) inside
+  // its curated pages. Set here, never trusted from the browser: an incoming header of this name is overwritten.
+  const headers = new Headers(req.headers);
+  headers.set("x-solu-path", req.nextUrl.pathname);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {

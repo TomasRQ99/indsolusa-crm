@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { addDays, today } from "./domain";
 import { focusItems, getFocusPolicy } from "./focus";
-import { ROLES } from "./permissions";
+import { WORK_ROLES as ROLES } from "./permissions";
 
 // Módulo 15 §9, §21 · People & capacity as Gerencia sees it: who is away and whether someone covers, who carries too
 // much cover, which relationships and roles have nobody behind them, what support the company owes. It reads facts
@@ -11,7 +11,7 @@ export async function peopleCapacity(now = today()) {
   const horizon = addDays(now, 30);
   const pol = await getFocusPolicy();
   const [people, absences, coverages, backups, strategic, teams, gaps, items, openDeals, overdueMoves] = await Promise.all([
-    db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, role: true } }),
+    db.user.findMany({ where: { active: true, role: { not: "JUNTA" } }, orderBy: { name: "asc" }, select: { id: true, name: true, role: true } }),
     // The kind and the note of an absence are deliberately not read here.
     db.absenceRecord.findMany({ where: { status: "APPROVED", endsOn: { gte: now }, startsOn: { lte: horizon } }, orderBy: { startsOn: "asc" }, select: { id: true, userId: true, startsOn: true, endsOn: true, user: { select: { name: true, active: true } } } }),
     db.coverageAssignment.findMany({ where: { revokedAt: null, endsAt: { gt: now } }, select: { id: true, originalUserId: true, actingUserId: true, startsAt: true, endsAt: true, actingUser: { select: { name: true } }, originalUser: { select: { name: true } } } }),

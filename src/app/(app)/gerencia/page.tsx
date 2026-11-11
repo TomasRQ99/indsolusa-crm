@@ -5,6 +5,7 @@ import { canManageAll, isGerencia } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { today } from "@/lib/domain";
 import { gerenciaHome, WATCHED_TEXT } from "@/lib/gerencia-home";
+import { entityBreakdown } from "@/lib/gerencia-views";
 import { DECISION_STAGE } from "@/lib/gerencia-rules";
 import { NeededCard, TileCard } from "./ui";
 
@@ -24,6 +25,7 @@ export default async function GerenciaHomePage() {
   const tt = (x: Txt) => t(x.es, x.en);
   const ger = isGerencia(user);
   const h = await gerenciaHome(user);
+  const entities = await entityBreakdown(h.period);
   const T = today();
   const n = h.needed;
   const quiet = n.shown.length === 0 && h.queue.length === 0 && n.reviewDue.length === 0;
@@ -71,6 +73,14 @@ export default async function GerenciaHomePage() {
           <tbody>{h.exposure.filter((e) => ger || e.key !== "people").map((e) => <tr key={e.key}><td><Link href={e.href}><b>{tt(e.title)}</b></Link></td><td className="n mono"><span className={e.tone === "risk" ? "risk-t" : e.tone === "attn" ? "attn-t" : ""}>{e.value}</span></td><td className="small">{tt(e.detail)}</td></tr>)}</tbody>
         </table></div>
       </section>
+      {entities.length > 1 && (
+        <section className="card" id="empresas"><b>{t("POR EMPRESA VENDEDORA", "BY SELLING COMPANY")}</b> <span className="small muted">{t("un Journey pertenece a la empresa que lo vende", "a Journey belongs to the company that sells it")}</span>
+          <div className="tscroll"><table>
+            <thead><tr><th>{t("Empresa", "Company")}</th><th className="n">{t("Venta del mes", "Sales this month")}</th><th className="n">Eságara</th><th className="n">{t("Contratado por facturar", "Contracted, to invoice")}</th><th className="n">{t("Por cobrar", "Outstanding")}</th><th className="n">{t("Journeys abiertos", "Open Journeys")}</th></tr></thead>
+            <tbody>{entities.map((e) => <tr key={e.key}><td><Link href={`/gerencia/futuro?empresa=${e.key}`}>{e.name}</Link>{!e.active ? <span className="sig wait" style={{ marginLeft: 6 }}>{t("desactivada", "switched off")}</span> : null}</td><td className="n mono">{i.money(e.sale)}</td><td className="n mono">{i.money(e.esagara)}{e.pct != null ? ` · ${i.pct(e.pct)}` : ""}</td><td className="n mono">{i.money(e.toInvoice)}</td><td className="n mono">{i.money(e.outstanding)}</td><td className="n mono">{e.open}</td></tr>)}</tbody>
+          </table></div>
+        </section>
+      )}
       <p className="src">{t("Cada cifra abre el lugar donde está su evidencia y es la misma que ve el equipo en su módulo. «Hoy» es una foto del momento; lo demás cuenta lo ocurrido en el mes.", "Each figure opens the place where its evidence lives and is the same the team sees in its module. \"Today\" is a snapshot of the moment; the rest counts what happened in the month.")}</p>
     </>
   );

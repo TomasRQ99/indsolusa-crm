@@ -27,10 +27,11 @@ const POS: Record<string, Txt> = {
 };
 
 /** Open Journeys (not lost, result not achieved) of one owner or of everyone. */
-export async function focusItems(ownerId: string | null, policy: FocusPolicy): Promise<FocusItem[]> {
+/** `extra` narrows the Journeys further (Módulo 15: one selling company). */
+export async function focusItems(ownerId: string | null, policy: FocusPolicy, extra: { sellerKey?: string } = {}): Promise<FocusItem[]> {
   const T = today();
   const deals = await db.deal.findMany({
-    where: { internal: false, stage: { not: "LOST" }, resultAchievedAt: null, ...(ownerId ? { ownerId } : {}) },
+    where: { internal: false, stage: { not: "LOST" }, resultAchievedAt: null, ...(ownerId ? { ownerId } : {}), ...extra },
     select: {
       id: true, code: true, title: true, createdAt: true, desiredResult: true, nextMove: true, nextMoveDate: true, promisedDate: true, ownerId: true,
       owner: { select: { name: true } }, account: { select: { id: true, name: true } },
@@ -65,8 +66,8 @@ export async function focusItems(ownerId: string | null, policy: FocusPolicy): P
   });
 }
 
-export async function focusViews(ownerId: string | null, policy: FocusPolicy) {
-  const items = await focusItems(ownerId, policy);
+export async function focusViews(ownerId: string | null, policy: FocusPolicy, extra: { sellerKey?: string } = {}) {
+  const items = await focusItems(ownerId, policy, extra);
   const T = today();
   const monthEnd = new Date(Date.UTC(T.getUTCFullYear(), T.getUTCMonth() + 1, 1));
   const byEsagara = (a: FocusItem, b: FocusItem) => (b.esagara ?? -Infinity) - (a.esagara ?? -Infinity);

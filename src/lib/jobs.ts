@@ -1,6 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { db } from "./db";
+import { briefDue } from "./gerencia-rules";
 
 // Durable worker (decision 2026-11-10). Render's free plan has no background processes, so a free GitHub
 // schedule calls POST /api/worker every 15 minutes with a key. Each call:
@@ -11,7 +12,7 @@ import { db } from "./db";
 // Every call is recorded in WorkerRun. Nothing here sends money. The only email it sends on its own is the monthly
 // reminder to Gerencia that the Business Pulse is ready to issue (decision 2026-11-11).
 
-export const JOB_KINDS = ["MAIL_REPLIES", "CUSTOMER_MAIL", "CATALOG_SYNC", "PAY_BEHAVIOR", "PAY_BEHAVIOR_ALL", "HOUSEKEEPING", "PULSE_REMINDER", "ADMIN_DAILY", "GERENCIA_DAILY"] as const;
+export const JOB_KINDS = ["MAIL_REPLIES", "CUSTOMER_MAIL", "CATALOG_SYNC", "PAY_BEHAVIOR", "PAY_BEHAVIOR_ALL", "HOUSEKEEPING", "PULSE_REMINDER", "ADMIN_DAILY", "GERENCIA_DAILY", "GERENCIA_BRIEF"] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
 
 export const JOB_LABEL: Record<JobKind, [string, string]> = {
@@ -24,6 +25,7 @@ export const JOB_LABEL: Record<JobKind, [string, string]> = {
   PULSE_REMINDER: ["Avisar a Gerencia que el informe del mes está listo para emitir", "Remind Management that the month's report is ready to issue"],
   ADMIN_DAILY: ["Revisar promesas de pago vencidas y obligaciones con decisión cercana", "Check payment promises past their date and obligations with a decision coming"],
   GERENCIA_DAILY: ["Guardar la foto diaria de Gerencia y anotar los cambios materiales", "Save Management's daily picture and note material changes"],
+  GERENCIA_BRIEF: ["Avisar a Gerencia por correo que el cierre ejecutivo está listo", "Email Management that the executive close is ready"],
 };
 
 /** Slot keys contain "@": they stay forever (a slot runs once). Plain keys are released when the job ends. */
@@ -86,6 +88,10 @@ const HANDLERS: Record<JobKind, Handler> = {
     const { gerenciaDaily } = await import("./gerencia-daily");
     return gerenciaDaily();
   },
+  async GERENCIA_BRIEF() {
+    const { gerenciaBrief } = await import("./gerencia-brief");
+    return gerenciaBrief();
+  },
 };
 
 // ---------- planning ----------
@@ -101,6 +107,9 @@ export async function planRecurring(now = new Date()) {
   await enqueue("HOUSEKEEPING", {}, { dedupeKey: `HOUSEKEEPING@${day}`, maxAttempts: 2 });
   await enqueue("ADMIN_DAILY", {}, { dedupeKey: `ADMIN_DAILY@${day}`, maxAttempts: 3 });
   await enqueue("GERENCIA_DAILY", {}, { dedupeKey: `GERENCIA_DAILY@${day}`, maxAttempts: 3 });
+  // Working days from 7 in the morning, company time: the job itself reads the policy (off, daily or Mondays).
+  const brief = briefDue("DAILY", now);
+  if (brief) await enqueue("GERENCIA_BRIEF", {}, { dedupeKey: `GERENCIA_BRIEF@${brief.day}`, maxAttempts: 1 });
   // Once a month, in its first week: the month that just ended is ready to issue.
   if (now.getUTCDate() <= 7) await enqueue("PULSE_REMINDER", {}, { dedupeKey: `PULSE_REMINDER@${day.slice(0, 7)}`, maxAttempts: 3 });
 }

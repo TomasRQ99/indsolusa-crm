@@ -40,9 +40,11 @@ export type GerenciaPolicy = {
   changePct: number;
   /** roles that may publish the company identity and the function charters */
   publishRoles: string[];
+  /** email to Gerencia that the executive close is ready: never, every working day when something waits, or on Mondays */
+  closeEmail: "OFF" | "DAILY" | "WEEKLY";
 };
 /** Starting values, to be confirmed by Gerencia (decision G-04). */
-export const DEFAULT_GERENCIA_POLICY: GerenciaPolicy = { decisionMaterialUsd: 0, queueMax: 9, concentrationPct: 30, patternCount: 3, patternDays: 90, charterReviewDays: 365, changePct: 20, publishRoles: ["GERENCIA"] };
+export const DEFAULT_GERENCIA_POLICY: GerenciaPolicy = { decisionMaterialUsd: 0, queueMax: 9, concentrationPct: 30, patternCount: 3, patternDays: 90, charterReviewDays: 365, changePct: 20, publishRoles: ["GERENCIA"], closeEmail: "WEEKLY" };
 const num = (x: unknown) => { const s = String(x ?? "").trim().replace(",", "."); const n = Number(s); return s !== "" && Number.isFinite(n) ? n : NaN; };
 export function cleanGerenciaPolicy(v: unknown, validRoles: readonly string[]): GerenciaPolicy | null {
   const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
@@ -50,13 +52,15 @@ export function cleanGerenciaPolicy(v: unknown, validRoles: readonly string[]): 
   const roles = [...new Set((Array.isArray(o.publishRoles) ? o.publishRoles : []).map(String).filter((r) => validRoles.includes(r)))];
   // Gerencia can never be left out of its own authority: otherwise nobody could put it back.
   if (!roles.includes("GERENCIA")) return null;
+  const mail = String(o.closeEmail ?? DEFAULT_GERENCIA_POLICY.closeEmail);
+  if (mail !== "OFF" && mail !== "DAILY" && mail !== "WEEKLY") return null;
   if (!(mat >= 0 && mat <= 1e9) || !(max >= 3 && max <= 30) || !(conc >= 5 && conc <= 100) || !(pc >= 2 && pc <= 50) || !(pd >= 7 && pd <= 730) || !(rev >= 30 && rev <= 1825) || !(chg >= 1 && chg <= 500)) return null;
-  return { decisionMaterialUsd: Math.round(mat * 100) / 100, queueMax: max, concentrationPct: Math.round(conc * 10) / 10, patternCount: pc, patternDays: pd, charterReviewDays: rev, changePct: Math.round(chg * 10) / 10, publishRoles: roles };
+  return { decisionMaterialUsd: Math.round(mat * 100) / 100, queueMax: max, concentrationPct: Math.round(conc * 10) / 10, patternCount: pc, patternDays: pd, charterReviewDays: rev, changePct: Math.round(chg * 10) / 10, publishRoles: roles, closeEmail: mail };
 }
 export const readGerenciaPolicy = (v: unknown): GerenciaPolicy => {
   const o = (v && typeof v === "object" ? v : {}) as Partial<GerenciaPolicy>;
   const p = { ...DEFAULT_GERENCIA_POLICY, ...o };
-  return { ...p, publishRoles: Array.isArray(p.publishRoles) && p.publishRoles.includes("GERENCIA") ? p.publishRoles : DEFAULT_GERENCIA_POLICY.publishRoles };
+  return { ...p, publishRoles: Array.isArray(p.publishRoles) && p.publishRoles.includes("GERENCIA") ? p.publishRoles : DEFAULT_GERENCIA_POLICY.publishRoles, closeEmail: p.closeEmail === "OFF" || p.closeEmail === "DAILY" ? p.closeEmail : "WEEKLY" };
 };
 /** §26: only the configured authority publishes an identity or a charter. */
 export const canPublish = (role: string, p: GerenciaPolicy) => p.publishRoles.includes(role);
@@ -419,4 +423,34 @@ export function trendOf(cur: { num: number; den: number }, base: { num: number; 
   if (c == null || b == null || cur.den < minSample || base.den < minSample) return { cur: c, base: b, trend: "THIN" };
   const d = c - b;
   return { cur: c, base: b, trend: Math.abs(d) < minPts ? "SAME" : d > 0 ? "UP" : "DOWN" };
+}
+
+// ---------- Email that the executive close is ready (§10, §19) ----------
+
+export type BriefKind = "DAILY" | "WEEKLY";
+/** Which email is due at this moment, in the company's time zone. Nothing on weekends and nothing before 7 in the
+ *  morning. On Mondays the weekly one (it covers the week that ended); other working days the daily one, only when
+ *  the policy says daily. Returns the local date too, so the email is sent once per day. */
+export function briefDue(mode: GerenciaPolicy["closeEmail"], now: Date, tz = "America/Bogota"): { kind: BriefKind; day: string } | null {
+  if (mode === "OFF") return null;
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", weekday: "short", hour: "2-digit", hourCycle: "h23" }).formatToParts(now).map((x) => [x.type, x.value]));
+  if (p.weekday === "Sat" || p.weekday === "Sun" || Number(p.hour) < 7) return null;
+  const day = `${p.year}-${p.month}-${p.day}`;
+  if (p.weekday === "Mon") return { kind: "WEEKLY", day };
+  return mode === "DAILY" ? { kind: "DAILY", day } : null;
+}
+export type BriefCounts = { waiting: number; review: number; exceptions: number };
+/** The daily email is sent only when something waits; the weekly one always (the week's close is ready either way). */
+export const briefWorthSending = (kind: BriefKind, c: BriefCounts) => kind === "WEEKLY" || c.waiting + c.review + c.exceptions > 0;
+/** Counts and a link, never amounts or names: the close lives in SOLU, not in a mailbox. */
+export function briefText(kind: BriefKind, lang: string, url: string | null, c: BriefCounts, refDay: string) {
+  const en = lang === "EN" || lang === "en";
+  const link = url ? `${url}/gerencia/cierre?tipo=${kind === "WEEKLY" ? "semana" : "dia"}&ref=${refDay}` : null;
+  const lines = en
+    ? [`Decisions waiting for you: ${c.waiting}`, `Decisions to review against what happened: ${c.review}`, `Material exceptions: ${c.exceptions}`]
+    : [`Decisiones que te esperan: ${c.waiting}`, `Decisiones por revisar contra lo que pasó: ${c.review}`, `Excepciones materiales: ${c.exceptions}`];
+  const subject = en ? (kind === "WEEKLY" ? "SOLU: last week's executive close is ready" : `SOLU: ${c.waiting + c.review + c.exceptions} matter(s) need Management today`) : kind === "WEEKLY" ? "SOLU: el cierre ejecutivo de la semana pasada está listo" : `SOLU: ${c.waiting + c.review + c.exceptions} asunto(s) necesitan a Gerencia hoy`;
+  const intro = en ? (kind === "WEEKLY" ? "The week has ended and its executive close is ready in SOLU: MANAGEMENT → Executive close → Week." : "This is what waits in SOLU today: MANAGEMENT → Home.") : kind === "WEEKLY" ? "La semana terminó y su cierre ejecutivo está listo en SOLU: GERENCIA → Cierre ejecutivo → Semana." : "Esto espera hoy en SOLU: GERENCIA → Inicio.";
+  const foot = en ? "This email carries no amounts or names: they are in SOLU. To stop or change it: MANAGEMENT → Policies and authority." : "Este correo no trae valores ni nombres: están en SOLU. Para apagarlo o cambiarlo: GERENCIA → Políticas y autoridad.";
+  return { subject, text: `${intro}\n\n${lines.join("\n")}${link ? `\n\n${link}` : ""}\n\n${foot}\n\nSOLU · Industry Solutions` };
 }

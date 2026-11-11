@@ -2,6 +2,9 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { futureBridge } from "@/lib/gerencia-home";
+import { entityBreakdown } from "@/lib/gerencia-views";
+import { periodOf } from "@/lib/goal-rules";
+import { today } from "@/lib/domain";
 import { BRIDGE_STAGES, type Share } from "@/lib/gerencia-rules";
 import type { FocusItem } from "@/lib/focus";
 
@@ -11,12 +14,16 @@ import type { FocusItem } from "@/lib/focus";
 
 type Txt = { es: string; en: string };
 
-export default async function FutureBridgePage() {
+export default async function FutureBridgePage({ searchParams }: { searchParams: Promise<{ empresa?: string }> }) {
   const user = await requireRole("GERENCIA", "DIRECTOR_COMERCIAL");
   const i = makeI18n(user.lang);
   const { t } = i;
   const tt = (x: Txt) => t(x.es, x.en);
-  const b = await futureBridge();
+  const sp = await searchParams;
+  const entities = await entityBreakdown(periodOf(today()));
+  // The filter exists only when more than one company sells; an unknown key means "all".
+  const seller = entities.length > 1 && entities.some((e) => e.key === sp.empresa) ? sp.empresa! : null;
+  const b = await futureBridge(seller);
   const v = b.views;
   const esBuckets = b.stages.filter((s) => s.esagara != null);
 
@@ -42,6 +49,13 @@ export default async function FutureBridgePage() {
         <p className="small">{t("calculado", "as of")} {i.date(b.asOf)}</p>
       </div></div>
 
+      {entities.length > 1 && (
+        <nav className="iv-tabs" id="empresa" aria-label={t("Empresa vendedora", "Selling company")}>
+          <Link href="/gerencia/futuro" className={seller ? "" : "on"}>{t("Todas las empresas", "All companies")}</Link>
+          {entities.map((e) => <Link key={e.key} href={`/gerencia/futuro?empresa=${e.key}`} className={seller === e.key ? "on" : ""}>{e.name}</Link>)}
+        </nav>
+      )}
+      {seller && <p className="src">{t("Se muestran los Journeys, facturas y compras de esta empresa. Las oportunidades futuras no pertenecen a una empresa: su conteo es de toda la compañía.", "Journeys, invoices and purchases of this company are shown. Future opportunities belong to no company: their count is company-wide.")}</p>}
       <div className="gm-bridge" id="puente">
         {BRIDGE_STAGES.map((def, k) => { const s = b.stages.find((x) => x.key === def.key)!; return (
           <section key={def.key} className={`gm-stage${s.usd != null ? " money" : ""}`} id={`st-${def.key}`}>

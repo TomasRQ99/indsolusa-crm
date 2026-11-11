@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { canManageAll, isGerencia, ROLE_LABEL, ROLES } from "@/lib/permissions";
+import { canManageAll, isGerencia, ROLE_LABEL, WORK_ROLES as ROLES } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { dayInput, today } from "@/lib/domain";

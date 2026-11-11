@@ -285,3 +285,27 @@ export async function systemPerformance(now = today()) {
   ];
   return { asOf: new Date(), from: mid, to: now, baseFrom: start, rows, lowerIsBetter: new Set(["paydays", "absence"]), neutral: new Set(["coverage", "absence"]) };
 }
+
+// ---------- §13 By selling company (AC19) ----------
+
+/** The same four figures for each company that sells: what was accepted this month, what is contracted and not
+ *  invoiced, what is owed to it, and how many Journeys are open. A Journey belongs to the company that sells it. */
+export async function entityBreakdown(period: string) {
+  const { start, end } = periodBounds(period);
+  const [sellers, accepted, contracted, invoices, open] = await Promise.all([
+    db.sellingEntity.findMany({ select: { key: true, legalName: true, active: true } }),
+    db.quote.findMany({ where: { status: "ACCEPTED", decidedAt: { gte: start, lt: end }, deal: { internal: false } }, select: { protSale: true, protEsagra: true, deal: { select: { sellerKey: true } } } }),
+    db.deal.findMany({ where: { internal: false, poAcceptedAt: { not: null }, stage: { not: "LOST" } }, select: { sellerKey: true, quotes: { where: { status: "ACCEPTED" }, orderBy: { decidedAt: "desc" }, take: 1, select: { protSale: true } }, invoices: { select: { amount: true } } } }),
+    db.invoice.findMany({ where: { deal: { internal: false } }, select: { amount: true, deal: { select: { sellerKey: true } }, applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } } } }),
+    db.deal.groupBy({ by: ["sellerKey"], where: { internal: false, stage: { notIn: ["WON", "LOST"] } }, _count: { _all: true } }),
+  ]);
+  const keys = [...new Set([...sellers.filter((s) => s.active).map((s) => s.key), ...accepted.map((q) => q.deal.sellerKey), ...contracted.map((d) => d.sellerKey), ...open.map((g) => g.sellerKey)])].sort((a, b) => (a === "USA" ? -1 : b === "USA" ? 1 : a.localeCompare(b)));
+  return keys.map((key) => {
+    const acc = accepted.filter((q) => q.deal.sellerKey === key);
+    const toInvoice = contracted.filter((d) => d.sellerKey === key).reduce((s, d) => s + Math.max(0, Number(d.quotes[0]?.protSale ?? 0) - sumMoney(d.invoices.map((i) => i.amount))), 0);
+    const owed = invoices.filter((i) => i.deal.sellerKey === key).reduce((s, i) => { const c = invoiceCash(i); return s + Math.max(0, c.balance - c.pendingReconcile); }, 0);
+    const sale = sumMoney(acc.map((q) => q.protSale)), esagara = sumMoney(acc.map((q) => q.protEsagra));
+    return { key, name: sellers.find((s) => s.key === key)?.legalName || key, active: sellers.find((s) => s.key === key)?.active ?? false, sale, esagara, pct: sale > 0 ? sharePct(esagara, sale) : null, toInvoice: r2(toInvoice), outstanding: r2(owed), open: open.find((g) => g.sellerKey === key)?._count._all ?? 0 };
+  });
+}
+export type EntityRow = Awaited<ReturnType<typeof entityBreakdown>>[number];

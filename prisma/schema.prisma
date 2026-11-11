@@ -21,6 +21,8 @@ enum Role {
   MARKETING
   /// Administración (decision O-02, 2026-11-10): same powers as Finanzas for now; approves purchases.
   ADMINISTRACION
+  /// Junta o asamblea (Módulo 15 §13): read-only, a curated view only. Never edits, never sees people data.
+  JUNTA
 }
 
 enum Lang {

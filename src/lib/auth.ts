@@ -1,9 +1,10 @@
 import { cache } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Lang, Role } from "@prisma/client";
 import { db } from "./db";
 import { coveringNow } from "./coverage";
+import { BOARD_HOME, boardMayAct, boardMayOpen, isBoard } from "./permissions";
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, signSessionToken, verifySessionToken } from "./session-token";
 
 export type SessionUser = { id: string; name: string; email: string; role: Role; lang: Lang; workdayMinutes: number; outlookConnectedAt: Date | null; covering: string[] };
@@ -25,7 +26,7 @@ export async function destroySession() {
 
 // The token only carries the user id; role and active status are read from the DB
 // on every request, so role changes and deactivations take effect immediately.
-export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
+const loadUser = cache(async (): Promise<SessionUser | null> => {
   const userId = await verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
   if (!userId) return null;
   const user = await db.user.findUnique({
@@ -47,9 +48,31 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   };
 });
 
+/** The signed-in person. For the read-only Junta role this answers "nobody" outside its curated pages, so every
+ *  download or data route that asks who is there refuses by itself (Módulo 15 §13). */
+export async function getCurrentUser(): Promise<SessionUser | null> {
+  const user = await loadUser();
+  if (user && isBoard(user)) {
+    try {
+      const h = await headers();
+      const path = h.get("x-solu-path") ?? "";
+      if (!boardMayOpen(path) || (h.has("next-action") && !boardMayAct(path))) return null;
+    } catch { return null; }
+  }
+  return user;
+}
+
 export async function requireUser(): Promise<SessionUser> {
-  const user = await getCurrentUser();
+  const user = await loadUser();
   if (!user) redirect("/login");
+  // Junta o asamblea (Módulo 15 §13): read-only and curated. Every page and every action passes through here, so
+  // this one check keeps the role inside its pages and stops it from saving anything but its own profile.
+  if (isBoard(user)) {
+    const h = await headers();
+    const path = h.get("x-solu-path") ?? "";
+    if (h.has("next-action") && !boardMayAct(path)) redirect(`${BOARD_HOME}?err=solo-lectura`);
+    if (!boardMayOpen(path)) redirect(BOARD_HOME);
+  }
   return user;
 }
 

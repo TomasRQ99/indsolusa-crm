@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { isGerencia, ROLES } from "@/lib/permissions";
+import { isGerencia, WORK_ROLES as ROLES } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { fDay, fPick, fText } from "@/lib/fd";
 import { FUNCTIONS, GERENCIA_POLICY_KEY, canPublish, changedFields, charterIssues, cleanGerenciaPolicy, identityIssues, parseInterfaces, parseLines, parsePairs } from "@/lib/gerencia-rules";

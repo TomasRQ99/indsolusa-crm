@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth";
-import { isGerencia, ROLE_LABEL, ROLES } from "@/lib/permissions";
+import { isGerencia, ROLE_LABEL, WORK_ROLES as ROLES } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { policyOversight } from "@/lib/gerencia-views";
 import { Notes } from "../ui";
@@ -79,6 +79,12 @@ export default async function OversightPage({ searchParams }: { searchParams: Pr
             <label style={{ flex: "1 1 200px" }}>{t("…dentro de estos días", "…within this many days")}<input name="patternDays" inputMode="numeric" required defaultValue={P.patternDays} disabled={!ger} /></label>
             <label style={{ flex: "1 1 240px" }}>{t("Una carta de función pide revisión a estos días", "A function charter asks for a review after this many days")}<input name="charterReviewDays" inputMode="numeric" required defaultValue={P.charterReviewDays} disabled={!ger} /></label>
           </div>
+          <label style={{ maxWidth: 520 }}>{t("Correo a Gerencia cuando el cierre ejecutivo está listo (sin cifras ni nombres, solo conteos y el enlace)", "Email to Management when the executive close is ready (no figures or names, only counts and the link)")}
+            <select name="closeEmail" defaultValue={P.closeEmail} disabled={!ger}>
+              <option value="WEEKLY">{t("Los lunes: el cierre de la semana que terminó", "On Mondays: the close of the week that ended")}</option>
+              <option value="DAILY">{t("Cada día hábil, solo si algo espera (y el lunes el de la semana)", "Every working day, only when something waits (and the week's on Monday)")}</option>
+              <option value="OFF">{t("Nunca", "Never")}</option>
+            </select></label>
           <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend className="small">{t("Quién publica la identidad de la compañía y las cartas de función", "Who publishes the company identity and the function charters")}</legend>
             <div className="qa-row">{ROLES.map((r) => <label key={r} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}><input type="checkbox" name="publishRoles" value={r} defaultChecked={P.publishRoles.includes(r)} disabled={!ger} style={{ width: "auto" }} />{t(ROLE_LABEL[r].es, ROLE_LABEL[r].en)}</label>)}</div>
           </fieldset>

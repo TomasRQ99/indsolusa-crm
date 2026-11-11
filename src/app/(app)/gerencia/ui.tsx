@@ -10,22 +10,23 @@ type Txt = { es: string; en: string };
 export const fmtFig = (i: I18n, unit: "usd" | "n" | "pct" | "days", v: number | null) => (v == null ? "—" : unit === "usd" ? i.money(v) : unit === "pct" ? i.pct(v) : unit === "days" ? `${i.n(v)} d` : i.n(v));
 
 /** One block of the pulse: a question, and two or three figures that each open their evidence. */
-export function TileCard({ tile, i }: { tile: Tile; i: I18n }) {
+/** `plain`: figures without links, for a reader who may not open the modules behind them (Junta). */
+export function TileCard({ tile, i, plain = false }: { tile: Tile; i: I18n; plain?: boolean }) {
   const t = (x: Txt) => i.t(x.es, x.en);
   return (
     <section className="gm-tile" id={`t-${tile.key}`}>
-      <div className="gm-tile-h"><b>{t(tile.title)}</b><Link href={tile.href} className="small">{i.t("abrir", "open")}</Link></div>
+      <div className="gm-tile-h"><b>{t(tile.title)}</b>{plain ? null : <Link href={tile.href} className="small">{i.t("abrir", "open")}</Link>}</div>
       <p className="q">{t(tile.question)}</p>
-      {tile.figures.map((f, k) => <FigureRow key={k} f={f} i={i} />)}
+      {tile.figures.map((f, k) => <FigureRow key={k} f={f} i={i} plain={plain} />)}
     </section>
   );
 }
-function FigureRow({ f, i }: { f: Figure; i: I18n }) {
+function FigureRow({ f, i, plain }: { f: Figure; i: I18n; plain: boolean }) {
   const t = (x: Txt) => i.t(x.es, x.en);
   const d = f.prev != null ? Math.round((f.value - f.prev) * 100) / 100 : null;
   return (
     <div className="gm-fig">
-      <span><Link href={f.href}>{t(f.label)}</Link>{f.note ? <span className="src block">{t(f.note)}</span> : null}</span>
+      <span>{plain ? t(f.label) : <Link href={f.href}>{t(f.label)}</Link>}{f.note ? <span className="src block">{t(f.note)}</span> : null}</span>
       <span><b className={f.tone ?? ""}>{fmtFig(i, f.unit, f.value)}</b>
         <span className="src block">{f.state ? i.t("hoy", "today") : d == null ? i.t("sin mes anterior", "no previous month") : d === 0 ? i.t("igual al mes anterior", "same as last month") : `${d > 0 ? "+" : "−"}${fmtFig(i, f.unit, Math.abs(d)).replace("USD ", "")} ${i.t("vs. mes anterior", "vs last month")}`}</span></span>
     </div>
