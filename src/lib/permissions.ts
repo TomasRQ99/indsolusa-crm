@@ -28,6 +28,8 @@ export const ROLES = Object.keys(ROLE_LABEL) as Role[];
 
 /** Gerencia only: people & data, commission policy and payouts, unlimited authority. */
 export const isGerencia = (u: U) => u.role === "GERENCIA";
+/** Módulo 13 §15 · taking a report out of SOLU as a file: Gerencia and Finanzas (decision 2026-11-11). */
+export const canExportReports = (u: U) => u.role === "GERENCIA" || u.role === "FINANZAS";
 
 /** Finanzas and Administración share the money side for now (decision 2026-11-10); Module 14 may split them. */
 export const isMoneyRole = (role: string) => role === "FINANZAS" || role === "ADMINISTRACION";

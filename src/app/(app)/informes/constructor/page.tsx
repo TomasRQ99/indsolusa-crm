@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { canFinance, canManageAll } from "@/lib/permissions";
+import { canExportReports, canFinance, canManageAll } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { periodOf } from "@/lib/goal-rules";
@@ -89,6 +89,7 @@ export default async function BuilderPage({ searchParams }: { searchParams: Prom
           {mayShare && <label className="small"><input type="checkbox" name="shared" value="1" /> {t("Compartir con todos", "Share with everyone")}</label>}
           <button className="btn ghost" type="submit">{t("Guardar vista", "Save view")}</button>
         </form>
+        {canExportReports(user) && <p className="small"><a href={`/informes/constructor/csv?${configQuery(c)}`}>{t("Descargar este informe (archivo para Excel)", "Download this report (file for Excel)")}</a> <span className="muted">· {t("solo Gerencia y Finanzas", "Management and Finance only")}</span></p>}
         {view && <p className="src"><Link href={`/informes/constructor?${configQuery(c)}`}>{t("Cambiar esta pregunta sin tocar la vista", "Change this question without touching the view")}</Link></p>}
       </section>
     </>

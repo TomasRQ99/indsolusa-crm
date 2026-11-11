@@ -90,7 +90,14 @@ Also: `HowCalc` now resolves the contacts goal key to its dictionary entry.
 Checked: 30 script checks (gap arithmetic, config cleaning, grouping, people add up to the function for every metric,
 builder totals equal the function's sale and Eságara, scope filters) and 15 browser checks (three screens, mobile width,
 save / open / delete a view, no browser errors).
-**Limits / pending decisions:** scheduled briefs (§16) not built: who receives what, cadence and channel are undecided;
-export not built: who is authorised is undecided (AC54 applies when it is); builder lacks sector, manufacturer, product,
+**User decisions 2026-11-11 (I-06, I-07), built the same day.** I-06: Gerencia receives the report and issues it from
+SOLU, with an email reminding them it is ready. Built as the Monthly Business Pulse: job `PULSE_REMINDER` (planned once
+per month in its first week, `src/lib/pulse-reminder.ts`) emails every active GERENCIA user unless the previous month is
+already issued; the email carries no figures; link uses `APP_URL` or Render's `RENDER_EXTERNAL_URL` when present. "Issue"
+is the existing close of the pulse, reworded "Emitir el informe". Monthly cadence is my reading — to confirm. I-07: export
+is for Gerencia and Finanzas (`canExportReports`): CSV of the pulse (`/informes/pulso/csv`) and of a builder report
+(`/informes/constructor/csv`), each headed by period, as-of, filters, who downloaded and metric versions (AC54).
+Checked: 9 script checks and 9 browser checks (downloads, 403 for other roles, rows add to total).
+**Limits / pending decisions:** daily and weekly briefs for negotiators and leaders not built; no PDF export; builder lacks sector, manufacturer, product,
 supplier, country, legal entity, comparison; only the low-Eságara cause is decomposed; only the Commercial function has a
 review; role clarity, pair view and development block wait for Module 16.

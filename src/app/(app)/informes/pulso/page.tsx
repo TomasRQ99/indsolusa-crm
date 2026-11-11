@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { canFinance, canManageAll, isGerencia } from "@/lib/permissions";
+import { canExportReports, canFinance, canManageAll, isGerencia } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { periodOf, shiftPeriod, validPeriod } from "@/lib/goal-rules";
@@ -27,7 +27,7 @@ export default async function BusinessPulsePage({ searchParams }: { searchParams
   const { groups, prevOf } = pulseGroups(data);
   const ended = period < cur;
   const fmt = (m: PulseMetric, v: number) => (m.unit === "usd" ? `USD ${i.n2(v)}` : m.unit === "pct" ? i.pct(v) : String(Math.round(v)));
-  const okMsg: Record<string, string> = { cerrado: t("Mes cerrado. Estas cifras quedan guardadas y no se recalculan solas.", "Month closed. These figures are saved and are not recalculated by themselves."), reabierto: t("Mes reabierto. Se muestra otra vez el cálculo en vivo; el cierre anterior queda en la historia.", "Month reopened. The live calculation shows again; the earlier close stays in the history.") };
+  const okMsg: Record<string, string> = { cerrado: t("Informe emitido y mes cerrado. Estas cifras quedan guardadas y no se recalculan solas.", "Report issued and month closed. These figures are saved and are not recalculated by themselves."), reabierto: t("Mes reabierto. Se muestra otra vez el cálculo en vivo; el cierre anterior queda en la historia.", "Month reopened. The live calculation shows again; the earlier close stays in the history.") };
   const errMsg: Record<string, string> = { permiso: t("Solo Gerencia cierra o reabre un mes.", "Only Management closes or reopens a month."), abierto: t("Solo se cierra un mes que ya terminó.", "Only a month that has ended can be closed."), ya: t("Ese mes ya está cerrado.", "That month is already closed."), motivo: t("Para reabrir, escribe el motivo.", "To reopen, write the reason."), "sin-cierre": t("Ese mes no tiene un cierre vigente.", "That month has no close in force.") };
 
   return (
@@ -58,9 +58,12 @@ export default async function BusinessPulsePage({ searchParams }: { searchParams
       ))}
       <p className="src">{t("«En el mes» cuenta lo que ocurrió entre el primer y el último día. «Foto» es cómo estaban las cosas al calcular: SOLU no guarda la historia de saldos, por eso una foto solo queda fija al cerrar el mes. El bloque de Equipo (capacidad, desarrollo) llega con el módulo de Equipo.", "\"In the month\" counts what happened between the first and last day. \"Snapshot\" is how things stood when calculated: SOLU keeps no history of balances, so a snapshot is only fixed when the month is closed. The Team block (capacity, development) arrives with the Team module.")}</p>
 
+      {canExportReports(user) && <p className="small"><a href={`/informes/pulso/csv?mes=${period}`}>{t("Descargar este informe (archivo para Excel)", "Download this report (file for Excel)")}</a> <span className="muted">· {t("solo Gerencia y Finanzas", "Management and Finance only")}</span></p>}
+
       {isGerencia(user) && (
         <section className="card" id="cierre">
-          <b>{t("CIERRE DEL MES", "MONTH CLOSE")}</b>
+          <b>{t("EMITIR EL INFORME DEL MES", "ISSUE THE MONTH'S REPORT")}</b>
+          {ended && !closed && <p className="small"><span className="sig attn">{t("Listo para emitir", "Ready to issue")}</span> {t("Revisa las cifras de arriba. Al emitir, quedan guardadas como el informe oficial del mes.", "Review the figures above. On issuing, they are saved as the month's official report.")}</p>}
           {closed ? (
             <form action={reopenPulse} className="qa-row" style={{ alignItems: "flex-end", flexWrap: "wrap" }}>
               <input type="hidden" name="period" value={period} />
@@ -68,8 +71,8 @@ export default async function BusinessPulsePage({ searchParams }: { searchParams
               <button type="submit" className="secondary" style={{ flex: "0 0 auto" }}>{t("Reabrir el mes", "Reopen the month")}</button>
             </form>
           ) : ended ? (
-            <form action={closePulse}><input type="hidden" name="period" value={period} /><button type="submit">{t(`Cerrar ${period} con estas cifras`, `Close ${period} with these figures`)}</button></form>
-          ) : <p className="small muted">{t("Un mes se cierra cuando ya terminó.", "A month is closed once it has ended.")}</p>}
+            <form action={closePulse}><input type="hidden" name="period" value={period} /><button type="submit">{t(`Emitir el informe de ${period} con estas cifras`, `Issue the ${period} report with these figures`)}</button></form>
+          ) : <p className="small muted">{t("El informe de un mes se emite cuando el mes ya terminó.", "A month's report is issued once the month has ended.")}</p>}
           {snaps.filter((s) => s.reopenedAt).map((s) => <p key={s.id} className="src">{t(`Cierre ${s.version} de ${s.closedByName} (${i.day(s.closedAt)}), reabierto por ${s.reopenedByName} el ${i.day(s.reopenedAt!)}: ${s.reopenReason}`, `Close ${s.version} by ${s.closedByName} (${i.day(s.closedAt)}), reopened by ${s.reopenedByName} on ${i.day(s.reopenedAt!)}: ${s.reopenReason}`)}</p>)}
         </section>
       )}

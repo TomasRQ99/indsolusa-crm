@@ -8,9 +8,10 @@ import { db } from "./db";
 //   2. plans the recurring work as jobs (one per time slot, so it never doubles),
 //   3. claims due jobs with FOR UPDATE SKIP LOCKED (two calls never take the same job),
 //   4. runs them within a time budget; a failure retries later with backoff, then stays FAILED for a person.
-// Every call is recorded in WorkerRun. Nothing here sends money or emails on its own.
+// Every call is recorded in WorkerRun. Nothing here sends money. The only email it sends on its own is the monthly
+// reminder to Gerencia that the Business Pulse is ready to issue (decision 2026-11-11).
 
-export const JOB_KINDS = ["MAIL_REPLIES", "CUSTOMER_MAIL", "CATALOG_SYNC", "PAY_BEHAVIOR", "PAY_BEHAVIOR_ALL", "HOUSEKEEPING"] as const;
+export const JOB_KINDS = ["MAIL_REPLIES", "CUSTOMER_MAIL", "CATALOG_SYNC", "PAY_BEHAVIOR", "PAY_BEHAVIOR_ALL", "HOUSEKEEPING", "PULSE_REMINDER"] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
 
 export const JOB_LABEL: Record<JobKind, [string, string]> = {
@@ -20,6 +21,7 @@ export const JOB_LABEL: Record<JobKind, [string, string]> = {
   PAY_BEHAVIOR: ["Recalcular cómo paga un cliente", "Recalculate how a customer pays"],
   PAY_BEHAVIOR_ALL: ["Recalcular cómo pagan todos los clientes", "Recalculate how all customers pay"],
   HOUSEKEEPING: ["Limpiar registros viejos del trabajador", "Clean old worker records"],
+  PULSE_REMINDER: ["Avisar a Gerencia que el informe del mes está listo para emitir", "Remind Management that the month's report is ready to issue"],
 };
 
 /** Slot keys contain "@": they stay forever (a slot runs once). Plain keys are released when the job ends. */
@@ -70,6 +72,10 @@ const HANDLERS: Record<JobKind, Handler> = {
     const runs = await db.workerRun.deleteMany({ where: { startedAt: { lt: new Date(Date.now() - 60 * 864e5) } } });
     return `deleted ${done.count} jobs, ${runs.count} runs`;
   },
+  async PULSE_REMINDER() {
+    const { pulseReminder } = await import("./pulse-reminder");
+    return pulseReminder();
+  },
 };
 
 // ---------- planning ----------
@@ -83,6 +89,8 @@ export async function planRecurring(now = new Date()) {
   await enqueue("CATALOG_SYNC", {}, { dedupeKey: `CATALOG_SYNC@${slot(now, 60)}`, maxAttempts: 2 });
   await enqueue("PAY_BEHAVIOR_ALL", {}, { dedupeKey: `PAY_BEHAVIOR_ALL@${day}`, maxAttempts: 3 });
   await enqueue("HOUSEKEEPING", {}, { dedupeKey: `HOUSEKEEPING@${day}`, maxAttempts: 2 });
+  // Once a month, in its first week: the month that just ended is ready to issue.
+  if (now.getUTCDate() <= 7) await enqueue("PULSE_REMINDER", {}, { dedupeKey: `PULSE_REMINDER@${day.slice(0, 7)}`, maxAttempts: 3 });
 }
 
 // ---------- running ----------
