@@ -337,6 +337,9 @@ model Deal {
   economicsFinal       Json?
   /// module 11 §40: UPON_ORDER | UPON_DELIVERY | UPON_ACCEPTANCE | MILESTONE | ADVANCE_BALANCE | RECURRING
   billingBasis         String                 @default("UPON_DELIVERY")
+  warranties           Warranty[]
+  customerClaims       CustomerClaim[]
+  productExperiences   ProductExperience[]
 
   @@index([stage])
   @@index([ownerId])
@@ -3795,4 +3798,96 @@ model DealCost {
 
   @@index([dealId])
   @@index([sharedId])
+}
+
+// ---------- Operaciones O9d · Warranty and customer claims (module 11 §45.1) ----------
+
+/// What is under warranty for a delivered Journey: item, serial, start and period. Never edited after a claim exists.
+model Warranty {
+  id             String   @id @default(cuid())
+  dealId         String
+  deal           Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  item           String
+  serial         String?
+  startsOn       DateTime
+  months         Int
+  terms          String?
+  /// the supplier's own warranty behind ours, when known
+  supplierName   String?
+  supplierMonths Int?
+  createdByName  String
+  createdAt      DateTime @default(now())
+
+  claims CustomerClaim[]
+
+  @@index([dealId])
+}
+
+/// A warranty claim, return or complaint from the customer after delivery. The original delivery history is never
+/// changed: the case and its notes are added on top.
+model CustomerClaim {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  dealId         String
+  deal           Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  warrantyId     String?
+  warranty       Warranty? @relation(fields: [warrantyId], references: [id], onDelete: SetNull)
+  /// WARRANTY | RETURN | COMPLAINT
+  kind           String
+  whatHappened   String
+  reportedBy     String?
+  reportedAt     DateTime
+  /// SUPPLIER | COMPANY | CARRIER | CUSTOMER | UNKNOWN
+  responsible    String    @default("UNKNOWN")
+  /// OPEN | RESOLVED | REJECTED
+  status         String    @default("OPEN")
+  resolution     String?
+  resolvedAt     DateTime?
+  resolvedByName String?
+  costUsd        Decimal?  @db.Decimal(14, 2)
+  createdByName  String
+  createdAt      DateTime  @default(now())
+
+  notes ClaimNote[]
+
+  @@index([dealId])
+}
+
+model ClaimNote {
+  id        String        @id @default(cuid())
+  claimId   String
+  claim     CustomerClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  text      String
+  byName    String
+  createdAt DateTime      @default(now())
+
+  @@index([claimId])
+}
+
+// ---------- Operaciones O10 · Product experience base (module 11 §36–37) ----------
+
+/// What we learned supplying a product, kept for the team. It can become public content only after a person reviews
+/// every confidentiality point; SOLU never publishes anything by itself.
+model ProductExperience {
+  id               String   @id @default(cuid())
+  code             String?
+  manufacturer     String?
+  title            String
+  application      String?
+  industry         String?
+  summary          String
+  dealId           String?
+  deal             Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  /// INTERNAL_ONLY | PUBLISHABLE_ANONYMIZED | CUSTOMER_APPROVED_CASE
+  eligibility      String   @default("INTERNAL_ONLY")
+  customerApproval String?
+  /// {reviewKey: {by, at}}
+  checks           Json     @default("{}")
+  draft            String?
+  createdByName    String
+  createdAt        DateTime @default(now())
+  updatedByName    String?
+  updatedAt        DateTime @updatedAt
+
+  @@index([code])
 }

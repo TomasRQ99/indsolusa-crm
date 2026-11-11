@@ -71,6 +71,9 @@ export const MODULES: NavModule[] = [
       { href: "/operaciones/remisiones", es: "Remisiones", en: "Delivery notes" },
       { href: "/operaciones/por-facturar", es: "Entregado sin facturar", en: "Delivered, not invoiced" },
       { href: "/operaciones/transportadores", es: "Transportadores", en: "Carriers" },
+      { href: "/operaciones/garantias", es: "Garantías", en: "Warranties" },
+      { href: "/operaciones/experiencias", es: "Experiencias", en: "Experiences" },
+      { href: "/operaciones/metricas", es: "Métricas", en: "Metrics" },
     ],
   },
   {

@@ -754,6 +754,10 @@ export default async function JourneyPage({
         <p className="quiet-p">{t("Costos reales del Journey, la Eságara protegida frente a la esperada hoy, y por qué cambió.", "The Journey's real costs, protected Eságara against expected today, and why it changed.")}</p>
       </section>
       <section className="jblock">
+        <div className="jbh"><b>{t("GARANTÍA Y RECLAMOS", "WARRANTY AND CLAIMS")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/garantia`}>{t("Abrir", "Open")}</Link></div>
+        <p className="quiet-p">{t("Qué quedó cubierto, por cuánto tiempo, y los casos que abra el cliente después de la entrega.", "What is covered, for how long, and the cases the customer opens after delivery.")}</p>
+      </section>
+      <section className="jblock">
         <div className="jbh"><b>{t("INSTRUCCIÓN DE DESPACHO", "DISPATCH INSTRUCTION")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/despacho`}>{t("Abrir", "Open")}</Link></div>
         <p className="quiet-p">{t("Lo que prometimos al cliente sobre la entrega (qué, dónde, cuándo, documentos y recepción). Comercial la emite al aceptar la PO; Operaciones la ejecuta.", "What we promised the customer about delivery (what, where, when, documents and reception). Commercial issues it after accepting the PO; Operations executes it.")}</p>
       </section>
