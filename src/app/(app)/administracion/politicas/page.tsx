@@ -4,24 +4,12 @@ import { canFinance, isGerencia } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { getAdminPolicy } from "@/lib/admin-store";
+import { POLICY_REGISTER } from "@/lib/policy-register";
 import { saveAdminPolicy } from "./actions";
 
 // Módulo 14 §2L · Políticas: one place to see every rule SOLU applies with numbers — which version is in force,
 // since when, who set it and why — and where each one is changed. Nothing here is fixed in code.
 
-const REGISTER: { key: string; es: string; en: string; whoEs: string; whoEn: string; href: string }[] = [
-  { key: "purchasePolicy", es: "Autoridad de compras y de pagos a proveedores", en: "Purchase and supplier-payment authority", whoEs: "Gerencia", whoEn: "Management", href: "/compras/requerimientos#politica" },
-  { key: "adminPolicy", es: "Administración: obligaciones, materialidad, tolerancia de facturas, autoridad prestada", en: "Administration: obligations, materiality, invoice tolerance, delegated authority", whoEs: "Gerencia", whoEn: "Management", href: "/administracion/politicas#admin" },
-  { key: "payRules", es: "Crédito: cómo se lee el comportamiento de pago", en: "Credit: how payment behaviour is read", whoEs: "Finanzas o Gerencia", whoEn: "Finance or Management", href: "/administracion/cupos" },
-  { key: "cashPolicy", es: "Alertas de dinero detenido y edades de cartera", en: "Stopped-money alerts and receivable ageing", whoEs: "Finanzas o Gerencia", whoEn: "Finance or Management", href: "/comercial/fugas#politica" },
-  { key: "comPolicy", es: "Umbral de Eságara baja y quién aprueba la excepción", en: "Low-Eságara threshold and who approves the exception", whoEs: "Gerencia", whoEn: "Management", href: "/comercial/esagara" },
-  { key: "esagaraPolicy", es: "Cierre económico de un Journey", en: "Economic close of a Journey", whoEs: "Gerencia", whoEn: "Management", href: "/administracion/economia" },
-  { key: "financeRate", es: "Costo del dinero", en: "Cost of money", whoEs: "Propuesta + Gerencia", whoEn: "Proposal + Management", href: "/profile/rentabilidad" },
-  { key: "opsPolicy", es: "Operaciones: tolerancias de flete, courier o carga, inventario", en: "Operations: freight tolerances, courier or cargo, stock", whoEs: "Gerencia", whoEn: "Management", href: "/operaciones/configuracion" },
-  { key: "authPolicy", es: "Rangos de autorización por nivel", en: "Authorisation ranges by level", whoEs: "Gerencia", whoEn: "Management", href: "/profile/autorizaciones" },
-  { key: "focusPolicy", es: "Foco de alto valor", en: "High-value focus", whoEs: "Gerencia o Dirección", whoEn: "Management or Direction", href: "/comercial/foco" },
-  { key: "econThresholds", es: "Señales económicas de Mercado", en: "Market economic signals", whoEs: "Gerencia", whoEn: "Management", href: "/mercado/fuentes" },
-];
 
 export default async function PoliciesPage({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string }> }) {
   const user = await requireUser();
@@ -33,7 +21,7 @@ export default async function PoliciesPage({ searchParams }: { searchParams: Pro
   const fin = canFinance(user);
   const [versions, commission, admin] = await Promise.all([
     // Only the policies in the register are read: other settings (such as the worker key) never reach this page.
-    db.marketSetting.findMany({ where: { key: { in: REGISTER.map((r) => r.key) } }, orderBy: [{ key: "asc" }, { version: "desc" }], select: { key: true, version: true, updatedByName: true, reason: true, createdAt: true, value: true } }),
+    db.marketSetting.findMany({ where: { key: { in: POLICY_REGISTER.map((r) => r.key) } }, orderBy: [{ key: "asc" }, { version: "desc" }], select: { key: true, version: true, updatedByName: true, reason: true, createdAt: true, value: true } }),
     db.commissionPolicy.findMany({ orderBy: { version: "desc" }, take: 8, select: { version: true, effectiveFrom: true } }),
     getAdminPolicy(),
   ]);
@@ -47,11 +35,11 @@ export default async function PoliciesPage({ searchParams }: { searchParams: Pro
       {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
 
-      <section className="card" id="registro"><b>{t("REGISTRO DE POLÍTICAS", "POLICY REGISTER")}</b>
+      <section className="card" id="registro"><b>{t("REGISTRO DE POLÍTICAS", "POLICY POLICY_REGISTER")}</b>
         <div className="tscroll"><table>
           <thead><tr><th>{t("Política", "Policy")}</th><th>{t("Versión vigente", "Version in force")}</th><th>{t("Desde", "Since")}</th><th>{t("Quién la definió", "Set by")}</th><th>{t("Quién la cambia", "Who changes it")}</th></tr></thead>
           <tbody>
-            {REGISTER.map((r) => {
+            {POLICY_REGISTER.map((r) => {
               const vs = versions.filter((v) => v.key === r.key);
               const cur = vs[0];
               return (

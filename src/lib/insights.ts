@@ -219,6 +219,6 @@ export function patternsOf(deals: IDeal[], now: Date, t: (es: string, en: string
   // Repeated material cause.
   const causes = new Map<string, Set<string>>();
   for (const d of recent) for (const c of causesOf(d)) if (c.cause !== "UNKNOWN") { const s = causes.get(c.cause) ?? new Set<string>(); s.add(d.id); causes.set(c.cause, s); }
-  for (const [c, s] of causes) if (s.size >= 2) out.push({ key: `k${c}`, kind: "CAUSE", n: s.size, href: `/gerencia?view=causas&cause=${c}`, title: t(`${causeName(c)}: se repite en ${s.size} Journeys`, `${causeName(c)}: repeats in ${s.size} Journeys`), context: t("ver el análisis de causas", "see the cause analysis") });
+  for (const [c, s] of causes) if (s.size >= 2) out.push({ key: `k${c}`, kind: "CAUSE", n: s.size, href: `/gerencia/insights?view=causas&cause=${c}`, title: t(`${causeName(c)}: se repite en ${s.size} Journeys`, `${causeName(c)}: repeats in ${s.size} Journeys`), context: t("ver el análisis de causas", "see the cause analysis") });
   return out.sort((a, b) => b.n - a.n);
 }

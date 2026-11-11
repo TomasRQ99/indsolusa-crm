@@ -125,6 +125,12 @@ model User {
   authorityReceived  DelegatedAuthority[]   @relation("AuthorityTo")
   supportGaps        SupportGap[]           @relation("SupportGapFor")
   supportGapsOwned   SupportGap[]           @relation("SupportGapOwner")
+
+  prioritiesOwned     StrategicPriority[]  @relation("PriorityOwner")
+  decisionsRequested  ManagementDecision[] @relation("DecisionRequester")
+  decisionsOwnedAfter ManagementDecision[] @relation("DecisionOwnerAfter")
+  strategicAccounts   StrategicAccount[]   @relation("StrategicExecutive")
+  chartersOwned       FunctionCharter[]    @relation("CharterOwner")
 }
 
 model Account {
@@ -182,6 +188,7 @@ model Account {
   visits               VisitPlan[]
   backup               RelationshipBackup?
   deliveryRequirements DeliveryRequirement[]
+  strategic            StrategicAccount?
 
   @@index([ownerId])
   @@index([name])
@@ -4582,4 +4589,243 @@ model AccountingExport {
   rows       Int
   byName     String
   createdAt  DateTime @default(now())
+}
+
+// ---------- Módulo 15 · Gerencia ----------
+
+/// G15 §3 · A direction the company chose, with the reason, the result wanted and the signs that come before it.
+/// Not a task list: it points at real objects (customers, Journeys, explorations, decisions) through its links.
+model StrategicPriority {
+  id              String    @id @default(cuid())
+  title           String
+  rationale       String
+  desiredOutcome  String
+  /// in the words of whoever set it: "2027", "18 meses"
+  horizon         String
+  horizonTo       DateTime?
+  /// [{text, metric}] signs seen before the result; metric = id in the metric dictionary, or null
+  indicators      Json      @default("[]")
+  ownerId         String
+  owner           User      @relation("PriorityOwner", fields: [ownerId], references: [id])
+  narrative       String?
+  narrativeAt     DateTime?
+  narrativeByName String?
+  nextReviewOn    DateTime?
+  /// ACTIVE | ACHIEVED | DROPPED
+  status          String    @default("ACTIVE")
+  closedAt        DateTime?
+  closedNote      String?
+  createdByName   String
+  createdAt       DateTime  @default(now())
+
+  links   StrategicPriorityLink[]
+  reviews StrategicPriorityReview[]
+
+  @@index([status])
+}
+
+model StrategicPriorityLink {
+  id          String            @id @default(cuid())
+  priorityId  String
+  priority    StrategicPriority @relation(fields: [priorityId], references: [id], onDelete: Cascade)
+  /// ACCOUNT | JOURNEY | EXPLORATION | DECISION | SCENARIO
+  kind        String
+  refId       String
+  note        String?
+  addedByName String
+  createdAt   DateTime          @default(now())
+
+  @@unique([priorityId, kind, refId])
+}
+
+/// Each review of a priority keeps the narrative as it was written that day. Never edited.
+model StrategicPriorityReview {
+  id           String            @id @default(cuid())
+  priorityId   String
+  priority     StrategicPriority @relation(fields: [priorityId], references: [id], onDelete: Cascade)
+  narrative    String
+  nextReviewOn DateTime?
+  byName       String
+  createdAt    DateTime          @default(now())
+
+  @@index([priorityId, createdAt])
+}
+
+/// G15 §4 · Management Decision Record. One row per version: a decided row is never edited, a revision is a new
+/// version with the same code and the earlier one stays, marked as replaced.
+model ManagementDecision {
+  id                  String    @id @default(cuid())
+  /// DG-2611-0001, the same for every version of the decision
+  code                String
+  version             Int       @default(1)
+  supersededAt        DateTime?
+  revisionReason      String?
+  /// GENERAL | RESOURCE_ALLOCATION | POLICY_EXCEPTION
+  kind                String    @default("GENERAL")
+  /// MERCADEO | COMERCIAL | OPERACIONES | ADMINISTRACION | EQUIPO | GERENCIA
+  area                String
+  question            String
+  context             String
+  whyNow              String?
+  impact              String
+  impactUsd           Decimal?  @db.Decimal(14, 2)
+  /// [{name, detail}]
+  alternatives        Json      @default("[]")
+  facts               String
+  assumptions         String?
+  risks               String?
+  recommendation      String?
+  deadline            DateTime?
+  /// the record the decision is about, when there is one
+  sourceHref          String?
+  sourceLabel         String?
+  scenarioId          String?
+  scenario            Scenario? @relation(fields: [scenarioId], references: [id], onDelete: SetNull)
+  /// REQUESTED | DECIDED | WITHDRAWN
+  status              String    @default("REQUESTED")
+  requestedById       String
+  requestedBy         User      @relation("DecisionRequester", fields: [requestedById], references: [id])
+  requestedByName     String
+  requestedAt         DateTime  @default(now())
+  decision            String?
+  /// name of the alternative chosen, when it was one of those listed
+  chosen              String?
+  rationale           String?
+  /// under which authority it was decided (role of the person that day, or the body that approved it)
+  authority           String?
+  decidedById         String?
+  decidedByName       String?
+  decidedAt           DateTime?
+  expectedConsequence String?
+  followUpOn          DateTime?
+  ownerAfterId        String?
+  ownerAfter          User?     @relation("DecisionOwnerAfter", fields: [ownerAfterId], references: [id], onDelete: SetNull)
+  withdrawnNote       String?
+  createdAt           DateTime  @default(now())
+
+  reviews ManagementDecisionReview[]
+
+  @@unique([code, version])
+  @@index([status, supersededAt])
+}
+
+/// What really happened after a decision, written when it is known. Added, never edited (AC20).
+model ManagementDecisionReview {
+  id                String             @id @default(cuid())
+  decisionId        String
+  decision          ManagementDecision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  actualConsequence String
+  /// AS_EXPECTED | BETTER | WORSE | MIXED | TOO_EARLY
+  verdict           String
+  nextFollowUpOn    DateTime?
+  byName            String
+  createdAt         DateTime           @default(now())
+
+  @@index([decisionId, createdAt])
+}
+
+/// G15 §7 · Options compared before deciding. Facts are kept apart from assumptions, and every option carries a
+/// range, never one certain number.
+model Scenario {
+  id            String   @id @default(cuid())
+  title         String
+  question      String
+  /// LOW_ESAGARA_ENTRY | CREDIT_INCREASE | FINANCE_PURCHASE | BUY_STOCK | ASSIGN_PEOPLE | EXPEDITE_IMPORT | OTHER
+  kind          String
+  facts         String
+  /// what the ranges measure: "Eságara a 12 meses, USD"
+  measure       String
+  /// [{name, description, assumptions, low, high, risks}]
+  options       Json     @default("[]")
+  sourceHref    String?
+  sourceLabel   String?
+  /// OPEN | DECIDED | ARCHIVED
+  status        String   @default("OPEN")
+  createdById   String
+  createdByName String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  decisions ManagementDecision[]
+
+  @@index([status])
+}
+
+/// G15 §6 · A customer Gerencia chose to follow. Only the reason and the executive movement live here: everything
+/// else is read from the customer's own record.
+model StrategicAccount {
+  id          String    @id @default(cuid())
+  accountId   String    @unique
+  account     Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  reason      String
+  growthNote  String?
+  nextMove    String?
+  nextMoveOn  DateTime?
+  executiveId String?
+  executive   User?     @relation("StrategicExecutive", fields: [executiveId], references: [id], onDelete: SetNull)
+  active      Boolean   @default(true)
+  setByName   String
+  createdAt   DateTime  @default(now())
+  endedAt     DateTime?
+  endedNote   String?
+  endedByName String?
+}
+
+/// G15 §22 · Who the company says it is. Each published version stays; the one in force is the latest whose
+/// date has arrived.
+model CompanyIdentity {
+  id               String   @id @default(cuid())
+  version          Int      @unique
+  purpose          String
+  slogan           String
+  valueProposition String
+  /// [string]
+  attributes       Json     @default("[]")
+  /// [{name, meaning}]
+  principles       Json     @default("[]")
+  /// [{name, description}]
+  methodologies    Json     @default("[]")
+  effectiveFrom    DateTime
+  reason           String
+  approvedById     String?
+  approvedByName   String
+  publishedAt      DateTime @default(now())
+}
+
+/// G15 §23 · What a function exists for, what it delivers, what it decides and who answers for it. Versioned.
+model FunctionCharter {
+  id               String   @id @default(cuid())
+  /// MERCADEO | COMERCIAL | OPERACIONES | ADMINISTRACION | GERENCIA
+  functionKey      String
+  version          Int
+  purpose          String
+  contribution     String?
+  /// [string]
+  outputs          Json     @default("[]")
+  /// [string]
+  responsibilities Json     @default("[]")
+  /// [string] decisions the function takes by itself
+  decisionRights   Json     @default("[]")
+  /// [{with, what}] what it hands to, or needs from, another function
+  interfaces       Json     @default("[]")
+  /// people, tools and budget it counts on
+  resources        String?
+  ownerId          String?
+  owner            User?    @relation("CharterOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  effectiveFrom    DateTime
+  reason           String
+  publishedById    String?
+  publishedByName  String
+  publishedAt      DateTime @default(now())
+
+  @@unique([functionKey, version])
+}
+
+/// G15 §14 · One picture a day of the figures Gerencia watches, so "what changed" is a fact and not a memory.
+model ManagementSnapshot {
+  id        String   @id @default(cuid())
+  /// "YYYY-MM-DD"
+  day       String   @unique
+  data      Json
+  createdAt DateTime @default(now())
 }

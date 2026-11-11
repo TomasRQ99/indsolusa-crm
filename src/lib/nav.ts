@@ -15,6 +15,10 @@ export const NAV_GROUPS = {
   hoy: { es: "Hoy", en: "Today" },
   recursos: { es: "Recursos", en: "Resources" },
   cierre: { es: "Cierre", en: "Close" },
+  // Gerencia (Módulo 15)
+  direccion: { es: "Dirección", en: "Direction" },
+  revision: { es: "Revisión", en: "Review" },
+  gobierno: { es: "Gobierno", en: "Governance" },
 } as const;
 export type NavModule = { key: ModuleKey; es: string; en: string; match: string[]; tabs: NavTab[] };
 
@@ -135,11 +139,26 @@ export const MODULES: NavModule[] = [
   },
   {
     key: "gerencia", es: "GERENCIA", en: "MANAGEMENT", match: ["/gerencia"],
+    // Módulo 15: Home first; what is not for everyone is hidden by role (§13). Asking Gerencia for a decision,
+    // the company identity and the function charters are open to every person.
     tabs: [
-      { href: "/gerencia", es: "Insights", en: "Insights", managerOnly: true },
-      { href: "/gerencia/comisiones", es: "Comisiones", en: "Commissions" },
-      { href: "/gerencia/liquidacion", es: "Liquidación", en: "Settlement" },
-      { href: "/gerencia/rentabilidad", es: "Rentabilidad", en: "Profitability" },
+      { href: "/gerencia", es: "Inicio", en: "Home", group: "hoy", managerOnly: true },
+      { href: "/gerencia/decisiones", es: "Decisiones", en: "Decisions", group: "hoy" },
+      { href: "/gerencia/cierre", es: "Cierre ejecutivo", en: "Executive close", group: "hoy", managerOnly: true },
+      { href: "/gerencia/futuro", es: "Puente al futuro", en: "Future bridge", group: "direccion", managerOnly: true },
+      { href: "/gerencia/prioridades", es: "Prioridades estratégicas", en: "Strategic priorities", group: "direccion", managerOnly: true },
+      { href: "/gerencia/cuentas", es: "Cuentas estratégicas", en: "Strategic accounts", group: "direccion", managerOnly: true },
+      { href: "/gerencia/escenarios", es: "Escenarios", en: "Scenarios", group: "direccion", managerOnly: true },
+      { href: "/gerencia/revisiones", es: "Revisión por función", en: "Functional review", group: "revision", managerOnly: true },
+      { href: "/gerencia/insights", es: "Insights", en: "Insights", group: "revision", managerOnly: true },
+      { href: "/gerencia/sistema", es: "Desempeño del sistema", en: "System performance", group: "revision", managerOnly: true },
+      { href: "/gerencia/personas", es: "Personas y capacidad", en: "People and capacity", group: "revision", adminOnly: true },
+      { href: "/gerencia/identidad", es: "Identidad", en: "Identity", group: "gobierno" },
+      { href: "/gerencia/funciones", es: "Funciones y roles", en: "Functions and roles", group: "gobierno" },
+      { href: "/gerencia/politicas", es: "Políticas y autoridad", en: "Policies and authority", group: "gobierno", managerOnly: true },
+      { href: "/gerencia/comisiones", es: "Comisiones", en: "Commissions", group: "dinero" },
+      { href: "/gerencia/liquidacion", es: "Liquidación", en: "Settlement", group: "dinero" },
+      { href: "/gerencia/rentabilidad", es: "Rentabilidad", en: "Profitability", group: "dinero" },
     ],
   },
 ];

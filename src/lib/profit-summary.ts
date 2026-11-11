@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "./db";
 import { today } from "./domain";
 import { sumMoney } from "./money";
@@ -12,7 +13,7 @@ import { settlementPreview } from "./settlement";
 type Txt = { es: string; en: string };
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
-export async function profitSummary(userId: string) {
+async function profitSummaryRaw(userId: string) {
   const T = today();
   const monthStart = new Date(Date.UTC(T.getUTCFullYear(), T.getUTCMonth(), 1));
   const pol = await getEsagaraPolicy();
@@ -65,3 +66,6 @@ export async function profitSummary(userId: string) {
     excess: preview.excess, runsUnpaid: runs.map((r) => ({ id: r.id, period: r.period, total: Number(r.total) })),
   };
 }
+
+/** Computed once per page: several blocks of the same screen read it (Módulo 15 Home). */
+export const profitSummary = cache(profitSummaryRaw);

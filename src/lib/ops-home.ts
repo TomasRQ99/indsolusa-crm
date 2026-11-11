@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "./db";
 import { addDays, today } from "./domain";
 import { subMoney, sumMoney } from "./money";
@@ -17,7 +18,7 @@ const dealSel = { id: true, code: true, title: true, account: { select: { name: 
 type DealRef = { id: string; code: string | null; title: string; account: { name: string }; owner: { name: string } };
 export type OpsRow = { key: string; href: string; deal: DealRef; what: { es: string; en: string }; at: Date | null; amount?: number; note?: string | null };
 
-export async function opsHome() {
+async function opsHomeRaw() {
   const T = today();
   const { value: pol } = await getOpsPolicy();
   const soon = addDays(T, pol.upcomingDays);
@@ -129,3 +130,6 @@ export async function operationalHandoff(dealId: string) {
   const bal = ar.map((i) => ({ due: i.dueAt, b: subMoney(i.amount, ...i.applications.map((a) => a.amount)) })).filter((x) => x.b > 0.005);
   return { d, po: d.customerPos[0] ?? null, quote: d.quotes[0] ?? null, basis: d.supplyBases[0] ?? null, dispatch: d.dispatches[0] ?? null, credit: { limit: d.account.creditLimit != null ? Number(d.account.creditLimit) : null, open: sumMoney(bal.map((x) => x.b)), overdue: sumMoney(bal.filter((x) => x.due < today()).map((x) => x.b)) } };
 }
+
+/** Computed once per page: several blocks of the same screen read it (Módulo 15 Home). */
+export const opsHome = cache(opsHomeRaw);

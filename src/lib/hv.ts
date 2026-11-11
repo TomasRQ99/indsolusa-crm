@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "./db";
 import { today } from "./domain";
 import { subMoney, sumMoney } from "./money";
@@ -8,7 +9,7 @@ import type { Line } from "./dispatch-rules";
 // Operaciones O8b · High-Value Commitments, derived from what already exists (no second record to keep in sync).
 // "High value" uses the same Eságara threshold as Comercial's High-Value Focus, so both modules agree.
 
-export async function highValueCommitments() {
+async function highValueCommitmentsRaw() {
   const T = today();
   const pol = await getFocusPolicy();
   const min = pol.value.materialEsagaraUsd;
@@ -55,3 +56,6 @@ export async function highValueCommitments() {
     }).filter((r) => !r.closure.closed),
   };
 }
+
+/** Computed once per page: several blocks of the same screen read it (Módulo 15 Home). */
+export const highValueCommitments = cache(highValueCommitmentsRaw);

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "./db";
 import { addDays, invoiceCash, today } from "./domain";
 import { sumMoney } from "./money";
@@ -11,7 +12,7 @@ import { balanceAge, byBucket, expectedCollection, gapLevers, liquidity, lowPoin
 
 const WINDOW = 120;
 
-export async function treasuryView() {
+async function treasuryViewRaw() {
   const T = today();
   const to = addDays(T, WINDOW);
   const [accounts, reservesAll, plan, invoices, deals, payments, milestones, apInvoices, internal, missions, runs, obligations] = await Promise.all([
@@ -110,3 +111,6 @@ export async function treasuryView() {
   };
 }
 export type TreasuryView = Awaited<ReturnType<typeof treasuryView>>;
+
+/** Computed once per page: several blocks of the same screen read it (Módulo 15 Home). */
+export const treasuryView = cache(treasuryViewRaw);

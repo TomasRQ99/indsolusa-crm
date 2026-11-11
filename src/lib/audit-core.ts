@@ -148,6 +148,16 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   DelegatedAuthority: "all",
   SupportGap: "all",
   AccountingExport: "all",
+  // Módulo 15 · Gerencia: direction, decisions and governance are material by definition.
+  StrategicPriority: "all",
+  StrategicPriorityLink: "all",
+  StrategicPriorityReview: "all",
+  ManagementDecision: "all",
+  ManagementDecisionReview: "all",
+  Scenario: "all",
+  StrategicAccount: "all",
+  CompanyIdentity: "all",
+  FunctionCharter: "all",
 };
 const MASK = new Set(["bankAccount", "docAccount"]);
 const SKIP = new Set(["id", "createdAt", "updatedAt"]);

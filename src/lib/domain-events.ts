@@ -82,6 +82,26 @@ export function eventsOf(r: AuditRow): EventOut[] {
       if (C) emit("authority.delegated", pick(ch, ["fromUserId", "toUserId", "domain", "limitUsd", "endsAt"]));
       else if (U && gotSet(ch, "revokedAt")) emit("authority.revoked");
       break;
+    // Módulo 15 §14
+    case "ManagementDecision":
+      if (C && now(ch, "status") === "DECIDED") { emit("management.decision_decided", pick(ch, ["code", "version", "area", "kind"])); if (now(ch, "kind") === "RESOURCE_ALLOCATION") emit("resource_allocation.decided", pick(ch, ["code", "impactUsd"])); }
+      else if (C) emit("management.decision_requested", pick(ch, ["code", "area", "kind", "deadline"]));
+      else if (U && became(ch, "status", "DECIDED")) emit("management.decision_decided", pick(ch, ["chosen", "followUpOn"]));
+      break;
+    case "ManagementDecisionReview":
+      if (C) emit("management.decision_reviewed", pick(ch, ["decisionId", "verdict"]));
+      break;
+    case "StrategicPriority":
+      if (C) emit("strategic_priority.created", pick(ch, ["title", "ownerId", "horizon"]));
+      // A review writes the narrative and has its own event; anything else that changes is a change of the priority.
+      else if (U && Object.keys(ch).some((k) => !k.startsWith("narrative") && k !== "nextReviewOn")) emit("strategic_priority.changed", Object.fromEntries(Object.keys(ch).slice(0, 8).map((k) => [k, true])));
+      break;
+    case "StrategicPriorityReview":
+      if (C) emit("strategic_priority.reviewed", pick(ch, ["priorityId", "nextReviewOn"]));
+      break;
+    case "PurchaseApproval":
+      if ((C && Number(now(ch, "level")) >= 2) || (U && gotSet(ch, "escalatedByName"))) emit("policy.exception_escalated", { policy: "purchasePolicy", ...pick(ch, ["prId", "amount", "level"]) });
+      break;
     case "AbsenceRecord":
       if (U && became(ch, "status", "APPROVED")) emit("absence.approved");
       break;
@@ -123,4 +143,16 @@ export const EVENT_NAMES: Record<string, { es: string; en: string }> = {
   "authority.delegated": { es: "Autoridad prestada", en: "Authority delegated" },
   "authority.revoked": { es: "Autoridad prestada retirada", en: "Delegated authority revoked" },
   "absence.approved": { es: "Ausencia aprobada", en: "Absence approved" },
+  // Módulo 15 §14. The last three depend on the passing of time and are written by the daily job of Gerencia.
+  "management.decision_requested": { es: "Se pidió una decisión a Gerencia", en: "A decision was requested from Management" },
+  "management.decision_decided": { es: "Gerencia decidió", en: "Management decided" },
+  "management.decision_reviewed": { es: "Decisión revisada contra lo que pasó", en: "Decision reviewed against what happened" },
+  "resource_allocation.decided": { es: "Asignación de recursos decidida", en: "Resource allocation decided" },
+  "strategic_priority.created": { es: "Prioridad estratégica creada", en: "Strategic priority created" },
+  "strategic_priority.changed": { es: "Prioridad estratégica cambiada", en: "Strategic priority changed" },
+  "strategic_priority.reviewed": { es: "Prioridad estratégica revisada", en: "Strategic priority reviewed" },
+  "policy.exception_escalated": { es: "Excepción a una política escalada al nivel más alto", en: "Policy exception escalated to the highest level" },
+  "risk.material_changed": { es: "Un riesgo cambió de forma material", en: "A risk changed materially" },
+  "future_pulse.material_change": { es: "El futuro visible cambió de forma material", en: "The visible future changed materially" },
+  "strategic_account.attention": { es: "Una cuenta estratégica pide atención", en: "A strategic account asks for attention" },
 };

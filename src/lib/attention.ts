@@ -2,7 +2,8 @@ import type { SessionUser } from "./auth";
 import type { I18n } from "./i18n";
 import type { ModuleKey } from "./nav";
 import { db } from "./db";
-import { canDecideCredit, canManageAll } from "./permissions";
+import { canDecideCredit, canManageAll, isGerencia } from "./permissions";
+import { decisionStage } from "./gerencia-rules";
 import { invoiceBlockers, invoiceCash, today } from "./domain";
 import { confirmationOf } from "./cash-rules";
 import { loadCredit, loadReceivables, loadSupplierPayments } from "./queries";
@@ -42,6 +43,14 @@ export async function shellAttention(user: SessionUser, i: I18n) {
     db.cashBlocker.findMany({ where: { responsibleId: user.id, resolvedAt: null, expectedResolution: { lt: today() } }, include: { deal: { select: { code: true, account: { select: { name: true } } } } } }),
   ]);
   const adm = await adminAttention(user, i);
+  // Módulo 15: decisions asked of Gerencia, and decided ones whose follow-up date arrived (for Gerencia or for
+  // whoever was left in charge).
+  const ger = isGerencia(user);
+  const [mgmtAsked, mgmtDecided] = await Promise.all([
+    ger ? db.managementDecision.findMany({ where: { status: "REQUESTED", supersededAt: null, requestedById: { not: user.id } }, orderBy: { requestedAt: "asc" }, take: 30, select: { id: true, code: true, question: true, deadline: true } }) : Promise.resolve([]),
+    db.managementDecision.findMany({ where: { status: "DECIDED", supersededAt: null, followUpOn: { lte: today() }, ...(ger ? {} : { ownerAfterId: user.id }) }, take: 100, select: { id: true, code: true, question: true, status: true, supersededAt: true, deadline: true, followUpOn: true, reviews: { select: { verdict: true, nextFollowUpOn: true, createdAt: true } } } }),
+  ]);
+  const mgmtReview = mgmtDecided.filter((d) => decisionStage(d, today()).stage === "REVIEW_DUE");
   const rejected = rejectedRaw.filter((x) => confirmationOf(x.steps).stage === "REJECTED" && invoiceCash(x).balance > 0.005);
   // Shipments interrupt only when the result is at stake — never per carrier scan.
   const shipNeeds = ships
@@ -63,7 +72,7 @@ export async function shellAttention(user: SessionUser, i: I18n) {
   set("operaciones", readyToInvoice + shipNeeds.length, shipNeeds.some((x) => x.k !== "HOLD") ? "risk" : "attn");
   if (broken.length || toReconcile.length) set("administracion", broken.length + toVerify.length + toReconcile.length, "risk");
   else set("administracion", toVerify.length, "attn");
-  set("gerencia", toApprove.length + (manager ? creditDecisions.length : 0), "attn");
+  set("gerencia", toApprove.length + (manager ? creditDecisions.length : 0) + mgmtAsked.length + mgmtReview.length, mgmtAsked.some((d) => d.deadline && d.deadline < today()) ? "risk" : "attn");
   if (decider && !counters.administracion) set("administracion", reviews.length + (manager ? 0 : creditDecisions.length), "attn");
   else if (decider && counters.administracion) counters.administracion.n += reviews.length + (manager ? 0 : creditDecisions.length);
   // Módulo 14: obligations to decide, internal purchases, absences and support owed by this person.
@@ -82,6 +91,8 @@ export async function shellAttention(user: SessionUser, i: I18n) {
     ...lateBlockers.map((b) => ({ key: `k${b.id}`, tone: "attn" as const, href: `/comercial/dinero?scope=mine`, text: t(`Bloqueo vencido: ${b.deal.code} · ${b.deal.account.name} · ${b.nextMovement}`, `Blocker past its date: ${b.deal.code} · ${b.deal.account.name} · ${b.nextMovement}`) })),
     ...reviews.map((r) => ({ key: `q${r.id}`, tone: "attn" as const, href: `/administracion/cupos#solicitudes`, text: t(`Decidir solicitud de cupo: ${r.account.name}`, `Decide credit request: ${r.account.name}`) })),
     ...adm.alerts,
+    ...mgmtAsked.map((d) => ({ key: `md${d.id}`, tone: (d.deadline && d.deadline < today() ? "risk" : "attn") as "attn" | "risk", href: `/gerencia/decisiones/${d.id}`, text: t(`Te piden una decisión (${d.code}): ${d.question}`, `A decision is asked of you (${d.code}): ${d.question}`) })),
+    ...mgmtReview.map((d) => ({ key: `mr${d.id}`, tone: "attn" as const, href: `/gerencia/decisiones/${d.id}#revision`, text: t(`Toca revisar qué pasó con la decisión ${d.code}: ${d.question}`, `Time to review what happened with decision ${d.code}: ${d.question}`) })),
     ...creditDecisions.map(({ a, d }) => ({ key: `c${d.id}`, tone: "attn" as const, href: `/administracion/cupos#${a.id}`, text: t(`Decidir el cupo de ${a.name}`, `Decide ${a.name}'s credit limit`) })),
   ];
 
