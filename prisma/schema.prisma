@@ -3329,6 +3329,8 @@ model FreightQuote {
   service        String?
   mode           String?
   cost           Decimal            @db.Decimal(14, 2)
+  /// how the cost is built, when known: {tariff, discountPct, discount, pieceSurcharge, fuel, insurance, extras:[{name, amount}], total}
+  breakdown      Json?
   currency       String             @default("USD")
   transitDays    Int?
   pickupDate     DateTime?

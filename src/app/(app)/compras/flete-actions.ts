@@ -1,6 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { EXTRA_CHARGES, freightBreakdown, type Breakdown } from "@/lib/freight-rules";
+import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { assertCanEditOps } from "@/lib/permissions";
@@ -49,14 +51,20 @@ export async function addFreightQuote(spoId: string, fd: FormData) {
   const { user, spo } = await load(spoId);
   if (!spo.freight) back(spoId, "err=flete-primero");
   const carrier = txt(fd, "carrier", 120);
-  const cost = num(fd, "cost");
+  const typed = num(fd, "cost");
   const source = txt(fd, "source", 200);
+  const bd = freightBreakdown({ tariff: num(fd, "b_tariff"), discountPct: num(fd, "b_discountPct"), pieceSurcharge: num(fd, "b_piece"), fuel: num(fd, "b_fuel"), insurance: num(fd, "b_insurance"), extras: Object.keys(EXTRA_CHARGES).map((k) => ({ key: k, amount: num(fd, `b_x_${k}`) })) });
+  if (bd === "BAD") back(spoId, "err=flete-desglose");
+  const b = bd as Breakdown | null;
+  // With a breakdown SOLU does the sum. A total typed as well must agree with it: SOLU never picks one silently.
+  if (b && typed != null && typed > 0 && Math.abs(typed - b.total) > 0.01) back(spoId, "err=flete-total");
+  const cost = b ? b.total : typed;
   if (!carrier || cost == null || cost <= 0 || !source) back(spoId, "err=flete-opcion");
   const transit = num(fd, "transitDays");
   await db.freightQuote.create({ data: {
     requirementId: spo.freight!.id, carrier: carrier!, service: txt(fd, "service", 120), mode: txt(fd, "mode", 20), cost: money2(cost!), currency: (txt(fd, "currency", 3) ?? "USD").toUpperCase(),
     transitDays: transit != null ? Math.round(transit) : null, pickupDate: day(fd, "pickupDate"), cutoff: txt(fd, "cutoff", 80), insurance: txt(fd, "insurance", 120), customsNote: txt(fd, "customsNote", 200), reliability: txt(fd, "reliability", 200),
-    validUntil: day(fd, "validUntil"), source: source!, recordedByName: user.name,
+    validUntil: day(fd, "validUntil"), source: source!, recordedByName: user.name, ...(b ? { breakdown: b as unknown as Prisma.InputJsonValue } : {}),
   } });
   back(spoId, "ok=flete-opcion");
 }

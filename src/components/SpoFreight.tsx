@@ -4,7 +4,8 @@ import { makeI18n } from "@/lib/i18n";
 import { getOpsPolicy } from "@/lib/ops-home";
 import { shipClass } from "@/lib/ops-rules";
 import { CLEARANCE_DAYS, LAST_MILE_DAYS, isDomestic } from "@/lib/purchasing";
-import { WEIGHT_SOURCES, choiceNeedsReason, logisticsReadiness, readQuotes, weightCheck } from "@/lib/freight-rules";
+import { EXTRA_CHARGES, WEIGHT_SOURCES, choiceNeedsReason, logisticsReadiness, readQuotes, weightCheck, type Breakdown } from "@/lib/freight-rules";
+import { chargeableKg, parseDims, volumetricKg } from "@/lib/freight-audit";
 import { adapters } from "@/lib/carriers/gateway";
 import { addFreightQuote, chooseFreightQuote, saveFreight } from "@/app/(app)/compras/flete-actions";
 
@@ -42,6 +43,11 @@ export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lan
   const word = { PROTECTED: t("Protege la promesa", "Protects the promise"), NARROW: t("Promesa justa", "Narrow"), AT_RISK: t("Promesa en riesgo", "Promise at risk"), BREACHED: t("Promesa incumplida", "Promise breached"), UNKNOWN: t("No se puede leer", "Can't be read") };
   const yn = (name: string, val: boolean | null | undefined) => <select name={name} defaultValue={val == null ? "" : val ? "yes" : "no"}><option value="">{t("No se sabe", "Unknown")}</option><option value="yes">{t("Sí", "Yes")}</option><option value="no">No</option></select>;
   const integrations = adapters().filter((a) => a.key !== "MANUAL");
+  // Billable weight the carrier should use: the larger of physical and volumetric, by the general weight rule.
+  const wr = await db.carrierRatingRule.findFirst({ where: { carrier: "DEFAULT" } });
+  const rule = { carrier: "DEFAULT", divisor: wr?.divisor ?? 5000, roundingKg: wr ? Number(wr.roundingKg) : 0.5, minChargeKg: wr?.minChargeKg != null ? Number(wr.minChargeKg) : null, tolerancePct: 0, toleranceUsd: 0, claimPct: 0, confirmed: wr?.confirmed ?? false, version: wr?.version ?? 0 };
+  const volKg = volumetricKg(parseDims(v.dims), v.packages, rule);
+  const billKg = chargeableKg(v.grossKg, volKg, rule);
 
   return (
     <section className="jblock" id="flete">
@@ -103,7 +109,7 @@ export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lan
               <thead><tr><th>{t("Transportador", "Carrier")}</th><th className="n">{t("Costo", "Cost")}</th><th>{t("Tránsito", "Transit")}</th><th>{t("Llegaría al cliente", "Would reach the customer")}</th><th>{t("Frente a la promesa", "Against the promise")}</th><th /></tr></thead>
               <tbody>{f.quotes.map((q) => { const r = reads.find((x) => x.id === q.id)!; return (
                 <tr key={q.id}>
-                  <td><b>{q.carrier}</b>{q.service ? ` · ${q.service}` : ""}{q.chosen && <span className="sig ok" style={{ marginLeft: 6 }}>{t("Elegida", "Chosen")}</span>}<span className="src block">{q.source}{q.validUntil ? ` · ${t("vigente hasta", "valid until")} ${i.day(q.validUntil)}` : ""}{q.reliability ? ` · ${q.reliability}` : ""}</span>{q.chosen && q.chosenReason && <span className="src block">«{q.chosenReason}» · {q.chosenByName}</span>}</td>
+                  <td><b>{q.carrier}</b>{q.service ? ` · ${q.service}` : ""}{q.chosen && <span className="sig ok" style={{ marginLeft: 6 }}>{t("Elegida", "Chosen")}</span>}{(() => { const b = q.breakdown as unknown as Breakdown | null; return b ? <span className="src block mono">{t("tarifa", "tariff")} {i.n2(b.tariff)}{b.discount > 0 ? ` − ${t("descuento", "discount")} ${i.n2(b.discountPct)} % (${i.n2(b.discount)})` : ""}{b.pieceSurcharge > 0 ? ` + ${t("sobrepeso", "piece surcharge")} ${i.n2(b.pieceSurcharge)}` : ""}{b.fuel > 0 ? ` + ${t("combustible", "fuel")} ${i.n2(b.fuel)}` : ""}{b.insurance > 0 ? ` + ${t("seguro", "insurance")} ${i.n2(b.insurance)}` : ""}{b.extras.map((x) => ` + ${t(EXTRA_CHARGES[x.key]?.es ?? x.name, EXTRA_CHARGES[x.key]?.en ?? x.name).toLowerCase()} ${i.n2(x.amount)}`).join("")}</span> : null; })()}<span className="src block">{q.source}{q.validUntil ? ` · ${t("vigente hasta", "valid until")} ${i.day(q.validUntil)}` : ""}{q.reliability ? ` · ${q.reliability}` : ""}</span>{q.chosen && q.chosenReason && <span className="src block">«{q.chosenReason}» · {q.chosenByName}</span>}</td>
                   <td className="n mono">{q.currency} {i.n2(q.cost)}{r.cheapest ? <span className="block small">{t("la más barata", "cheapest")}</span> : r.extraVsCheapest > 0 ? <span className="block small">+{i.n2(r.extraVsCheapest)}</span> : null}</td>
                   <td className="small">{q.transitDays != null ? t(`${q.transitDays} días`, `${q.transitDays} days`) : "—"}{q.pickupDate ? <span className="block">{t("recoge", "pickup")} {i.day(q.pickupDate)}</span> : null}</td>
                   <td className="mono small">{r.arrives ? i.day(r.arrives) : "—"}</td>
@@ -122,7 +128,7 @@ export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lan
                   <label>{t("Servicio", "Service")}<input name="service" maxLength={120} placeholder="Express, consolidado…" /></label>
                 </div>
                 <div className="qa-row">
-                  <label style={{ flex: "0 0 140px" }}>{t("Costo", "Cost")}<input name="cost" type="number" min={0} step="0.01" required /></label>
+                  <label style={{ flex: "0 0 160px" }}>{t("Costo total (si no hay desglose)", "Total cost (if no breakdown)")}<input name="cost" type="number" min={0} step="0.01" /></label>
                   <label style={{ flex: "0 0 90px" }}>{t("Moneda", "Currency")}<input name="currency" maxLength={3} defaultValue="USD" /></label>
                   <label style={{ flex: "0 0 120px" }}>{t("Días de tránsito", "Transit days")}<input name="transitDays" type="number" min={0} /></label>
                   <label style={{ flex: "0 0 auto" }}>{t("Puede recoger el", "Can pick up on")}<input name="pickupDate" type="date" defaultValue={dayInput(f.readyDate)} /></label>
@@ -132,6 +138,16 @@ export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lan
                   <label>{t("De dónde sale la tarifa", "Where the rate comes from")}<input name="source" required maxLength={200} placeholder={t("Cotización, correo, tarifa de contrato…", "Quote, email, contract rate…")} /></label>
                   <label>{t("Qué tan confiable ha sido (hechos)", "How reliable it has been (facts)")}<input name="reliability" maxLength={200} /></label>
                 </div>
+                <span className="k">{t("Desglose del flete (opcional): SOLU hace la suma", "Freight breakdown (optional): SOLU does the sum")}</span>
+                {billKg != null && <span className="small">{t("Peso a facturar esperado", "Expected billable weight")}: <b className="mono">{i.n2(billKg)} kg</b> <span className="muted">({t("físico", "physical")} {v.grossKg != null ? i.n2(v.grossKg) : "—"} kg · {t("volumétrico", "volumetric")} {volKg != null ? i.n2(volKg) : "—"} kg{rule.confirmed ? "" : t(" · regla de peso por confirmar", " · weight rule to confirm")})</span></span>}
+                <div className="qa-row">
+                  <label>{t("Tarifa del flete", "Freight tariff")}<input name="b_tariff" inputMode="decimal" /></label>
+                  <label style={{ flex: "0 0 130px" }}>{t("% descuento", "Discount %")}<input name="b_discountPct" inputMode="decimal" /></label>
+                  <label>{t("Pieza con sobrepeso", "Piece surcharge")}<input name="b_piece" inputMode="decimal" /></label>
+                  <label>{t("Recargo de combustible", "Fuel surcharge")}<input name="b_fuel" inputMode="decimal" /></label>
+                  <label>{t("Seguro", "Insurance")}<input name="b_insurance" inputMode="decimal" /></label>
+                </div>
+                <div className="qa-row">{Object.entries(EXTRA_CHARGES).map(([k, x]) => <label key={k}>{t(x.es, x.en)}<input name={`b_x_${k}`} inputMode="decimal" /></label>)}</div>
                 <button type="submit">{t("Agregar opción", "Add option")}</button>
               </form>
             </details>

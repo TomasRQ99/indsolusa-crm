@@ -64,3 +64,28 @@ export function readQuotes(quotes: QuoteIn[], ctx: { readyDate: Date | null; pro
 }
 /** Choosing needs a written reason when the option is not the cheapest or doesn't protect the promise. */
 export const choiceNeedsReason = (r: QuoteRead) => !r.cheapest || r.health === "AT_RISK" || r.health === "BREACHED" || r.health === "UNKNOWN";
+
+// ---------- Freight cost breakdown (structure used by Importsoluciones' DHL calculator, 2026-11-11) ----------
+// cost = tariff − discount + piece surcharge + fuel surcharge + insurance + extra charges.
+// SOLU does the sum from the parts typed in; it never fills a part that was not given.
+
+export const EXTRA_CHARGES: Record<string, { es: string; en: string }> = {
+  exportDeclaration: { es: "Declaración de exportación", en: "Export declaration" }, remotePickup: { es: "Recogida remota", en: "Remote pickup" },
+  lithium: { es: "Reglamentación de litio", en: "Lithium regulation" }, nonStackable: { es: "No apilable", en: "Non-stackable" }, other: { es: "Otros cargos", en: "Other charges" },
+};
+export type BreakdownIn = { tariff: number | null; discountPct: number | null; pieceSurcharge: number | null; fuel: number | null; insurance: number | null; extras: { key: string; amount: number | null }[] };
+export type Breakdown = { tariff: number; discountPct: number; discount: number; pieceSurcharge: number; fuel: number; insurance: number; extras: { key: string; name: string; amount: number }[]; extrasTotal: number; total: number };
+const c2 = (n: number) => Math.round(n * 100) / 100;
+/** Returns null when there is no tariff (no breakdown was given), or "BAD" when a part is out of range. */
+export function freightBreakdown(i: BreakdownIn): Breakdown | null | "BAD" {
+  const any = [i.pieceSurcharge, i.fuel, i.insurance, i.discountPct, ...i.extras.map((e) => e.amount)].some((x) => x != null && x !== 0);
+  if (i.tariff == null || i.tariff === 0) return any ? "BAD" : null; // parts without the tariff they hang from make no sense
+  const pct = i.discountPct ?? 0;
+  const parts = [i.tariff, i.pieceSurcharge ?? 0, i.fuel ?? 0, i.insurance ?? 0, ...i.extras.map((e) => e.amount ?? 0)];
+  if (parts.some((x) => !(x >= 0) || x > 1e7) || !(pct >= 0) || pct > 100) return "BAD";
+  const discount = c2((i.tariff * pct) / 100);
+  const extras = i.extras.filter((e) => (e.amount ?? 0) > 0).map((e) => ({ key: e.key, name: EXTRA_CHARGES[e.key]?.es ?? e.key, amount: c2(e.amount!) }));
+  const extrasTotal = c2(extras.reduce((s, e) => s + e.amount, 0));
+  const total = c2(i.tariff - discount + (i.pieceSurcharge ?? 0) + (i.fuel ?? 0) + (i.insurance ?? 0) + extrasTotal);
+  return { tariff: c2(i.tariff), discountPct: pct, discount, pieceSurcharge: c2(i.pieceSurcharge ?? 0), fuel: c2(i.fuel ?? 0), insurance: c2(i.insurance ?? 0), extras, extrasTotal, total };
+}
