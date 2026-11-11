@@ -111,3 +111,9 @@ Each wave is committed separately, tested, and starts with its open decisions be
 - **O10 Showcase / SEO (§37; AC25–26).** Publication candidates and eligibility; public pages and Need intake. Proposed last, subject to O-13.
 
 Not built: opaque scores, automatic payments, automatic sending of customs information, automatic publication, any tariff classification chosen for a lower duty.
+
+## Information received 2026-11-11 (not built; decisions open)
+
+- **DHL account owner (answers the open question of O5b):** the direct DHL account, with special rates and negotiable discounts, belongs to **Importsoluciones**; Industry Solutions USA ships through it. Importsoluciones' own system is already connected to the DHL API and calculates freight. Open: whether SOLU connects to DHL at all, or takes the freight figure from their system.
+- **Courier vs cargo rule:** courier account up to 49 kg; cargo account (formal import and nationalisation) when FOB value of the goods alone is above USD 2,000 or **physical** weight is above 50 kg (from 50.1 kg; never volumetric). Not yet used by `logisticsReadiness` / `importReadiness`.
+- **Authorisation ranges by level** (COP and SMLV, 2025, to be validated by the company): person levels Emprendedor / Junior / Senior; steps Personal → peer (mentor informed) → senior peer → MMS and mentor → Gerencia → partners if relevant risk. SOLU has no such levels today, works in USD, and the table doesn't say what is being authorised. Relates to O-04 (second review by amount) and to Module 12 R-09.
