@@ -120,5 +120,12 @@ export function suggest<T extends Candidate>(txAmount: number, txDate: Date, ope
 export const CLASSES: Record<string, { es: string; en: string }> = {
   INTERNAL_TRANSFER: { es: "Traslado entre cuentas propias", en: "Transfer between own accounts" },
   BANK_FEE: { es: "Comisión o cargo del banco", en: "Bank fee or charge" },
+  // Módulo 14 §2E: every movement is explained or stays openly unexplained.
+  EXPENSE: { es: "Gasto de la empresa", en: "Company expense" },
+  PAYROLL: { es: "Nómina", en: "Payroll" },
+  TAX: { es: "Impuesto", en: "Tax" },
+  FINANCING: { es: "Financiación (crédito, cuota, desembolso)", en: "Financing (loan, instalment, drawdown)" },
+  INVESTMENT: { es: "Inversión o aporte", en: "Investment or contribution" },
+  REFUND: { es: "Devolución o reembolso", en: "Refund" },
   OTHER: { es: "Otro (no es de un cliente ni de un proveedor)", en: "Other (not from a customer or to a supplier)" },
 };

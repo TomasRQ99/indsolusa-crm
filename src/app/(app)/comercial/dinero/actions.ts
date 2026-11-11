@@ -187,12 +187,17 @@ export async function withdrawCreditReview(id: string, fd: FormData) {
 export async function decideCreditReview(id: string, fd: FormData) {
   const user = await requireUser();
   const back = backOf(fd, "/administracion/cupos#solicitudes");
-  if (!canDecideCredit(user)) go(back, "err=autoridad");
   const r = await db.creditReviewRequest.findUniqueOrThrow({ where: { id } });
+  // Módulo 14 §16: Finanzas or Gerencia, or someone they lent the credit authority to (up to the cap of that loan).
+  const asked = Math.max(Number(r.requestedLimit ?? 0), Number(String(fd.get("approvedLimit") ?? "").replace(",", ".")) || 0);
+  const { actWith } = await import("@/lib/admin-store");
+  const act = await actWith(user, "CREDIT", asked > 0 ? asked : null, r.requestedById, (role) => canDecideCredit({ id: user.id, role: role as typeof user.role }));
+  if (!act.ok) go(back, "err=autoridad");
   if (r.status !== "OPEN") go(back, "err=decidida");
   if (r.requestedById === user.id) go(back, "err=propia");
   const decision = txt(fd, "decision", 10);
-  const note = txt(fd, "decisionNote", 1200);
+  const typed = txt(fd, "decisionNote", 1100);
+  const note = typed && act.fromName ? `${typed} (autoridad prestada por ${act.fromName})` : typed;
   if (decision !== "APPROVE" && decision !== "REJECT") go(back, "err=decision");
   if (!note) go(back, "err=nota");
   if (decision === "REJECT") {

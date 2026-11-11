@@ -6,6 +6,7 @@ import { decideCreditReview } from "../../comercial/dinero/actions";
 import { ALT_LABEL, kindLabel } from "@/components/CashBags";
 import { makeI18n } from "@/lib/i18n";
 import { loadCredit } from "@/lib/queries";
+import { delegationsTo } from "@/lib/admin-store";
 import { grantCreditException, saveFinanceRate, savePayRules, setCreditLimit } from "../actions";
 import { getFinanceRate, FIN_COST_FORMULA } from "@/lib/financing";
 import { paymentBehaviors } from "@/lib/pay-behavior";
@@ -17,6 +18,8 @@ export default async function CreditLimitsPage({ searchParams }: { searchParams:
   const { t } = i;
   const manager = canManageAll(user);
   const decider = canDecideCredit(user);
+  // Módulo 14 §16: someone lent the credit authority may decide requests (not change limits directly).
+  const reviewDecider = decider || (await delegationsTo(user.id)).some((d) => d.domain === "CREDIT");
   const sp = await searchParams;
   const [rows, others, reviews] = await Promise.all([
     loadCredit(),
@@ -169,7 +172,7 @@ export default async function CreditLimitsPage({ searchParams }: { searchParams:
                     <div><dt>{t("Cómo paga", "How they pay")}</dt><dd>{s.expectedDays == null ? t("sin historial", "no history") : t(`~${s.expectedDays} días (plazo ${s.termsDays})`, `~${s.expectedDays} days (${s.termsDays}-day terms)`)}<span className="src">{t(`${s.payN} facturas · tendencia`, `${s.payN} invoices · trend`)} {s.trend}</span></dd></div>
                     <div><dt>{t("Promesas", "Promises")}</dt><dd>{t(`${s.promisesKept} cumplidas · ${s.promisesBroken} incumplidas`, `${s.promisesKept} kept · ${s.promisesBroken} broken`)}</dd></div>
                   </dl>
-                  {decider && r.requestedById !== user.id ? (
+                  {reviewDecider && r.requestedById !== user.id ? (
                     <form action={decideCreditReview.bind(null, r.id)} className="grid cols-3">
                       <input type="hidden" name="back" value="/administracion/cupos#solicitudes" />
                       {(r.kind === "INCREASE" || r.kind === "DECREASE") && <label className="small">{t("Cupo aprobado (USD)", "Approved limit (USD)")}<input name="approvedLimit" inputMode="decimal" defaultValue={r.requestedLimit == null ? "" : Number(r.requestedLimit)} /></label>}

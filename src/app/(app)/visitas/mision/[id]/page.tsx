@@ -9,10 +9,13 @@ import { VISIT_STATUS } from "@/lib/visits";
 import { BUDGET_STATUS, EXPENSES_STATUS, EXPENSE_CATS, canDecideBudget, canEditExpenses, canReconcile, canRequestBudget, travelSummary } from "@/lib/travel-rules";
 import { ShrinkFileInput } from "@/components/ShrinkFileInput";
 import { ExpenseMoneyFields } from "@/components/ExpenseMoneyFields";
-import { addExpense, decideBudget, reconcileExpenses, removeExpense, requestBudget, submitExpenses } from "../actions";
+import { travelSettlement } from "@/lib/admin-rules";
+import { loadBudgets } from "@/lib/admin-store";
+import { addExpense, decideBudget, giveAdvance, reconcileExpenses, removeExpense, requestBudget, setExpenseOutcome, settleMission, submitExpenses, validateWithReceipts } from "../actions";
 
-// Comercial C8e · one mission: its visits, the travel budget (asked → decided by someone else) and the expenses
-// (listed with receipts → checked against the budget by Finanzas or Gerencia). Interim rules until Module 14.
+// One mission: its visits, the travel budget (asked → decided by someone else), the advance, the expenses (listed
+// with receipts → each one checked by Finanzas or Gerencia) and the final settlement. Comercial C8e, aligned with
+// Module 14 §14 and §18.
 
 export default async function MissionPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string }> }) {
   const user = await requireUser();
@@ -25,7 +28,8 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
     include: {
       owner: { select: { name: true, role: true } },
       visits: { orderBy: { plannedAt: "asc" }, select: { id: true, status: true, plannedAt: true, account: { select: { name: true } } } },
-      expenses: { orderBy: [{ spentOn: "asc" }, { createdAt: "asc" }], select: { id: true, spentOn: true, category: true, description: true, amount: true, originalNote: true, currency: true, originalAmount: true, fxRate: true, fxSource: true, receiptName: true, noReceiptReason: true } },
+      expenses: { orderBy: [{ spentOn: "asc" }, { createdAt: "asc" }], select: { id: true, spentOn: true, category: true, description: true, amount: true, originalNote: true, currency: true, originalAmount: true, fxRate: true, fxSource: true, receiptName: true, noReceiptReason: true, outcome: true, outcomeNote: true, outcomeByName: true, createdById: true } },
+      budget: { select: { id: true, name: true } },
     },
   });
   if (!m) notFound();
@@ -35,6 +39,10 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
   const checker = canReconcile(user, who);
   if (!mine && !decider && !checker) notFound();
   const editExp = mine && canEditExpenses(m);
+  // Módulo 14 §14: budgets the trip can be charged to (for whoever decides) and the settlement of the advance.
+  const budgets = decider && m.budgetStatus === "REQUESTED" ? await loadBudgets({ closedAt: null }) : [];
+  const st = travelSettlement(m.advanceGivenAt ? m.advanceAmount : null, m.expenses);
+  const reviewing = checker && m.expensesStatus === "SUBMITTED";
   const s = travelSummary(m.budgetApproved, m.expenses.map((e) => ({ amount: e.amount, category: e.category, hasReceipt: !!e.receiptName })));
   const money = (v: unknown) => i.money2(v);
   const bs = BUDGET_STATUS[m.budgetStatus] ?? BUDGET_STATUS.NOT_REQUESTED;
@@ -46,7 +54,8 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
     aprobado: t("Presupuesto aprobado.", "Budget approved."), rechazado: t("Presupuesto rechazado.", "Budget rejected."),
     gasto: t("Gasto agregado.", "Expense added."), "gasto-quitado": t("Gasto quitado.", "Expense removed."),
     enviado: t("Gastos enviados a revisión. Los revisa Finanzas o Gerencia.", "Expenses sent for review. Finance or Management checks them."),
-    devuelto: t("Gastos devueltos con tu pregunta.", "Expenses returned with your question."), legalizado: t("Gastos legalizados.", "Expenses reconciled."),
+    devuelto: t("Gastos devueltos con tu pregunta.", "Expenses returned with your question."), legalizado: t("Gastos legalizados. Falta liquidar el anticipo.", "Expenses reconciled. The advance still has to be settled."),
+    anticipo: t("Anticipo registrado.", "Advance recorded."), resultado: t("Resultado del gasto guardado.", "Expense outcome saved."), liquidado: t("Viaje liquidado.", "Trip settled."),
   };
   const errMsg: Record<string, string> = {
     permiso: t("Solo quien viaja o la dirección cambian esta misión.", "Only the traveller or management change this mission."),
@@ -65,6 +74,11 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
     "sin-gastos": t("Agrega al menos un gasto antes de enviar.", "Add at least one expense before sending."),
     cargaste: t("Tú cargaste alguno de estos gastos: los debe revisar otra persona de Finanzas o Gerencia.", "You entered some of these expenses: another person from Finance or Management must check them."),
     muchos: t("Esta misión ya tiene el máximo de gastos.", "This mission already has the maximum number of expenses."),
+    anticipo: t("El anticipo necesita valor, fecha (no futura) y la referencia del pago.", "The advance needs an amount, a date (not in the future) and the payment reference."),
+    "anticipo-tope": t("El anticipo no puede superar el presupuesto aprobado.", "The advance can't exceed the approved budget."),
+    resultado: t("Escribe el motivo: es obligatorio para no aceptar un gasto, y para aceptar uno sin soporte.", "Write the reason: it is required to not accept an expense, and to accept one without a receipt."),
+    "sin-validar": t("Cada gasto necesita su resultado (válido o no aceptado) antes de legalizar.", "Each expense needs its outcome (valid or not accepted) before reconciling."),
+    liquidar: t("Escribe la referencia del pago o de la devolución.", "Type the reference of the payment or of the return."),
   };
 
   return (
@@ -96,6 +110,7 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
           {m.budgetStatus === "APPROVED" && <><dt>{t("Aprobado", "Approved")}</dt><dd className="mono"><b>{money(m.budgetApproved)}</b><span className="muted"> · {m.budgetDecidedByName} · {i.day(m.budgetDecidedAt)}</span></dd></>}
           {m.budgetStatus === "REJECTED" && <><dt>{t("Rechazado", "Rejected")}</dt><dd><span className="muted">{m.budgetDecidedByName} · {i.day(m.budgetDecidedAt)}</span></dd></>}
           {m.budgetNote && <><dt>{m.budgetStatus === "REQUESTED" ? t("Justificación", "Justification") : t("Nota", "Note")}</dt><dd>«{m.budgetNote}»</dd></>}
+          {m.budgetStatus === "APPROVED" && <><dt>{t("Se carga a", "Charged to")}</dt><dd>{m.budget ? <Link href={`/administracion/presupuesto#b-${m.budget.id}`}>{m.budget.name}</Link> : <span className="muted">{t("ningún presupuesto", "no budget")}</span>}</dd></>}
         </dl>
         {mine && canRequestBudget(m.budgetStatus) && (
           <form action={requestBudget.bind(null, m.id)} className="qa-form" style={{ maxWidth: 520 }}>
@@ -107,6 +122,7 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
         {m.budgetStatus === "REQUESTED" && (decider ? (
           <form action={decideBudget.bind(null, m.id)} className="qa-form exc-decide" style={{ maxWidth: 620 }}>
             <label>{t("Monto a aprobar (USD)", "Amount to approve (USD)")}<input name="approved" type="number" min={0} step="0.01" defaultValue={m.budgetAmount != null ? Number(m.budgetAmount) : ""} /></label>
+            {budgets.length > 0 && <label>{t("Presupuesto al que se carga", "Budget it is charged to")}<select name="budgetId" defaultValue=""><option value="">{t("Ninguno", "None")}</option>{budgets.map((b) => <option key={b.id} value={b.id}>{b.name} · {t("queda", "left")} {i.n2(b.view.available)}</option>)}</select></label>}
             <label>{t("Nota (obligatoria para rechazar o cambiar el monto)", "Note (required to reject or change the amount)")}<textarea name="note" rows={2} maxLength={500} /></label>
             <div className="qa-row">
               <button type="submit" name="action" value="APPROVE">{t("Aprobar presupuesto", "Approve budget")}</button>
@@ -115,6 +131,21 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
           </form>
         ) : <p className="src">{mine ? t("Esperando la decisión de Gerencia (otra persona).", "Waiting for Management's decision (someone else).") : t("La decide Gerencia.", "Management decides it.")}</p>)}
       </section>
+
+      {m.budgetStatus === "APPROVED" && (
+        <section className="jblock" id="anticipo">
+          <div className="jbh"><b>{t("ANTICIPO", "ADVANCE")}</b><span className="grow" /><span className="src">{t("Lo entrega Finanzas o Gerencia", "Given by Finance or Management")}</span></div>
+          {m.advanceGivenAt ? <p className="small">{t("Entregado", "Given")}: <b className="mono">{money(m.advanceAmount)}</b> · {i.day(m.advanceGivenAt)} · {m.advanceGivenByName} · {m.advanceRef}</p>
+            : checker && !m.settledAt && m.expensesStatus !== "RECONCILED" ? (
+              <form action={giveAdvance.bind(null, m.id)} className="qa-row" style={{ alignItems: "flex-end", maxWidth: 720 }}>
+                <label>{t("Valor (USD)", "Amount (USD)")}<input name="advanceAmount" type="number" min={0} step="0.01" required /></label>
+                <label>{t("Fecha", "Date")}<input name="advanceOn" type="date" defaultValue={dayInput(today())} max={dayInput(today())} /></label>
+                <label style={{ flex: 2 }}>{t("Referencia del pago", "Payment reference")}<input name="advanceRef" required maxLength={120} /></label>
+                <button type="submit" className="secondary" style={{ flex: "0 0 auto" }}>{t("Registrar anticipo", "Record advance")}</button>
+              </form>
+            ) : <p className="small muted">{t("Sin anticipo: quien viaja paga y la empresa le reembolsa lo válido.", "No advance: the traveller pays and the company reimburses what is valid.")}</p>}
+        </section>
+      )}
 
       {m.budgetStatus === "APPROVED" && (
         <section className="jblock" id="gastos">
@@ -126,7 +157,7 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
           </div>
           {m.expenses.length === 0 ? <p className="quiet-p">{t("Aún no hay gastos. Agrégalos durante el viaje, con la foto del soporte.", "No expenses yet. Add them during the trip, with a photo of the receipt.")}</p> : (
             <div className="tscroll"><table>
-              <thead><tr><th>{t("Fecha", "Date")}</th><th>{t("Tipo", "Type")}</th><th>{t("Descripción", "Description")}</th><th className="n">USD</th><th>{t("Soporte", "Receipt")}</th>{editExp && <th />}</tr></thead>
+              <thead><tr><th>{t("Fecha", "Date")}</th><th>{t("Tipo", "Type")}</th><th>{t("Descripción", "Description")}</th><th className="n">USD</th><th>{t("Soporte", "Receipt")}</th><th>{t("Resultado", "Outcome")}</th>{editExp && <th />}</tr></thead>
               <tbody>{m.expenses.map((e) => (
                 <tr key={e.id}>
                   <td className="mono small">{i.day(e.spentOn)}</td>
@@ -134,6 +165,8 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
                   <td>{e.description}{e.originalNote && <span className="muted small"> · {e.originalNote}</span>}{e.currency === "COP" && e.originalAmount != null && <span className="src block">COP {i.n(e.originalAmount)} · {t("tasa", "rate")} {i.n2(e.fxRate)} · {e.fxSource}</span>}</td>
                   <td className="n mono">{i.n2(e.amount)}</td>
                   <td className="small">{e.receiptName ? <a href={`/visitas/soporte/${e.id}`} target="_blank" rel="noreferrer">{t("Ver soporte", "View receipt")}</a> : <span className="risk-t">{t("Sin soporte", "No receipt")}: {e.noReceiptReason}</span>}</td>
+                  <td className="small">{e.outcome === "VALID" ? <span className="sig ok">{t("Válido", "Valid")}</span> : e.outcome === "REJECTED" ? <span className="sig risk">{t("No aceptado", "Not accepted")}</span> : <span className="sig wait">{t("Sin revisar", "Not checked")}</span>}{e.outcomeNote ? <span className="src block">{e.outcomeNote} · {e.outcomeByName}</span> : e.outcomeByName ? <span className="src block">{e.outcomeByName}</span> : null}
+                    {reviewing && e.createdById !== user.id && <form action={setExpenseOutcome.bind(null, e.id)} className="qa-row" style={{ alignItems: "center", marginTop: 4 }}><input name="note" placeholder={e.receiptName ? t("Motivo si no se acepta", "Reason if not accepted") : t("Motivo (obligatorio: no hay soporte)", "Reason (required: no receipt)")} aria-label={t("Motivo", "Reason")} style={{ minWidth: 140 }} /><button type="submit" name="outcome" value="VALID" className="secondary sm" style={{ flex: "0 0 auto" }}>{t("Válido", "Valid")}</button><button type="submit" name="outcome" value="REJECTED" className="secondary sm" style={{ flex: "0 0 auto" }}>{t("No aceptar", "Don't accept")}</button></form>}</td>
                   {editExp && <td><form action={removeExpense.bind(null, e.id)}><button type="submit" className="linkish">{t("Quitar", "Remove")}</button></form></td>}
                 </tr>
               ))}</tbody>
@@ -159,8 +192,10 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
               {m.expenses.length > 0 && <form action={submitExpenses.bind(null, m.id)} style={{ marginTop: 10 }}><button type="submit">{m.expensesStatus === "RETURNED" ? t("Volver a enviar a revisión", "Send for review again") : t("Enviar gastos a revisión", "Send expenses for review")}</button><span className="src block">{t("Después de enviar ya no se pueden cambiar, salvo que te los devuelvan.", "After sending they can't be changed, unless they're returned to you.")}</span></form>}
             </>
           )}
+          {reviewing && m.expenses.some((e) => !e.outcome && e.receiptName && e.createdById !== user.id) && <form action={validateWithReceipts.bind(null, m.id)} style={{ marginTop: 8 }}><button type="submit" className="secondary sm">{t("Marcar como válidos los que tienen soporte", "Mark those with a receipt as valid")}</button><span className="src"> {t("Revísalos primero: los que no tienen soporte quedan para decidir uno por uno.", "Check them first: those without a receipt stay to be decided one by one.")}</span></form>}
           {m.expensesStatus === "SUBMITTED" && (checker ? (
             <form action={reconcileExpenses.bind(null, m.id)} className="qa-form exc-decide" style={{ maxWidth: 620, marginTop: 10 }}>
+              {st.pending > 0 && <p className="qv-alert">{t(`Faltan ${st.pending} gasto(s) por revisar: ninguno cuenta hasta tener su resultado.`, `${st.pending} expense(s) still to check: none counts until it has its outcome.`)}</p>}
               {(s.over || s.withoutReceipt > 0) && <p className="qv-alert">{s.over ? t(`El gasto supera el presupuesto en ${money(Math.abs(s.diff ?? 0))}. `, `Spending is over budget by ${money(Math.abs(s.diff ?? 0))}. `) : ""}{s.withoutReceipt > 0 ? t(`${s.withoutReceipt} gasto(s) sin soporte por ${money(s.withoutReceiptAmount)}. `, `${s.withoutReceipt} expense(s) without receipt for ${money(s.withoutReceiptAmount)}. `) : ""}{t("Para legalizar así, escribe por qué se acepta.", "To reconcile as is, write why it's accepted.")}</p>}
               <label>{t("Nota (obligatoria para devolver, o si hay exceso o falta soporte)", "Note (required to return, or when over budget or a receipt is missing)")}<textarea name="note" rows={2} maxLength={500} /></label>
               <div className="qa-row">
@@ -171,7 +206,20 @@ export default async function MissionPage({ params, searchParams }: { params: Pr
           ) : <p className="src" style={{ marginTop: 8 }}>{t("En revisión por Finanzas o Gerencia.", "Under review by Finance or Management.")}</p>)}
         </section>
       )}
-      <p className="src">{t("Reglas provisionales de viaje (travel-v1), hasta que llegue el documento oficial de Administración (Módulo 14). El presupuesto se lleva en USD; un gasto en pesos se convierte con la TRM oficial o con lo que te cobraron.", "Interim travel rules (travel-v1), until the official Administration document (Module 14) arrives. The budget is kept in USD; an expense in pesos is converted with the official TRM or with what you were charged.")}</p>
+      {m.budgetStatus === "APPROVED" && (m.expensesStatus === "RECONCILED" || m.settledAt) && (
+        <section className="jblock" id="liquidacion">
+          <div className="jbh"><b>{t("LIQUIDACIÓN DEL VIAJE", "TRIP SETTLEMENT")}</b></div>
+          <dl className="qv-dl tight">
+            <dt>{t("Gastos válidos", "Valid expenses")}</dt><dd className="mono">{money(st.valid)}{st.rejected > 0 ? <span className="muted"> · {t("no aceptados", "not accepted")} {money(st.rejected)}</span> : null}</dd>
+            <dt>{t("Anticipo entregado", "Advance given")}</dt><dd className="mono">{money(st.advance)}</dd>
+            <dt>{st.direction === "TRAVELLER_RETURNS" ? t("Quien viajó devuelve", "The traveller returns") : st.direction === "PAY_TRAVELLER" ? t("La empresa le paga a quien viajó", "The company pays the traveller") : t("Diferencia", "Difference")}</dt><dd className="mono"><b>{money(Math.abs(st.settle))}</b>{st.direction === "EVEN" ? <span className="muted"> · {t("nada que pagar ni devolver", "nothing to pay or return")}</span> : null}</dd>
+            {m.settledAt && <><dt>{t("Liquidado", "Settled")}</dt><dd>{i.day(m.settledAt)} · {m.settledByName}{m.settleRef ? ` · ${m.settleRef}` : ""}</dd></>}
+          </dl>
+          {!m.settledAt && checker && <form action={settleMission.bind(null, m.id)} className="qa-row" style={{ alignItems: "flex-end", maxWidth: 620 }}><label style={{ flex: 2 }}>{st.direction === "TRAVELLER_RETURNS" ? t("Referencia de la devolución", "Reference of the return") : t("Referencia del pago", "Payment reference")}<input name="settleRef" maxLength={120} required={st.direction !== "EVEN"} /></label><button type="submit" style={{ flex: "0 0 auto" }}>{t("Cerrar la liquidación", "Close the settlement")}</button></form>}
+          {!m.settledAt && !checker && <p className="src">{t("La cierra Finanzas o Gerencia.", "Finance or Management closes it.")}</p>}
+        </section>
+      )}
+      <p className="src">{t("Reglas de viaje (travel-v2, Módulo 14 de Administración): la misión da el propósito; Administración autoriza y controla el dinero. Ningún gasto cuenta hasta que alguien lo revisa contra su soporte. El presupuesto se lleva en USD; un gasto en pesos se convierte con la TRM oficial o con lo que te cobraron.", "Travel rules (travel-v2, Administration Module 14): the mission gives the purpose; Administration authorises and controls the money. No expense counts until someone checks it against its receipt. The budget is kept in USD; an expense in pesos is converted with the official TRM or with what you were charged.")}</p>
     </div>
   );
 }

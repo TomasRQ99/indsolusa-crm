@@ -3,6 +3,7 @@
 // money, bank data, authority (roles), commercial commitments, states and document versions.
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { PrismaClient } from "@prisma/client";
+import { eventsOf } from "./domain-events";
 
 /** Tracked fields per model; "all" = every scalar field the write touches. */
 export const AUDITED: Record<string, readonly string[] | "all"> = {
@@ -125,6 +126,28 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   VisitAttachment: ["name", "mime", "size", "uploadedByName"],
   CoverageAssignment: "all",
   RelationshipBackup: "all",
+  // Módulo 14 · Administración
+  CashBalance: "all",
+  CashReserve: "all",
+  CashPlanItem: "all",
+  SupplierInvoice: "all",
+  Budget: "all",
+  BudgetEntry: "all",
+  InternalPurchase: "all",
+  Asset: "all",
+  AssetEvent: "all",
+  Obligation: "all",
+  // Personal contract data: the history keeps who changed it and when, not the values (the history screen is
+  // open to Dirección as well, and these facts are for Administración, Gerencia and the person).
+  PersonAdmin: ["userId", "updatedByName"],
+  // Pay is never copied into the change history: only that it changed, for whom and from when.
+  PersonCompensation: ["userId", "currency", "period", "effectiveFrom", "setByName"],
+  PersonRoleAssignment: "all",
+  // The kind of absence (it can be a health matter) and its note stay out of the change history.
+  AbsenceRecord: ["userId", "startsOn", "endsOn", "status", "decidedByName"],
+  DelegatedAuthority: "all",
+  SupportGap: "all",
+  AccountingExport: "all",
 };
 const MASK = new Set(["bankAccount", "docAccount"]);
 const SKIP = new Set(["id", "createdAt", "updatedAt"]);
@@ -172,6 +195,8 @@ export function makeAuditHook(base: PrismaClient) {
   const write = async (rows: AuditRow[]) => {
     if (!rows.length) return;
     try { await base.auditEvent.createMany({ data: rows }); } catch (e) { console.error("audit write failed", e); }
+    // Módulo 14 §10: the same changes, named as business events. Derived here so no screen can forget one.
+    try { const ev = rows.flatMap(eventsOf); if (ev.length) await base.domainEvent.createMany({ data: ev }); } catch (e) { console.error("domain events failed", e); }
   };
   const emit = async (rows: AuditRow[]) => {
     const st = txStore.getStore();

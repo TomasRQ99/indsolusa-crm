@@ -8,6 +8,8 @@ import { makeI18n } from "@/lib/i18n";
 import { loadSupplierPayments } from "@/lib/queries";
 import { paymentStateLabel } from "@/lib/labels";
 import { authorityFor, treasuryChecks } from "@/lib/purchasing";
+import type { Role } from "@prisma/client";
+import { actWith } from "@/lib/admin-store";
 import { db } from "@/lib/db";
 import { Popovers } from "@/components/Popovers";
 import { approveSupplierPayment, markUncertain, reconcileExecution, recordExecution, verifySupplierPayment } from "../../actions";
@@ -27,7 +29,11 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
   // supplierPo already carries all its own fields (version, releasedAt, amount…): no extra query.
   const spoFull = spo;
   const { dup, usd } = await treasuryChecks(p, spoFull, i);
-  const auth = authorityFor(user, p, usd, i, await getPurchasePolicy());
+  const payPol = await getPurchasePolicy();
+  const own = authorityFor(user, p, usd, i, payPol);
+  // Módulo 14 §16: an authority lent to this person for payments counts too.
+  const act = own.can ? null : await actWith(user, "PAYMENT_APPROVAL", usd, p.requestedById, (role) => authorityFor({ id: user.id, role: role as Role }, p, usd, i, payPol).can);
+  const auth = act?.ok ? { ...own, can: true, reasons: [t(`Apruebas con autoridad prestada por ${act.fromName}`, `You approve with authority lent by ${act.fromName}`)] } : own;
   const L = paymentStateLabel(i, p.state);
   const m = (v: unknown) => `${p.currency} ${i.n2(v)}`;
   const differs = new Set(p.discrepancies.map((x) => x.field));

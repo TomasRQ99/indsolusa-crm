@@ -62,7 +62,7 @@ export default async function AdminReportPage() {
             <tr><td>{t("Por facturar de lo contratado", "To invoice from what is contracted")}</td>{HORIZONS.map((h) => <td key={h} className="n mono">{f.contracted.toInvoice[h].n ? i.n2(f.contracted.toInvoice[h].usd) : "—"}</td>)}</tr>
           </tbody>
         </table></div>
-        <p className="src">{t("Por fecha de vencimiento o prometida, no por cuándo se paga de verdad. No incluye el saldo en bancos ni un presupuesto: SOLU no los tiene.", "By due or promised date, not by when it is really paid. It includes no bank balance and no budget: SOLU doesn't have them.")} <Link href="/informes/futuro">{t("Pulso del futuro", "Future pulse")}</Link></p>
+        <p className="src">{t("Por fecha de vencimiento o prometida, no por cuándo se paga de verdad. El saldo en bancos, lo comprometido y la caja proyectada están en Tesorería.", "By due or promised date, not by when it is really paid. Bank balances, what is committed and projected cash are in Treasury.")} <Link href="/administracion/tesoreria">{t("Tesorería", "Treasury")}</Link> · <Link href="/informes/futuro">{t("Pulso del futuro", "Future pulse")}</Link></p>
       </section>
 
       <section className="card" id="credito">

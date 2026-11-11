@@ -75,6 +75,15 @@ export function canDecideCredit(u: U) {
   return u.role === "GERENCIA" || isMoneyRole(u.role);
 }
 
+/** Módulo 14 §2K, §9 · labour facts of people (contract, dates, absences, assets): Gerencia and Administración.
+ *  Never pay: see canSeePay. (Decision A-01, confirmed by the user 2026-11-11.) */
+export const canAdminPeople = (u: U) => u.role === "GERENCIA" || u.role === "ADMINISTRACION";
+/** Pay is seen by Gerencia, Finanzas and the person themselves (user decision 2026-11-11), and set by Gerencia only (AC18). */
+export const canSeePay = (u: U, personId: string) => u.role === "GERENCIA" || u.role === "FINANZAS" || u.id === personId;
+/** Budgets are assigned, changed and closed by Gerencia or Finanzas (user decision 2026-11-11). */
+export const canAssignBudgets = (u: U) => u.role === "GERENCIA" || u.role === "FINANZAS";
+export const canSetPay = (u: U) => u.role === "GERENCIA";
+
 /** Mercado §18: loading economic datasets is for Management and Marketing. */
 export function canImportData(u: U) {
   return canManageAll(u) || u.role === "MARKETING";

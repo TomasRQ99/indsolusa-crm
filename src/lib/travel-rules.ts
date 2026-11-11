@@ -7,7 +7,7 @@ import { cmpMoney, sharePct, subMoney, sumMoney, type MoneyIn } from "./money";
 //   - If the traveller is Gerencia, Finanzas decides (so nobody approves their own trip).
 //   - After the trip the traveller lists expenses with receipts; Finanzas or Gerencia (not the traveller) checks them.
 
-export const TRAVEL_RULES = "travel-v1";
+export const TRAVEL_RULES = "travel-v2"; // aligned with Module 14 §14, §18 (advance, outcome per expense, settlement) on 2026-11-11
 type Txt = { es: string; en: string };
 export const EXPENSE_CATS: Record<string, Txt> = {
   TRANSPORT: { es: "Tiquetes / transporte", en: "Tickets / transport" },

@@ -22,6 +22,9 @@ export default async function CoveragePage({ searchParams }: { searchParams: Pro
     where: { endsAt: { gte: addDays(today(), -30) }, ...(manage ? {} : { OR: [{ originalUserId: user.id }, { actingUserId: user.id }] }) },
     orderBy: { startsAt: "desc" }, include: { originalUser: { select: { name: true } }, actingUser: { select: { name: true } } },
   });
+  // Módulo 14 §15: approved absences (kept by Administración) that nobody covers yet. The kind of absence is not shown here.
+  const absences = await db.absenceRecord.findMany({ where: { status: "APPROVED", endsOn: { gte: today() }, startsOn: { lte: addDays(today(), 45) }, ...(manage ? {} : { userId: user.id }) }, orderBy: { startsOn: "asc" }, select: { id: true, userId: true, startsOn: true, endsOn: true, user: { select: { name: true } } } });
+  const uncovered = absences.filter((a) => !list.some((c) => !c.revokedAt && c.originalUserId === a.userId && c.startsAt <= a.endsOn && a.startsOn < c.endsAt));
   const scanFor = manage && sp.scan && people.some((p) => p.id === sp.scan) ? sp.scan : null;
   const scan = scanFor ? await coverageScan(scanFor, scanHorizon()) : null;
   const accounts = await db.account.findMany({ where: { ownerId: user.id }, orderBy: { name: "asc" }, select: { id: true, name: true, backup: { select: { backupUserId: true, note: true } } } });
@@ -52,6 +55,7 @@ export default async function CoveragePage({ searchParams }: { searchParams: Pro
       </div>
       {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
+      {uncovered.length > 0 && <div className="note attn">{t("Ausencias aprobadas sin nadie que cubra:", "Approved absences with nobody covering:")} {uncovered.map((a) => <span key={a.id} style={{ marginRight: 12 }}><b>{a.user.name}</b> {i.day(a.startsOn)} – {i.day(a.endsOn)}</span>)}</div>}
       {user.covering.length > 0 && <div className="note attn">{t(`Hoy estás cubriendo a ${people.filter((p) => user.covering.includes(p.id)).map((p) => p.name).join(", ")}: puedes actuar en sus Journeys hasta que termine la cobertura.`, `Today you're covering ${people.filter((p) => user.covering.includes(p.id)).map((p) => p.name).join(", ")}: you can act on their Journeys until the coverage ends.`)}</div>}
 
       <section className="card" id="coberturas">

@@ -8,9 +8,13 @@ import { refreshApp } from "@/lib/revalidate";
 import { cmpMoney, money2 } from "@/lib/money";
 import { TRM_SOURCE, copToUsd, impliedRate, trmFor } from "@/lib/fx";
 import { EXPENSE_CATS, MAX_EXPENSES, MAX_RECEIPT_BYTES, RECEIPT_MIMES, canDecideBudget, canEditExpenses, canReconcile, canRequestBudget, travelSummary } from "@/lib/travel-rules";
+import { travelSettlement } from "@/lib/admin-rules";
+import { today } from "@/lib/domain";
 
-// Comercial C8e · travel budget and expenses of a mission (interim rules, decision C-17). Nobody approves their own
-// trip or checks their own expenses; every decision keeps who, when and why.
+// Travel budget and expenses of a mission. Started as Comercial C8e (interim rules, decision C-17) and aligned with
+// the official Module 14 §14 and §18 on 2026-11-11: the mission gives the purpose; Administración authorises and
+// controls the money. Nobody approves their own trip or checks their own expenses; no expense counts until a person
+// checked it against its evidence; the advance is settled into what the company owes or the traveller returns.
 
 const go = (id: string, qs: string): never => { refreshApp(); redirect(`/visitas/mision/${id}?${qs}`); };
 const txt = (fd: FormData, k: string, max = 500) => { const v = String(fd.get(k) ?? "").replace(/\r\n/g, "\n").trim().slice(0, max); return v || null; };
@@ -19,7 +23,7 @@ const amountOf = (fd: FormData, k: string) => { const n = Number(String(fd.get(k
 
 async function load(id: string) {
   const user = await requireUser();
-  const m = await db.commercialMission.findUnique({ where: { id }, select: { id: true, ownerId: true, budgetStatus: true, budgetAmount: true, budgetApproved: true, expensesStatus: true, owner: { select: { role: true } } } });
+  const m = await db.commercialMission.findUnique({ where: { id }, select: { id: true, ownerId: true, budgetStatus: true, budgetAmount: true, budgetApproved: true, expensesStatus: true, advanceAmount: true, advanceGivenAt: true, settledAt: true, owner: { select: { role: true } } } });
   if (!m) { refreshApp(); redirect("/visitas?err=mision-no"); }
   return { user, m: m!, who: { ownerId: m!.ownerId, ownerRole: m!.owner.role } };
 }
@@ -49,7 +53,10 @@ export async function decideBudget(id: string, fd: FormData) {
   if (approved == null) go(id, "err=monto");
   // Approving a different amount than requested needs a reason the traveller can read.
   if (m.budgetAmount != null && cmpMoney(approved, m.budgetAmount) !== 0 && !note) go(id, "err=nota-monto");
-  await db.commercialMission.update({ where: { id }, data: { budgetStatus: "APPROVED", budgetApproved: approved, budgetDecidedAt: new Date(), budgetDecidedByName: user.name, budgetNote: note } });
+  // Módulo 14 §2F: the trip is charged to a budget when the approver names one; from now it is a commitment there.
+  const budgetId = String(fd.get("budgetId") ?? "");
+  const budget = budgetId ? await db.budget.findFirst({ where: { id: budgetId, closedAt: null }, select: { id: true } }) : null;
+  await db.commercialMission.update({ where: { id }, data: { budgetStatus: "APPROVED", budgetApproved: approved, budgetDecidedAt: new Date(), budgetDecidedByName: user.name, budgetNote: note, budgetId: budget?.id ?? null } });
   go(id, "ok=aprobado");
 }
 
@@ -126,12 +133,15 @@ export async function reconcileExpenses(id: string, fd: FormData) {
     await db.commercialMission.update({ where: { id }, data: { expensesStatus: "RETURNED", reconcileNote: note, reconciledByName: user.name, reconciledAt: null } });
     go(id, "ok=devuelto");
   }
-  const rows = await db.missionExpense.findMany({ where: { missionId: id }, select: { amount: true, category: true, receiptName: true, createdById: true } });
+  const rows = await db.missionExpense.findMany({ where: { missionId: id }, select: { amount: true, category: true, receiptName: true, createdById: true, outcome: true } });
   // Whoever typed in any of the expenses doesn't check them either.
   if (rows.some((r) => r.createdById === user.id)) go(id, "err=cargaste");
-  const s = travelSummary(m.budgetApproved, rows.map((r) => ({ amount: r.amount, category: r.category, hasReceipt: !!r.receiptName })));
-  // Over budget or without receipts can still be reconciled, but only with the reason written down.
-  if ((s.over || s.withoutReceipt > 0) && !note) go(id, "err=nota-exceso");
+  // Módulo 14 §18: every expense needs its own outcome before the trip can be reconciled.
+  if (rows.some((r) => !r.outcome)) go(id, "err=sin-validar#gastos");
+  const valid = rows.filter((r) => r.outcome === "VALID");
+  const s = travelSummary(m.budgetApproved, valid.map((r) => ({ amount: r.amount, category: r.category, hasReceipt: !!r.receiptName })));
+  // Over budget can still be reconciled, but only with the reason written down.
+  if (s.over && !note) go(id, "err=nota-exceso");
   await db.commercialMission.update({ where: { id }, data: { expensesStatus: "RECONCILED", reconcileNote: note, reconciledByName: user.name, reconciledAt: new Date() } });
   go(id, "ok=legalizado");
 }
@@ -141,4 +151,59 @@ export async function previewRate(day: string): Promise<{ ok: true; rate: number
   await requireUser();
   const trm = await trmFor(String(day ?? ""));
   return trm ? { ok: true, rate: trm.rate, validFrom: trm.validFrom } : { ok: false };
+}
+
+// ---------- Módulo 14 §14, §18 · advance, expense by expense, settlement ----------
+
+/** Money handed to the traveller before the trip. Finanzas or Gerencia, never the traveller; once per trip. */
+export async function giveAdvance(id: string, fd: FormData) {
+  const { user, m, who } = await load(id);
+  if (!canReconcile(user, who)) go(id, "err=autoridad");
+  const amount = amountOf(fd, "advanceAmount"), ref = txt(fd, "advanceRef", 120), on = dayOf(fd, "advanceOn") ?? today();
+  if (m.budgetStatus !== "APPROVED" || m.advanceGivenAt || m.settledAt || m.expensesStatus === "RECONCILED") go(id, "err=estado");
+  if (amount == null || !ref || on > today()) go(id, "err=anticipo#anticipo");
+  // An advance never exceeds the approved budget.
+  if (m.budgetApproved != null && cmpMoney(amount, m.budgetApproved) > 0) go(id, "err=anticipo-tope#anticipo");
+  await db.commercialMission.update({ where: { id }, data: { advanceAmount: amount, advanceGivenAt: on, advanceGivenByName: user.name, advanceRef: ref } });
+  go(id, "ok=anticipo#anticipo");
+}
+
+/** One expense, checked against its receipt and the travel rules: valid, or not accepted with the reason. */
+export async function setExpenseOutcome(expenseId: string, fd: FormData) {
+  const user = await requireUser();
+  const e = await db.missionExpense.findUnique({ where: { id: expenseId }, select: { id: true, createdById: true, receiptName: true, mission: { select: { id: true, ownerId: true, expensesStatus: true, owner: { select: { role: true } } } } } });
+  if (!e) { refreshApp(); redirect("/visitas?err=mision-no"); }
+  const m = e!.mission;
+  if (!canReconcile(user, { ownerId: m.ownerId, ownerRole: m.owner.role }) || e!.createdById === user.id) go(m.id, "err=autoridad");
+  if (m.expensesStatus !== "SUBMITTED") go(m.id, "err=estado");
+  const outcome = String(fd.get("outcome") ?? ""), note = txt(fd, "note", 300);
+  if (outcome !== "VALID" && outcome !== "REJECTED") go(m.id, "err=estado");
+  // Not accepting needs a reason; so does accepting an expense that has no receipt.
+  if ((outcome === "REJECTED" || !e!.receiptName) && !note) go(m.id, "err=resultado#gastos");
+  await db.missionExpense.update({ where: { id: expenseId }, data: { outcome, outcomeNote: note, outcomeByName: user.name } });
+  go(m.id, "ok=resultado#gastos");
+}
+
+/** Accept in one step every expense that has its receipt and no outcome yet. The ones without a receipt stay for a person. */
+export async function validateWithReceipts(id: string) {
+  const { user, m, who } = await load(id);
+  if (!canReconcile(user, who)) go(id, "err=autoridad");
+  if (m.expensesStatus !== "SUBMITTED") go(id, "err=estado");
+  await db.missionExpense.updateMany({ where: { missionId: id, outcome: null, receiptName: { not: null }, NOT: { createdById: user.id } }, data: { outcome: "VALID", outcomeByName: user.name } });
+  go(id, "ok=resultado#gastos");
+}
+
+/** Close the trip's money: what was validly spent minus the advance. The company pays the difference, or the
+ *  traveller returns it. Recorded with the bank reference by Finanzas or Gerencia. */
+export async function settleMission(id: string, fd: FormData) {
+  const { user, m, who } = await load(id);
+  if (!canReconcile(user, who)) go(id, "err=autoridad");
+  if (m.expensesStatus !== "RECONCILED" || m.settledAt) go(id, "err=estado");
+  const rows = await db.missionExpense.findMany({ where: { missionId: id }, select: { amount: true, outcome: true } });
+  const st = travelSettlement(m.advanceGivenAt ? m.advanceAmount : null, rows);
+  const ref = txt(fd, "settleRef", 120);
+  if (!st.ready) go(id, "err=sin-validar#gastos");
+  if (st.direction !== "EVEN" && !ref) go(id, "err=liquidar#liquidacion");
+  await db.commercialMission.update({ where: { id }, data: { settleAmount: st.settle, settledAt: new Date(), settledByName: user.name, settleRef: ref } });
+  go(id, "ok=liquidado#liquidacion");
 }

@@ -6,6 +6,8 @@ import { prInclude } from "@/lib/pr";
 import { ITEM_TYPES, PURPOSES, exposureOf, prTotals } from "@/lib/pr-rules";
 import { fullReadiness, getPurchasePolicy } from "@/lib/pr-auth";
 import { REASONS, REASON_TEXT, canApprovePurchase } from "@/lib/purchase-auth";
+import { actingAs } from "@/lib/admin-rules";
+import { delegationsTo } from "@/lib/admin-store";
 import { ROLES, ROLE_LABEL, isGerencia } from "@/lib/permissions";
 import { getSellers } from "@/lib/sellers";
 import { createStockPr, savePurchasePolicy } from "./actions";
@@ -25,7 +27,8 @@ export default async function PrListPage({ searchParams }: { searchParams: Promi
   const spos = await db.supplierPO.findMany({ where: { id: { in: prs.map((p) => p.supplierPoId).filter((x): x is string => !!x) } }, select: { id: true, code: true, releasedAt: true } });
   const rows = await Promise.all(prs.map(async (pr) => { const F = await fullReadiness(pr); return { pr, r: F.readiness, F, tot: prTotals(pr.lines), ex: exposureOf(pr), spo: spos.find((s) => s.id === pr.supplierPoId) ?? null }; }));
   const pol = await getPurchasePolicy();
-  const mine = rows.filter((x) => x.F.last?.status === "REQUESTED" && canApprovePurchase(user, x.F.last, pol.value));
+  const lentToMe = await delegationsTo(user.id);
+  const mine = rows.filter((x) => x.F.last?.status === "REQUESTED" && actingAs(user, "PURCHASE_APPROVAL", Number(x.F.last.relatedTotal), lentToMe, new Date(), x.F.last.requestedById).some((c) => canApprovePurchase({ id: user.id, role: c.role }, x.F.last!, pol.value)));
   const gerencia = isGerencia(user);
   const errMsg: Record<string, string> = {
     justificacion: t("Una compra para stock debe decir por qué conviene.", "A stock purchase must say why it makes sense."),

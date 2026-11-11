@@ -8,6 +8,7 @@ import { PURPOSES, exposureOf, lineSplit, prTotals } from "@/lib/pr-rules";
 import { createStockOrder, decideApproval, requestApproval, saveHeader, setAllocation, setLineQty } from "../actions";
 import { fullReadiness } from "@/lib/pr-auth";
 import { REASON_TEXT, canApprovePurchase } from "@/lib/purchase-auth";
+import { actWith } from "@/lib/admin-store";
 
 // Operaciones O1 · one Purchase Requirement: bought vs assigned per Journey, what is left as inventory exposure,
 // the readiness reading with each blocker's way out, and the stock authorization.
@@ -24,7 +25,8 @@ export default async function PrPage({ params, searchParams }: { params: Promise
   const F = await fullReadiness(pr);
   const r = F.readiness;
   const C = F.last?.status === "REQUESTED" ? (F.last.context as unknown as typeof F.auth.context) : F.auth.context;
-  const canDecide = !!F.last && canApprovePurchase(user, F.last, F.policy.value);
+  const last = F.last;
+  const canDecide = !!last && (await actWith(user, "PURCHASE_APPROVAL", Number(last.relatedTotal), last.requestedById, (role) => canApprovePurchase({ id: user.id, role }, last, F.policy.value))).ok;
   // A pending request keeps the level it was asked at; otherwise show what today's policy would require.
   const lvl = F.last?.status === "REQUESTED" ? F.last.level : F.auth.level;
   const [spo, deals, suppliers] = await Promise.all([

@@ -111,6 +111,20 @@ model User {
   quotesCreated       Quote[]
   explorations        Exploration[]          @relation("ExplorationOwner")
   futuresOwned        FutureOpportunity[]    @relation("FutureOwner")
+
+  budgetsOwned       Budget[]               @relation("BudgetOwner")
+  internalPurchases  InternalPurchase[]     @relation("InternalPurchaseRequester")
+  assetsHeld         Asset[]                @relation("AssetCustodian")
+  obligationsOwned   Obligation[]           @relation("ObligationOwner")
+  personAdmin        PersonAdmin?           @relation("PersonAdminOf")
+  compensation       PersonCompensation[]   @relation("CompensationOf")
+  roleAssignments    PersonRoleAssignment[] @relation("RoleAssignmentOf")
+  roleAssignmentsLed PersonRoleAssignment[] @relation("RoleAssignmentLeader")
+  absences           AbsenceRecord[]        @relation("AbsenceOf")
+  authorityGiven     DelegatedAuthority[]   @relation("AuthorityFrom")
+  authorityReceived  DelegatedAuthority[]   @relation("AuthorityTo")
+  supportGaps        SupportGap[]           @relation("SupportGapFor")
+  supportGapsOwned   SupportGap[]           @relation("SupportGapOwner")
 }
 
 model Account {
@@ -776,6 +790,8 @@ model Supplier {
   supplyOptions        SupplyOption[]
   logisticsObs         LogisticsObservation[]
   purchaseRequirements PurchaseRequirement[]
+  supplierInvoices     SupplierInvoice[]
+  internalPurchases    InternalPurchase[]
 }
 
 model SupplierPO {
@@ -819,17 +835,18 @@ model SupplierPO {
   firstQuoteRef    String?
   negotiationNote  String?
 
-  lines         SupplierPOLine[]
-  requirements  PaymentRequirement[]
-  payments      SupplierPayment[]
-  shipments     Shipment[]
-  confirmations SupplierConfirmation[]
-  savings       SavingsEntry[]
-  commitments   SupplierCommitment[]
-  freight       FreightRequirement?
-  receipts      GoodsReceipt[]
+  lines            SupplierPOLine[]
+  requirements     PaymentRequirement[]
+  payments         SupplierPayment[]
+  shipments        Shipment[]
+  confirmations    SupplierConfirmation[]
+  savings          SavingsEntry[]
+  commitments      SupplierCommitment[]
+  freight          FreightRequirement?
+  receipts         GoodsReceipt[]
+  supplierInvoices SupplierInvoice[]
   /// STOCK | MANUFACTURED | SERVICE | REPAIR: which milestones apply (§23)
-  orderKind     String?
+  orderKind        String?
 
   @@index([dealId])
 }
@@ -2116,6 +2133,8 @@ model MarketSetting {
   version       Int
   value         Json
   updatedByName String
+  /// why this version exists (asked for since Module 14)
+  reason        String?
   createdAt     DateTime @default(now())
 
   @@unique([key, version])
@@ -2926,6 +2945,18 @@ model CommercialMission {
   reconciledAt        DateTime?
   reconciledByName    String?
   reconcileNote       String?
+  /// A14 §14: the budget this trip is charged to, the advance given and the final settlement
+  budgetId            String?
+  budget              Budget?   @relation(fields: [budgetId], references: [id], onDelete: SetNull)
+  advanceAmount       Decimal?  @db.Decimal(14, 2)
+  advanceGivenAt      DateTime?
+  advanceGivenByName  String?
+  advanceRef          String?
+  /// + the company pays the traveller, − the traveller returns money
+  settleAmount        Decimal?  @db.Decimal(14, 2)
+  settledAt           DateTime?
+  settledByName       String?
+  settleRef           String?
 
   expenses MissionExpense[]
   visits   VisitPlan[]
@@ -3012,6 +3043,10 @@ model MissionExpense {
   receiptSize     Int?
   receiptData     Bytes?
   noReceiptReason String?
+  /// A14 §18: no expense counts until a person checked it against its evidence and the policy: VALID | REJECTED
+  outcome         String?
+  outcomeNote     String?
+  outcomeByName   String?
   createdByName   String
   createdById     String?
   createdAt       DateTime          @default(now())
@@ -3727,6 +3762,7 @@ model BankAccount {
 
   statements   BankStatement[]
   transactions BankTransaction[]
+  balances     CashBalance[]
 }
 
 /// One uploaded statement file. The file itself is not kept: only what was read from it.
@@ -4072,4 +4108,478 @@ model ReportView {
   updatedAt DateTime @updatedAt
 
   @@index([ownerId])
+}
+
+// =====================================================================================================
+// Módulo 14 · Administración (v1.2). Treasury, payables, budget, internal purchases, assets, obligations,
+// people administration, absences, delegated authority and domain events.
+// =====================================================================================================
+
+/// A14 §2A · A bank balance a person confirmed: how much, true for which day, and where the figure came from.
+/// Never edited: a newer confirmation is a new row, so the history of balances stays.
+model CashBalance {
+  id              String      @id @default(cuid())
+  bankAccountId   String
+  bankAccount     BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  amount          Decimal     @db.Decimal(14, 2)
+  observedAt      DateTime
+  /// STATEMENT | BANK_PORTAL | TYPED
+  source          String
+  note            String?
+  confirmedByName String
+  createdAt       DateTime    @default(now())
+
+  @@index([bankAccountId, observedAt])
+}
+
+/// A14 §2A · Money in the bank that is not free to spend: set aside for a purpose, decided by someone, until a date
+/// or until it is released. Releasing keeps the row.
+model CashReserve {
+  id             String    @id @default(cuid())
+  /// RESTRICTED (cannot be used: guarantee, legal) | RESERVED (kept for a purpose)
+  kind           String
+  purpose        String
+  amount         Decimal   @db.Decimal(14, 2)
+  currency       String    @default("USD")
+  authorityName  String
+  until          DateTime?
+  releasedAt     DateTime?
+  releasedByName String?
+  releaseNote    String?
+  createdByName  String
+  createdAt      DateTime  @default(now())
+}
+
+/// A14 §8 · A dated money movement SOLU cannot derive from another record: payroll, a tax, a loan instalment,
+/// a capital contribution. Each one keeps how sure it is, where the figure comes from and when it was observed.
+model CashPlanItem {
+  id            String    @id @default(cuid())
+  /// IN | OUT
+  direction     String
+  /// PAYROLL | TAX | FINANCING | INVESTMENT | RENT | OTHER
+  category      String
+  label         String
+  amount        Decimal   @db.Decimal(14, 2)
+  currency      String    @default("USD")
+  dueOn         DateTime
+  /// NONE | MONTHLY
+  repeat        String    @default("NONE")
+  repeatUntil   DateTime?
+  /// CONFIRMED | EXPECTED | ESTIMATED
+  confidence    String
+  source        String
+  observedAt    DateTime
+  endedAt       DateTime?
+  endedByName   String?
+  endedNote     String?
+  createdByName String
+  createdAt     DateTime  @default(now())
+
+  @@index([dueOn])
+}
+
+/// A14 §2D · The supplier's invoice: the obligation to pay. It is linked to the order and, through the order, to
+/// what was received (three-way match). For a service, a person records that the service was accepted.
+model SupplierInvoice {
+  id                    String            @id @default(cuid())
+  supplierId            String
+  supplier              Supplier          @relation(fields: [supplierId], references: [id])
+  supplierPoId          String?
+  supplierPo            SupplierPO?       @relation(fields: [supplierPoId], references: [id], onDelete: SetNull)
+  internalPurchaseId    String?
+  internalPurchase      InternalPurchase? @relation(fields: [internalPurchaseId], references: [id], onDelete: SetNull)
+  number                String
+  /// PRODUCT | SERVICE
+  kind                  String            @default("PRODUCT")
+  invoiceDate           DateTime
+  dueAt                 DateTime?
+  amount                Decimal           @db.Decimal(14, 2)
+  currency              String            @default("USD")
+  amountUsd             Decimal?          @db.Decimal(14, 2)
+  /// early-payment discount offered by the supplier
+  discountPct           Decimal?          @db.Decimal(5, 2)
+  discountUntil         DateTime?
+  lateImpact            String?
+  /// where the invoice came from (email, portal, paper) and the day it reached us
+  source                String
+  receivedAt            DateTime
+  serviceAcceptedAt     DateTime?
+  serviceAcceptedByName String?
+  serviceAcceptNote     String?
+  /// a difference a person with authority accepted, with the reason
+  exceptionAt           DateTime?
+  exceptionByName       String?
+  exceptionNote         String?
+  /// paying an invoice that has no customer order behind it: approval and payment are separate facts
+  payApprovedAt         DateTime?
+  payApprovedByName     String?
+  payApprovedById       String?
+  paidAt                DateTime?
+  paidRef               String?
+  paidByName            String?
+  recordedByName        String
+  recordedById          String
+  createdAt             DateTime          @default(now())
+
+  @@unique([supplierId, number])
+  @@index([supplierPoId])
+  @@index([dueAt])
+}
+
+/// A14 §2F · Money assigned to a cost centre, a function or a project for a period, with an owner.
+/// Committed and spent are never typed here: they come from approved purchases, trips and the entries below.
+model Budget {
+  id             String    @id @default(cuid())
+  name           String
+  /// COST_CENTER | FUNCTION | PROJECT
+  scopeKind      String
+  ownerId        String
+  owner          User      @relation("BudgetOwner", fields: [ownerId], references: [id])
+  periodFrom     DateTime
+  periodTo       DateTime
+  currency       String    @default("USD")
+  amount         Decimal   @db.Decimal(14, 2)
+  /// the owner's own forecast of the total by the end of the period
+  forecast       Decimal?  @db.Decimal(14, 2)
+  forecastNote   String?
+  forecastAt     DateTime?
+  forecastByName String?
+  approvedByName String
+  closedAt       DateTime?
+  createdByName  String
+  createdAt      DateTime  @default(now())
+
+  entries   BudgetEntry[]
+  purchases InternalPurchase[]
+  missions  CommercialMission[]
+}
+
+/// A commitment or a spend against a budget that no other record of SOLU already holds.
+model BudgetEntry {
+  id            String    @id @default(cuid())
+  budgetId      String
+  budget        Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  /// COMMITTED | SPENT
+  kind          String
+  amount        Decimal   @db.Decimal(14, 2)
+  on            DateTime
+  description   String
+  evidence      String?
+  /// a commitment that was later spent or dropped
+  closedAt      DateTime?
+  closedNote    String?
+  createdByName String
+  createdAt     DateTime  @default(now())
+
+  @@index([budgetId])
+}
+
+/// A14 §2G · A purchase for the company itself (not for a customer order): internal use, a capital asset or a
+/// project investment. The need comes first; the budget and the authority are checked before anything is bought.
+model InternalPurchase {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  /// INTERNAL_USE | CAPITAL_ASSET | PROJECT_INVESTMENT
+  purpose         String
+  need            String
+  description     String
+  supplierId      String?
+  supplier        Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  supplierName    String?
+  amount          Decimal   @db.Decimal(14, 2)
+  currency        String    @default("USD")
+  amountUsd       Decimal   @db.Decimal(14, 2)
+  budgetId        String?
+  budget          Budget?   @relation(fields: [budgetId], references: [id], onDelete: SetNull)
+  requesterId     String
+  requester       User      @relation("InternalPurchaseRequester", fields: [requesterId], references: [id])
+  neededBy        DateTime?
+  /// total cost of ownership for an asset: {years, yearlyCost, endValue, note}
+  tco             Json?
+  /// REQUESTED | RETURNED | APPROVED | REJECTED | CANCELLED
+  status          String    @default("REQUESTED")
+  level           Int
+  /// how much this purchase goes over what the budget had left when it was decided (null = within budget)
+  overBudget      Decimal?  @db.Decimal(14, 2)
+  exceptionReason String?
+  decidedById     String?
+  decidedByName   String?
+  decidedAt       DateTime?
+  decisionNote    String?
+  /// decided using an authority delegated by someone else
+  delegationId    String?
+  policyVersion   Int       @default(0)
+  boughtAt        DateTime?
+  boughtNote      String?
+  cancelledAt     DateTime?
+  cancelNote      String?
+  createdAt       DateTime  @default(now())
+
+  invoices SupplierInvoice[]
+  asset    Asset?
+
+  @@index([status])
+  @@index([budgetId])
+}
+
+/// A14 §2H · Something the company owns and someone looks after. Who has it and where is never overwritten:
+/// every change is an event, so the custody history stays.
+model Asset {
+  id                 String            @id @default(cuid())
+  code               String            @unique
+  name               String
+  /// EQUIPMENT | VEHICLE | COMPUTER | FURNITURE | SOFTWARE | OTHER
+  category           String
+  legalOwner         String
+  value              Decimal?          @db.Decimal(14, 2)
+  currency           String            @default("USD")
+  acquiredOn         DateTime?
+  serial             String?
+  internalPurchaseId String?           @unique
+  internalPurchase   InternalPurchase? @relation(fields: [internalPurchaseId], references: [id], onDelete: SetNull)
+  /// REQUESTED | ACQUIRED | ASSIGNED | IN_MAINTENANCE | DISPOSED
+  status             String            @default("ACQUIRED")
+  custodianId        String?
+  custodian          User?             @relation("AssetCustodian", fields: [custodianId], references: [id], onDelete: SetNull)
+  location           String?
+  warrantyUntil      DateTime?
+  insurer            String?
+  insuranceUntil     DateTime?
+  nextMaintenanceOn  DateTime?
+  documentsNote      String?
+  /// vehicles
+  plate              String?
+  odometerKm         Int?
+  disposedAt         DateTime?
+  createdByName      String
+  createdAt          DateTime          @default(now())
+
+  events AssetEvent[]
+
+  @@index([custodianId])
+}
+
+/// One fact in the life of an asset. Never edited or deleted.
+model AssetEvent {
+  id         String   @id @default(cuid())
+  assetId    String
+  asset      Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  /// ACQUIRED | ASSIGNED | TRANSFERRED | RETURNED | MAINTENANCE | ODOMETER | INSURANCE | DOCUMENT | DISPOSED
+  kind       String
+  at         DateTime
+  fromName   String?
+  toUserId   String?
+  toName     String?
+  location   String?
+  odometerKm Int?
+  costUsd    Decimal? @db.Decimal(14, 2)
+  note       String?
+  evidence   String?
+  byName     String
+  createdAt  DateTime @default(now())
+
+  @@index([assetId])
+}
+
+/// A14 §2I · A contract or another obligation with dates that matter: when it ends, by when notice must be given,
+/// what must be paid or collected. SOLU alerts only while a decision can still change the outcome.
+model Obligation {
+  id             String    @id @default(cuid())
+  /// CONTRACT | LEASE | INSURANCE | PERMIT | GUARANTEE | SUBSCRIPTION | TAX | OTHER
+  kind           String
+  party          String
+  purpose        String
+  startsOn       DateTime?
+  endsOn         DateTime?
+  /// NONE | AUTO | MANUAL
+  renewal        String    @default("NONE")
+  /// days before the end by which notice must be given
+  noticeDays     Int?
+  /// PAY | COLLECT | NONE
+  moneyDirection String    @default("NONE")
+  amount         Decimal?  @db.Decimal(14, 2)
+  currency       String    @default("USD")
+  /// ONCE | MONTHLY | QUARTERLY | YEARLY
+  frequency      String?
+  nextDueOn      DateTime?
+  /// marked by a person as material whatever its amount
+  material       Boolean   @default(false)
+  ownerId        String
+  owner          User      @relation("ObligationOwner", fields: [ownerId], references: [id])
+  evidence       String?
+  notes          String?
+  /// what was decided for the current term: RENEW | END (null = not decided yet)
+  decision       String?
+  decisionNote   String?
+  decidedAt      DateTime?
+  decidedByName  String?
+  /// ACTIVE | ENDED
+  status         String    @default("ACTIVE")
+  endedAt        DateTime?
+  endedNote      String?
+  createdByName  String
+  createdAt      DateTime  @default(now())
+
+  @@index([status, endsOn])
+}
+
+/// A14 §2K, §23 · Administrative facts of a person's bond with the company. No development, character or
+/// private reflections here: those belong to Equipo.
+model PersonAdmin {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  user                User      @relation("PersonAdminOf", fields: [userId], references: [id], onDelete: Cascade)
+  legalName           String?
+  /// EMPLOYEE | CONTRACTOR | PARTNER | OTHER
+  bond                String?
+  employer            String?
+  contractStart       DateTime?
+  contractEnd         DateTime?
+  location            String?
+  vacationDaysPerYear Decimal?  @db.Decimal(5, 1)
+  documentsNote       String?
+  updatedByName       String
+  updatedAt           DateTime  @updatedAt
+}
+
+/// Pay of a person. Kept apart from every other table so that no list or report can carry it by accident.
+/// A change is a new row. Only Gerencia and the person see it.
+model PersonCompensation {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation("CompensationOf", fields: [userId], references: [id], onDelete: Cascade)
+  amount        Decimal  @db.Decimal(16, 2)
+  currency      String
+  /// MONTHLY | YEARLY | HOURLY
+  period        String
+  effectiveFrom DateTime
+  benefitsNote  String?
+  setByName     String
+  createdAt     DateTime @default(now())
+
+  @@index([userId, effectiveFrom])
+}
+
+/// A14 §23–24 · The formal assignment of a person: contractual title (what the contract says) and operating role
+/// (what the person does in SOLU), unit, formal leader and the dates it holds. A change closes the row and opens another.
+model PersonRoleAssignment {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation("RoleAssignmentOf", fields: [userId], references: [id], onDelete: Cascade)
+  contractualTitle String
+  operatingRole    String
+  unit             String?
+  leaderId         String?
+  leader           User?     @relation("RoleAssignmentLeader", fields: [leaderId], references: [id], onDelete: SetNull)
+  location         String?
+  effectiveFrom    DateTime
+  effectiveTo      DateTime?
+  reason           String
+  setByName        String
+  createdAt        DateTime  @default(now())
+
+  @@index([userId, effectiveFrom])
+}
+
+/// A14 §15 · Days a person is away. Administración keeps the labour evidence; Equipo designs the coverage.
+model AbsenceRecord {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation("AbsenceOf", fields: [userId], references: [id], onDelete: Cascade)
+  /// VACATION | SICK | LEAVE | TRAINING | OTHER
+  kind            String
+  startsOn        DateTime
+  endsOn          DateTime
+  /// REQUESTED | APPROVED | REJECTED | CANCELLED
+  status          String    @default("REQUESTED")
+  note            String?
+  evidence        String?
+  requestedByName String
+  decidedById     String?
+  decidedByName   String?
+  decidedAt       DateTime?
+  decisionNote    String?
+  createdAt       DateTime  @default(now())
+
+  @@index([userId, startsOn])
+}
+
+/// A14 §16 · Authority one person lends to another for a while: which domain, up to how much, between which
+/// dates, who approved it. It ends by itself; extending it is a new version, never an edit.
+model DelegatedAuthority {
+  id             String    @id @default(cuid())
+  fromUserId     String
+  fromUser       User      @relation("AuthorityFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId       String
+  toUser         User      @relation("AuthorityTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  /// PURCHASE_APPROVAL | PAYMENT_APPROVAL | CREDIT
+  domain         String
+  limitUsd       Decimal?  @db.Decimal(14, 2)
+  scopeNote      String?
+  startsAt       DateTime
+  endsAt         DateTime
+  reason         String
+  approvedById   String
+  approvedByName String
+  version        Int       @default(1)
+  previousId     String?
+  revokedAt      DateTime?
+  revokedByName  String?
+  revokeReason   String?
+  createdAt      DateTime  @default(now())
+
+  @@index([toUserId, endsAt])
+}
+
+/// A14 §25 · Something the company owes a person so they can do their role well (a tool, an access, an asset,
+/// training, information) and is missing. It has an owner and a next movement. It is never a mark on the person.
+model SupportGap {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation("SupportGapFor", fields: [userId], references: [id], onDelete: Cascade)
+  /// TOOL | ACCESS | ASSET | TRAINING | INFORMATION
+  kind          String
+  what          String
+  impact        String?
+  ownerId       String
+  owner         User      @relation("SupportGapOwner", fields: [ownerId], references: [id])
+  nextMovement  String
+  dueOn         DateTime?
+  /// OPEN | ESCALATED | RESOLVED
+  status        String    @default("OPEN")
+  escalatedAt   DateTime?
+  escalatedNote String?
+  resolvedAt    DateTime?
+  resolvedNote  String?
+  raisedByName  String
+  createdAt     DateTime  @default(now())
+
+  @@index([status])
+}
+
+/// A14 §10 · Something that happened, named in business words (credit.limit_changed, cash.received…), for
+/// integrations and reports. Written from the audit trail, so no screen can forget it. Never edited.
+model DomainEvent {
+  id         String   @id @default(cuid())
+  name       String
+  entity     String
+  entityId   String
+  payload    Json     @default("{}")
+  actorName  String
+  occurredAt DateTime @default(now())
+
+  @@index([name, occurredAt])
+  @@index([occurredAt])
+}
+
+/// A14 §2J · One file of facts taken out for the accounting system. The facts themselves are never changed by it.
+model AccountingExport {
+  id         String   @id @default(cuid())
+  /// CUSTOMER_INVOICES | SUPPLIER_INVOICES | RECEIPTS | PAYMENTS | COSTS
+  kind       String
+  periodFrom DateTime
+  periodTo   DateTime
+  rows       Int
+  byName     String
+  createdAt  DateTime @default(now())
 }

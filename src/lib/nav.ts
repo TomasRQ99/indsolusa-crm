@@ -11,8 +11,14 @@ export const NAV_GROUPS = {
   dinero: { es: "Dinero", en: "Money" },
   trabajo: { es: "Mi trabajo", en: "My work" },
   ajustes: { es: "Configuración", en: "Setup" },
+  // Administración (Módulo 14)
+  hoy: { es: "Hoy", en: "Today" },
+  recursos: { es: "Recursos", en: "Resources" },
+  cierre: { es: "Cierre", en: "Close" },
 } as const;
 export type NavModule = { key: ModuleKey; es: string; en: string; match: string[]; tabs: NavTab[] };
+
+const FIN = ["GERENCIA", "DIRECTOR_COMERCIAL", "FINANZAS", "ADMINISTRACION"];
 
 export const MODULES: NavModule[] = [
   {
@@ -79,16 +85,30 @@ export const MODULES: NavModule[] = [
   },
   {
     key: "administracion", es: "ADMINISTRACIÓN", en: "ADMINISTRATION", match: ["/administracion"],
+    // Módulo 14: many sections, shown one group at a time. FIN = the roles that run the money side.
     tabs: [
-      { href: "/administracion/cobrar", es: "Cuentas por cobrar", en: "Receivables" },
-      { href: "/administracion/pagos-recibidos", es: "Pagos recibidos", en: "Payments received" },
-      { href: "/administracion/banco", es: "Banco", en: "Bank" },
-      { href: "/administracion/pagos-proveedores", es: "Pagos a proveedores", en: "Supplier payments" },
-      { href: "/administracion/pagos-exterior", es: "Pagos al exterior", en: "Foreign payments" },
-      { href: "/administracion/cierre", es: "Cierre y comisiones", en: "Close and commissions" },
-      { href: "/administracion/economia", es: "Eságara real", en: "Real Eságara" },
-      { href: "/administracion/cupos", es: "Cupos de crédito", en: "Credit limits" },
-      { href: "/administracion/historial", es: "Historial de cambios", en: "Change history", managerOnly: true },
+      { href: "/administracion", es: "Inicio", en: "Home", group: "hoy" },
+      { href: "/administracion/exposicion", es: "Exposición de recursos", en: "Resource exposure", group: "hoy", roles: FIN },
+      { href: "/administracion/tesoreria", es: "Tesorería", en: "Treasury", group: "dinero", roles: FIN },
+      { href: "/administracion/cobrar", es: "Cuentas por cobrar", en: "Receivables", group: "dinero" },
+      { href: "/administracion/pagos-recibidos", es: "Pagos recibidos", en: "Payments received", group: "dinero" },
+      { href: "/administracion/banco", es: "Banco", en: "Bank", group: "dinero" },
+      { href: "/administracion/pagar", es: "Cuentas por pagar", en: "Payables", group: "dinero", roles: [...FIN, "NEGOCIADOR_OPERATIVO"] },
+      { href: "/administracion/pagos-proveedores", es: "Pagos a proveedores", en: "Supplier payments", group: "dinero" },
+      { href: "/administracion/pagos-exterior", es: "Pagos al exterior", en: "Foreign payments", group: "dinero" },
+      { href: "/administracion/cupos", es: "Cupos de crédito", en: "Credit limits", group: "dinero" },
+      { href: "/administracion/presupuesto", es: "Presupuesto", en: "Budget", group: "recursos" },
+      { href: "/administracion/compras-internas", es: "Compras internas", en: "Internal purchases", group: "recursos" },
+      { href: "/administracion/activos", es: "Activos", en: "Assets", group: "recursos" },
+      { href: "/administracion/obligaciones", es: "Contratos y obligaciones", en: "Contracts and obligations", group: "recursos" },
+      { href: "/administracion/personas", es: "Personas", en: "People", group: "recursos" },
+      { href: "/administracion/autoridad", es: "Autoridad prestada", en: "Delegated authority", group: "recursos" },
+      { href: "/administracion/cierre", es: "Cierre y comisiones", en: "Close and commissions", group: "cierre" },
+      { href: "/administracion/economia", es: "Eságara real", en: "Real Eságara", group: "cierre" },
+      { href: "/administracion/contabilidad", es: "Contabilidad", en: "Accounting", group: "cierre", roles: FIN },
+      { href: "/administracion/politicas", es: "Políticas", en: "Policies", group: "ajustes" },
+      { href: "/administracion/eventos", es: "Eventos", en: "Events", group: "ajustes", roles: FIN },
+      { href: "/administracion/historial", es: "Historial de cambios", en: "Change history", group: "ajustes", managerOnly: true },
     ],
   },
   { key: "proyectos", es: "PROYECTOS", en: "PROJECTS", match: ["/proyectos"], tabs: [{ href: "/proyectos", es: "Proyectos", en: "Projects" }] },

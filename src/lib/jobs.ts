@@ -11,7 +11,7 @@ import { db } from "./db";
 // Every call is recorded in WorkerRun. Nothing here sends money. The only email it sends on its own is the monthly
 // reminder to Gerencia that the Business Pulse is ready to issue (decision 2026-11-11).
 
-export const JOB_KINDS = ["MAIL_REPLIES", "CUSTOMER_MAIL", "CATALOG_SYNC", "PAY_BEHAVIOR", "PAY_BEHAVIOR_ALL", "HOUSEKEEPING", "PULSE_REMINDER"] as const;
+export const JOB_KINDS = ["MAIL_REPLIES", "CUSTOMER_MAIL", "CATALOG_SYNC", "PAY_BEHAVIOR", "PAY_BEHAVIOR_ALL", "HOUSEKEEPING", "PULSE_REMINDER", "ADMIN_DAILY"] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
 
 export const JOB_LABEL: Record<JobKind, [string, string]> = {
@@ -22,6 +22,7 @@ export const JOB_LABEL: Record<JobKind, [string, string]> = {
   PAY_BEHAVIOR_ALL: ["Recalcular cómo pagan todos los clientes", "Recalculate how all customers pay"],
   HOUSEKEEPING: ["Limpiar registros viejos del trabajador", "Clean old worker records"],
   PULSE_REMINDER: ["Avisar a Gerencia que el informe del mes está listo para emitir", "Remind Management that the month's report is ready to issue"],
+  ADMIN_DAILY: ["Revisar promesas de pago vencidas y obligaciones con decisión cercana", "Check payment promises past their date and obligations with a decision coming"],
 };
 
 /** Slot keys contain "@": they stay forever (a slot runs once). Plain keys are released when the job ends. */
@@ -76,6 +77,10 @@ const HANDLERS: Record<JobKind, Handler> = {
     const { pulseReminder } = await import("./pulse-reminder");
     return pulseReminder();
   },
+  async ADMIN_DAILY() {
+    const { adminDaily } = await import("./admin-daily");
+    return adminDaily();
+  },
 };
 
 // ---------- planning ----------
@@ -89,6 +94,7 @@ export async function planRecurring(now = new Date()) {
   await enqueue("CATALOG_SYNC", {}, { dedupeKey: `CATALOG_SYNC@${slot(now, 60)}`, maxAttempts: 2 });
   await enqueue("PAY_BEHAVIOR_ALL", {}, { dedupeKey: `PAY_BEHAVIOR_ALL@${day}`, maxAttempts: 3 });
   await enqueue("HOUSEKEEPING", {}, { dedupeKey: `HOUSEKEEPING@${day}`, maxAttempts: 2 });
+  await enqueue("ADMIN_DAILY", {}, { dedupeKey: `ADMIN_DAILY@${day}`, maxAttempts: 3 });
   // Once a month, in its first week: the month that just ended is ready to issue.
   if (now.getUTCDate() <= 7) await enqueue("PULSE_REMINDER", {}, { dedupeKey: `PULSE_REMINDER@${day.slice(0, 7)}`, maxAttempts: 3 });
 }

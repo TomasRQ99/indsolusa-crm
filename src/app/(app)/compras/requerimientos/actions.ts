@@ -13,6 +13,7 @@ import { ITEM_TYPES } from "@/lib/pr-rules";
 import type { Prisma } from "@prisma/client";
 import { fullReadiness, getPurchasePolicy } from "@/lib/pr-auth";
 import { PURCHASE_POLICY_KEY, REASONS, canApprovePurchase, type PurchasePolicy } from "@/lib/purchase-auth";
+import { actWith } from "@/lib/admin-store";
 
 // Operaciones O1 · Purchase Requirement actions. Quantities and assignments change only while the Supplier PO is
 // not released; the stock authorization is decided by Finanzas or Gerencia, never by whoever asked (interim, O-02).
@@ -124,13 +125,16 @@ export async function decideApproval(approvalId: string, fd: FormData) {
   if (!a) go(null, "err=no-existe");
   const id = a!.prId;
   const pol = await getPurchasePolicy();
-  if (!canApprovePurchase(user, a!, pol.value)) go(id, "err=autoridad#autorizacion");
+  // Módulo 14 §16: with the person's own role, or with an authority someone lent them (never on the lender's own request).
+  const act = await actWith(user, "PURCHASE_APPROVAL", Number(a!.relatedTotal), a!.requestedById, (role) => canApprovePurchase({ id: user.id, role }, a!, pol.value));
+  if (!act.ok) go(id, "err=autoridad#autorizacion");
+  const who = act.fromName ? `${user.name} (autoridad prestada por ${act.fromName})` : user.name;
   if (a!.status !== "REQUESTED") go(id, "err=estado#autorizacion");
   const action = String(fd.get("action") ?? "");
   const note = txt(fd, "note", 500);
   if (action === "ESCALATE") {
     if (a!.level >= 2) go(id, "err=estado#autorizacion");
-    await db.purchaseApproval.update({ where: { id: approvalId }, data: { level: 2, escalatedByName: user.name, decisionNote: note } });
+    await db.purchaseApproval.update({ where: { id: approvalId }, data: { level: 2, escalatedByName: who, decisionNote: note } });
     go(id, "ok=escalada#autorizacion");
   }
   if ((action === "RETURN" || action === "REJECT") && !note) go(id, "err=nota#autorizacion");
@@ -139,8 +143,8 @@ export async function decideApproval(approvalId: string, fd: FormData) {
   const reasons = Array.isArray(a!.reasons) ? (a!.reasons as string[]) : [];
   const stock = reasons.includes("STOCK");
   await db.$transaction([
-    db.purchaseApproval.update({ where: { id: approvalId }, data: { status, decidedById: user.id, decidedByName: user.name, decidedAt: new Date(), decisionNote: note } }),
-    db.purchaseRequirement.update({ where: { id }, data: stock ? { stockStatus: status === "APPROVED" ? "APPROVED" : status === "REJECTED" ? "REJECTED" : "NONE", stockQtyApproved: status === "APPROVED" ? a!.stockQty : null, stockAmount: status === "APPROVED" ? a!.stockAmount : null, stockDecidedAt: new Date(), stockDecidedByName: user.name, stockNote: note } : {} }),
+    db.purchaseApproval.update({ where: { id: approvalId }, data: { status, decidedById: user.id, decidedByName: who, decidedAt: new Date(), decisionNote: note } }),
+    db.purchaseRequirement.update({ where: { id }, data: stock ? { stockStatus: status === "APPROVED" ? "APPROVED" : status === "REJECTED" ? "REJECTED" : "NONE", stockQtyApproved: status === "APPROVED" ? a!.stockQty : null, stockAmount: status === "APPROVED" ? a!.stockAmount : null, stockDecidedAt: new Date(), stockDecidedByName: who, stockNote: note } : {} }),
   ]);
   go(id, `ok=${status === "APPROVED" ? "aprobada" : status === "RETURNED" ? "devuelta" : "rechazada"}#autorizacion`);
 }

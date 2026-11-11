@@ -2,6 +2,8 @@
 
 import { z } from "zod";
 import { getPurchasePolicy } from "@/lib/pr-auth";
+import type { Role } from "@prisma/client";
+import { actWith } from "@/lib/admin-store";
 import { sellerOf } from "@/lib/sellers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -307,11 +309,13 @@ export async function approveSupplierPayment(id: string, formData: FormData) {
   const { dup, usd } = await treasuryChecks(p, p.supplierPo, i);
   if (dup.hard) payBack(id, "err=duplicado");
   if (dup.hits.length && formData.get("dupChecked") !== "1") payBack(id, "err=revisar-duplicados");
-  const auth = authorityFor(user, p, usd, i, await getPurchasePolicy());
-  if (!auth.can) payBack(id, "err=autoridad");
+  const payPol = await getPurchasePolicy();
+  // Módulo 14 §16: own role, or an authority lent for payments (same checks: never the requester or the verifier).
+  const act = await actWith(user, "PAYMENT_APPROVAL", usd, p.requestedById, (role) => authorityFor({ id: user.id, role: role as Role }, p, usd, i, payPol).can);
+  if (!act.ok) payBack(id, "err=autoridad");
   await db.supplierPayment.updateMany({
     where: { id, approvedAt: null },
-    data: { approvedById: user.id, approvedAt: new Date(), dupCheckedByName: user.name, dupCheckNote: dup.hits.length ? `Revisados ${dup.hits.length} posibles duplicados` : "Sin duplicados" },
+    data: { approvedById: user.id, approvedAt: new Date(), dupCheckedByName: user.name, dupCheckNote: `${dup.hits.length ? `Revisados ${dup.hits.length} posibles duplicados` : "Sin duplicados"}${act.fromName ? ` · aprobado con autoridad prestada por ${act.fromName}` : ""}` },
   });
   payBack(id, "ok=aprobado");
 }

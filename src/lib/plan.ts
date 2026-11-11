@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { isWorkingDay } from "./holidays";
 import { addDays, today } from "./domain";
+import { absentOn } from "./admin-rules";
 
 // Mi Plan: blocks derived from known commitments (to-dos and Journey next movements),
 // placed into the person's real capacity, with a protected buffer for urgencies.
@@ -46,10 +47,12 @@ export async function buildPlan(user: { id: string; workdayMinutes: number }, ho
     }),
   ]);
 
+  // Módulo 14 §15: an approved absence leaves that day without capacity, so nothing is planned on it.
+  const away = await db.absenceRecord.findMany({ where: { userId: user.id, status: "APPROVED", startsOn: { lte: lastDay }, endsOn: { gte: start } }, select: { status: true, startsOn: true, endsOn: true } });
   const days: PlanDay[] = [];
   for (let k = 0; k < horizon; k++) {
     const date = addDays(start, k);
-    const workday = isWorkingDay(date) ? user.workdayMinutes : 0;
+    const workday = isWorkingDay(date) && !absentOn(away, date) ? user.workdayMinutes : 0;
     days.push({ date, workday, capacity: Math.round(workday * (1 - URGENCY_BUFFER)), planned: [], proposed: [] });
   }
   const dayOf = (d: Date) => days.find((x) => x.date.getTime() === d.getTime());

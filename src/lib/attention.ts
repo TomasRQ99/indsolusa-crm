@@ -9,6 +9,7 @@ import { loadCredit, loadReceivables, loadSupplierPayments } from "./queries";
 import { buildMiDia } from "./midia";
 import { forwardOf } from "./logistics";
 import { APPROVER_ROLES } from "./esagara-gate";
+import { adminAttention } from "./admin-attention";
 
 // Attention for the shell: a module shows a counter only when it holds objects that
 // need THIS person (amber = needs movement or clarity, red = result at risk).
@@ -40,6 +41,7 @@ export async function shellAttention(user: SessionUser, i: I18n) {
     db.invoice.findMany({ where: { deal: mineDeal, steps: { some: { kind: "REJECTED" } } }, include: { steps: true, account: { select: { name: true } }, applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } } } }),
     db.cashBlocker.findMany({ where: { responsibleId: user.id, resolvedAt: null, expectedResolution: { lt: today() } }, include: { deal: { select: { code: true, account: { select: { name: true } } } } } }),
   ]);
+  const adm = await adminAttention(user, i);
   const rejected = rejectedRaw.filter((x) => confirmationOf(x.steps).stage === "REJECTED" && invoiceCash(x).balance > 0.005);
   // Shipments interrupt only when the result is at stake — never per carrier scan.
   const shipNeeds = ships
@@ -64,6 +66,8 @@ export async function shellAttention(user: SessionUser, i: I18n) {
   set("gerencia", toApprove.length + (manager ? creditDecisions.length : 0), "attn");
   if (decider && !counters.administracion) set("administracion", reviews.length + (manager ? 0 : creditDecisions.length), "attn");
   else if (decider && counters.administracion) counters.administracion.n += reviews.length + (manager ? 0 : creditDecisions.length);
+  // Módulo 14: obligations to decide, internal purchases, absences and support owed by this person.
+  if (adm.alerts.length) { if (counters.administracion) { counters.administracion.n += adm.alerts.length; if (adm.risk) counters.administracion.tone = "risk"; } else set("administracion", adm.alerts.length, adm.risk ? "risk" : "attn"); }
   set("comercial", excToDecide.length + excBack.length + rejected.length + lateBlockers.length, rejected.length ? "risk" : "attn");
 
   const alerts: Alert[] = [
@@ -77,6 +81,7 @@ export async function shellAttention(user: SessionUser, i: I18n) {
     ...rejected.map((x) => ({ key: `r${x.id}`, tone: "risk" as const, href: `/comercial/dinero#collect:${x.id}`, text: t(`Factura ${x.number} rechazada por ${x.account.name}: corregir y volver a radicar`, `Invoice ${x.number} rejected by ${x.account.name}: fix and resubmit`) })),
     ...lateBlockers.map((b) => ({ key: `k${b.id}`, tone: "attn" as const, href: `/comercial/dinero?scope=mine`, text: t(`Bloqueo vencido: ${b.deal.code} · ${b.deal.account.name} · ${b.nextMovement}`, `Blocker past its date: ${b.deal.code} · ${b.deal.account.name} · ${b.nextMovement}`) })),
     ...reviews.map((r) => ({ key: `q${r.id}`, tone: "attn" as const, href: `/administracion/cupos#solicitudes`, text: t(`Decidir solicitud de cupo: ${r.account.name}`, `Decide credit request: ${r.account.name}`) })),
+    ...adm.alerts,
     ...creditDecisions.map(({ a, d }) => ({ key: `c${d.id}`, tone: "attn" as const, href: `/administracion/cupos#${a.id}`, text: t(`Decidir el cupo de ${a.name}`, `Decide ${a.name}'s credit limit`) })),
   ];
 
