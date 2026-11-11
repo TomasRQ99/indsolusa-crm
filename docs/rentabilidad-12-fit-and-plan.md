@@ -111,3 +111,16 @@ a negative Eságara pays nothing (the tier starts at 0 %). Approval by levels wa
 **Still not built:** a monthly settlement run with frozen inputs and an idempotency key (today approval and payment are per
 person, on demand); adjustment lines for returns / warranty / excess (rules unanswered); the Dirección and Administración
 home views; profitability analytics by customer / supplier / product; role participation (by decision).
+## 8. R4 — settlement run — DONE 2026-11-11
+
+`CommissionSettlementRun` (period YYYY-MM, version, status APPROVED | PAID, frozen `lines`, total, who approved / paid,
+payroll reference) and `CommissionEntry.runId`; `src/lib/settlement.ts` (`settlementPreview`: every half payable now, minus
+the approver's own; excess list); `/gerencia/liquidacion` (+ actions `approveRun`, `payRun`). Idempotent through the entry's
+unique key (invoice, half, person, part): approving twice creates nothing twice. Paid lines never change. People without a
+management or money role see only their own lines.
+**Limits:** a run takes what is payable at the moment of approval, the month is its label (no cut-off by date); no export to
+payroll (the reference is typed); adjustments are listed as "aprobado de más" but no adjustment line is created (rule
+unanswered); the older per-person approve / pay buttons on Comisiones still work alongside; settlement is not blocked by
+missing material costs (R-11: ignore for now); role participation is not part of the run (not built by decision).
+**Module 12 status:** R0, R2, R3, R4 built; R1 resolved by decision; R5 not built by decision; R6 (Dirección and
+Administración home views, profitability analytics by customer / supplier / product, goals vs actual) not built.

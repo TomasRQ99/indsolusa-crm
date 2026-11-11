@@ -104,6 +104,7 @@ export const MODULES: NavModule[] = [
     tabs: [
       { href: "/gerencia", es: "Insights", en: "Insights", managerOnly: true },
       { href: "/gerencia/comisiones", es: "Comisiones", en: "Commissions" },
+      { href: "/gerencia/liquidacion", es: "Liquidación", en: "Settlement" },
     ],
   },
 ];

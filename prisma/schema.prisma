@@ -1093,7 +1093,10 @@ model CommissionEntry {
   payrollRef   String?
 
   /// Módulo 12 R3: the collection half is paid in parts as the customer pays; each part is its own entry (0, 1, 2…).
-  seq Int @default(0)
+  seq   Int                      @default(0)
+  /// the settlement run that approved this entry (null for entries approved before runs existed)
+  run   CommissionSettlementRun? @relation(fields: [runId], references: [id])
+  runId String?                  @map("commissionSettlementRunId")
 
   // Módulo 12: one sale can pay several people, and the collection half in several parts.
   @@unique([invoiceId, half, userId, seq])
@@ -3947,4 +3950,29 @@ model CommissionAllocation {
 
   @@index([dealId])
   @@index([userId])
+}
+
+// ---------- Módulo 12 R4 · monthly commission settlement (§21–22) ----------
+
+/// One approval of everything payable at that moment, for a period. The lines are a frozen copy of what was approved
+/// and how it was calculated; a later change never edits a run, it shows up in a later run.
+model CommissionSettlementRun {
+  id             String    @id @default(cuid())
+  /// "YYYY-MM"
+  period         String
+  version        Int
+  /// APPROVED | PAID
+  status         String    @default("APPROVED")
+  /// [{userId, userName, deal, invoice, half, seq, amount, calc, policyVersion}]
+  lines          Json
+  total          Decimal   @db.Decimal(14, 2)
+  approvedByName String
+  approvedAt     DateTime  @default(now())
+  paidAt         DateTime?
+  paidByName     String?
+  payrollRef     String?
+
+  entries CommissionEntry[]
+
+  @@unique([period, version])
 }
