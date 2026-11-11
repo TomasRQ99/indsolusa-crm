@@ -100,6 +100,7 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   PulseSnapshot: ["period", "version", "closedByName", "reopenedByName", "reopenReason"],
   Team: "all",
   TeamMember: "all",
+  ReportView: "all",
   DealAuthorization: "all",
   CommissionSettlementRun: ["period", "version", "status", "total", "approvedByName", "paidByName", "payrollRef"],
   CommissionAllocation: "all",

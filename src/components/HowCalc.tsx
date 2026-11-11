@@ -2,7 +2,8 @@ import { METRICS } from "@/lib/metric-dictionary";
 
 // Módulo 13 §10 · "¿Cómo se calcula?" next to a figure, without leaving the screen.
 export function HowCalc({ id, es }: { id: string; es: boolean }) {
-  const m = METRICS[id];
+  // The goal key for contacts is VALUE_CONTACTS; its dictionary entry is USEFUL_CONTACTS.
+  const m = METRICS[id === "VALUE_CONTACTS" ? "USEFUL_CONTACTS" : id];
   if (!m) return null;
   const t = (x: { es: string; en: string }) => (es ? x.es : x.en);
   return (

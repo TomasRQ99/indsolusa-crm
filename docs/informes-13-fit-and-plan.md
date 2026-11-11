@@ -67,4 +67,30 @@ Both visible to Gerencia, Dirección Comercial, Finanzas and Administración.
 **Limits:** SOLU keeps no history of balances, so a state figure of a past month is only fixed if that month was closed;
 the Team block of the pulse waits for Module 16; the queue has no capacity, succession, contractual-deadline or supplier-exposure
 items yet; financial future has no bank balance; impact amounts in the queue are not localised; no trend lines.
-**Remaining:** I3 (Director and Administración views), I4 (goal-gap causes, insights), I5 (saved views, briefs, builder).
+**Remaining after I1–I2:** done below.
+
+## 6. I3–I5 — DONE 2026-11-11
+
+**Functional review and causes (§4.4, §13–14).** `src/lib/report-insights.ts`: `goalGap` (pure; splits the Eságara gap to
+goal into what sales under the Eságara threshold explain — shortfall to the threshold per sale, capped at the gap — and an
+explicit unexplained residual; the two always add to the gap), `commercialFunction(period)` (every person's `goalActuals`
+summed; the function's goal is the sum of people's goals and is null when nobody has one; previous month; threshold read
+from the versioned commercial policy), `insightsFor(period)` (facts counted from records, each labelled FACT or INFERENCE
+with a link to the evidence; nothing is sent to anyone). Screen `/informes/funcion`, month navigation, people alphabetical.
+**Administración view (§4.5).** `/informes/administracion`: receivables by age (not due, 1–30, 31–60, 60+), due in / out /
+to invoice by horizon (reuses `futurePulse`), customers over their credit limit, bank movements not explained, protected vs
+expected Eságara, journeys ready to close, commissions to approve / approved (reuses `profitSummary`).
+**Builder and saved views (§15).** `src/lib/report-builder.ts` (`cleanConfig`, `buildRows` pure, `builderFacts`): certified
+metrics only (Venta, Eságara ganada, Eságara %) from accepted quotes by decision date; group by month, customer or
+negotiator; filter by negotiator and customer; up to 24 months. `ReportView` (migration `20270103120000_m13_report_view`)
+stores the question, never figures; opening recalculates under the viewer's permissions (own Journeys plus teams led, or
+everything for management and money roles). Sharing a view with everyone: management and money roles (my conservative
+default, to confirm). Screen `/informes/constructor` (+ actions `saveView`, `deleteView`).
+Also: `HowCalc` now resolves the contacts goal key to its dictionary entry.
+Checked: 30 script checks (gap arithmetic, config cleaning, grouping, people add up to the function for every metric,
+builder totals equal the function's sale and Eságara, scope filters) and 15 browser checks (three screens, mobile width,
+save / open / delete a view, no browser errors).
+**Limits / pending decisions:** scheduled briefs (§16) not built: who receives what, cadence and channel are undecided;
+export not built: who is authorised is undecided (AC54 applies when it is); builder lacks sector, manufacturer, product,
+supplier, country, legal entity, comparison; only the low-Eságara cause is decomposed; only the Commercial function has a
+review; role clarity, pair view and development block wait for Module 16.

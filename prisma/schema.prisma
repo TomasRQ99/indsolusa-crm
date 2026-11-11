@@ -72,6 +72,7 @@ model User {
   authLevel          String?
   teamsLed           Team[]                @relation("TeamLeader")
   teamMemberships    TeamMember[]
+  reportViews        ReportView[]
   // Outlook calendar of the person's own mailbox (login email), read and written via Microsoft Graph.
   outlookConnectedAt DateTime?
   createdAt          DateTime              @default(now())
@@ -4054,4 +4055,21 @@ model PulseSnapshot {
   reopenReason   String?
 
   @@unique([period, version])
+}
+
+// ---------- Módulo 13 · saved report views (§15) ----------
+
+/// A question asked of the Report Builder (period, grouping, filters). It never stores figures: opening it
+/// recalculates from live data under the permissions of whoever opens it.
+model ReportView {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  shared    Boolean  @default(false)
+  config    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
 }
