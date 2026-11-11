@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { canManageAll, isGerencia } from "@/lib/permissions";
 import { universalSearch } from "@/lib/search";
 import { MODULES } from "@/lib/nav";
+import { searchGuides } from "@/lib/guide";
 
 // "Pregúntale a SOLU" (first version): finds records and screens related to the question.
 // AI answers are not connected yet; the panel says so instead of pretending.
@@ -10,7 +11,7 @@ export async function GET(req: Request) {
   const user = await requireUser();
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim();
-  if (!q) return NextResponse.json({ hits: [], screens: [] });
+  if (!q) return NextResponse.json({ hits: [], screens: [], guides: [] });
 
   const words = q
     .toLowerCase()
@@ -35,5 +36,8 @@ export async function GET(req: Request) {
     if (hits.length) break;
     hits = await universalSearch(w);
   }
-  return NextResponse.json({ hits: hits.slice(0, 8), screens });
+  // "¿Cómo hago una factura?" is a request for training: offer the on-screen guides first.
+  // Respects the person's own switch in Mi perfil.
+  const found = searchGuides(q, user);
+  return NextResponse.json({ hits: hits.slice(0, 8), screens, guides: user.guideOn ? found : [], guideOff: !user.guideOn && found.length > 0 });
 }

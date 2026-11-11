@@ -410,7 +410,9 @@ function AskPanel({ es, where, inputRef, onClose }: { es: boolean; where: string
   const t = (a: string, b: string) => (es ? a : b);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
-  const [res, setRes] = useState<{ q: string; hits: Hit[]; screens: { href: string; label: string }[] } | null>(null);
+  const [res, setRes] = useState<{ q: string; hits: Hit[]; screens: { href: string; label: string }[]; guides?: GuideMatch[]; guideOff?: boolean } | null>(null);
+  const guides = res?.guides ?? [];
+  const guide = (g: GuideMatch, route: boolean) => { onClose(); startGuide(g.id, route); };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -421,7 +423,7 @@ function AskPanel({ es, where, inputRef, onClose }: { es: boolean; where: string
       const data = await r.json();
       setRes({ q, ...data });
     } catch {
-      setRes({ q, hits: [], screens: [] });
+      setRes({ q, hits: [], screens: [], guides: [] });
     } finally {
       setBusy(false);
     }
@@ -435,19 +437,37 @@ function AskPanel({ es, where, inputRef, onClose }: { es: boolean; where: string
       </div>
       {where && <p className="ask-where">{t("Estás en", "You are in")}: <b>{where}</b></p>}
       <form onSubmit={submit} className="ask-form" data-no-pending>
-        <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Ej.: ¿qué pasa con la OC 4500-221?", "E.g.: what's going on with PO 4500-221?")} aria-label={t("Tu pregunta", "Your question")} />
+        <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Ej.: ¿cómo hago una factura? · ¿qué pasa con la OC 4500-221?", "E.g.: how do I make an invoice? · what's going on with PO 4500-221?")} aria-label={t("Tu pregunta", "Your question")} />
         <button type="submit" disabled={busy}>{busy ? "…" : t("Preguntar", "Ask")}</button>
       </form>
       <p className="ask-note">
         {t(
-          "Las respuestas escritas por IA aún no están conectadas. Por ahora SOLU te muestra los registros y pantallas que coinciden con tu pregunta, con su fuente.",
-          "AI-written answers are not connected yet. For now SOLU shows the records and screens that match your question, with their source.",
+          "Las respuestas escritas por IA aún no están conectadas. Por ahora SOLU te muestra los registros y pantallas que coinciden con tu pregunta, y si preguntas cómo hacer algo, te ofrece la guía en pantalla.",
+          "AI-written answers are not connected yet. For now SOLU shows the records and screens that match your question, and if you ask how to do something, it offers the on-screen guide.",
         )}
       </p>
       <ReportSignal es={es} screen={where} />
       {res && (
         <div className="ask-res">
-          {res.hits.length === 0 && res.screens.length === 0 && <p className="pop-empty">{t(`No encontré nada para "${res.q}".`, `I found nothing for "${res.q}".`)}</p>}
+          {guides.length > 0 && (
+            <>
+              <h3 className="ask-gh">{t("Te guío en pantalla, paso a paso", "I'll guide you on screen, step by step")}</h3>
+              <ul className="ask-guides">
+                {guides.map((g) => (
+                  <li key={g.id} data-mod={g.mod ?? undefined}>
+                    <span className="mico">{g.mod ? MODULE_ICONS[g.mod] : <IconSearch />}</span>
+                    <div className="ss-txt"><b>{g.title}</b><small>{g.path}</small></div>
+                    <div className="ss-act">
+                      {g.routeLen > 0 && <button type="button" className="sm" onClick={() => guide(g, true)}>{t(`Desde el inicio · ${g.routeLen} etapas`, `From the start · ${g.routeLen} stages`)}</button>}
+                      <button type="button" className={`sm${g.routeLen > 0 ? " secondary" : ""}`} onClick={() => guide(g, false)}>{g.routeLen > 0 ? t("Solo esta parte", "Only this part") : t("Guíame", "Guide me")}</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {res.guideOff && <p className="ask-where">{t("La guía de entrenamiento está apagada.", "The training guide is off.")} <Link href="/profile#guia">{t("Encenderla en Mi perfil", "Turn it on in My profile")}</Link></p>}
+          {guides.length === 0 && res.hits.length === 0 && res.screens.length === 0 && <p className="pop-empty">{t(`No encontré nada para "${res.q}".`, `I found nothing for "${res.q}".`)}</p>}
           {res.hits.length > 0 && (
             <>
               <h3>{t("Registros", "Records")}</h3>

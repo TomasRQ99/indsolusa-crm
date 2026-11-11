@@ -1896,6 +1896,14 @@ a.card:hover, a.deal:hover, a.att:hover { text-decoration: none; border-color: v
 .ss-foot { padding: 8px 10px 4px; margin-top: 4px; border-top: 1px solid var(--line); font-size: 12px; color: var(--ink-3); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; }
 @media (max-width: 1023px) { .search-sug { top: 48px; width: 100%; } .ss-item { flex-wrap: wrap; } .ss-act { width: 100%; padding-left: 40px; } }
 
+/* The same guides, offered inside "Pregúntale a SOLU" */
+.ask-res h3.ask-gh { color: var(--brand); }
+.ask-res ul.ask-guides { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.ask-guides li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 8px; border: 1px solid var(--brand-line); border-radius: 8px; background: var(--brand-soft); }
+.ask-guides .mico { background: var(--surface); }
+.ask-guides .ss-txt small { white-space: normal; }
+.ask-guides .ss-act { width: 100%; padding-left: 38px; flex-wrap: wrap; }
+
 /* Rings around what the current step names. Solid + number = do this now. Dashed = the way to get there. */
 .guide-rings { position: fixed; inset: 0; z-index: 43; pointer-events: none; }
 .g-ring { position: fixed; border-radius: 9px; box-sizing: border-box; }

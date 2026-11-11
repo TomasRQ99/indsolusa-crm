@@ -1822,12 +1822,14 @@
    "m": "global",
    "t": "Pregúntale a SOLU y reportar un defecto",
    "path": "Barra superior · Pregúntale a SOLU",
-   "why": "Encuentra registros rápido, y avísanos cuando SOLU te hizo repetir trabajo o mostró ruido.",
+   "why": "Encuentra registros rápido, pide que te guíe para hacer algo, y avísanos cuando SOLU te hizo repetir trabajo o mostró ruido.",
    "steps": [
     "Haz clic en [[Pregúntale a SOLU]] y escribe una pregunta o un nombre.",
+    "Pregunta cómo hacer algo, por ejemplo «¿cómo hago una factura?»: arriba aparece «Te guío en pantalla» con [[Desde el inicio · 8 etapas]] y [[Solo esta parte]].",
+    "Escribe «entrenamiento» o «ayuda» para ver las guías del trabajo de todos los días, cada una con [[Guíame]].",
     "Abajo, abre \"Reportar un defecto de SOLU\", describe lo que pasó y envía."
    ],
-   "expect": "Los reportes aparecen en Insights, en la salud del producto."
+   "expect": "Al elegir una guía, el panel se cierra y la guía queda en la esquina. Con la guía de entrenamiento apagada en Mi perfil, el panel lo dice y enlaza a donde se enciende. Los reportes aparecen en Insights, en la salud del producto."
   },
   {
    "id": "bell-lang",

@@ -152,6 +152,9 @@ const stems = (s: string) => new Set(norm(s).split(" ").filter(Boolean).map(stem
 
 const INDEX = FEATURES.map((f) => ({ f, title: stems(f.t), path: stems(f.path), id: stems(f.id.replace(/-/g, " ")), why: stems(f.why), steps: stems(f.steps.join(" ") + " " + f.expect) }));
 
+/** Words that ask for training in general. Compared by their first letters, like everything else. */
+const TRAINING = new Set(["entrenamiento", "entrenar", "training", "capacitacion", "tutorial", "tour", "guia", "guide", "ayuda", "help", "aprender", "learn", "empezar", "empiezo", "start", "modulos", "onboarding", "induccion"].map((w) => stem(w)));
+
 /** Looks like a record (an invoice number, a Journey code, a tax ID): that is a search, not a question. */
 const looksLikeRecord = (q: string) => /\d{3,}/.test(q) || /^[a-z]{1,3}-\d/i.test(q.trim());
 
@@ -188,6 +191,10 @@ export function searchGuides(q: string, user: U, max = 4): GuideMatch[] {
     if (LIFE.includes(x.f.id)) score += 2;
     return { x, score, strong };
   }).filter((r) => r.strong > 0 && r.score >= 5).sort((a, b) => b.score - a.score);
+
+  // "entrenamiento", "ayuda", "cómo empiezo": the person asks for training itself, not for one subject.
+  const asked = norm(q).split(" ").filter((w) => w.length > 1 && !STOP.has(w)).map(stem);
+  if (asked.some((w) => TRAINING.has(w)) && (!scored.length || asked.every((w) => TRAINING.has(w) || w === "solu"))) return starterGuides(user);
 
   const out: GuideMatch[] = [];
   for (const r of scored) {
