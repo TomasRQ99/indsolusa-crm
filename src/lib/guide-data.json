@@ -1162,7 +1162,8 @@
    "why": "Tus datos, idioma y conexión del calendario.",
    "steps": [
     "Actualiza tus datos, tu idioma y tu jornada, y [[Guardar]].",
-    "Haz clic en [[Conectar mi calendario]] e inicia sesión con tu propia cuenta de Microsoft."
+    "Haz clic en [[Conectar mi calendario]] e inicia sesión con tu propia cuenta de Microsoft.",
+    "En «Guía en pantalla (entrenamiento)» puedes apagar o encender la guía de la barra de búsqueda."
    ],
    "expect": "El calendario conectado es solo el de tu propio buzón de Outlook. Después de conectarlo, los bloques de tu agenda aparecen en Outlook."
   },
@@ -1779,12 +1780,42 @@
    "m": "global",
    "t": "Búsqueda",
    "path": "Barra superior · Ctrl K o /",
-   "why": "Salta a cualquier cliente, Journey, cotización o pantalla.",
+   "why": "Salta a cualquier cliente, Journey, factura, proveedor o repuesto.",
    "steps": [
-    "Presiona [[Ctrl K]] y escribe parte de un nombre, código o pantalla.",
-    "Presiona Enter o haz clic en un resultado."
+    "Presiona [[Ctrl K]] y escribe o pega parte de un nombre, un código, un NIT o un número de factura.",
+    "Presiona Enter. Si hay un solo resultado, SOLU lo abre directamente."
    ],
-   "expect": "Los resultados aparecen mientras escribes."
+   "expect": "Un código o un número siempre busca registros. Si escribes algo que necesitas hacer, además aparecen guías (ver «Guía en pantalla»)."
+  },
+  {
+   "id": "guia-pantalla",
+   "m": "global",
+   "t": "Guía en pantalla (entrenamiento)",
+   "path": "Barra superior · barra de búsqueda",
+   "why": "Escribe lo que necesitas hacer y SOLU te lleva a donde empieza y te muestra los pasos de esta guía sobre la pantalla real, marcando dónde hacer clic.",
+   "steps": [
+    "Haz clic en la barra de búsqueda sin escribir nada: aparece el trabajo de todos los días, cada uno con su botón [[Guíame]].",
+    "Escribe «hacer factura» (o «make invoice»). En la primera fila haz clic en [[Desde el inicio · 8 etapas]]: SOLU abre el tablero de Journeys con la guía en la esquina.",
+    "Sigue los pasos con [[Siguiente paso]]. El anillo azul con número marca el botón o la pestaña que nombra el paso.",
+    "Si el paso está en otra pantalla, sigue la línea punteada o usa el botón «Llévame a…» de la guía.",
+    "Si tu caso ya va adelantado, toca el número de su etapa en la guía. Con [[Solo esta parte]] ves una sola función.",
+    "Para apagarla: EQUIPO → Configuración → Mi perfil y [[Apagar la guía de entrenamiento]]. Se enciende ahí mismo con [[Encender la guía de entrenamiento]]."
+   ],
+   "expect": "La guía sigue contigo al cambiar de pantalla y se puede minimizar o cerrar. Nunca hace clic por ti. Apagarla solo cambia para ti: la búsqueda de registros sigue igual."
+  },
+  {
+   "id": "colores",
+   "m": "global",
+   "t": "Colores: dónde estás, qué se puede tocar y qué te necesita",
+   "path": "En todas las pantallas",
+   "why": "El color tiene tres trabajos: decir en qué módulo estás, mostrar qué se puede hacer clic y señalar el estado de cada cosa.",
+   "steps": [
+    "Mira el menú: cada módulo tiene su color, y el módulo donde estás aparece relleno.",
+    "Abre dos módulos distintos: cambia el color de la línea bajo la barra superior y de la franja con el nombre del módulo y la sección.",
+    "Pasa el cursor por una tabla: la fila que lleva a algún lado se pone azul.",
+    "En Mi Día, mira los títulos de cada sección: ámbar es «necesita de ti», azul es «para mover», verde es «esperando con control»."
+   ],
+   "expect": "Verde, ámbar y rojo siguen significando protegido, atención y riesgo. El morado sigue siendo solo para la ayuda de SOLU. En el tablero de Journeys las columnas se hacen más azules a medida que el Journey avanza; «OC aceptada» es verde."
   },
   {
    "id": "ask",
