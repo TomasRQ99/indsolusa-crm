@@ -27,7 +27,7 @@ export default async function FuturePulsePage() {
 
       <section className="card" id="cola">
         <b>{t("DÓNDE DEBE INTERVENIR GERENCIA", "WHERE MANAGEMENT SHOULD STEP IN")} · {queue.length}</b>
-        {queue.length === 0 ? <p className="small muted">{t("Nada material por decidir ahora.", "Nothing material to decide right now.")}</p> : queue.map((q) => (
+        {queue.length === 0 ? <p className="small muted"><span className="sig ok">{t("Nada material por decidir ahora.", "Nothing material to decide right now.")}</span></p> : queue.map((q) => (
           <article key={q.key} className="exc-item">
             <header className="exc-head"><span className="sig attn">{t(q.kind.es, q.kind.en)}</span> <b><Link href={q.href}>{q.headline}</Link></b><span className="grow" />{q.impact && <span className="mono small">{q.impact}</span>}</header>
             <p className="small">{t("Decisión", "Decision")}: {t(q.decision.es, q.decision.en)}{q.owner && <span className="muted"> · {t("lleva", "owner")}: {q.owner}</span>}</p>

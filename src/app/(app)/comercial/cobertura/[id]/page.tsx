@@ -37,7 +37,7 @@ export default async function CoverageDetail({ params, searchParams }: { params:
   const okMsg: Record<string, string> = { devuelto: t("Listo. Los pendientes abiertos a nombre de quien cubría volvieron a su dueño.", "Done. The to-dos opened in the name of whoever covered are back with their owner."), creada: t("Cobertura creada. Quien cubre ya ve la entrega de turno.", "Coverage created. The person covering can already see the handover."), terminada: t("Cobertura terminada. El permiso ya no aplica.", "Coverage ended. The permission no longer applies.") };
   const errMsg: Record<string, string> = { "regreso-permiso": t("El regreso lo confirma quien estuvo ausente, o la dirección.", "The return is confirmed by whoever was away, or by management."), "regreso-activa": t("La cobertura sigue activa: termínala primero.", "The coverage is still active: end it first."), permiso: t("Solo la dirección, quien se ausenta o quien cubre la terminan.", "Only management, the absent person or the person covering end it.") };
 
-  const Items = ({ rows }: { rows: ScanItem[] }) => rows.length === 0 ? <p className="small muted">{t("Nada pendiente.", "Nothing pending.")}</p> : (
+  const Items = ({ rows }: { rows: ScanItem[] }) => rows.length === 0 ? <p className="small muted"><span className="sig ok">{t("Nada pendiente.", "Nothing pending.")}</span></p> : (
     <div className="tscroll"><table>
       <thead><tr><th>{t("Cuándo", "When")}</th><th>{t("Qué", "What")}</th><th>{t("Cliente", "Customer")}</th><th>{t("Detalle", "Detail")}</th></tr></thead>
       <tbody>{rows.map((s, k) => { const at = s.at ? new Date(s.at) : null; return <tr key={k}><td className={`mono small${at && at < today() ? " risk-t" : ""}`}>{at ? i.day(at) : "—"}</td><td className="small">{t(SCAN_KINDS[s.kind]?.es ?? s.kind, SCAN_KINDS[s.kind]?.en ?? s.kind)}</td><td className="small">{s.account ?? "—"}</td><td className="small"><Link href={s.href}>{s.label}</Link>{s.amount != null && <span className="mono"> · {i.money2(s.amount)}</span>}</td></tr>; })}</tbody>
@@ -79,7 +79,7 @@ export default async function CoverageDetail({ params, searchParams }: { params:
 
       <details className="jblock" open={!started}>
         <summary className="jbh"><b>{t("ENTREGA DE TURNO", "HANDOVER")}</b><span className="grow" /><span className="src">{h.takenAt ? t(`Foto del ${i.day(new Date(h.takenAt))}`, `Snapshot of ${i.day(new Date(h.takenAt))}`) : ""}</span></summary>
-        {hItems.length + hJourneys.length === 0 ? <p className="small muted">{t("Nada pendiente.", "Nothing pending.")}</p> : HANDOVER_ORDER.map((cls) => { const rows = hItems.filter((x) => x.cls === cls), js = hJourneys.filter((j) => j.cls === cls); if (!rows.length && !js.length) return null; const k = HANDOVER_CLASSES[cls]; return (
+        {hItems.length + hJourneys.length === 0 ? <p className="small muted"><span className="sig ok">{t("Nada pendiente.", "Nothing pending.")}</span></p> : HANDOVER_ORDER.map((cls) => { const rows = hItems.filter((x) => x.cls === cls), js = hJourneys.filter((j) => j.cls === cls); if (!rows.length && !js.length) return null; const k = HANDOVER_CLASSES[cls]; return (
           <div key={cls} id={`h-${cls}`} style={{ marginTop: 10 }}>
             <p className="small"><span className={`sig ${k.tone}`}>{t(k.es, k.en)}</span> <b>{rows.length + js.length}</b> <span className="muted">· {t(k.hint.es, k.hint.en)}</span></p>
             {rows.length > 0 && <Items rows={rows} />}

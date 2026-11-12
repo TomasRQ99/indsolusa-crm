@@ -33,9 +33,9 @@ export default async function FunctionReviewPage({ searchParams }: { searchParam
         <p className="small"><span className="mono">{period}</span> · <span className={`sig ${status === "CLOSED" ? "ok" : "wait"}`}>{status === "CLOSED" ? t("Mes cerrado", "Month closed") : t("Provisional: el mes sigue abierto", "Provisional: the month is still open")}</span> · {t("calculado", "as of")} {i.day(now)} · <Link href={`/informes/funcion?mes=${shiftPeriod(period, -1)}`}>← {shiftPeriod(period, -1)}</Link>{period < periodOf(now) && <> · <Link href={`/informes/funcion?mes=${shiftPeriod(period, 1)}`}>{shiftPeriod(period, 1)} →</Link></>}</p>
       </div></div>
 
-      <section className="card" id="hallazgos">
+      <section className="card" id="hallazgos" data-zone={insights.length ? "act" : "calm"}>
         <b>{t("LO QUE SOLU ENCONTRÓ", "WHAT SOLU FOUND")} · {insights.length}</b>
-        {insights.length === 0 ? <p className="small muted">{t("Nada que señalar este mes.", "Nothing to point out this month.")}</p> : insights.map((x) => (
+        {insights.length === 0 ? <p className="small muted"><span className="sig ok">{t("Nada que señalar este mes.", "Nothing to point out this month.")}</span></p> : insights.map((x) => (
           <article key={x.key} className="exc-item">
             <header className="exc-head"><span className={`sig ${x.kind === "FACT" ? "ok" : "wait"}`}>{x.kind === "FACT" ? t("Hecho", "Fact") : t("Hecho e inferencia", "Fact and inference")}</span> <b>{t(x.headline.es, x.headline.en)}</b></header>
             <p className="small">{t(x.detail.es, x.detail.en)} <Link href={x.href}>{t("Ver la evidencia", "See the evidence")}</Link></p>

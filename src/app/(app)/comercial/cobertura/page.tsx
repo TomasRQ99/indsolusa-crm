@@ -99,7 +99,7 @@ export default async function CoveragePage({ searchParams }: { searchParams: Pro
             <label>{t("Persona", "Person")}<select name="scan" defaultValue={scanFor ?? ""}><option value="" disabled>{t("Elige…", "Choose…")}</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
             <button type="submit" className="secondary">{t("Escanear", "Scan")}</button>
           </form>
-          {scan && (scan.length === 0 ? <p className="small muted" style={{ marginTop: 8 }}>{t("Nada urgente en los próximos 2 días.", "Nothing urgent in the next 2 days.")}</p> : (
+          {scan && (scan.length === 0 ? <p className="small muted" style={{ marginTop: 8 }}><span className="sig ok">{t("Nada urgente en los próximos 2 días.", "Nothing urgent in the next 2 days.")}</span></p> : (
             <div className="tscroll" style={{ marginTop: 8 }}><table>
               <thead><tr><th>{t("Cuándo", "When")}</th><th>{t("Qué", "What")}</th><th>{t("Cliente", "Customer")}</th><th>{t("Detalle", "Detail")}</th></tr></thead>
               <tbody>{scan.map((s, k) => { const at = s.at ? new Date(s.at) : null; return <tr key={k}><td className={`mono small${at && at < today() ? " risk-t" : ""}`}>{at ? i.day(at) : "—"}</td><td className="small">{t(SCAN_KINDS[s.kind].es, SCAN_KINDS[s.kind].en)}</td><td className="small">{s.account ?? "—"}</td><td className="small"><Link href={s.href}>{s.label}</Link>{s.amount != null && <span className="mono"> · {i.money2(s.amount)}</span>}</td></tr>; })}</tbody>

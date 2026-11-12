@@ -46,7 +46,7 @@ export default async function PeopleAdminPage() {
       </section>
 
       <section className="card" id="soporte"><b>{t("SOPORTE QUE LA EMPRESA DEBE", "SUPPORT THE COMPANY OWES")} · {gaps.length}</b>
-        {gaps.length === 0 ? <p className="small muted">{t("Nada pendiente.", "Nothing pending.")}</p> : <ul className="plain small">{gaps.map((g) => <li key={g.id}><span className={`sig ${g.status === "ESCALATED" ? "risk" : g.dueOn && g.dueOn < T ? "attn" : "wait"}`}>{g.status === "ESCALATED" ? t("Escalado", "Escalated") : GAP_KINDS[g.kind] ? t(GAP_KINDS[g.kind].es, GAP_KINDS[g.kind].en) : g.kind}</span> <Link href={`/administracion/personas/${g.userId}#soporte`}><b>{g.user.name}</b>: {g.what}</Link> · {t("responde", "owner")} {g.owner.name} · {g.nextMovement}{g.dueOn ? ` · ${i.day(g.dueOn)}` : ""}</li>)}</ul>}
+        {gaps.length === 0 ? <p className="small muted"><span className="sig ok">{t("Nada pendiente.", "Nothing pending.")}</span></p> : <ul className="plain small">{gaps.map((g) => <li key={g.id}><span className={`sig ${g.status === "ESCALATED" ? "risk" : g.dueOn && g.dueOn < T ? "attn" : "wait"}`}>{g.status === "ESCALATED" ? t("Escalado", "Escalated") : GAP_KINDS[g.kind] ? t(GAP_KINDS[g.kind].es, GAP_KINDS[g.kind].en) : g.kind}</span> <Link href={`/administracion/personas/${g.userId}#soporte`}><b>{g.user.name}</b>: {g.what}</Link> · {t("responde", "owner")} {g.owner.name} · {g.nextMovement}{g.dueOn ? ` · ${i.day(g.dueOn)}` : ""}</li>)}</ul>}
         <p className="src">{t("Que falte una herramienta o un acceso no es bajo desempeño de la persona.", "A missing tool or access is not the person's low performance.")}</p>
       </section>
 

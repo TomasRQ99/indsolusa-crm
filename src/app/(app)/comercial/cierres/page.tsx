@@ -71,7 +71,7 @@ export default async function ClosesPage({ searchParams }: { searchParams: Promi
 
       <section className="card" id="aprendimos">
         <b>2 · {t("Qué aprendimos", "What we learned")}</b>
-        {r.learned.visits.length + r.learned.presentations.length === 0 ? <p className="small muted">{t("Nada registrado como aprendizaje en el periodo (visitas o presentaciones).", "Nothing recorded as learning in the period (visits or presentations).")}</p> : (
+        {r.learned.visits.length + r.learned.presentations.length === 0 ? <p className="small muted">{t("Nada registrado como aprendizaje en el periodo (visitas o presentaciones).", "Nothing recorded as learning in the period (visits or presentations).")} <Link href="/visitas">{t("Abrir Visitas", "Open Visits")} →</Link></p> : (
           <ul className="mk-ul small">
             {r.learned.visits.map((v) => <li key={v.id}><Link href={`/visitas/${v.id}`}>{v.account.name}</Link>: {v.learned}</li>)}
             {r.learned.presentations.map((p) => <li key={p.id}><Link href={`/deals/${p.case.deal.id}/solucion`}>{p.case.deal.account.name}</Link>: {p.valued ? t(`valoró ${p.valued}`, `valued ${p.valued}`) : ""}{p.valued && p.objections ? " · " : ""}{p.objections ? t(`objeción: ${p.objections}`, `objection: ${p.objections}`) : ""}</li>)}
@@ -81,7 +81,7 @@ export default async function ClosesPage({ searchParams }: { searchParams: Promi
 
       <section className="card" id="futuro">
         <b>3 · {t("Futuro visible ahora", "Future visible now")}</b>
-        {r.future.needs.length + r.future.futures.length + r.future.decisionsNext.length === 0 ? <p className="small muted">{t("Sin necesidades nuevas, futuro capturado ni decisiones próximas.", "No new needs, captured future or upcoming decisions.")}</p> : (
+        {r.future.needs.length + r.future.futures.length + r.future.decisionsNext.length === 0 ? <p className="small muted">{t("Sin necesidades nuevas, futuro capturado ni decisiones próximas.", "No new needs, captured future or upcoming decisions.")} <Link href="/deals">{t("Abrir Journeys", "Open Journeys")} →</Link></p> : (
           <ul className="mk-ul small">
             {r.future.needs.slice(0, 10).map((d) => <li key={d.id}>{t("Necesidad", "Need")}: <Link href={`/deals/${d.id}`}>{d.code ?? d.title}</Link> · {d.account.name} — {d.desiredResult}</li>)}
             {r.future.needs.length > 10 && <li className="muted">{t(`y ${r.future.needs.length - 10} necesidades más`, `and ${r.future.needs.length - 10} more needs`)}</li>}
@@ -93,7 +93,7 @@ export default async function ClosesPage({ searchParams }: { searchParams: Promi
 
       <section className="card" id="mejora">
         <b>4 · {t("Oportunidades de mejora", "Improvement opportunities")}</b>
-        {r.improve.length === 0 ? <p className="small muted">{t("Nada que señalar en este periodo.", "Nothing to flag this period.")}</p> : <ul className="mk-ul small">{r.improve.map((x, k) => <li key={k}>{t(x.es, x.en)}</li>)}</ul>}
+        {r.improve.length === 0 ? <p className="small muted"><span className="sig ok">{t("Nada que señalar en este periodo.", "Nothing to flag this period.")}</span></p> : <ul className="mk-ul small">{r.improve.map((x, k) => <li key={k}>{t(x.es, x.en)}</li>)}</ul>}
         {scope && <p className="src"><Link href={`/comercial/mejora${scope !== user.id ? `?u=${scope}` : ""}`}>{t("Ver la comparación con la historia propia", "See the comparison with own history")} →</Link></p>}
       </section>
 

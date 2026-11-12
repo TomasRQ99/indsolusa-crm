@@ -51,7 +51,7 @@ export default async function MeetingsPage({ searchParams }: { searchParams: Pro
       {toClose.length > 0 && <div className="note attn">{t("Conversaciones cuya fecha ya llegó y siguen abiertas:", "Conversations whose date has come and are still open:")} {toClose.map((m) => <Link key={m.id} href={`/equipo/reuniones/${m.id}`} style={{ marginRight: 12 }}>{i.day(m.scheduledOn)} · {other(m)}</Link>)}</div>}
 
       <section className="card" id="proximas"><b>{t("PRÓXIMAS", "UPCOMING")}</b>
-        {planned.length === 0 ? <p className="small muted">{t("Ninguna programada.", "None scheduled.")}</p> : (
+        {planned.length === 0 ? <p className="small muted">{t("Ninguna programada.", "None scheduled.")} <a href="#nueva">{t("Programar una conversación", "Schedule a conversation")} →</a></p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Cuándo", "When")}</th><th>{t("Tipo", "Kind")}</th><th>{t("Sobre el desarrollo de", "About the development of")}</th><th>{t("Con", "With")}</th></tr></thead>
             <tbody>{planned.map((m) => <tr key={m.id}><td className={m.scheduledOn < T ? "attn-t" : ""}><Link href={`/equipo/reuniones/${m.id}`}>{i.dateShort(m.scheduledOn)}</Link></td><td>{tx(MEETING_KINDS[m.kind] ?? MEETING_KINDS.ONE_ON_ONE)}{m.checkpointDay != null ? ` · ${t("día", "day")} ${m.checkpointDay}` : ""}</td><td>{m.user.name}</td><td>{m.with.name}</td></tr>)}</tbody>

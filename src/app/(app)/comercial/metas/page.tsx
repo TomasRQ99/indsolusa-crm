@@ -123,7 +123,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
 
       <section className="card" id="contactos">
         <b>{t("Qué dejaron los contactos útiles", "What the useful contacts left")}</b>
-        {Object.keys(b.byKind).length === 0 ? <p className="small muted">{t("Aún no hay contactos marcados como útiles este mes. Al registrar una llamada, correo o reunión, marca qué dejó.", "No contacts marked useful this month yet. When you log a call, email or meeting, mark what it left.")}</p> : (
+        {Object.keys(b.byKind).length === 0 ? <p className="small muted">{t("Aún no hay contactos marcados como útiles este mes. Al registrar una llamada, correo o reunión, marca qué dejó.", "No contacts marked useful this month yet. When you log a call, email or meeting, mark what it left.")} <Link href="/comercial/comunicaciones">{t("Registrar un contacto", "Record a contact")} →</Link></p> : (
           <ul className="goal-kinds">{Object.entries(VALUE_KINDS).filter(([k]) => b.byKind[k]).map(([k, v]) => <li key={k}><b>{b.byKind[k]}</b> {t(v.es, v.en)}</li>)}</ul>
         )}
       </section>

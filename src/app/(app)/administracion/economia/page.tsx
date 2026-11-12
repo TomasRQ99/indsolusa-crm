@@ -40,7 +40,7 @@ export default async function EconomicsListPage({ searchParams }: { searchParams
       )}
       <section className="card">
         <p className="small">{all ? <Link href="/administracion/economia">{t("Ver solo los que siguen abiertos", "Show only those still open")}</Link> : <Link href="/administracion/economia?ver=todo">{t("Incluir los cerrados como final", "Include those closed as final")}</Link>}</p>
-        {rows.length === 0 ? <p className="small muted">{t("Aún no hay Journeys aceptados con Eságara protegida.", "No accepted Journeys with protected Eságara yet.")}</p> : (
+        {rows.length === 0 ? <p className="small muted">{t("Aún no hay Journeys aceptados con Eságara protegida.", "No accepted Journeys with protected Eságara yet.")} <Link href="/deals">{t("Abrir Journeys", "Open Journeys")} →</Link></p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Journey", "Journey")}</th><th className="n">{t("Protegida", "Protected")}</th><th className="n">{t("Esperada hoy", "Expected today")}</th><th className="n">{t("Cambio", "Change")}</th><th>{t("Causa principal", "Main cause")}</th><th>{t("Estado", "State")}</th><th>{t("¿Lista para cerrar?", "Ready to close?")}</th></tr></thead>
             <tbody>

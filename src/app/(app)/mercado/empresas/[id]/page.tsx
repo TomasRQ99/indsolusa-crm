@@ -120,7 +120,7 @@ export default async function CompanyExplorationPage({ params, searchParams }: {
           <b>{t("Siguiente movimiento útil", "Next useful movement")}</b>
           {data.explorations.length === 0 ? (
             <>
-              <p className="small muted">{t("Ninguna exploración incluye esta empresa todavía. Explorarla ayuda a que el siguiente paso no dependa de la memoria de nadie.", "No exploration includes this company yet. Exploring it means the next step doesn't depend on anyone's memory.")}</p>
+              <p className="small muted">{t("Ninguna exploración incluye esta empresa todavía. Explorarla ayuda a que el siguiente paso no dependa de la memoria de nadie.", "No exploration includes this company yet. Exploring it means the next step doesn't depend on anyone's memory.")} <Link href="/mercado">{t("Abrir Explorar", "Open Explore")} →</Link></p>
               <form action={exploreCompany.bind(null, a.id)}><button type="submit">{t("Explorar esta empresa", "Explore this company")}</button></form>
             </>
           ) : (

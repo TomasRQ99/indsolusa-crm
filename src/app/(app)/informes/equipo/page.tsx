@@ -40,7 +40,7 @@ export default async function TeamReviewPage({ searchParams }: { searchParams: P
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
 
       {visible.length > 1 && <p className="small">{visible.map((x) => <Link key={x.id} href={`/informes/equipo?equipo=${x.id}`} className={x.id === team?.id ? "val" : ""} style={{ marginRight: 12 }}>{x.name}</Link>)}</p>}
-      {!team ? <section className="card"><p className="small muted">{scope.all ? t("Aún no hay equipos. Gerencia los arma abajo.", "No teams yet. Management sets them up below.") : t("No lideras ningún equipo. Tu propio informe está en Mi desempeño.", "You don't lead a team. Your own report is in My performance.")}</p></section> : (
+      {!team ? <section className="card"><p className="small muted">{scope.all ? <>{t("Aún no hay equipos.", "No teams yet.")} <a href="#equipos">{t("Armar el primer equipo", "Set up the first team")} →</a></> : t("No lideras ningún equipo. Tu propio informe está en Mi desempeño.", "You don't lead a team. Your own report is in My performance.")}{scope.all ? null : <> <Link href="/informes">{t("Abrir Mi desempeño", "Open My performance")} →</Link></>}</p></section> : (
         <section className="card" id="revision">
           <b>{team.name.toUpperCase()}</b> <span className="small muted">{t("lidera", "led by")} {team.leader.name} · {t(`${members.length} personas`, `${members.length} people`)}</span>
           {reports.length === 0 ? <p className="small muted">{t("Este equipo aún no tiene personas.", "This team has no people yet.")}</p> : (

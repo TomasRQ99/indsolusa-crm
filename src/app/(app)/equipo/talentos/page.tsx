@@ -37,7 +37,7 @@ export default async function TalentMapPage() {
 
           {blocks.map((b) => { const rows = v.groups.filter((g) => g.block === b); return (
             <section className="card" key={b} id={`m-${b}`}><b>{tx(PROFILE_BLOCKS[b]).toUpperCase()}</b> · {rows.length} <span className="small muted">{tx(PROFILE_BLOCKS[b].hint)}</span>
-              {rows.length === 0 ? <p className="small muted">{t("Nada organizacional registrado.", "Nothing organisational recorded.")}</p> : (
+              {rows.length === 0 ? <p className="small muted">{t("Nada organizacional registrado.", "Nothing organisational recorded.")} <Link href="/equipo/perfil">{t("Abrir Mi 360, donde cada persona lo comparte", "Open My 360, where each person shares it")} →</Link></p> : (
                 <div className="tscroll"><table>
                   <thead><tr><th>{t("Qué", "What")}</th><th className="n">{t("Personas", "People")}</th><th>{t("Quiénes", "Who")}</th></tr></thead>
                   <tbody>{rows.map((g) => <tr key={g.key}><td>{g.label}</td><td className="n mono">{g.people.length}</td><td className="small">{g.people.map((p) => p.name).join(", ")}</td></tr>)}</tbody>

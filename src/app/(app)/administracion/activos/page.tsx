@@ -37,7 +37,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
       </section>}
 
       <section className="card"><b>{t("ACTIVOS", "ASSETS")} · {rows.length}</b>
-        {rows.length === 0 ? <p className="small muted">{all ? t("Aún no hay activos registrados.", "No assets recorded yet.") : t("No tienes activos a tu cargo.", "You have no assets in your care.")}</p> : (
+        {rows.length === 0 ? <p className="small muted">{all ? t("Aún no hay activos registrados.", "No assets recorded yet.") : t("No tienes activos a tu cargo.", "You have no assets in your care.")}{all ? <> <a href="#nuevo">{t("Registrar un activo", "Record an asset")} →</a></> : null}</p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Activo", "Asset")}</th><th>{t("Tipo", "Kind")}</th><th>{t("Quién lo tiene", "Who has it")}</th><th>{t("Dónde", "Where")}</th><th className="n">{t("Valor", "Value")}</th><th>{t("Estado", "Status")}</th></tr></thead>
             <tbody>{rows.map((a) => (

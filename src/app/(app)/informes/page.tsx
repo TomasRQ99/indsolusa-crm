@@ -45,7 +45,7 @@ export default async function MyPerformancePage({ searchParams }: { searchParams
         {people.length > 1 && <form action="/informes" className="qa-row" style={{ maxWidth: 420 }}><input type="hidden" name="mes" value={period} /><select name="u" defaultValue={personId} aria-label={t("Persona", "Person")}><option value={user.id}>{t("Yo", "Me")}</option>{people.filter((p) => p.id !== user.id).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select><button type="submit" className="secondary sm" style={{ flex: "0 0 auto" }}>{t("Ver", "View")}</button></form>}
       </div></div>
 
-      <section className="card" id="resultado">
+      <section className="card" data-zone="plan" id="resultado">
         <b>{t("RESULTADO Y FUTURO", "RESULT AND FUTURE")}</b>
         <div className="tscroll"><table>
           <thead><tr><th>{t("Qué", "What")}</th><th className="n">{t("Este mes", "This month")}</th><th className="n">{t("Meta", "Goal")}</th><th>{t("Ritmo", "Pace")}</th><th className="n">{t("Mes anterior", "Previous month")}</th></tr></thead>
@@ -63,7 +63,7 @@ export default async function MyPerformancePage({ searchParams }: { searchParams
         <p className="src">{t("El mes anterior se muestra completo; el actual, hasta hoy. La comparación sirve para ver la dirección, no para juzgar un mes a medias.", "The previous month is shown in full; the current one, up to today. The comparison shows direction, not a verdict on a half month.")} <Link href="/comercial/metas">{t("Ver mis metas", "See my goals")}</Link></p>
       </section>
 
-      <section className="card" id="dinero">
+      <section className="card" data-zone="flow" id="dinero">
         <b>{t("DINERO QUE DEBO MOVER", "MONEY I MUST MOVE")}</b>
         <dl className="qv-dl">
           <dt>{t("Entregado sin facturar", "Delivered, not invoiced")}<span className="block"><HowCalc id="DELIVERED_NOT_INVOICED" es={i.es} /></span></dt><dd><b className="mono">{usd(r.money.notInvoicedUsd)}</b>{r.money.notInvoiced.slice(0, 5).map((x, k) => <span key={k} className="src block"><Link href={`/deals/${x.id}/facturacion`}>{x.code}</Link> · {x.ref} · {i.n2(x.usd)}</span>)}</dd>
@@ -72,7 +72,7 @@ export default async function MyPerformancePage({ searchParams }: { searchParams
         </dl>
       </section>
 
-      <section className="card" id="riesgos">
+      <section className="card" data-zone="act" id="riesgos">
         <b>{t("RIESGOS Y LO QUE VIENE", "RISKS AND WHAT IS COMING")}</b>
         <dl className="qv-dl">
           <dt>{t("Negocios grandes sin movimiento", "Large business with no movement")}</dt><dd><b className="mono">{r.risks.attention.length}</b>{r.risks.attention.slice(0, 4).map((x) => <span key={x.dealId} className="src block"><Link href={`/deals/${x.dealId}`}>{x.code ?? x.solution}</Link> · {x.account} · {t(`${x.daysQuiet} días`, `${x.daysQuiet} days`)}</span>)}</dd>
@@ -85,7 +85,7 @@ export default async function MyPerformancePage({ searchParams }: { searchParams
       </section>
 
       {showComm && (
-        <section className="card" id="comision">
+        <section className="card" data-zone="calm" id="comision">
           <b>{t("MI COMISIÓN", "MY COMMISSION")}</b> <HowCalc id="COMMISSION" es={i.es} />
           <Split label={t("Mi comisión por etapa", "My commission by stage")} parts={[
             { key: "est", label: t("Estimada", "Estimated"), value: c.estimated.hi, tone: "wait", text: usd(c.estimated.hi) },

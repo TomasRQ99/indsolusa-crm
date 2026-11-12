@@ -59,7 +59,7 @@ export default async function Profile360Page({ searchParams }: { searchParams: P
       {!self && <p className="src">{v.rel.leader || v.rel.mentor ? t("Ves lo que la persona marcó como compartido u organizacional. Sus reflexiones privadas no se muestran aquí.", "You see what the person marked as shared or organisational. Their private reflections are not shown here.") : t("Como Gerencia ves solo lo que la persona marcó como organizacional.", "As Management you see only what the person marked as organisational.")}</p>}
 
       <section className="card" id="historia-roles"><b>{t("IDENTIDAD ORGANIZACIONAL E HISTORIA DE ROLES", "ORGANISATIONAL IDENTITY AND ROLE HISTORY")}</b> <Link className="small" href={`/equipo/mi-rol${qp(personId, user.id)}`}>{t("Ver el rol", "See the role")}</Link>
-        {v.history.length === 0 ? <p className="small muted">{t("Sin asignaciones registradas.", "No assignments recorded.")}</p> : (
+        {v.history.length === 0 ? <p className="small muted">{t("Sin asignaciones registradas.", "No assignments recorded.")} <Link href={`/administracion/personas/${personId}`}>{t("Ver la ficha administrativa, donde se registran", "See the administrative record, where they are recorded")} →</Link></p> : (
           <ul className="plain">{v.history.map((h) => <li key={h.id}><span className="small mono">{i.day(h.effectiveFrom)} → {h.effectiveTo ? i.day(h.effectiveTo) : t("hoy", "today")}</span> · <b>{h.roleProfile?.title ?? h.contractualTitle}</b>{h.roleProfile ? <span className="src"> · {t("acuerdo", "agreement")} v{h.roleProfile.version}</span> : null}{h.level ? ` · ${h.level}` : ""}{h.acting ? <span className="sig wait" style={{ marginLeft: 6 }}>{t("temporal", "temporary")}</span> : null}{h.leader ? <span className="muted"> · {t("líder", "leader")}: {h.leader.name}</span> : null}</li>)}</ul>
         )}
       </section>
@@ -131,7 +131,7 @@ export default async function Profile360Page({ searchParams }: { searchParams: P
       )}
 
       <section className="card" id="caracter"><b>{t("CARÁCTER: EVIDENCIA", "CHARACTER: EVIDENCE")}</b> <span className="small muted">{t("El carácter se demuestra en decisiones: conductas que alguien vio, con su situación y su día.", "Character is shown in decisions: conduct someone saw, with its situation and its day.")}</span>
-        {v.character.length === 0 ? <p className="small muted">{t("Sin evidencia registrada.", "No evidence recorded.")}</p> : (
+        {v.character.length === 0 ? <p className="small muted">{t("Sin evidencia registrada.", "No evidence recorded.")}{guide ? <> {t("Usa «Registrar una conducta observada», aquí abajo.", "Use “Registrar una conducta observada”, just below.")}</> : <> {t("La registra quien acompaña a la persona, aquí mismo.", "Whoever guides the person records it, right here.")}</>}</p> : (
           <ul className="plain">{v.character.map((c) => (
             <li key={c.id}><span className="sig info">{c.dimension}</span> {c.behavior} {self ? <PrivacyTag value={c.privacy} i={i} /> : null}
               <span className="src block">{t("Situación", "Situation")}: {c.context} · {i.date(c.observedOn)} · {EVIDENCE_SOURCES[c.sourceKind] ? tx(EVIDENCE_SOURCES[c.sourceKind]) : c.sourceKind}{c.sourceRef ? ` (${c.sourceRef})` : ""} · {c.recordedByName}</span>
@@ -163,10 +163,10 @@ export default async function Profile360Page({ searchParams }: { searchParams: P
 
       {(guide || v.rel.gerencia) && (
         <section className="card" id="readiness"><b>{t("PREPARACIÓN PARA UN ROL O NIVEL", "READINESS FOR A ROLE OR LEVEL")}</b>
-          {v.readiness.length === 0 ? <p className="small muted">{t("Sin evaluaciones registradas.", "No assessments recorded.")}</p> : (
+          {v.readiness.length === 0 ? <p className="small muted">{t("Sin evaluaciones registradas.", "No assessments recorded.")} {t("Las registra el líder, aquí mismo, contra un acuerdo de rol.", "The leader records them, right here, against a role agreement.")}</p> : (
             <ul className="plain">{v.readiness.map((r) => <li key={r.id} style={r.supersededAt ? { opacity: 0.6 } : undefined}><span className={`sig ${READINESS[r.state]?.tone ?? "wait"}`}>{READINESS[r.state] ? tx(READINESS[r.state]) : r.state}</span> <b>{r.roleKey}</b>{r.level ? ` · ${r.level}` : ""} <span className="src">· {r.assessedByName} · {i.day(r.assessedOn)}{r.supersededAt ? ` · ${t("reemplazada", "superseded")}` : ""}</span><span className="src block">{t("Evidencia", "Evidence")}: {r.evidence}{r.gaps ? ` · ${t("Brechas", "Gaps")}: ${r.gaps}` : ""}{r.plan ? ` · ${t("Plan", "Plan")}: ${r.plan}` : ""}</span></li>)}</ul>
           )}
-          {leaderish && (roles.length === 0 ? <p className="small muted">{t("Aún no hay acuerdos de rol publicados contra los que evaluar.", "No role agreements published yet to assess against.")}</p> : (
+          {leaderish && (roles.length === 0 ? <p className="small muted">{t("Aún no hay acuerdos de rol publicados contra los que evaluar.", "No role agreements published yet to assess against.")} <Link href="/equipo/roles">{t("Abrir Acuerdos de rol", "Open Role agreements")} →</Link></p> : (
             <details open={sp.err === "readiness"}><summary className="small">{t("Registrar una evaluación", "Record an assessment")}</summary>
               <form action={saveReadiness.bind(null, personId)} className="qa-form">
                 <input type="hidden" name="back" value={back} />

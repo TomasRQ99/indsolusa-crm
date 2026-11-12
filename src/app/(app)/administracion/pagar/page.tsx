@@ -69,7 +69,7 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
 
       <section className="card" id="facturas">
         <b>{t("FACTURAS DE PROVEEDORES", "SUPPLIER INVOICES")}</b> <span className="small muted">· {showPaid ? <Link href="/administracion/pagar#facturas">{t("ver solo las abiertas", "show open only")}</Link> : <Link href="/administracion/pagar?ver=pagadas#facturas">{t("ver también las pagadas", "also show paid")}</Link>}</span>
-        {rows.length === 0 ? <p className="small muted">{t("Aún no hay facturas de proveedores registradas.", "No supplier invoices recorded yet.")}</p> : rows.map((r) => {
+        {rows.length === 0 ? <p className="small muted">{t("Aún no hay facturas de proveedores registradas.", "No supplier invoices recorded yet.")} <a href="#nueva">{t("Registrar una factura de proveedor", "Record a supplier invoice")} →</a></p> : rows.map((r) => {
           const m = MATCH_TEXT[r.match.kind];
           const d = discountOf(r, T);
           return (

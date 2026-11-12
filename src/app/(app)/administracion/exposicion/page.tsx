@@ -54,7 +54,7 @@ export default async function ExposurePage() {
       </section>
 
       <section className="card" id="inventario"><b>{t("4 · INVENTARIO", "4 · STOCK")}</b>
-        {e.inventory.byState.length === 0 ? <p className="small muted">{t("No hay unidades en bodega.", "No units in the warehouse.")}</p> : <ul className="plain small">{e.inventory.byState.map((s) => <li key={s.state}>{lot(s.state)}: <span className="mono">{i.n(s.qty)}</span> {t("unidades", "units")}</li>)}</ul>}
+        {e.inventory.byState.length === 0 ? <p className="small muted">{t("No hay unidades en bodega.", "No units in the warehouse.")} <Link href="/operaciones/inventario">{t("Abrir Inventario", "Open Inventory")} →</Link></p> : <ul className="plain small">{e.inventory.byState.map((s) => <li key={s.state}>{lot(s.state)}: <span className="mono">{i.n(s.qty)}</span> {t("unidades", "units")}</li>)}</ul>}
         <p className="small">{t("Compras para inventario aprobadas", "Stock purchases approved")}: <span className="mono">{usd(e.inventory.approvedUsd)}</span></p>
         <p className="src">{t("SOLU cuenta unidades por estado; todavía no les asigna un valor en libros.", "SOLU counts units by state; it doesn't give them a book value yet.")} <Link href="/operaciones/inventario">{t("Inventario", "Stock")}</Link></p>
       </section>

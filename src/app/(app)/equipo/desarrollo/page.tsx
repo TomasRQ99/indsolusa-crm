@@ -74,7 +74,7 @@ export default async function DevelopmentPage({ searchParams }: { searchParams: 
       {!guide && <p className="src">{t("Como Gerencia ves que el ciclo existe y lo que la persona marcó como organizacional.", "As Management you see that the cycle exists and what the person marked as organisational.")}</p>}
 
       {v.flags.length > 0 && guide && (
-        <section className="card" id="atencion"><b>{t("QUÉ PIDE ATENCIÓN", "WHAT ASKS FOR ATTENTION")}</b>
+        <section className="card" id="atencion" data-zone="act"><b>{t("QUÉ PIDE ATENCIÓN", "WHAT ASKS FOR ATTENTION")}</b>
           <ul className="plain">{v.flags.map((f, k) => <li key={k}><span className="sig attn">{tx(DEV_FLAG[f.key])}</span> {f.key === "UNDER_MIN" && f.dim ? t(`${tx(DIMS[f.dim])}: falta(n) ${f.n}`, `${tx(DIMS[f.dim])}: ${f.n} missing`) : f.key === "CHECKPOINT_DUE" ? t(`día ${f.day} del ciclo`, `day ${f.day} of the cycle`) : f.n ? f.n : ""}{f.key === "NO_NEXT_MEETING" || f.key === "CHECKPOINT_DUE" ? <> <Link className="small" href={`/equipo/reuniones${qp(personId, user.id)}#nueva`}>{t("programar", "schedule")}</Link></> : null}</li>)}</ul>
         </section>
       )}
@@ -128,7 +128,7 @@ export default async function DevelopmentPage({ searchParams }: { searchParams: 
           <div className="eq-cols3" style={{ marginBottom: 12 }}>{DIM_KEYS.map((d) => { const b = balance.find((x) => x.dim === d)!; return (
             <div className="eq-dim" key={d}><b>{tx(DIMS[d])}</b> <span className={`sig ${b.under ? "attn" : "ok"}`}>{b.n} {t("de", "of")} {b.min}–{b.max}</span><p className="q">{tx(DIMS[d].question)}</p></div>
           ); })}</div>
-          {plan.objectives.length === 0 && <p className="small muted">{t("Aún no hay objetivos en este ciclo.", "No objectives in this cycle yet.")}</p>}
+          {plan.objectives.length === 0 && <p className="small muted">{t("Aún no hay objetivos en este ciclo.", "No objectives in this cycle yet.")} <a href="#nuevo-objetivo">{t("Agregar el primer objetivo", "Add the first objective")} →</a></p>}
           {plan.objectives.map((o) => { const open = o.status === "OPEN", late = open && o.reviewOn < T; const mine = guide && (self || o.privacy !== "PRIVATE"); return (
             <article key={o.id} id={`o-${o.id}`} className={`eq-obj${!open ? " done" : late ? " late" : ""}`}>
               <div className="eq-obj-h"><span className="sig info">{tx(DIMS[o.dimension as Dim] ?? DIMS.SER)}</span><span className="t">{o.title}</span>
@@ -194,7 +194,7 @@ export default async function DevelopmentPage({ searchParams }: { searchParams: 
       )}
 
       {guide && (
-        <section className="card" id="compromisos"><b>{t("COMPROMISOS", "COMMITMENTS")}</b> <span className="small muted">{t("quién hace qué, qué lo mostrará y para cuándo", "who does what, what will show it and by when")}</span>
+        <section className="card" id="compromisos" data-zone="flow"><b>{t("COMPROMISOS", "COMMITMENTS")}</b> <span className="small muted">{t("quién hace qué, qué lo mostrará y para cuándo", "who does what, what will show it and by when")}</span>
           {v.commitments.length === 0 ? <p className="small muted">{t("Ninguno.", "None.")}</p> : (
             <ul className="plain">{v.commitments.map((c) => { const open = c.status === "OPEN"; return (
               <li key={c.id}><span className={`sig ${!open ? (c.status === "DONE" ? "ok" : "wait") : c.dueOn < T ? "attn" : "info"}`}>{!open ? (c.status === "DONE" ? t("cumplido", "kept") : t("retirado", "dropped")) : c.dueOn < T ? t("vencido", "overdue") : i.day(c.dueOn)}</span> <span className="sig wait">{tx(ACTION_KINDS[c.kind] ?? ACTION_KINDS.PRACTICE)}</span> <b>{c.owner.name}</b>: {c.what}{c.sharedWithId ? <span className="src"> · {t("compartido con", "shared with")} {everyone.find((x) => x.id === c.sharedWithId)?.name ?? "—"}</span> : null}
@@ -222,8 +222,8 @@ export default async function DevelopmentPage({ searchParams }: { searchParams: 
       )}
 
       {guide && (
-        <section className="card" id="oportunidades"><b>{t("OPORTUNIDADES DE DESARROLLO", "DEVELOPMENT OPPORTUNITIES")}</b> <span className="small muted">{t("algo que vale la pena desarrollar; se vuelve objetivo solo cuando se decide tomarlo", "something worth developing; it becomes an objective only when it is taken up")}</span>
-          {v.opportunities.length === 0 ? <p className="small muted">{t("Ninguna abierta.", "None open.")}</p> : (
+        <section className="card" id="oportunidades" data-zone="plan"><b>{t("OPORTUNIDADES DE DESARROLLO", "DEVELOPMENT OPPORTUNITIES")}</b> <span className="small muted">{t("algo que vale la pena desarrollar; se vuelve objetivo solo cuando se decide tomarlo", "something worth developing; it becomes an objective only when it is taken up")}</span>
+          {v.opportunities.length === 0 ? <p className="small muted">{t("Ninguna abierta.", "None open.")} {t("Usa «Agregar una oportunidad», aquí abajo.", "Use “Agregar una oportunidad”, just below.")}</p> : (
             <ul className="plain">{v.opportunities.map((o) => (
               <li key={o.id}>{o.dimension && o.dimension in DIMS ? <span className="sig info">{tx(DIMS[o.dimension as Dim])}</span> : null} {o.what} <span className="src">· {t(SRC[o.source]?.es ?? o.source, SRC[o.source]?.en ?? o.source)} · {o.raisedByName} · {i.day(o.createdAt)}</span>
                 <span className="qa-row" style={{ marginTop: 4 }}>{plan ? <Link className="btn secondary sm" href={`${back}${back.includes("?") ? "&" : "?"}opp=${o.id}#nuevo-objetivo`}>{t("Convertir en objetivo", "Turn into an objective")}</Link> : <span className="src">{t("Abre un ciclo para convertirla en objetivo.", "Open a cycle to turn it into an objective.")}</span>}
@@ -252,7 +252,7 @@ export default async function DevelopmentPage({ searchParams }: { searchParams: 
       )}
 
       {v.feedback.length > 0 && (
-        <section className="card" id="feedback"><b>{t("FEEDBACK RECIBIDO", "FEEDBACK RECEIVED")}</b> <Link className="small" href="/equipo/feedback">{t("Feedback 360", "Feedback 360")}</Link>
+        <section className="card" id="feedback" data-zone="plan"><b>{t("FEEDBACK RECIBIDO", "FEEDBACK RECEIVED")}</b> <Link className="small" href="/equipo/feedback">{t("Feedback 360", "Feedback 360")}</Link>
           <ul className="plain">{v.feedback.slice(0, 5).map((f) => <li key={f.id}><b>{f.from.name}</b> <span className="src">· {i.day(f.givenAt)}</span>{FEEDBACK_PARTS.filter((p) => f[p.key]).map((p) => <span key={p.key} className="src block"><b>{tx(p)}:</b> {f[p.key]}</span>)}</li>)}</ul>
         </section>
       )}
@@ -268,7 +268,7 @@ export default async function DevelopmentPage({ searchParams }: { searchParams: 
       )}
 
       {v.closed.length > 0 && (
-        <section className="card" id="historia"><b>{t("CICLOS ANTERIORES", "EARLIER CYCLES")}</b>
+        <section className="card" id="historia" data-zone="plan"><b>{t("CICLOS ANTERIORES", "EARLIER CYCLES")}</b>
           <ul className="plain">{v.closed.map((c) => <li key={c.id}><b>{t(`Ciclo ${c.cycle}`, `Cycle ${c.cycle}`)}</b> · {i.day(c.startsOn)} → {i.date(c.endsOn)} · {t(`${c.objectives.filter((o) => o.status === "ACHIEVED").length} de ${c.objectives.length} objetivos logrados`, `${c.objectives.filter((o) => o.status === "ACHIEVED").length} of ${c.objectives.length} objectives achieved`)}{c.closeNote ? <span className="src block">{c.closeNote}</span> : null}</li>)}</ul>
         </section>
       )}

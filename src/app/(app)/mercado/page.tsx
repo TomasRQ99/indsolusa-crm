@@ -49,7 +49,7 @@ export default async function MercadoHome({ searchParams }: { searchParams: Prom
         <span className="src block">{t("SOLU ordena la frase (sector, territorio, tecnologías y empresas que ya conoce) y te muestra lo que no pudo deducir. Tú confirmas.", "SOLU structures the sentence (sector, territory, technologies and companies it already knows) and shows what it couldn't tell. You confirm.")}</span>
       </form>
 
-      <section className="mk-sec">
+      <section className="mk-sec" data-zone="act">
         <h2>{t("Para explorar", "Worth exploring")} <span className="muted small">{t("señales nuevas", "new signals")}</span></h2>
         {h.cards.length === 0 && <div className="card empty"><b>{t("No hay señales nuevas", "No new signals")}</b><span className="src block">{t("Cuando alguien escuche de una ampliación, una parada o un cambio en un cliente, regístralo abajo. Una señal no es una venta: es una razón para conversar.", "When someone hears about an expansion, a shutdown or a change at a customer, record it below. A signal isn't a sale: it's a reason to talk.")}</span></div>}
         <div className="grid cols-2">
@@ -105,7 +105,7 @@ export default async function MercadoHome({ searchParams }: { searchParams: Prom
         </details>
       </section>
 
-      <section className="mk-sec">
+      <section className="mk-sec" data-zone="flow">
         <h2>{t("Exploraciones activas", "Active explorations")}</h2>
         {h.explorations.length === 0 ? <div className="card empty"><b>{t("Aún no hay exploraciones", "No explorations yet")}</b><span className="src block">{t("Empieza con una frase arriba.", "Start with one sentence above.")}</span></div> : (
           <div className="card flush">
@@ -130,7 +130,7 @@ export default async function MercadoHome({ searchParams }: { searchParams: Prom
       </section>
 
       <div className="grid cols-2">
-        <section className="mk-sec">
+        <section className="mk-sec" data-zone="flow">
           <h2>{t("Espacios sin explorar", "White space")}</h2>
           {h.whites.length === 0 ? <div className="card empty small">{t("Nada pendiente. Cuando veas una planta, un área o una tecnología donde aún no estamos, anótala en una exploración.", "Nothing pending. When you see a plant, area or technology where we aren't yet, note it in an exploration.")}</div> : (
             <ul className="card mk-list">
@@ -141,7 +141,7 @@ export default async function MercadoHome({ searchParams }: { searchParams: Prom
             </ul>
           )}
         </section>
-        <section className="mk-sec">
+        <section className="mk-sec" data-zone="plan">
           <h2>{t("Qué cambió", "What changed")} <span className="muted small">{t("últimos 14 días", "last 14 days")}</span></h2>
           {h.changes.length === 0 ? <div className="card empty small">{t("Sin cambios recientes.", "No recent changes.")}</div> : (
             <ul className="card mk-list">
@@ -152,7 +152,7 @@ export default async function MercadoHome({ searchParams }: { searchParams: Prom
       </div>
 
       {h.grow.length > 0 && (
-        <section className="mk-sec">
+        <section className="mk-sec" data-zone="flow">
           <h2>{t("Relaciones que pueden crecer", "Relationships that can grow")}</h2>
           <div className="grid cols-3">
             {h.grow.map((g) => <div key={g.id} className="card"><Link href={`/mercado/empresas/${g.id}`}><b>{g.name}</b></Link><span className="src block">{t("Donde aún no estamos", "Where we aren't yet")}: {g.whites.join(" · ")}</span></div>)}
@@ -160,7 +160,7 @@ export default async function MercadoHome({ searchParams }: { searchParams: Prom
         </section>
       )}
 
-      <section className="mk-sec">
+      <section className="mk-sec" data-zone="plan">
         <h2>{t("Oportunidades futuras", "Future opportunities")} <span className="muted small">{t("eventos que aún no son una necesidad", "events that aren't a need yet")}</span></h2>
         {h.futuresCount === 0 ? <div className="card empty small">{t("Cuando un cliente mencione una parada, un CAPEX o una nueva planta, guárdalo desde una exploración para llegar a tiempo.", "When a customer mentions a shutdown, CAPEX or a new plant, save it from an exploration to arrive on time.")}</div> : (
           <div className="grid cols-4">

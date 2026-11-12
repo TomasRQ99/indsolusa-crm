@@ -71,7 +71,7 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Pro
 
       <section className="card" id="recibido"><b>{t("FEEDBACK SOBRE MÍ", "FEEDBACK ABOUT ME")}</b>
         {waiting.length > 0 && <p className="small muted">{t("Pedido y aún sin responder", "Asked and not yet answered")}: {waiting.map((f) => f.from.name).join(", ")}</p>}
-        {mineGiven.length === 0 ? <p className="small muted">{t("Aún no has recibido feedback.", "You haven't received feedback yet.")}</p> : (
+        {mineGiven.length === 0 ? <p className="small muted">{t("Aún no has recibido feedback.", "You haven't received feedback yet.")} <a href="#pedir">{t("Pedir feedback", "Ask for feedback")} →</a></p> : (
           <ul className="plain">{mineGiven.map((f) => <li key={f.id}><span className="sig wait">{tx(FEEDBACK_RELATIONS[f.relation] ?? FEEDBACK_RELATIONS.PEER)}</span> <b>{f.from.name}</b> <span className="src">· {i.day(f.givenAt)}{f.topic ? ` · ${f.topic}` : ""}</span><Parts f={f} /><ToOpp f={f} personId={user.id} /></li>)}</ul>
         )}
       </section>

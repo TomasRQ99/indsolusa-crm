@@ -42,7 +42,7 @@ export default async function CarriersPage({ searchParams }: { searchParams: Pro
       <section className="card">
         <b>DHL Express · MyDHL API</b>
         <p className="small">{dhl && dhl.capabilities.length > 0 ? t("Conexión activa.", "Connection active.") : t("Conexión aún no activa: las funciones (tarifas, guías, recogidas, rastreo, prueba de entrega) se escriben a partir de la especificación oficial de DHL y se prueban en su ambiente de pruebas antes de usarse.", "Connection not active yet: the functions (rates, waybills, pickups, tracking, proof of delivery) are written from DHL's official specification and verified in its test environment before use.")}</p>
-        {accounts.length === 0 ? <p className="small muted">{t("Aún no hay cuentas registradas.", "No accounts registered yet.")}</p> : (
+        {accounts.length === 0 ? <p className="small muted">{t("Aún no hay cuentas registradas.", "No accounts registered yet.")} {t("Usa «+ Registrar o actualizar una cuenta DHL», aquí abajo.", "Use “+ Registrar o actualizar una cuenta DHL”, just below.")}</p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Cuenta", "Account")}</th><th>{t("Empresa dueña", "Owning company")}</th><th>{t("Ambiente", "Environment")}</th><th>{t("Clave", "Key")}</th><th>{t("Secreto", "Secret")}</th><th>{t("Número de cuenta", "Account number")}</th><th>{t("Estado", "Status")}</th></tr></thead>
             <tbody>{accounts.map((a) => { const s = dhlCredentialStatus(a.secretRef); return (

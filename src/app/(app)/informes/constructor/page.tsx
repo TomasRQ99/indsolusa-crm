@@ -44,7 +44,7 @@ export default async function BuilderPage({ searchParams }: { searchParams: Prom
 
       <section className="card" id="vistas">
         <b>{t("VISTAS GUARDADAS", "SAVED VIEWS")} · {views.length}</b>
-        {views.length === 0 ? <p className="small muted">{t("Aún no hay vistas. Arma un informe abajo y guárdalo.", "No views yet. Build a report below and save it.")}</p> : (
+        {views.length === 0 ? <p className="small muted">{t("Aún no hay vistas. Arma un informe abajo y guárdalo.", "No views yet. Build a report below and save it.")} <a href="#armar">{t("Armar un informe", "Build a report")} →</a></p> : (
           <ul className="plain small">{views.map((x) => (
             <li key={x.id} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
               <Link href={`/informes/constructor?v=${x.id}`} className={x.id === view?.id ? "val" : ""}><b>{x.name}</b></Link>

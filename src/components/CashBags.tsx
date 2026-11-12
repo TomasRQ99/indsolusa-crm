@@ -105,7 +105,7 @@ export function CashBags({ j, i, compact = false }: { j: CashJourney; i: I18n; c
                 <dt>{t("Qué hacer", "To do")}</dt><dd>{top.todo}</dd>
                 <dt>{t("Volver a mirar", "Look again")}</dt><dd>{top.look ?? (top.needs ? t("hoy", "today") : "—")}</dd>
               </dl>
-            ) : <p className="small muted">{b.empty}</p>}
+            ) : <p className="small"><span className="sig ok">{b.empty}</span></p>}
             {compact && b.lines.length > 1 && <Link className="small" href={`/comercial/dinero#${b.anchor}`}>{t(`Ver los ${b.lines.length}`, `See all ${b.lines.length}`)}</Link>}
           </article>
         );

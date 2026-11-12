@@ -137,7 +137,7 @@ export default async function MoneyDesk({ searchParams }: { searchParams: Promis
       {/* 1 · ENTREGAR */}
       <section className="mk-sec" id="entregar">
         <h2>{t("Entregar", "Deliver")} <span className="src">{t(`mercancía lista que no se ha entregado · alerta después de ${j.policy.value.readyAlertDays} días calendario`, `ready goods not delivered · alert after ${j.policy.value.readyAlertDays} calendar days`)}</span></h2>
-        {j.deliver.length === 0 ? <div className="card empty">{t("Nada listo esperando entrega.", "Nothing ready waiting for delivery.")}</div> : j.deliver.map((x) => (
+        {j.deliver.length === 0 ? <div className="card empty"><span className="sig ok">{t("Nada listo esperando entrega.", "Nothing ready waiting for delivery.")}</span></div> : j.deliver.map((x) => (
           <article key={x.key} id={x.key} className={`card md-item ${x.alert && !x.blocker ? "move" : ""}`}>
             <div className="md-top"><Link href={`/deals/${x.dealId}`}><b>{x.dealCode} · {x.title}</b></Link><span className="val">{i.money(x.value)}</span></div>
             <span className="small">{x.account} · {x.ownerName} · {x.refs.join(", ")} · {t(`listo desde ${i.day(x.readyAt)} (${daysTxt(x.days)})`, `ready since ${i.day(x.readyAt)} (${daysTxt(x.days)})`)} {x.alert && <span className={`sig ${x.blocker ? "wait" : "attn"}`}>{t(`más de ${j.policy.value.readyAlertDays} días`, `over ${j.policy.value.readyAlertDays} days`)}</span>}</span>
@@ -168,7 +168,7 @@ export default async function MoneyDesk({ searchParams }: { searchParams: Promis
       {/* 3 · COBRAR */}
       <section className="mk-sec" id="cobrar">
         <h2>{t("Cobrar", "Collect")} <span className="src">{t("vencimiento del contrato ≠ fecha esperada ≠ promesa ≠ dinero conciliado", "contractual due ≠ expected date ≠ promise ≠ reconciled cash")}</span></h2>
-        {j.collect.length === 0 ? <div className="card empty">{t("No hay facturas abiertas.", "No open invoices.")}</div> : j.collect.map((x) => {
+        {j.collect.length === 0 ? <div className="card empty"><span className="sig ok">{t("No hay facturas abiertas.", "No open invoices.")}</span></div> : j.collect.map((x) => {
           const can = canEditMoney(user, x.ownerId);
           return (
             <article key={x.key} id={x.key} className={`card md-item ${x.needs ? "move" : ""}`}>
@@ -240,7 +240,7 @@ export default async function MoneyDesk({ searchParams }: { searchParams: Promis
       {/* 4 · LIBERAR CRÉDITO */}
       <section className="mk-sec" id="credito">
         <h2>{t("Liberar crédito", "Free up credit")} <span className="src">{t("Comercial ve y solicita; Finanzas o Gerencia deciden", "Commercial sees and requests; Finance or Management decide")}</span></h2>
-        {j.credit.length === 0 ? <div className="card empty">{t("Ningún cliente cerca o por encima del cupo.", "No customer near or over the limit.")}</div> : j.credit.map((x) => (
+        {j.credit.length === 0 ? <div className="card empty"><span className="sig ok">{t("Ningún cliente cerca o por encima del cupo.", "No customer near or over the limit.")}</span></div> : j.credit.map((x) => (
           <article key={x.key} id={x.key} className={`card md-item ${x.needs ? "move" : ""}`}>
             <div className="md-top"><Link href={`/accounts/${x.accountId}`}><b>{x.account}</b></Link><span className={`sig ${x.over ? "risk" : "attn"}`}>{x.over ? t("Excede el cupo", "Over limit") : t("Cerca del cupo", "Near limit")}</span></div>
             <dl className="md-truths">

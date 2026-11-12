@@ -96,7 +96,7 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
       <section className="card" id="movimientos">
         <b>{all ? t("TODOS LOS MOVIMIENTOS", "ALL MOVEMENTS") : t("MOVIMIENTOS POR EXPLICAR", "MOVEMENTS TO EXPLAIN")} · {shown.length}</b>
         <p className="small">{all ? <Link href="/administracion/banco#movimientos">{t("Ver solo los que faltan por explicar", "Show only those still to explain")}</Link> : <Link href="/administracion/banco?ver=todo#movimientos">{t(`Ver todos (${rows.length})`, `Show all (${rows.length})`)}</Link>}</p>
-        {shown.length === 0 && <p className="small muted">{rows.length ? t("Todo lo cargado está explicado.", "Everything loaded is explained.") : t("Aún no hay movimientos. Sube el primer extracto.", "No movements yet. Upload the first statement.")}</p>}
+        {shown.length === 0 && <p className="small muted">{rows.length ? t("Todo lo cargado está explicado.", "Everything loaded is explained.") : <>{t("Aún no hay movimientos.", "No movements yet.")} <a href="#cargar">{t("Subir el primer extracto", "Upload the first statement")} →</a></>}</p>}
         {shown.map(({ x, s }) => {
           const amt = Number(x.amount), cur = x.bankAccount.currency;
           const isOpen = s.state === "UNMATCHED" || s.state === "PARTIAL";

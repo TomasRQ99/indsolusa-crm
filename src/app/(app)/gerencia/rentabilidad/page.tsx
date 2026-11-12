@@ -51,7 +51,7 @@ export default async function ProfitabilityPage() {
 
       <section className="card" id="causas">
         <b>{t("POR QUÉ CAMBIÓ LA ESÁGARA (NEGOCIOS ABIERTOS)", "WHY ESÁGARA MOVED (OPEN BUSINESS)")}</b>
-        {s.drivers.length === 0 ? <p className="small muted">{t("Sin cambios frente a lo protegido.", "No changes against what was protected.")}</p> : (
+        {s.drivers.length === 0 ? <p className="small muted"><span className="sig ok">{t("Sin cambios frente a lo protegido.", "No changes against what was protected.")}</span></p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Causa", "Cause")}</th><th className="n">USD</th><th className="n">{t("Journeys", "Journeys")}</th></tr></thead>
             <tbody>{s.drivers.map((d, k) => <tr key={k}><td>{t(d.text.es, d.text.en)}</td><td className={`n mono ${d.usd < 0 ? "risk-t" : "ok-t"}`}>{signed(d.usd)}</td><td className="n mono">{d.n}</td></tr>)}</tbody>
@@ -61,7 +61,7 @@ export default async function ProfitabilityPage() {
 
       <section className="card" id="clientes">
         <b>{t("POR CLIENTE: VENTA Y LO QUE DEJA", "BY CUSTOMER: SALE AND WHAT IT LEAVES")}</b>
-        {s.byCustomer.length === 0 ? <p className="small muted">{t("Aún no hay negocios aceptados.", "No accepted business yet.")}</p> : (
+        {s.byCustomer.length === 0 ? <p className="small muted">{t("Aún no hay negocios aceptados.", "No accepted business yet.")} <Link href="/deals">{t("Abrir Journeys", "Open Journeys")} →</Link></p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Cliente", "Customer")}</th><th className="n">{t("Journeys", "Journeys")}</th><th className="n">{t("Venta", "Sale")}</th><th className="n">{t("Eságara esperada", "Expected Eságara")}</th><th className="n">%</th><th className="n">{t("Frente a la protegida", "Vs protected")}</th><th className="n">{t("Por cobrar", "To collect")}</th></tr></thead>
             <tbody>{s.byCustomer.map((c) => <tr key={c.id}><td><Link href={`/accounts/${c.id}`}>{c.name}</Link></td><td className="n mono">{c.journeys}</td><td className="n mono">{i.n2(c.sale)}<CellBar value={c.sale} max={maxSale} tone="wait" tip={`${c.name} · ${t("venta", "sale")} ${i.n2(c.sale)}`} /></td><td className="n mono">{i.n2(c.expected)}<CellBar value={c.expected} max={maxSale} tone={c.expected - c.prot < -0.005 ? "risk" : "ok"} tip={`${c.name} · ${t("Eságara esperada", "expected Eságara")} ${i.n2(c.expected)}`} /></td><td className="n mono">{c.sale > 0 ? i.pct(sharePct(c.expected, c.sale)) : "—"}</td><td className={`n mono ${c.expected - c.prot < -0.005 ? "risk-t" : ""}`}>{signed(Math.round((c.expected - c.prot) * 100) / 100)}</td><td className="n mono">{i.n2(c.outstanding)}</td></tr>)}</tbody>

@@ -2188,6 +2188,25 @@ details.card:not([open]) > summary:not(.small)::-webkit-details-marker { display
 details.card:not([open]) > summary:not(.small)::before { content: "+"; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--brand); color: #fff; font: 700 16px/1 var(--font-sans), sans-serif; flex: none; }
 details.card:not([open]) > summary:not(.small):hover { background: var(--brand-soft); }
 details.card[open] > summary:not(.small) { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+/* Colour zones on every screen (audit 2026-11-12): a block that was not tagged by hand takes the colour of the worst
+   signal inside it. Red = something at risk · amber = needs someone · green = only good news · blue = here you fill in
+   or start something (it holds a form) · grey = context to read. */
+.sig { white-space: normal; height: auto; min-height: 20px; text-align: left; border-radius: 10px; }
+.main section.card:not([data-zone]):not(.flush):has(form) > b:first-child { color: var(--z); letter-spacing: 0.03em; }
+.main section.card:not([data-zone]):not(.flush) { --z: var(--line-strong); border-left: 4px solid var(--z); }
+.main section.card:not([data-zone]):not(.flush):has(form) { --z: var(--brand); }
+/* Green only when the block itself says "all good" (a green line directly under its title), not when a row inside
+   merely carries a green label such as "Hecho" or "Verificado". */
+.main section.card:not([data-zone]):not(.flush):has(> p > .sig.ok:first-child, > .sig.ok) { --z: var(--ok); border-left: 4px solid var(--z); }
+.main section.card:not([data-zone]):not(.flush):has(.sig.attn, .note.attn) { --z: var(--attn); border-left: 4px solid var(--z); }
+.main section.card:not([data-zone]):not(.flush):has(.sig.risk, .sig.missed, .note.risk) { --z: var(--risk); border-left: 4px solid var(--z); }
+.main section.card:not([data-zone]):not(.flush):has(> p > .sig.ok:first-child, > .sig.ok, .sig.attn, .note.attn, .sig.risk, .sig.missed, .note.risk) > b:first-child { color: var(--z); letter-spacing: 0.03em; }
+.mk-sec[data-zone] > h2 { padding-bottom: 6px; border-bottom: 2px solid var(--z); color: var(--z); }
+.mk-sec[data-zone] > h2::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--z); flex: none; align-self: center; }
+.mk-sec[data-zone] > h2 > span { color: var(--ink-3); }
+/* A link that jumps to a block of the same screen lands below the top bar, and the block lights up so the eye finds it */
+.main section[id], .main details[id], .main article[id] { scroll-margin-top: 84px; }
+.main .card:target { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
 /* Empty state that says what to do next */
 .vz-empty { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 14px 16px; border: 1px dashed var(--brand-line); border-radius: var(--radius); background: var(--brand-soft); font-size: 13px; line-height: 19px; color: var(--ink-2); margin-bottom: 16px; }
 .vz-empty b { color: var(--ink); }

@@ -44,7 +44,7 @@ export default async function HighValuePage() {
           <p>{t(`Cada Journey aceptado con Eságara de USD ${i.n2(threshold)} o más, visible hasta que se entrega todo y se cobra todo. El mismo umbral que usa Comercial en Foco de alto valor.`, `Every accepted Journey with Eságara of USD ${i.n2(threshold)} or more, visible until everything is delivered and everything is collected. The same threshold Sales uses in High-Value Focus.`)}</p>
         </div>
       </div>
-      {rows.length === 0 && <section className="card"><p className="small muted">{t("No hay compromisos de alto valor abiertos.", "No open high-value commitments.")}</p></section>}
+      {rows.length === 0 && <section className="card"><p className="small muted">{t("No hay compromisos de alto valor abiertos.", "No open high-value commitments.")} <Link href="/deals">{t("Abrir Journeys", "Open Journeys")} →</Link></p></section>}
       {withRisk.length > 0 && <section className="card"><b>{t("CON RIESGO", "AT RISK")} · {withRisk.length}</b>{withRisk.map((r) => <Card key={r.deal.id} r={r} />)}</section>}
       {calm.length > 0 && <section className="card"><b>{t("AVANZANDO", "MOVING")} · {calm.length}</b>{calm.map((r) => <Card key={r.deal.id} r={r} />)}<p className="src">{t("«Sin riesgo conocido» significa que SOLU no ve nada material con lo registrado; no que nada pueda pasar.", "\"No known risk\" means SOLU sees nothing material in what is recorded; not that nothing can happen.")}</p></section>}
     </>

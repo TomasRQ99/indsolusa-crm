@@ -32,7 +32,7 @@ export default async function WarrantiesPage() {
       </section>
       <section className="card">
         <b>{t(`GARANTÍAS QUE TERMINAN EN ${endingDays} DÍAS`, `WARRANTIES ENDING WITHIN ${endingDays} DAYS`)} · {ending.length}</b>
-        {ending.length === 0 ? <p className="small muted">{t("Ninguna por ahora.", "None for now.")}</p> : (
+        {ending.length === 0 ? <p className="small muted"><span className="sig ok">{t("Ninguna por ahora.", "None for now.")}</span></p> : (
           <ul className="plain small">{ending.map(({ w, s }) => <li key={w.id}><Link href={`/deals/${w.deal.id}/garantia`}>{w.deal.code ?? w.deal.title}</Link> · {w.deal.account.name} · {w.item}{w.serial ? ` · ${w.serial}` : ""} · <span className="mono">{i.day(s.end)}</span> <span className="muted">({t(`${s.daysLeft} días`, `${s.daysLeft} days`)})</span></li>)}</ul>
         )}
         <p className="src">{t(`${active.length} garantías vigentes en total. Una garantía que termina puede ser una buena razón para volver a hablar con el cliente.`, `${active.length} active warranties in total. A warranty about to end can be a good reason to talk to the customer again.`)}</p>

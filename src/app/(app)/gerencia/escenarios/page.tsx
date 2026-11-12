@@ -68,7 +68,7 @@ export default async function ScenariosPage({ searchParams }: { searchParams: Pr
         <p>{t("Para comparar opciones antes de decidir: aceptar un negocio de Eságara baja, subir un cupo, financiar una compra, comprar inventario, asignar personas, acelerar una importación. Un escenario no es un pronóstico: guarda sus supuestos y sus rangos.", "To compare options before deciding: accepting a low-Eságara deal, raising a limit, financing a purchase, buying stock, assigning people, expediting an import. A scenario is not a forecast: it keeps its assumptions and its ranges.")}</p>
       </div></div>
       <Notes sp={sp} ok={ok} err={err} />
-      {rows.length === 0 && <div className="card"><p className="small muted">{t("Aún no hay escenarios.", "No scenarios yet.")}</p></div>}
+      {rows.length === 0 && <div className="card"><p className="small muted">{t("Aún no hay escenarios.", "No scenarios yet.")} <a href="#nuevo">{t("Crear el primero", "Create the first one")} →</a></p></div>}
 
       {rows.map((s) => {
         const opts = asOptions(s.options);

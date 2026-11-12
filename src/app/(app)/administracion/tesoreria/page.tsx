@@ -101,7 +101,7 @@ export default async function TreasuryPage({ searchParams }: { searchParams: Pro
 
       <section className="card" id="cuentas">
         <b>{t("CUENTAS Y SALDOS CONFIRMADOS", "ACCOUNTS AND CONFIRMED BALANCES")}</b>
-        {v.bank.length === 0 ? <p className="small muted">{t("Sin cuentas.", "No accounts.")}</p> : (
+        {v.bank.length === 0 ? <p className="small muted">{t("Sin cuentas.", "No accounts.")} <Link href="/administracion/banco">{t("Crear la cuenta en Banco", "Create the account in Bank")} →</Link></p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Cuenta", "Account")}</th><th className="n">{t("Saldo", "Balance")}</th><th>{t("Dato", "Figure")}</th><th>{t("Confirmar saldo", "Confirm balance")}</th></tr></thead>
             <tbody>{v.bank.map((a) => (
@@ -128,7 +128,7 @@ export default async function TreasuryPage({ searchParams }: { searchParams: Pro
 
       <section className="card" id="reservas">
         <b>{t("DINERO RESTRINGIDO O RESERVADO", "RESTRICTED OR RESERVED MONEY")}</b>
-        {v.reserves.length === 0 ? <p className="small muted">{t("Nada apartado.", "Nothing set aside.")}</p> : (
+        {v.reserves.length === 0 ? <p className="small muted">{t("Nada apartado.", "Nothing set aside.")} {t("Usa «Apartar dinero», aquí abajo.", "Use “Apartar dinero”, just below.")}</p> : (
           <ul className="plain small">{v.reserves.map((r) => (
             <li key={r.id}><span className={`sig ${r.kind === "RESTRICTED" ? "risk" : "wait"}`}>{r.kind === "RESTRICTED" ? t("Restringido", "Restricted") : t("Reservado", "Reserved")}</span> <b>{r.purpose}</b> · <span className="mono">{r.currency} {i.n2(r.amount)}</span> · {t("decidió", "decided by")} {r.authorityName}{r.until ? ` · ${t("hasta", "until")} ${i.day(r.until)}` : ""}
               <form action={releaseReserve.bind(null, r.id)} className="qa-row" style={{ alignItems: "center", marginTop: 4 }}><input name="note" required placeholder={t("Por qué se libera", "Why it is released")} aria-label={t("Por qué se libera", "Why it is released")} /><button type="submit" className="secondary sm" style={{ flex: "0 0 auto" }}>{t("Liberar", "Release")}</button></form>
@@ -151,7 +151,7 @@ export default async function TreasuryPage({ searchParams }: { searchParams: Pro
 
       <section className="card" id="plan">
         <b>{t("LO QUE SOLU NO PUEDE SABER SOLO: NÓMINA, IMPUESTOS, FINANCIACIÓN", "WHAT SOLU CANNOT KNOW BY ITSELF: PAYROLL, TAXES, FINANCING")}</b>
-        {v.plan.length === 0 ? <p className="small muted">{t("Nada escrito todavía. Sin esto la proyección no incluye la nómina ni los impuestos.", "Nothing typed yet. Without this the projection includes no payroll or taxes.")}</p> : (
+        {v.plan.length === 0 ? <p className="small muted">{t("Nada escrito todavía. Sin esto la proyección no incluye la nómina ni los impuestos.", "Nothing typed yet. Without this the projection includes no payroll or taxes.")} {t("Usa «Agregar un movimiento», aquí abajo.", "Use “Agregar un movimiento”, just below.")}</p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Qué", "What")}</th><th className="n">{t("Valor", "Amount")}</th><th>{t("Cuándo", "When")}</th><th>{t("Certeza y fuente", "Certainty and source")}</th><th /></tr></thead>
             <tbody>{v.plan.map((p) => (

@@ -71,7 +71,7 @@ export default async function FocusPage({ searchParams }: { searchParams: Promis
 
       <section className="card" data-zone="flow" id="dinero">
         <b>{t("Dinero por mover", "Money to move")}</b> · <Link href="/comercial/dinero" className="small">{t("Ver todo", "See all")} →</Link>
-        {v.moneyToMove.length === 0 ? <p className="small muted">{t("Sin caja bloqueada.", "No blocked cash.")}</p> : (
+        {v.moneyToMove.length === 0 ? <p className="small muted"><span className="sig ok">{t("Sin caja bloqueada.", "No blocked cash.")}</span></p> : (
           <ul className="mk-ul">{v.moneyToMove.map((b) => <li key={b.id}><b className="mono">{i.money(b.blockedValue)}</b> · {b.deal.account.name} · <Link href={`/deals/${b.deal.id}`}>{b.deal.code ?? b.deal.title}</Link> — {b.narrative}<span className="muted"> → {b.nextMovement}{showOwner ? ` · ${b.deal.owner.name}` : ""}</span></li>)}</ul>
         )}
       </section>
@@ -90,7 +90,7 @@ export default async function FocusPage({ searchParams }: { searchParams: Promis
       <section className="card" id="politica">
         <b>{t("Política de foco", "Focus policy")} · v{pol.version}</b>
         {manage ? (
-          <form action={saveFocusPolicy} className="qa-form" style={{ maxWidth: 520 }}>
+          <form action={saveFocusPolicy} className="qa-form cols" style={{ maxWidth: 900 }}>
             <label>{t("Valor material: Eságara mínima (USD)", "Material value: minimum Eságara (USD)")}<input name="materialEsagaraUsd" type="number" min={0} step="1" defaultValue={pol.value.materialEsagaraUsd} /></label>
             <label>{t("Días sin movimiento para llamar la atención", "Days without movement to flag")}<input name="staleDays" type="number" min={1} max={90} defaultValue={pol.value.staleDays} /></label>
             <label>{t("Horizonte de decisiones (días)", "Decisions horizon (days)")}<input name="decisionsDays" type="number" min={1} max={90} defaultValue={pol.value.decisionsDays} /></label>

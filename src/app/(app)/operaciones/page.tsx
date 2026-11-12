@@ -81,7 +81,7 @@ export default async function OpsHomePage({ searchParams }: { searchParams: Prom
             </div>
           </details>
         </div>
-        {h.exceptions.length === 0 && h.attention.length === 0 ? <p className="small muted">{t("Nada se desvió de lo esperado.", "Nothing deviated from what was expected.")}</p> : (
+        {h.exceptions.length === 0 && h.attention.length === 0 ? <p className="small muted"><span className="sig ok">{t("Nada se desvió de lo esperado.", "Nothing deviated from what was expected.")}</span></p> : (
           <>
             {h.exceptions.map((e) => {
               const areas = readAreas(e.impactAreas); const opts = readOptions(e.options);
@@ -114,7 +114,7 @@ export default async function OpsHomePage({ searchParams }: { searchParams: Prom
       <section className="card" data-zone="risk" id="promesas">
         <b>{t("PROMESA AL CLIENTE EN RIESGO", "CUSTOMER PROMISE AT RISK")}</b>
         <p className="src">{t(`La promesa al cliente se compara con lo que hoy se espera; la fecha del transportador informa, no reemplaza la promesa. ${h.protectedCount === 1 ? "1 promesa protegida no se lista" : `${h.protectedCount} promesas protegidas no se listan`}.`, `The customer promise is compared with what is expected today; the carrier's date informs, it doesn't replace the promise. ${h.protectedCount === 1 ? "1 protected promise is not listed" : `${h.protectedCount} protected promises are not listed`}.`)}</p>
-        {h.atRisk.length === 0 ? <p className="small muted">{t("Ninguna promesa en riesgo.", "No promise at risk.")}</p> : (
+        {h.atRisk.length === 0 ? <p className="small muted"><span className="sig ok">{t("Ninguna promesa en riesgo.", "No promise at risk.")}</span></p> : (
           <div className="tscroll"><table>
             <thead><tr><th>Journey</th><th>{t("Promesa", "Promise")}</th><th>{t("Esperado hoy", "Expected today")}</th><th>{t("Lectura", "Reading")}</th></tr></thead>
             <tbody>{h.atRisk.map((p) => <tr key={p.deal.id}><td className="small">{dealLabel(p.deal)}<span className="src block">{p.deal.title}</span></td><td className="mono small">{i.day(p.promise)}</td><td className="mono small">{p.expected ? i.day(p.expected) : "—"}</td><td><span className={`sig ${tone[p.health]}`}>{word[p.health]}</span><span className="src block">{t(p.reason.es, p.reason.en)}</span></td></tr>)}</tbody>

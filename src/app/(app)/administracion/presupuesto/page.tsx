@@ -32,7 +32,7 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
       {!all && <p className="small muted">{t("Ves los presupuestos de los que eres responsable.", "You see the budgets you own.")}</p>}
 
-      {rows.length === 0 ? <div className="card"><p className="small muted">{t("No hay presupuestos todavía.", "There are no budgets yet.")} {ger ? t("Crea el primero abajo.", "Create the first one below.") : t("Los asignan Gerencia o Finanzas.", "Management or Finance assign them.")}</p></div> : rows.map((b) => {
+      {rows.length === 0 ? <div className="card"><p className="small muted">{t("No hay presupuestos todavía.", "There are no budgets yet.")} {ger ? <a href="#nuevo">{t("Crear el primero", "Create the first one")} →</a> : t("Los asignan Gerencia o Finanzas.", "Management or Finance assign them.")}</p></div> : rows.map((b) => {
         const v = b.view;
         const editable = !b.closedAt && (all || b.ownerId === user.id);
         return (

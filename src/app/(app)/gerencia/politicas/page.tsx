@@ -48,7 +48,7 @@ export default async function OversightPage({ searchParams }: { searchParams: Pr
       </section>
 
       <section className="card" id="aprobaciones"><b>{t("APROBACIONES DEL NIVEL MÁS ALTO, 90 DÍAS", "HIGHEST-LEVEL APPROVALS, 90 DAYS")}</b>
-        {o.approvals.length === 0 ? <p className="small muted">{t("Ninguna en 90 días.", "None in 90 days.")}</p> : (
+        {o.approvals.length === 0 ? <p className="small muted">{t("Ninguna en 90 días.", "None in 90 days.")} <a href="#pendientes">{t("Ver las que esperan decisión", "See those awaiting a decision")} →</a></p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Cuándo", "When")}</th><th>{t("Qué", "What")}</th><th className="n">{t("Valor", "Amount")}</th><th>{t("Quién aprobó", "Approved by")}</th></tr></thead>
             <tbody>{o.approvals.map((a) => <tr key={a.key}><td className="small">{i.date(a.at)}</td><td><Link href={a.href}>{t(a.what.es, a.what.en)}</Link></td><td className="n mono">{a.usd != null ? i.money(a.usd) : "—"}</td><td className="small">{a.by}</td></tr>)}</tbody>

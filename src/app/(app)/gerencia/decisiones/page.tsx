@@ -60,7 +60,7 @@ export default async function DecisionsPage({ searchParams }: { searchParams: Pr
       )}
 
       <section className="card" id="registro"><b>{t("REGISTRO DE DECISIONES", "DECISION RECORD")}</b> <span className="small muted">{manager ? "" : t("las que pediste o quedaron a tu cargo", "those you asked for or were left in your care")}</span>
-        {register.length === 0 ? <p className="small muted">{t("Aún no hay decisiones registradas.", "No decisions recorded yet.")}</p> : (
+        {register.length === 0 ? <p className="small muted">{t("Aún no hay decisiones registradas.", "No decisions recorded yet.")} <a href="#pedir">{t("Pedir una decisión", "Ask for a decision")} →</a></p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Decisión", "Decision")}</th><th>{t("Qué se decidió", "What was decided")}</th><th>{t("Autoridad", "Authority")}</th><th>{t("Seguimiento", "Follow-up")}</th><th>{t("Estado", "State")}</th></tr></thead>
             <tbody>{register.map(({ d, s }) => (

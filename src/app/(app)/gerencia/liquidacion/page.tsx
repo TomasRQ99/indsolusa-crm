@@ -45,7 +45,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
 
       <section className="card" id="previa">
         <b>{t("POR APROBAR HOY", "TO APPROVE TODAY")} · <span className="mono">USD {i.n2(p.total)}</span></b>
-        {p.byPerson.length === 0 ? <p className="small muted">{t("No hay comisiones por aprobar en este momento.", "No commissions to approve right now.")}</p> : p.byPerson.map((g) => (
+        {p.byPerson.length === 0 ? <p className="small muted"><span className="sig ok">{t("No hay comisiones por aprobar en este momento.", "No commissions to approve right now.")}</span> <Link href="/gerencia/comisiones">{t("Ver las comisiones", "See the commissions")} →</Link></p> : p.byPerson.map((g) => (
           <div key={g.userId} style={{ marginTop: 10 }}><span className="k">{g.userName} · <span className="mono">USD {i.n2(g.total)}</span></span><span style={{ display: "block", maxWidth: 420 }}><span className="vz-cell left"><i className="attn" style={{ width: `${Math.max(2, (g.total / Math.max(1, ...p.byPerson.map((x) => x.total))) * 100)}%` }} title={`${g.userName}: USD ${i.n2(g.total)}`} /></span></span><Lines ls={g.lines} /></div>
         ))}
         {p.own > 0 && <p className="note attn">{t(`${p.own} línea(s) tuyas por USD ${i.n2(p.ownAmount)} no entran: nadie aprueba sus propias comisiones. Las aprueba otra persona de Gerencia o Dirección Comercial.`, `${p.own} line(s) of your own for USD ${i.n2(p.ownAmount)} are left out: nobody approves their own commissions. Another person in Management or Sales Direction approves them.`)}</p>}
@@ -60,7 +60,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
 
       <section className="card" id="corridas">
         <b>{t("LIQUIDACIONES", "SETTLEMENTS")}</b>
-        {runs.length === 0 ? <p className="small muted">{t("Aún no se ha aprobado ninguna.", "None approved yet.")}</p> : runs.map((r) => { const ls = (r.lines as unknown as RunLine[]).filter((l) => manager || canPay || l.userId === user.id); return (
+        {runs.length === 0 ? <p className="small muted">{t("Aún no se ha aprobado ninguna.", "None approved yet.")} <a href="#previa">{t("Ver lo que está por aprobar", "See what is to approve")} →</a></p> : runs.map((r) => { const ls = (r.lines as unknown as RunLine[]).filter((l) => manager || canPay || l.userId === user.id); return (
           <details key={r.id} className="qa" style={{ marginTop: 8 }} open={r.status === "APPROVED"}>
             <summary className="qa-btn"><span className="mono">{r.period}</span>{r.version > 1 ? ` · ${t(`corrida ${r.version}`, `run ${r.version}`)}` : ""} · <span className="mono">USD {i.n2(Number(r.total))}</span> · {r.status === "PAID" ? <span className="sig ok">{t("Pagada", "Paid")}</span> : <span className="sig attn">{t("Aprobada, sin pagar", "Approved, not paid")}</span>}</summary>
             <p className="small">{t("Aprobó", "Approved by")} {r.approvedByName} · {i.day(r.approvedAt)}{r.paidAt ? ` · ${t("pagó", "paid by")} ${r.paidByName} · ${i.day(r.paidAt)} · ${r.payrollRef}` : ""}</p>

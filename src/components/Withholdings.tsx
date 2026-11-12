@@ -14,7 +14,7 @@ export async function Withholdings({ accountId, lang, canRecord, canVoid, open, 
   const rows = await db.customerPayment.findMany({ where: { kind: "WITHHOLDING", ...(accountId ? { accountId } : {}) }, orderBy: { receivedAt: "desc" }, take: 60, include: { account: { select: { name: true } }, applications: { select: { invoice: { select: { number: true } } } }, createdBy: { select: { name: true } } } });
   const byType = Object.keys(WITHHOLDING_TYPES).map((k) => ({ k, total: sumMoney(rows.filter((r) => r.withholdingType === k).map((r) => r.amount)) })).filter((x) => x.total > 0);
   const tn = (k: string | null) => (k && WITHHOLDING_TYPES[k] ? t(WITHHOLDING_TYPES[k].es, WITHHOLDING_TYPES[k].en) : "—");
-  if (!rows.length && !(canRecord && open?.length)) return heading ? null : <p className="small muted">{t("Sin retenciones registradas.", "No withholdings recorded.")}</p>;
+  if (!rows.length && !(canRecord && open?.length)) return heading ? null : <p className="small muted">{t("Sin retenciones registradas. Se registran aquí cuando el cliente tenga una factura abierta.", "No withholdings recorded. They are recorded here once the customer has an open invoice.")}</p>;
 
   return (
     <section className={heading ? "card" : undefined} id="retenciones">

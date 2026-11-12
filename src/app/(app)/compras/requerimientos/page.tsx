@@ -88,7 +88,7 @@ export default async function PrListPage({ searchParams }: { searchParams: Promi
             </div>
           </details>
         </div>
-        {rows.length === 0 ? <p className="small muted">{t("Aún no hay requerimientos. Nacen al preparar una compra desde un Journey con PO aceptada.", "No requirements yet. They are created when a purchase is prepared from a Journey with an accepted PO.")}</p> : (
+        {rows.length === 0 ? <p className="small muted">{t("Aún no hay requerimientos. Nacen al preparar una compra desde un Journey con PO aceptada.", "No requirements yet. They are created when a purchase is prepared from a Journey with an accepted PO.")} <Link href="/deals">{t("Abrir Journeys", "Open Journeys")} →</Link></p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Requerimiento", "Requirement")}</th><th>{t("Para qué", "Purpose")}</th><th className="n">{t("Total previsto", "Expected total")}</th><th className="n">{t("Sin asignar", "Unassigned")}</th><th>{t("Lectura", "Reading")}</th><th>{t("Orden", "Order")}</th></tr></thead>
             <tbody>{rows.map(({ pr, r, tot, ex, spo }) => (

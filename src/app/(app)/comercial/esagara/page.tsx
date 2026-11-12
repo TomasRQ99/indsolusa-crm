@@ -64,7 +64,7 @@ export default async function EsagaraPage({ searchParams }: { searchParams: Prom
       {approver && (
         <section className="card" id="cola">
           <b>{t("Esperando tu decisión", "Waiting for your decision")}</b>
-          {waiting.length === 0 ? <p className="small muted">{t("No hay solicitudes esperando.", "No requests waiting.")}</p> : waiting.map((e) => {
+          {waiting.length === 0 ? <p className="small muted"><span className="sig ok">{t("No hay solicitudes esperando.", "No requests waiting.")}</span></p> : waiting.map((e) => {
             const s = e.snapshot as unknown as Snap;
             const now = gateOf(saleOf(e.quote.lines), costOf(e.quote), pol.value);
             const moved = Math.abs(now.sale - Number(e.saleAmount)) > 0.005 || Math.abs((now.pct ?? 0) - Number(e.esagaraPct)) > 0.005;
@@ -140,7 +140,7 @@ export default async function EsagaraPage({ searchParams }: { searchParams: Prom
         <section className="card" id="patron">
           <b>{t("Aprobadas en los últimos 90 días, por cliente", "Approved in the last 90 days, by customer")}</b>
           <p className="src">{t("Para ver dónde se está regalando Eságara de forma repetida. Es un patrón de la empresa, no una calificación de personas.", "To see where Eságara is being given away repeatedly. It's a company pattern, not a rating of people.")}</p>
-          {byAccount.size === 0 ? <p className="small muted">{t("Ninguna en este periodo.", "None in this period.")}</p> : (
+          {byAccount.size === 0 ? <p className="small muted"><span className="sig ok">{t("Ninguna en este periodo.", "None in this period.")}</span></p> : (
             <div className="tscroll"><table>
               <thead><tr><th>{t("Cliente", "Customer")}</th><th className="n">{t("Excepciones", "Exceptions")}</th><th className="n">{t("Venta", "Sale")}</th><th className="n">{t("Eságara media", "Average Eságara")}</th><th>{t("Razones", "Reasons")}</th></tr></thead>
               <tbody>{[...byAccount.entries()].sort((a, b) => b[1].rows.length - a[1].rows.length).map(([id, g]) => {

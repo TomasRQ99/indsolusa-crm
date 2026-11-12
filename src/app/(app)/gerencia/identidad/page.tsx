@@ -35,7 +35,7 @@ export default async function IdentityPage({ searchParams }: { searchParams: Pro
       <div className="ph"><div><h1>{t("Identidad de la compañía", "Company identity")}</h1><p>{t("Para qué existimos, qué ofrecemos y cómo nos comportamos. Es el punto de partida de cada función y de cada rol.", "Why we exist, what we offer and how we behave. It is the starting point of every function and every role.")}</p></div></div>
       <Notes sp={sp} ok={ok} err={err} />
 
-      {!cur ? <div className="card"><p className="small muted">{t("Aún no hay una identidad vigente.", "No identity is in force yet.")}</p></div> : (
+      {!cur ? <div className="card"><p className="small muted">{t("Aún no hay una identidad vigente.", "No identity is in force yet.")} <a href="#publicar">{t("Publicar la identidad", "Publish the identity")} →</a></p></div> : (
         <section className="card gm-idn" id="vigente">
           <span className="small muted">{t("Propósito", "Purpose")}</span>
           <h2>{cur.purpose}</h2>

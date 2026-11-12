@@ -52,7 +52,7 @@ export default async function AuthorityPage({ searchParams }: { searchParams: Pr
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
 
       <section className="card"><b>{t("VIGENTES Y PRÓXIMAS", "IN FORCE AND UPCOMING")} · {live.length}</b>
-        {live.length === 0 ? <p className="small muted">{t("Ninguna.", "None.")}</p> : <ul className="plain small">{live.map(line)}</ul>}
+        {live.length === 0 ? <p className="small muted">{t("Ninguna.", "None.")} <a href="#nueva">{t("Ir al formulario para prestar autoridad", "Go to the form to lend authority")} →</a></p> : <ul className="plain small">{live.map(line)}</ul>}
       </section>
       {past.length > 0 && <section className="card"><b>{t("ANTERIORES", "EARLIER")} · {past.length}</b><ul className="plain small">{past.map(line)}</ul></section>}
 

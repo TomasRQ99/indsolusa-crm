@@ -48,7 +48,7 @@ export default async function ImprovementPage({ searchParams }: { searchParams: 
 
       <section className="card" id="sugerencias">
         <b>{t("Dónde mejorar", "Where to improve")}</b>
-        {sugg.length === 0 ? <p className="small muted">{t("Ningún paso empeoró frente a tu propia historia (o aún hay pocos datos).", "No step got worse against your own history (or there's still little data).")}</p> : <ul className="mk-ul">{sugg.map((k) => <li key={k}><b>{t(STEP_TEXT[k].es, STEP_TEXT[k].en)}:</b> {t(STEP_TEXT[k].worse.es, STEP_TEXT[k].worse.en)}</li>)}</ul>}
+        {sugg.length === 0 ? <p className="small muted"><span className="sig ok">{t("Ningún paso empeoró frente a tu propia historia (o aún hay pocos datos).", "No step got worse against your own history (or there's still little data).")}</span></p> : <ul className="mk-ul">{sugg.map((k) => <li key={k}><b>{t(STEP_TEXT[k].es, STEP_TEXT[k].en)}:</b> {t(STEP_TEXT[k].worse.es, STEP_TEXT[k].worse.en)}</li>)}</ul>}
         {wins.length > 0 && <><b className="small" style={{ display: "block", marginTop: 8 }}>{t("Lo que va mejor", "What's going better")}</b><ul className="mk-ul small">{wins.map((k) => <li key={k}>{t(STEP_TEXT[k].better.es, STEP_TEXT[k].better.en)}</li>)}</ul></>}
       </section>
 

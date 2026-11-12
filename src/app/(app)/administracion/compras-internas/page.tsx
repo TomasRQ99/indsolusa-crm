@@ -40,15 +40,15 @@ export default async function InternalPurchasesPage({ searchParams }: { searchPa
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
 
       <section className="card" id="decidir"><b>{t("ESPERAN TU DECISIÓN", "AWAITING YOUR DECISION")} · {toDecide.length}</b>
-        {toDecide.length === 0 ? <p className="small muted">{t("Nada por ahora.", "Nothing for now.")}</p> : <ul className="plain small">{toDecide.map(({ p, a }) => <li key={p.id}><Link href={`/administracion/compras-internas/${p.id}`}><b>{p.code}</b> · {p.description}</Link> · <span className="mono">{p.currency} {i.n2(p.amount)}</span> · {p.requester.name}{a.check.exception ? <span className="sig risk"> {t(a.check.why!.es, a.check.why!.en)}</span> : null}{a.fromName ? <span className="sig wait"> {t(`con autoridad prestada por ${a.fromName}`, `with authority lent by ${a.fromName}`)}</span> : null}</li>)}</ul>}
+        {toDecide.length === 0 ? <p className="small muted"><span className="sig ok">{t("Nada por ahora.", "Nothing for now.")}</span></p> : <ul className="plain small">{toDecide.map(({ p, a }) => <li key={p.id}><Link href={`/administracion/compras-internas/${p.id}`}><b>{p.code}</b> · {p.description}</Link> · <span className="mono">{p.currency} {i.n2(p.amount)}</span> · {p.requester.name}{a.check.exception ? <span className="sig risk"> {t(a.check.why!.es, a.check.why!.en)}</span> : null}{a.fromName ? <span className="sig wait"> {t(`con autoridad prestada por ${a.fromName}`, `with authority lent by ${a.fromName}`)}</span> : null}</li>)}</ul>}
       </section>
 
       <section className="card" id="mias"><b>{t("LAS QUE PEDÍ, EN CURSO", "MY REQUESTS IN PROGRESS")} · {mine.length}</b>
-        {mine.length === 0 ? <p className="small muted">{t("Ninguna.", "None.")}</p> : <ul className="plain small">{mine.map((p) => row(p))}</ul>}
+        {mine.length === 0 ? <p className="small muted">{t("Ninguna.", "None.")} <a href="#pedir">{t("Pedir una compra interna", "Request an internal purchase")} →</a></p> : <ul className="plain small">{mine.map((p) => row(p))}</ul>}
       </section>
 
       {all && <section className="card" id="todas"><b>{t("TODAS", "ALL")}</b>
-        {open.length + done.length === 0 ? <p className="small muted">{t("Aún no hay compras internas.", "No internal purchases yet.")}</p> : <ul className="plain small">{[...open, ...done].map((p) => row(p, p.requester.name))}</ul>}
+        {open.length + done.length === 0 ? <p className="small muted">{t("Aún no hay compras internas.", "No internal purchases yet.")} <a href="#pedir">{t("Pedir una compra interna", "Request an internal purchase")} →</a></p> : <ul className="plain small">{[...open, ...done].map((p) => row(p, p.requester.name))}</ul>}
       </section>}
 
       <section className="card" id="pedir">

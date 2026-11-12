@@ -83,7 +83,7 @@ export default async function VisitsPage({ searchParams }: { searchParams: Promi
             </div>
           </details>
         </div>
-        {upcoming.length === 0 ? <p className="small muted">{t("No tienes visitas planeadas.", "You have no planned visits.")}</p> : (
+        {upcoming.length === 0 ? <p className="small muted">{t("No tienes visitas planeadas.", "You have no planned visits.")} {t("Usa «+ Planear visita», aquí arriba.", "Use “+ Planear visita”, just above.")}</p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Fecha", "Date")}</th><th>{t("Cliente", "Customer")}</th><th>{t("Objetivos", "Objectives")}</th><th>{t("Misión", "Mission")}</th></tr></thead>
             <tbody>{upcoming.map((v) => (
@@ -100,7 +100,7 @@ export default async function VisitsPage({ searchParams }: { searchParams: Promi
 
       <section className="card" id="compromisos">
         <b>{t("Compromisos abiertos de visitas", "Open commitments from visits")}</b>
-        {owed.length === 0 ? <p className="small muted">{t("Nada pendiente.", "Nothing pending.")}</p> : (
+        {owed.length === 0 ? <p className="small muted"><span className="sig ok">{t("Nada pendiente.", "Nothing pending.")}</span></p> : (
           <ul className="mk-ul">{owed.map((c) => <li key={c.id}><span className={`sig ${c.side === "US" ? "attn" : "wait"}`}>{c.side === "US" ? t("Nosotros", "Us") : t("Cliente", "Customer")}</span> {c.what} · <Link href={`/visitas/${c.visit.id}`}>{c.visit.account.name}</Link>{c.dueAt && <span className={late(c.dueAt) ? "risk-t" : "muted"}> · {i.day(c.dueAt)}</span>}</li>)}</ul>
         )}
       </section>
@@ -128,7 +128,7 @@ export default async function VisitsPage({ searchParams }: { searchParams: Promi
             </div>
           </details>
         </div>
-        {missions.length === 0 ? <p className="small muted">{t("Sin misiones recientes. Una misión agrupa varias visitas de un mismo viaje.", "No recent missions. A mission groups several visits on one trip.")}</p> : missions.map((m) => (
+        {missions.length === 0 ? <p className="small muted">{t("Sin misiones recientes. Una misión agrupa varias visitas de un mismo viaje.", "No recent missions. A mission groups several visits on one trip.")} {t("Usa «+ Nueva misión», aquí arriba.", "Use “+ Nueva misión”, just above.")}</p> : missions.map((m) => (
           <article key={m.id} className="exc-item">
             <header className="exc-head"><b><Link href={`/visitas/mision/${m.id}`}>{m.title}</Link></b> · {m.destination} · <span className="mono small">{i.day(m.startDate)} – {i.day(m.endDate)}</span><span className="grow" />
               {m.budgetStatus !== "NOT_REQUESTED" && <span className={`sig ${(BUDGET_STATUS[m.budgetStatus] ?? BUDGET_STATUS.REQUESTED).tone}`}>{t((BUDGET_STATUS[m.budgetStatus] ?? BUDGET_STATUS.REQUESTED).es, (BUDGET_STATUS[m.budgetStatus] ?? BUDGET_STATUS.REQUESTED).en)}{m.budgetAmount ? ` · ${i.money(m.budgetApproved ?? m.budgetAmount)}` : ""}</span>}

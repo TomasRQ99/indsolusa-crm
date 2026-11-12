@@ -57,7 +57,7 @@ export default async function ExperiencesPage({ searchParams }: { searchParams: 
         </details>
       </section>
 
-      {rows.length === 0 && <section className="card"><p className="small muted">{q ? t("Nada con esa búsqueda.", "Nothing for that search.") : t("Aún no hay experiencias registradas.", "No experiences recorded yet.")}</p></section>}
+      {rows.length === 0 && <section className="card"><p className="small muted">{q ? t("Nada con esa búsqueda.", "Nothing for that search.") : t("Aún no hay experiencias registradas. Usa «+ Registrar experiencia», aquí arriba.", "No experiences recorded yet. Use “+ Registrar experiencia”, just above.")}</p></section>}
       {rows.map((e) => {
         const checks = (e.checks ?? {}) as Record<string, { by: string; at: string }>;
         const rd = readiness({ eligibility: e.eligibility, draft: e.draft, checks, customerApproval: e.customerApproval });

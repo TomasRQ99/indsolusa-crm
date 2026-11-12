@@ -87,9 +87,9 @@ export default async function MyRolePage({ searchParams }: { searchParams: Promi
         </div>
       </section>
 
-      <section className="card eq-block" id="compania">
+      <section className="card eq-block" id="compania" data-zone="plan">
         <div className="eq-h"><span className="n">1</span><b>{t("Nuestra compañía", "Our company")}</b>{idn ? <span className="src">{t("identidad", "identity")} v{idn.version} · {t("rige desde", "in force since")} {i.date(idn.effectiveFrom)}</span> : null}<span className="grow" /><Link className="small" href="/gerencia/identidad">{t("Ver la identidad completa", "See the full identity")}</Link></div>
-        {!idn ? <p className="small muted">{t("Aún no hay una identidad publicada.", "No identity has been published yet.")}</p> : (
+        {!idn ? <p className="small muted">{t("Aún no hay una identidad publicada.", "No identity has been published yet.")} <Link href="/gerencia/identidad">{t("Abrir Identidad", "Open Identity")} →</Link></p> : (
           <>
             <p style={{ fontSize: 16, margin: "4px 0" }}><b>{idn.purpose}</b> <span className="muted">· {idn.slogan}</span></p>
             <p className="small gm-pre">{idn.valueProposition}</p>
@@ -102,7 +102,7 @@ export default async function MyRolePage({ searchParams }: { searchParams: Promi
         )}
       </section>
 
-      <section className="card eq-block" id="funcion">
+      <section className="card eq-block" id="funcion" data-zone="plan">
         <div className="eq-h"><span className="n">2</span><b>{t("Mi función", "My function")}{fn ? `: ${tx(fn)}` : ""}</b>{charter ? <span className="src">{t("carta", "charter")} v{charter.version} · {t("rige desde", "in force since")} {i.date(charter.effectiveFrom)}</span> : null}<span className="grow" /><Link className="small" href={`/gerencia/funciones${v.functionKey ? `#f-${v.functionKey}` : ""}`}>{t("Ver la carta de la función", "See the function charter")}</Link></div>
         {!fn ? <p className="small muted">{t("Sin función asignada.", "No function assigned.")}</p> : (
           <>
@@ -118,11 +118,11 @@ export default async function MyRolePage({ searchParams }: { searchParams: Promi
         )}
       </section>
 
-      <section className="card eq-block" id="rol">
+      <section className="card eq-block" id="rol" data-zone="flow">
         <div className="eq-h"><span className="n">3</span><b>{t("Mi rol", "My role")}{p ? `: ${p.title}` : ""}</b>
           {v.profileRow ? <span className="src" id="version">{t("acuerdo de rol", "role agreement")} v{v.profileRow.version} · {t("rige desde", "in force since")} {i.date(v.profileRow.effectiveFrom)} · {v.profileRow.publishedByName}</span> : null}
           <span className="grow" />{p ? <Link className="small" href={`/equipo/roles/${p.roleKey}`}>{t("Ver versiones", "See versions")}</Link> : null}</div>
-        {!p ? <p className="small muted">{t("Sin acuerdo de rol vigente.", "No role agreement in force.")}{a ? <> {t("Cargo registrado", "Recorded title")}: <b>{a.contractualTitle}</b>.</> : null} {t("Rol de acceso en SOLU", "Access role in SOLU")}: {tx(ROLE_LABEL[v.person.role])}.</p> : (
+        {!p ? <p className="small muted">{t("Sin acuerdo de rol vigente.", "No role agreement in force.")}{a ? <> {t("Cargo registrado", "Recorded title")}: <b>{a.contractualTitle}</b>.</> : null} {t("Rol de acceso en SOLU", "Access role in SOLU")}: {tx(ROLE_LABEL[v.person.role])}. <Link href="/equipo/roles">{t("Abrir Acuerdos de rol", "Open Role agreements")} →</Link></p> : (
           <>
             <p className="small">{a?.level ? <><b>{t("Nivel", "Level")}:</b> {a.level} · </> : null}{a?.leader ? <><b>{t("Líder", "Leader")}:</b> {a.leader.name} · </> : null}{a ? <>{t("desde", "since")} {i.date(a.effectiveFrom)}{a.effectiveTo ? ` ${t("hasta", "until")} ${i.date(a.effectiveTo)}` : ""}</> : null}
               {v.agreedVersion != null && v.profileRow && v.agreedVersion !== v.profileRow.version ? <span className="src block">{t(`Se asignó bajo la versión ${v.agreedVersion}; hoy rige la ${v.profileRow.version}. Ambas quedan en la historia.`, `Assigned under version ${v.agreedVersion}; version ${v.profileRow.version} is in force today. Both stay in the history.`)}</span> : null}</p>
@@ -156,7 +156,7 @@ export default async function MyRolePage({ searchParams }: { searchParams: Promi
         )}
       </section>
 
-      <section className="card eq-block" id="como">
+      <section className="card eq-block" id="como" data-zone="plan">
         <div className="eq-h"><span className="n">4</span><b>{t("Cómo se espera que lo haga", "How I am expected to do it")}</b></div>
         {!p ? <p className="small muted">{t("Se muestra cuando haya un acuerdo de rol.", "Shown once there is a role agreement.")}</p> : (
           <>
@@ -170,7 +170,7 @@ export default async function MyRolePage({ searchParams }: { searchParams: Promi
         )}
       </section>
 
-      <section className="card eq-block" id="voy-bien">
+      <section className="card eq-block" id="voy-bien" data-zone="calm">
         <div className="eq-h"><span className="n">5</span><b>{t("Cómo sé si voy bien", "How I know I am doing well")}</b></div>
         {v.goals ? (
           <>
@@ -196,7 +196,7 @@ export default async function MyRolePage({ searchParams }: { searchParams: Promi
         )}
       </section>
 
-      <section className="card eq-block" id="crecer">
+      <section className="card eq-block" id="crecer" data-zone="flow">
         <div className="eq-h"><span className="n">6</span><b>{t("Cómo puedo crecer", "How I can grow")}</b><span className="grow" /><Link className="small" href={`/equipo/desarrollo${qp(personId, user.id)}`}>{self ? t("Mi desarrollo", "My development") : t("Su desarrollo", "Their development")}</Link></div>
         <p className="small muted">{t("El desarrollo empieza por el SER, se expresa en el HACER y se refleja en el TENER.", "Development starts with BEING, is expressed in DOING and shows in HAVING.")}</p>
         {p && p.careerLevels.length > 0 && (

@@ -73,7 +73,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
 
       <section className="card" id="lotes">
         <b>{t("LOTES EN BODEGA", "LOTS IN THE WAREHOUSE")}</b>
-        {lots.filter((l) => !LOT_STATES[l.state]?.blocked).length === 0 ? <p className="small muted">{t("Nada comprometido ni disponible por ahora.", "Nothing committed or available for now.")}</p> : (
+        {lots.filter((l) => !LOT_STATES[l.state]?.blocked).length === 0 ? <p className="small muted">{t("Nada comprometido ni disponible por ahora.", "Nothing committed or available for now.")} <Link href="/compras">{t("Abrir Compras", "Open Purchases")} →</Link></p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Lote", "Lot")}</th><th>{t("Estado", "State")}</th><th>{t("Para", "For")}</th><th>{t("Salida", "Out")}</th></tr></thead>
             <tbody>{lots.filter((l) => !LOT_STATES[l.state]?.blocked).map((l) => (
