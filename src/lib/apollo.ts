@@ -9,15 +9,15 @@ import { db } from "@/lib/db";
 //   phone, which SOLU never asks for). Returns the full name, work email, LinkedIn and the employer.
 // - The key travels only in the x-api-key header. Parameters go in the query string, arrays as name[]=.
 // The key lives only in the APOLLO_API_KEY environment variable (Render → Environment). Without it this is off.
-// SOLU keeps its own count of credits (ApolloUsage) and stops revealing at APOLLO_MONTHLY_CREDITS (default 50);
+// SOLU keeps its own count of credits (ApolloUsage) and stops revealing at APOLLO_MONTHLY_CREDITS (default 90, the free plan the company uses since 2026-11-12);
 // Apollo's own count is the one that bills.
 
 export const apolloConfigured = () => !!process.env.APOLLO_API_KEY;
 /** Test-only override so automated tests talk to a fake Apollo. Never honoured in production. */
 const base = () => (process.env.NODE_ENV !== "production" && process.env.APOLLO_API_BASE) || "https://api.apollo.io";
 export const apolloMonthlyCap = () => {
-  const v = Number(process.env.APOLLO_MONTHLY_CREDITS ?? "50");
-  return Number.isFinite(v) && v >= 0 ? Math.floor(v) : 50;
+  const v = Number(process.env.APOLLO_MONTHLY_CREDITS ?? "90");
+  return Number.isFinite(v) && v >= 0 ? Math.floor(v) : 90;
 };
 
 export async function apolloCreditsThisMonth() {
@@ -28,7 +28,7 @@ export async function apolloCreditsThisMonth() {
 }
 
 /** Why Apollo did not answer, in words a person can act on. */
-export type ApolloError = "off" | "key" | "plan" | "rate" | "cap" | "down" | "notfound";
+export type ApolloError = "off" | "key" | "plan" | "rate" | "cap" | "credits" | "down" | "notfound";
 
 export const SENIORITIES = ["owner", "founder", "c_suite", "partner", "vp", "head", "director", "manager", "senior", "entry"] as const;
 export const SIZES = ["1,50", "51,200", "201,1000", "1001,5000", "5001,1000000"] as const;
@@ -45,7 +45,7 @@ export type PeopleFilters = {
   page: number;
 };
 export type PersonHit = { id: string; firstName: string; lastMasked: string; title: string | null; orgName: string | null; hasEmail: boolean; hasPhone: boolean; refreshedAt: string | null };
-export type PeopleResult = { ok: true; total: number; page: number; perPage: number; people: PersonHit[] } | { ok: false; error: ApolloError };
+export type PeopleResult = { ok: true; total: number; page: number; perPage: number; people: PersonHit[] } | { ok: false; error: ApolloError; said?: string };
 
 const PER_PAGE = 25;
 
@@ -60,7 +60,14 @@ async function call(path: string, params: URLSearchParams): Promise<{ status: nu
   try { json = await res.json(); } catch {}
   return { status: res.status, json };
 }
-const errorOf = (status: number): ApolloError => (status === 401 ? "key" : status === 403 ? "plan" : status === 429 ? "rate" : "down");
+/** What Apollo itself wrote in an error answer, shortened. It is shown as Apollo's words, never as SOLU's. */
+function saidBy(json: unknown): string {
+  const j = (json ?? {}) as { error?: unknown; message?: unknown; error_details?: { message?: unknown } };
+  const s = [j.error_details?.message, j.error, j.message].find((x) => typeof x === "string" && x.trim());
+  return typeof s === "string" ? s.replace(/\s+/g, " ").trim().slice(0, 200) : "";
+}
+const errorOf = (status: number, said = ""): ApolloError =>
+  status === 401 ? "key" : status === 403 ? "plan" : status === 429 ? "rate" : status === 402 || /insufficient credit|out of credits|credit limit|not enough credits/i.test(said) ? "credits" : "down";
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
 /** Free search. Nothing is saved: these are Apollo's results, shown as they come. */
@@ -80,8 +87,9 @@ export async function searchPeople(f: PeopleFilters, userName: string): Promise<
   try {
     const { status, json } = await call("/api/v1/mixed_people/api_search", p);
     if (status !== 200 || !json || typeof json !== "object") {
-      await db.apolloUsage.create({ data: { kind: "PEOPLE_SEARCH", ok: false, detail: `HTTP ${status}`, userName } });
-      return { ok: false, error: errorOf(status) };
+      const said = saidBy(json);
+      await db.apolloUsage.create({ data: { kind: "PEOPLE_SEARCH", ok: false, detail: `HTTP ${status}${said ? ` · Apollo: ${said}` : ""}`, userName } });
+      return { ok: false, error: errorOf(status, said), said };
     }
     const j = json as { total_entries?: number; pagination?: { total_entries?: number }; people?: Record<string, unknown>[] };
     const people: PersonHit[] = (Array.isArray(j.people) ? j.people : []).flatMap((x) => {
@@ -122,8 +130,9 @@ export async function revealPerson(apolloId: string, foundWith: string, user: { 
     return { ok: false, error: "down" };
   }
   if (status !== 200) {
-    await db.apolloUsage.create({ data: { kind: "REVEAL", ok: false, detail: `HTTP ${status} · ${apolloId}`, userName: user.name } });
-    return { ok: false, error: errorOf(status) };
+    const said = saidBy(json);
+    await db.apolloUsage.create({ data: { kind: "REVEAL", ok: false, detail: `HTTP ${status} · ${apolloId}${said ? ` · Apollo: ${said}` : ""}`, userName: user.name } });
+    return { ok: false, error: errorOf(status, said) };
   }
   const person = ((json ?? {}) as { person?: Record<string, unknown> | null }).person;
   if (!person || !str(person.first_name)) {

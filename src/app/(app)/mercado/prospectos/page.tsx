@@ -24,6 +24,7 @@ const ERR: Record<string, [string, string]> = {
   plan: ["El plan de Apollo de esta cuenta no permite esta función por API, o la llave no tiene este permiso. Se resuelve en Apollo: crear la llave como «master key» o revisar el plan.", "This account's Apollo plan does not allow this function over the API, or the key lacks this permission. It is solved in Apollo: create the key as a master key or review the plan."],
   rate: ["Apollo pide esperar un momento: se alcanzó su límite de consultas por hora. Conviene intentar de nuevo en unos minutos.", "Apollo asks to wait a moment: its hourly limit was reached. It is worth trying again in a few minutes."],
   cap: ["Se alcanzó el tope de créditos de Apollo de este mes en SOLU. La búsqueda sigue funcionando; revelar personas vuelve el próximo mes o cuando Gerencia suba el tope.", "This month's Apollo credit cap in SOLU was reached. Search still works; revealing people returns next month or when Management raises the cap."],
+  credits: ["Apollo dice que a la cuenta no le quedan créditos para esto. Buscar sigue siendo gratis; revelar vuelve cuando Apollo renueve los créditos del plan.", "Apollo says the account has no credits left for this. Searching stays free; revealing returns when Apollo renews the plan's credits."],
   down: ["Apollo no respondió. No sabemos si alcanzó a recibir la solicitud; conviene esperar un minuto y revisar la lista de prospectos antes de intentar de nuevo.", "Apollo did not respond. We don't know if it received the request; it is worth waiting a minute and checking the prospects list before trying again."],
   notfound: ["Apollo no devolvió datos de esa persona. No se usó ningún crédito.", "Apollo returned no data for that person. No credit was used."],
   permiso: ["Tu rol no puede revelar ni pasar prospectos.", "Your role cannot reveal or pass prospects."],
@@ -70,6 +71,11 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
   const back = qs();
   const found = describeFilters(f);
   const ok = OK[one("ok")], err = ERR[one("err")] ?? (result && !result.ok ? ERR[result.error] : undefined);
+  // Apollo's own words for what just failed: from this search, or from the reveal that sent the person back here.
+  const lastFail = one("err") && !["permiso", "cap", "off"].includes(one("err"))
+    ? await db.apolloUsage.findFirst({ where: { ok: false, userName: user.name, createdAt: { gte: new Date(Date.now() - 120_000) } }, orderBy: { createdAt: "desc" }, select: { detail: true } })
+    : null;
+  const said = (result && !result.ok ? result.said : undefined) || (lastFail?.detail?.includes("Apollo: ") ? lastFail.detail.split("Apollo: ").slice(-1)[0] : "");
   const pages = result?.ok ? Math.min(500, Math.ceil(result.total / result.perPage)) : 0;
 
   return (
@@ -84,7 +90,14 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
       </div>
 
       {ok && <p className="note okn" style={{ marginBottom: 16 }}>{es ? ok[0] : ok[1]}</p>}
-      {err && <p className="note attn" style={{ marginBottom: 16 }}>{es ? err[0] : err[1]}</p>}
+      {err && (
+        <p className="note attn" style={{ marginBottom: 16 }}>
+          <span>
+            {es ? err[0] : err[1]}
+            {said && <span className="src block" style={{ marginTop: 4 }}>{t("Lo que respondió Apollo", "What Apollo answered")}: «{said}»</span>}
+          </span>
+        </p>
+      )}
 
       {!on && (
         <section className="card" data-zone="plan" id="conectar">
@@ -95,7 +108,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
               <li>{t("Crea la cuenta en apollo.io con un correo de la empresa (no Gmail).", "Create the account at apollo.io with a company email (not Gmail).")}</li>
               <li>{t("En Apollo: Settings → Integrations → API Keys → «Create new key». Marca «Set as master key» y copia la llave.", "In Apollo: Settings → Integrations → API Keys → “Create new key”. Tick “Set as master key” and copy the key.")}</li>
               <li>{t("En Render: abre el servicio del CRM → Environment → «Add Environment Variable». Nombre: APOLLO_API_KEY. Valor: la llave. Guarda; Render reinicia solo.", "In Render: open the CRM service → Environment → “Add Environment Variable”. Name: APOLLO_API_KEY. Value: the key. Save; Render restarts by itself.")}</li>
-              <li>{t("Opcional: APOLLO_MONTHLY_CREDITS con el tope de créditos al mes que SOLU puede usar (si no existe, son 50).", "Optional: APOLLO_MONTHLY_CREDITS with the monthly credit cap SOLU may use (50 if it is not set).")}</li>
+              <li>{t("Opcional: APOLLO_MONTHLY_CREDITS con el tope de créditos al mes que SOLU puede usar (si no existe, son 90).", "Optional: APOLLO_MONTHLY_CREDITS with the monthly credit cap SOLU may use (90 if it is not set).")}</li>
               <li>{t("Vuelve a esta pantalla y haz una búsqueda. La llave nunca se escribe en SOLU ni en un chat.", "Come back to this screen and run a search. The key is never typed into SOLU or a chat.")}</li>
             </ol>
           ) : (
