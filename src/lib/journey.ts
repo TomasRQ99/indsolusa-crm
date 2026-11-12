@@ -40,6 +40,18 @@ export type JourneyDeal = Prisma.DealGetPayload<{ include: typeof journeyInclude
 
 export type Tone = "risk" | "move" | "clarity" | "ok" | "wait";
 export type TabKey = "resumen" | "need" | "source" | "quote" | "execute" | "finance" | "file" | "result";
+export type PathKey = "need" | "source" | "quote" | "po" | "purchase" | "pay" | "ship" | "deliver" | "invoice" | "cash" | "result";
+export type PathState = "done" | "now" | "wait" | "risk" | "later" | "gap";
+export type PathStep = { key: PathKey; label: string; tab: TabKey; state: PathState };
+/** What a Journey asks of the person looking at a list, from the few fields a list already has. */
+export function cardAsk(d: { stage: string; nextMove: string | null; nextMoveDate: Date | null; waitingFor: string | null; waitingUntil: Date | null; promisedDate: Date | null; resultAchievedAt: Date | null; deliveries: number }, now: Date): PathState | null {
+  if (d.stage === "LOST") return "later";
+  if (d.resultAchievedAt) return "done";
+  if (d.stage === "WON" && d.promisedDate && d.promisedDate < now && d.deliveries === 0) return "risk";
+  if (d.waitingFor) return d.waitingUntil && d.waitingUntil < now ? "now" : "wait";
+  if (d.nextMove) return d.nextMoveDate && d.nextMoveDate > now ? "later" : "now";
+  return d.stage === "WON" ? null : "now";
+}
 export type Fact = { key: string; text: string; when: Date | null; src: string; uncertain?: boolean; activityId?: string; poId?: string };
 export type Change = { at: Date; what: string; cons?: string };
 export type Doc = { kind: string; title: string; sub: string; href?: string };
@@ -436,7 +448,69 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
     },
   ];
 
+  // ---------- The path (audit 2026-11-12): the life of the order as steps, each with one colour ----------
+  // done = green · now = blue, the one step that is ours to move · wait = amber, someone else has it · risk = red ·
+  // later = grey · gap = a step behind us that was never written down. Only one step is "now", "wait" or "risk".
+  const advanced = ["PROPOSAL", "NEGOTIATION", "WON"].includes(deal.stage);
+  const pays = deal.supplierPos.flatMap((p) => p.payments);
+  const rawSteps: { key: PathKey; es: string; en: string; tab: TabKey; done: boolean; soft?: boolean }[] = [
+    { key: "need", es: "Necesidad", en: "Need", tab: "need", done: !!deal.desiredResult, soft: true },
+    { key: "source", es: "Fuente", en: "Source", tab: "source", done: deal.supplierPos.length > 0 || Number(deal.supplierCost) > 0 || !!deal.sourcingNote, soft: true },
+    { key: "quote", es: "Cotización", en: "Quote", tab: "quote", done: !!deal.quoteSentAt || deal.stage === "NEGOTIATION" || won, soft: true },
+    { key: "po", es: "OC del cliente", en: "Customer PO", tab: "quote", done: !!deal.poAcceptedAt || won },
+    { key: "purchase", es: "Compra", en: "Purchase", tab: "execute", done: deal.supplierPos.length > 0 && deal.supplierPos.every((p) => !!p.confirmedAt) },
+    { key: "pay", es: "Pago al proveedor", en: "Supplier payment", tab: "finance", done: pays.length > 0 && pays.every((p) => !!p.executedAt), soft: pays.length === 0 },
+    { key: "ship", es: "Envío", en: "Shipment", tab: "execute", done: allReceived || fullyDelivered },
+    { key: "deliver", es: "Entrega", en: "Delivery", tab: "execute", done: fullyDelivered },
+    { key: "invoice", es: "Factura", en: "Invoice", tab: "finance", done: fullyInvoiced },
+    { key: "cash", es: "Cobro", en: "Collection", tab: "finance", done: fullyCollected },
+    { key: "result", es: "Resultado", en: "Result", tab: "result", done: !!deal.resultAchievedAt },
+  ];
+  const laterDone = (n: number) => rawSteps.slice(n + 1).some((s) => s.done);
+  // A step behind us that later facts prove happened, but nobody wrote down here: shown as a gap, never as the live step.
+  const goodsMoved = allReceived || fullyDelivered || deal.deliveries.length > 0;
+  const implied = (s: (typeof rawSteps)[number], n: number) => (s.soft && laterDone(n)) || (s.key === "purchase" && goodsMoved);
+  const over = lost || !!deal.closedAt || deal.resultState === "NO_LONGER_RELEVANT";
+  const curIdx = over ? -1 : rawSteps.findIndex((s, n) => !s.done && !implied(s, n));
+  const curState: PathState = forward.mode === "wait" && !forward.late ? "wait" : "now";
+  // What each step needs to be done, in plain words: this is what the blue box says.
+  const NEEDS: Record<PathKey, [string, string]> = {
+    need: ["Escribir el resultado que busca el cliente", "Write down the result the customer wants"],
+    source: ["Registrar la fuente y su costo", "Record the source and its cost"],
+    quote: ["Enviar la cotización al cliente", "Send the quote to the customer"],
+    po: ["Recibir y aceptar la OC del cliente", "Receive and accept the customer PO"],
+    purchase: ["Emitir la compra y confirmarla con el proveedor", "Issue the purchase and confirm it with the supplier"],
+    pay: ["Ejecutar el pago al proveedor", "Execute the supplier payment"],
+    ship: ["Recibir la mercancía del proveedor", "Receive the goods from the supplier"],
+    deliver: ["Entregar al cliente", "Deliver to the customer"],
+    invoice: ["Facturar lo entregado", "Invoice what was delivered"],
+    cash: ["Cobrar y conciliar el pago", "Collect and reconcile the payment"],
+    result: ["Confirmar con el cliente que logró su resultado", "Confirm with the customer that they achieved the result"],
+  };
+  const idxOf = (k: PathKey) => rawSteps.findIndex((s) => s.key === k);
+  // A risk sits on the step it belongs to, which is not always the step that is ours now (same order as the signal).
+  let riskIdx = -1;
+  if (!over && signal.tone === "risk") {
+    if (deal.recoveries.length || deal.resultState === "NOT_ACHIEVED") riskIdx = idxOf("result");
+    else if (promisePast || (gapDays != null && gapDays > 0 && !expected.done)) riskIdx = curIdx >= idxOf("purchase") && curIdx <= idxOf("deliver") ? curIdx : idxOf("deliver");
+    else if (overdueInv.length) riskIdx = idxOf("cash");
+  }
+  const path = {
+    over, lost, closed: !!deal.closedAt || deal.resultState === "NO_LONGER_RELEVANT",
+    current: curIdx >= 0 ? {
+      key: rawSteps[curIdx].key, state: curState, tab: rawSteps[curIdx].tab, label: t(rawSteps[curIdx].es, rawSteps[curIdx].en),
+      what: t(...NEEDS[rawSteps[curIdx].key]),
+      noted: forward.mode === "wait" ? t(`Esperando: ${forward.what}${forward.date ? ` · revisar el ${i.day(forward.date)}` : ""}`, `Waiting: ${forward.what}${forward.date ? ` · check on ${i.day(forward.date)}` : ""}`)
+        : forward.mode === "move" ? t(`Siguiente movimiento anotado: ${forward.what}${forward.date ? ` · ${i.day(forward.date)}` : ""}`, `Next movement noted: ${forward.what}${forward.date ? ` · ${i.day(forward.date)}` : ""}`)
+        : suggestion ? t(`SOLU sugiere: ${suggestion.what}`, `SOLU suggests: ${suggestion.what}`) : null,
+      late: forward.late,
+    } : null,
+    risk: riskIdx >= 0 ? { key: rawSteps[riskIdx].key, tab: rawSteps[riskIdx].tab, label: t(rawSteps[riskIdx].es, rawSteps[riskIdx].en), what: `${signal.label}: ${signal.why}` } : null,
+    steps: rawSteps.map((s, n): PathStep => ({ key: s.key, label: t(s.es, s.en), tab: s.tab, state: n === riskIdx ? "risk" : s.done ? "done" : n === curIdx ? curState : !over && implied(s, n) ? "gap" : "later" })),
+  };
+
   return {
+    path,
     now, eg, won, lost, ordered, delivered, invoiced, reconciled, balance, fullyDelivered, fullyInvoiced, fullyCollected,
     carrier, expected, promise, promiseState, gapDays,
     forward, suggestion, signal, nowFacts, changes, since: from, docs, conversation, has, timeline, risk, story: story.filter(Boolean), answers,

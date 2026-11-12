@@ -2210,6 +2210,70 @@ details.card[open] > summary:not(.small) { font-size: 14px; font-weight: 600; ma
 /* Empty state that says what to do next */
 .vz-empty { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 14px 16px; border: 1px dashed var(--brand-line); border-radius: var(--radius); background: var(--brand-soft); font-size: 13px; line-height: 19px; color: var(--ink-2); margin-bottom: 16px; }
 .vz-empty b { color: var(--ink); }
+/* ---------- The path of an order (audit 2026-11-12) · src/components/JourneyPath.tsx · prefix `jp-` ----------
+   green = done · blue = your step now (the only filled blue) · amber = someone else has it · red = at risk ·
+   grey = later · dashed = behind us, never written down. */
+.jp { margin: 12px 0 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.jp-steps { list-style: none; margin: 0; padding: 12px 8px 10px; display: flex; overflow-x: auto; }
+.jp-step { --c: var(--line-strong); flex: 1 1 0; min-width: 84px; position: relative; }
+.jp-step::before { content: ""; position: absolute; top: 13px; left: -50%; width: 100%; height: 3px; background: var(--c); }
+.jp-step:first-child::before { display: none; }
+.jp-step::before { z-index: 0; }
+.jp-step a { z-index: 1; }
+.jp-step a { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0 4px; text-align: center; text-decoration: none; color: var(--ink-2); }
+.jp-dot { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 2px solid var(--c); color: var(--ink-3); font: 700 12px/1 var(--font-sans), sans-serif; }
+.jp-l { font: 600 12px/15px var(--font-sans), sans-serif; color: var(--ink); }
+.jp-s { font-size: 10.5px; line-height: 13px; color: var(--ink-3); }
+.jp-step[data-st="done"] { --c: var(--ok); }
+.jp-step[data-st="done"] .jp-dot { background: var(--ok); color: #fff; }
+.jp-step[data-st="now"] { --c: var(--brand); }
+.jp-step[data-st="now"] .jp-dot { background: var(--brand); color: #fff; box-shadow: 0 0 0 4px var(--brand-soft); }
+.jp-step[data-st="now"] .jp-l, .jp-step[data-st="now"] .jp-s { color: var(--brand-strong); }
+.jp-step[data-st="wait"] { --c: #d97a1c; }
+.jp-step[data-st="wait"] .jp-dot { background: var(--attn-soft); color: var(--attn); box-shadow: 0 0 0 4px var(--attn-soft); }
+.jp-step[data-st="wait"] .jp-s { color: var(--attn); }
+.jp-step[data-st="risk"] { --c: var(--risk); }
+.jp-step[data-st="risk"] .jp-dot { background: var(--risk); color: #fff; box-shadow: 0 0 0 4px var(--risk-soft); }
+.jp-step[data-st="risk"] .jp-s { color: var(--risk); }
+.jp-step[data-st="gap"] .jp-dot { border-style: dashed; }
+.jp-step[data-st="gap"] .jp-l { color: var(--ink-2); }
+.jp-step[data-st="later"] .jp-l { color: var(--ink-3); font-weight: 500; }
+.jp-step a:hover .jp-l { text-decoration: underline; }
+.jp-step a:hover .jp-dot { border-color: var(--brand); }
+.jp-now { --c: var(--ink-3); --cs: var(--surface-sunken); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 14px; background: var(--cs); border-top: 1px solid var(--line); border-left: 4px solid var(--c); font-size: 13.5px; line-height: 19px; }
+.jp-now[data-st="now"] { --c: var(--brand); --cs: var(--brand-soft); }
+.jp-now[data-st="wait"] { --c: #d97a1c; --cs: var(--attn-soft); }
+.jp-now[data-st="risk"] { --c: var(--risk); --cs: var(--risk-soft); }
+.jp-k { font: 700 11px/16px var(--font-sans), sans-serif; letter-spacing: 0.04em; text-transform: uppercase; color: var(--c); }
+.jp-now[data-st="wait"] .jp-k { color: var(--attn); }
+.jp-now b { color: var(--ink); overflow-wrap: anywhere; }
+.jp-now + .jp-now { border-top: 1px solid var(--line); }
+.jp-w { display: flex; flex-direction: column; min-width: 0; }
+.jp-n { font-size: 12.5px; line-height: 17px; color: var(--ink-2); overflow-wrap: anywhere; }
+.jp-n.late { color: var(--attn); font-weight: 600; }
+.jp-now .grow { flex: 1; }
+.jp-now .btn { flex: none; }
+.jp-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 8px; font-size: 12px; color: var(--ink-2); }
+.jp-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.jp-legend i { width: 4px; height: 14px; border-radius: 2px; background: var(--line-strong); }
+.jp-legend i[data-st="now"] { background: var(--brand); } .jp-legend i[data-st="wait"] { background: #d97a1c; } .jp-legend i[data-st="risk"] { background: var(--risk); } .jp-legend i[data-st="done"] { background: var(--ok); }
+/* A card or a row on a list wears the same colour on its left edge */
+.deal[data-ask] { border-left: 4px solid var(--line-strong); }
+.deal[data-ask="now"] { border-left-color: var(--brand); }
+.deal[data-ask="wait"] { border-left-color: #d97a1c; }
+.deal[data-ask="risk"] { border-left-color: var(--risk); }
+.deal[data-ask="done"] { border-left-color: var(--ok); }
+/* Phone: the eleven steps fit in one row as dots; the boxes under the strip name the steps that matter */
+@media (max-width: 599px) {
+  .jp-steps { padding: 12px 6px 10px; overflow: visible; }
+  .jp-step { min-width: 0; }
+  .jp-step a { padding: 0; }
+  .jp-l, .jp-s { display: none; }
+  .jp-dot { width: 22px; height: 22px; font-size: 10px; }
+  .jp-step::before { top: 10px; }
+  .jp-step[data-st="now"] .jp-dot, .jp-step[data-st="wait"] .jp-dot, .jp-step[data-st="risk"] .jp-dot { box-shadow: 0 0 0 3px var(--brand-soft); }
+  .jp-now .btn { width: 100%; justify-content: center; }
+}
 /* Phone (audit 2026-11-12): nothing spills sideways, and what you tap is big enough for a thumb */
 .main select, .main input, .main textarea { max-width: 100%; }
 @media (max-width: 599px) {

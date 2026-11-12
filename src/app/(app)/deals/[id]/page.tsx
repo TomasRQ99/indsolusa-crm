@@ -12,6 +12,7 @@ import { paymentStateLabel } from "@/lib/labels";
 import { stageLabel } from "@/lib/labels";
 import { buildJourney, journeyInclude, typeLabel, type TabKey, type Tone } from "@/lib/journey";
 import { OutlookNote } from "@/components/OutlookNote";
+import { JourneyPath } from "@/components/JourneyPath";
 import { Popovers } from "@/components/Popovers";
 import {
   acceptCustomerPo,
@@ -1084,6 +1085,7 @@ export default async function JourneyPage({
           <span className="k">{t("Resultado deseado", "Desired result")}</span>
           {deal.desiredResult ? <span>{deal.desiredResult}</span> : <span className="muted">{t("Aún sin definir", "Not defined yet")} <NeedForm /></span>}
         </div>
+        <JourneyPath path={J.path} self={self} es={i.es} />
         <div className="strip">
           <div>
             <span className="k">{t("Ahora", "Now")}</span>

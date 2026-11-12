@@ -7,6 +7,8 @@ import { addDays, esagra, today } from "@/lib/domain";
 import { STAGES, stageLabel } from "@/lib/labels";
 import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
 import { Split } from "@/components/Viz";
+import { PathLegend, pathWords } from "@/components/JourneyPath";
+import { cardAsk } from "@/lib/journey";
 import { createDeal, moveDealStage } from "./actions";
 
 export default async function DealsPage({ searchParams }: { searchParams: Promise<{ mine?: string }> }) {
@@ -24,7 +26,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
       where: { ...scope, internal: false, closedAt: null, OR: [{ stage: { not: "LOST" } }, { updatedAt: { gte: addDays(now, -90) } }] },
       orderBy: { updatedAt: "desc" },
       select: {
-        id: true, code: true, title: true, stage: true, amount: true, supplierCost: true, freightCost: true, otherCosts: true, nextMove: true, nextMoveDate: true, waitingFor: true, ownerId: true,
+        id: true, code: true, title: true, stage: true, amount: true, supplierCost: true, freightCost: true, otherCosts: true, nextMove: true, nextMoveDate: true, waitingFor: true, waitingUntil: true, promisedDate: true, resultAchievedAt: true, ownerId: true, _count: { select: { deliveries: true } },
         account: { select: { id: true, name: true } }, owner: { select: { name: true } },
       },
     }),
@@ -34,6 +36,8 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
 
   const open = deals.filter((d) => !["WON", "LOST"].includes(d.stage));
   const noMove = open.filter((d) => !d.nextMove && !d.waitingFor);
+  const W = pathWords(i.es);
+  const mineNow = deals.filter((d) => cardAsk({ ...d, deliveries: d._count.deliveries }, now) === "now");
 
   return (
     <>
@@ -50,6 +54,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
       </div>
 
       <section className="sum">
+        <div data-tone={mineNow.length > 0 ? "info" : undefined}><span className="k">{t("Tu paso ahora", "Your step now")}</span><span className="v">{mineNow.length}</span><span className="s">{t("Journeys con un paso nuestro para hoy", "Journeys with a step of ours for today")}</span>{mineNow[0] && <Link className="go" href={`/deals/${mineNow[0].id}`}>{t("Abrir el primero", "Open the first one")} →</Link>}</div>
         <div><span className="k">{t("En curso", "In progress")}</span><span className="v">{open.length}</span><span className="s">{i.money(open.reduce((s, d) => s + Number(d.amount), 0))}</span></div>
         <div data-tone={noMove.length > 0 ? "attn" : "ok"}><span className="k">{t("Sin siguiente movimiento", "No next movement")}</span><span className="v">{noMove.length}</span><span className="s">{noMove.length > 0 ? t("conviene definir qué sigue", "worth deciding what's next") : t("todos tienen qué sigue", "all have a next step")}</span>{noMove[0] && <Link className="go" href={`/deals/${noMove[0].id}`}>{t("Abrir el primero", "Open the first one")} →</Link>}</div>
         <div><span className="k">{t("OC aceptadas", "POs accepted")}</span><span className="v">{deals.filter((d) => d.stage === "WON").length}</span><span className="s">{t(`${closedCount} Journeys cerrados en el historial`, `${closedCount} closed Journeys in history`)}</span></div>
@@ -73,6 +78,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
         </form>
       </details>
 
+      <PathLegend es={i.es} />
       <div className="kanban">
         {STAGES.map((s) => {
           const column = deals.filter((d) => d.stage === s);
@@ -80,8 +86,9 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
           const card = (d: (typeof deals)[number]) => {
                 const eg = esagra(d);
                 const late = d.nextMoveDate && d.nextMoveDate < now;
+                const ask = cardAsk({ ...d, deliveries: d._count.deliveries }, now);
                 return (
-                  <article className="deal" key={d.id}>
+                  <article className="deal" key={d.id} data-ask={ask ?? undefined} title={ask ? W[ask] : undefined}>
                     <Link href={`/deals/${d.id}`}><b>{d.title}</b></Link>
                     <span className="src">{d.code ?? ""} · {d.account.name}</span>
                     <span className="row" style={{ justifyContent: "space-between" }}>
