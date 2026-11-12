@@ -34,14 +34,19 @@ export const DIARY_MAX = 1500;
 // ---------- Reading of the person ----------
 
 export const ASPECTS: Record<string, Txt & { ph: Txt }> = {
-  MOVES: { es: "Qué lo mueve", en: "What moves them", ph: { es: "Ej.: Quiere que su planta sea la referencia del grupo", en: "E.g.: Wants their plant to be the group's benchmark" } },
+  MOVES: { es: "Qué quiere lograr en su trabajo", en: "What they want to achieve at work", ph: { es: "Ej.: Quiere que su planta sea la referencia del grupo", en: "E.g.: Wants their plant to be the group's benchmark" } },
+  DAILY: { es: "Qué le complica el día a día", en: "What makes their daily work hard", ph: { es: "Ej.: Pasa las mañanas persiguiendo repuestos en vez de planear el mantenimiento", en: "E.g.: Spends mornings chasing spares instead of planning maintenance" } },
   WORRIES: { es: "Qué le preocupa", en: "What worries them", ph: { es: "Ej.: Quedar mal con producción por una parada que él no pudo evitar", en: "E.g.: Letting production down over a stop they could not prevent" } },
   PRESSURE: { es: "Qué presión tiene encima", en: "What pressure they carry", ph: { es: "Ej.: Le recortaron el presupuesto y le subieron la meta de disponibilidad", en: "E.g.: Their budget was cut and the availability target raised" } },
   DECIDES: { es: "Cómo decide", en: "How they decide", ph: { es: "Ej.: Pide datos y los revisa solo; no decide en la reunión", en: "E.g.: Asks for data and reviews it alone; does not decide in the meeting" } },
   TRUST: { es: "Qué le da confianza", en: "What earns their trust", ph: { es: "Ej.: Que le avisemos antes si un plazo cambia", en: "E.g.: Being told early when a date changes" } },
+  ANGLE: { es: "Cómo le sirve nuestra solución", en: "How our solution serves them", ph: { es: "Ej.: Le importa más no volver a parar que el precio: hablarle de entrega asegurada", en: "E.g.: Not stopping again matters more than price: talk about secured delivery" } },
   STYLE: { es: "Cómo le gusta que le hablen", en: "How they like to be spoken to", ph: { es: "Ej.: Directo y con números; se impacienta con presentaciones largas", en: "E.g.: Direct and with numbers; gets impatient with long presentations" } },
 };
 
+// Scope confirmed by the user 2026-11-12: the reading is about a person's desires and struggles AT WORK, the ones
+// that come from daily operations (Sandler: understand them to present our service as the solution to that struggle).
+// It is never about health, religion or politics.
 /** Who reads and writes the reading of a person: the commercial side. Not the money side, not the board. */
 export const READING_ROLES = ["GERENCIA", "DIRECTOR_COMERCIAL", "NEGOCIADOR_COMERCIAL", "NEGOCIADOR_OPERATIVO", "MARKETING"];
 export const canSeeReadings = (u: { role: string }) => READING_ROLES.includes(u.role);
