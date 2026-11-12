@@ -64,7 +64,7 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
                   ...group.map((r) => {
                     const e = expected(r);
                     return (
-                      <tr key={r.id} className={sel?.id === r.id ? "sel" : undefined}>
+                      <tr key={r.id} className={sel?.id === r.id ? "sel" : undefined} data-tone={TONE[r.state]}>
                         <td><Link href={`/administracion/cobrar?f=${r.id}`}><b>{r.account.name}</b></Link><span className="src mono">{r.number} · {r.deal.code}</span></td>
                         <td className="n val">{i.n2(r.cash.balance)}</td>
                         <td>{i.day(r.dueAt)}<span className="src">{t("factura", "invoice")}</span></td>

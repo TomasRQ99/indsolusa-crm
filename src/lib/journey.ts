@@ -41,15 +41,15 @@ export type JourneyDeal = Prisma.DealGetPayload<{ include: typeof journeyInclude
 export type Tone = "risk" | "move" | "clarity" | "ok" | "wait";
 export type TabKey = "resumen" | "need" | "source" | "quote" | "execute" | "finance" | "file" | "result";
 export type PathKey = "need" | "source" | "quote" | "po" | "purchase" | "pay" | "ship" | "deliver" | "invoice" | "cash" | "result";
-export type PathState = "done" | "now" | "wait" | "risk" | "later" | "gap";
+export type PathState = "done" | "now" | "late" | "wait" | "risk" | "later" | "gap";
 export type PathStep = { key: PathKey; label: string; tab: TabKey; state: PathState };
 /** What a Journey asks of the person looking at a list, from the few fields a list already has. */
 export function cardAsk(d: { stage: string; nextMove: string | null; nextMoveDate: Date | null; waitingFor: string | null; waitingUntil: Date | null; promisedDate: Date | null; resultAchievedAt: Date | null; deliveries: number }, now: Date): PathState | null {
   if (d.stage === "LOST") return "later";
   if (d.resultAchievedAt) return "done";
   if (d.stage === "WON" && d.promisedDate && d.promisedDate < now && d.deliveries === 0) return "risk";
-  if (d.waitingFor) return d.waitingUntil && d.waitingUntil < now ? "now" : "wait";
-  if (d.nextMove) return d.nextMoveDate && d.nextMoveDate > now ? "later" : "now";
+  if (d.waitingFor) return d.waitingUntil && d.waitingUntil < now ? "late" : "wait";
+  if (d.nextMove) return !d.nextMoveDate ? "now" : d.nextMoveDate > now ? "later" : d.nextMoveDate < now ? "late" : "now";
   return d.stage === "WON" ? null : "now";
 }
 export type Fact = { key: string; text: string; when: Date | null; src: string; uncertain?: boolean; activityId?: string; poId?: string };
@@ -472,7 +472,9 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
   const implied = (s: (typeof rawSteps)[number], n: number) => (s.soft && laterDone(n)) || (s.key === "purchase" && goodsMoved);
   const over = lost || !!deal.closedAt || deal.resultState === "NO_LONGER_RELEVANT";
   const curIdx = over ? -1 : rawSteps.findIndex((s, n) => !s.done && !implied(s, n));
-  const curState: PathState = forward.mode === "wait" && !forward.late ? "wait" : "now";
+  // In transit with a carrier date that is still ahead and fresh, and nobody noted a movement of ours: the carrier has it.
+  const carrierHasIt = curIdx >= 0 && rawSteps[curIdx].key === "ship" && forward.mode === "none" && !!carrier && !carrier.late && !carrier.stale && carrier.date >= now;
+  const curState: PathState = forward.late ? "late" : forward.mode === "wait" || carrierHasIt ? "wait" : "now";
   // What each step needs to be done, in plain words: this is what the blue box says.
   const NEEDS: Record<PathKey, [string, string]> = {
     need: ["Escribir el resultado que busca el cliente", "Write down the result the customer wants"],
@@ -502,6 +504,7 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
       what: t(...NEEDS[rawSteps[curIdx].key]),
       noted: forward.mode === "wait" ? t(`Esperando: ${forward.what}${forward.date ? ` · revisar el ${i.day(forward.date)}` : ""}`, `Waiting: ${forward.what}${forward.date ? ` · check on ${i.day(forward.date)}` : ""}`)
         : forward.mode === "move" ? t(`Siguiente movimiento anotado: ${forward.what}${forward.date ? ` · ${i.day(forward.date)}` : ""}`, `Next movement noted: ${forward.what}${forward.date ? ` · ${i.day(forward.date)}` : ""}`)
+        : carrierHasIt ? t(`Lo tiene ${carrier!.who} · llega el ${i.day(carrier!.date)}`, `${carrier!.who} has it · arrives on ${i.day(carrier!.date)}`)
         : suggestion ? t(`SOLU sugiere: ${suggestion.what}`, `SOLU suggests: ${suggestion.what}`) : null,
       late: forward.late,
     } : null,

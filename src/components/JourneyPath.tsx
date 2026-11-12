@@ -1,6 +1,7 @@
 // The life of an order as one strip of steps (audit 2026-11-12). Colour is the guide:
-// green = done · blue = the step that is yours now (a button) · amber = someone else has it · red = at risk ·
-// grey = later · dashed = behind us but never written down. The state is also written in words, never colour alone.
+// green = done · blue = the step that is yours now (a button) · amber = yours and its date has passed · red = at risk ·
+// solid grey with a pause = waiting with control (someone else has it) · hollow grey = later · dashed = never written
+// down. Same code as the rest of SOLU: blue is action, amber is attention, grey is waiting. The state is also written in words, never colour alone.
 // A risk sits on its own step, so a path can show one red step and one blue (or amber) step at the same time.
 
 import Link from "next/link";
@@ -14,8 +15,8 @@ type Path = {
 
 export function pathWords(es: boolean): Record<PathState, string> {
   return es
-    ? { done: "Hecho", now: "Tu paso ahora", wait: "Lo tiene otra persona", risk: "En riesgo", later: "Después", gap: "Sin registrar" }
-    : { done: "Done", now: "Your step now", wait: "Someone else has it", risk: "At risk", later: "Later", gap: "Not recorded" };
+    ? { done: "Hecho", now: "Tu paso ahora", late: "Tu paso, se pasó la fecha", wait: "Esperando con control", risk: "En riesgo", later: "Después", gap: "Sin registrar" }
+    : { done: "Done", now: "Your step now", late: "Your step, past its date", wait: "Waiting with control", risk: "At risk", later: "Later", gap: "Not recorded" };
 }
 
 export function JourneyPath({ path, self, es }: { path: Path; self: string; es: boolean }) {
@@ -48,7 +49,7 @@ export function JourneyPath({ path, self, es }: { path: Path; self: string; es: 
           <span className="jp-k">{W[cur.state]} · {cur.label}</span>
           <span className="jp-w"><b>{cur.what}</b>{cur.noted && <span className={`jp-n${cur.late ? " late" : ""}`}>{cur.noted}</span>}</span>
           <span className="grow" />
-          <Link className={`btn${cur.state === "now" ? "" : " secondary"}`} href={`${self}?tab=${cur.tab}`}>{cur.state === "now" ? (es ? "Ir a este paso" : "Go to this step") : es ? "Ver este paso" : "See this step"} →</Link>
+          <Link className={`btn${cur.state === "wait" ? " secondary" : ""}`} href={`${self}?tab=${cur.tab}`}>{cur.state !== "wait" ? (es ? "Ir a este paso" : "Go to this step") : es ? "Ver este paso" : "See this step"} →</Link>
         </div>
       ) : (
         <div className="jp-now" data-st="later">
@@ -63,6 +64,6 @@ export function JourneyPath({ path, self, es }: { path: Path; self: string; es: 
 /** The key to the colours, for lists and boards. */
 export function PathLegend({ es, only }: { es: boolean; only?: PathState[] }) {
   const W = pathWords(es);
-  const order: PathState[] = only ?? ["now", "wait", "risk", "later", "done"];
+  const order: PathState[] = only ?? ["now", "late", "risk", "wait", "later", "done"];
   return <p className="jp-legend">{order.map((k) => <span key={k}><i data-st={k} />{W[k]}</span>)}</p>;
 }

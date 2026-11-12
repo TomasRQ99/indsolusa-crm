@@ -35,9 +35,11 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
   const first = user.name.split(" ")[0];
   const toneLabel = { risk: t("Resultado en riesgo", "Result at risk"), move: t("Necesita movimiento", "Needs a move"), clarity: t("Necesita claridad", "Needs clarity") };
 
-  const Card = ({ n }: { n: Need }) => (
-    <article className="att">
+  const stopId = (k: string) => `parada-${k.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+  const Card = ({ n, no }: { n: Need; no?: number }) => (
+    <article className="att" id={stopId(n.key)}>
       <div className="att-top">
+        {no != null && <span className="att-n" data-t={n.tone} aria-label={t(`Parada ${no}`, `Stop ${no}`)}>{no}</span>}
         <span className={`tsig ${n.tone}`}><ToneIcon tone={n.tone} />{toneLabel[n.tone]}</span>
         <span className="due">{n.due.main}{n.due.sub && <small> · {n.due.sub}</small>}</span>
       </div>
@@ -270,7 +272,15 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
             {m.needs.length === 0 ? (
               <div className="att calm"><b>{t("Nada requiere tu criterio hoy", "Nothing needs your judgment today")}</b><span>{t("Buen momento para mover el futuro: lo que actúes antes sale más barato que reaccionar después.", "Good time to move the future: acting early costs less than reacting later.")}</span></div>
             ) : (
-              m.needs.map((n) => <Card key={n.key} n={n} />)
+              <>
+                {m.needs.length > 1 && (
+                  <nav aria-label={t("Tu ruta de hoy", "Your route today")}>
+                    <p className="src" style={{ margin: "0 0 6px" }}><b>{t(`Tu ruta de hoy: ${m.needs.length} paradas`, `Your route today: ${m.needs.length} stops`)}</b> · {t("en este orden: primero lo que está en riesgo, luego lo que necesita un movimiento", "in this order: first what is at risk, then what needs a move")}</p>
+                    <ol className="route">{m.needs.map((n, k) => <li key={n.key}><a href={`#${stopId(n.key)}`} title={`${toneLabel[n.tone]} · ${n.who.title}`}><i data-t={n.tone}>{k + 1}</i><span>{n.who.title}</span></a></li>)}</ol>
+                  </nav>
+                )}
+                {m.needs.map((n, k) => <Card key={n.key} n={n} no={k + 1} />)}
+              </>
             )}
             {m.moreNeeds.length > 0 && (
               <details className="more">

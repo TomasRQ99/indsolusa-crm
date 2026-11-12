@@ -2229,9 +2229,12 @@ details.card[open] > summary:not(.small) { font-size: 14px; font-weight: 600; ma
 .jp-step[data-st="now"] { --c: var(--brand); }
 .jp-step[data-st="now"] .jp-dot { background: var(--brand); color: #fff; box-shadow: 0 0 0 4px var(--brand-soft); }
 .jp-step[data-st="now"] .jp-l, .jp-step[data-st="now"] .jp-s { color: var(--brand-strong); }
-.jp-step[data-st="wait"] { --c: #d97a1c; }
-.jp-step[data-st="wait"] .jp-dot { background: var(--attn-soft); color: var(--attn); box-shadow: 0 0 0 4px var(--attn-soft); }
-.jp-step[data-st="wait"] .jp-s { color: var(--attn); }
+.jp-step[data-st="late"] { --c: #d97a1c; }
+.jp-step[data-st="late"] .jp-dot { background: #d97a1c; color: #fff; box-shadow: 0 0 0 4px var(--attn-soft); }
+.jp-step[data-st="late"] .jp-l, .jp-step[data-st="late"] .jp-s { color: var(--attn); }
+.jp-step[data-st="wait"] { --c: #8a96a8; }
+.jp-step[data-st="wait"] .jp-dot { background: #8a96a8; color: #fff; box-shadow: 0 0 0 4px var(--surface-sunken); }
+.jp-step[data-st="wait"] .jp-l { color: var(--ink); }
 .jp-step[data-st="risk"] { --c: var(--risk); }
 .jp-step[data-st="risk"] .jp-dot { background: var(--risk); color: #fff; box-shadow: 0 0 0 4px var(--risk-soft); }
 .jp-step[data-st="risk"] .jp-s { color: var(--risk); }
@@ -2242,10 +2245,12 @@ details.card[open] > summary:not(.small) { font-size: 14px; font-weight: 600; ma
 .jp-step a:hover .jp-dot { border-color: var(--brand); }
 .jp-now { --c: var(--ink-3); --cs: var(--surface-sunken); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 14px; background: var(--cs); border-top: 1px solid var(--line); border-left: 4px solid var(--c); font-size: 13.5px; line-height: 19px; }
 .jp-now[data-st="now"] { --c: var(--brand); --cs: var(--brand-soft); }
-.jp-now[data-st="wait"] { --c: #d97a1c; --cs: var(--attn-soft); }
+.jp-now[data-st="late"] { --c: #d97a1c; --cs: var(--attn-soft); }
+.jp-now[data-st="late"] .jp-k { color: var(--attn); }
+.jp-now[data-st="wait"] { --c: #8a96a8; --cs: var(--surface-sunken); }
 .jp-now[data-st="risk"] { --c: var(--risk); --cs: var(--risk-soft); }
 .jp-k { font: 700 11px/16px var(--font-sans), sans-serif; letter-spacing: 0.04em; text-transform: uppercase; color: var(--c); }
-.jp-now[data-st="wait"] .jp-k { color: var(--attn); }
+.jp-now[data-st="wait"] .jp-k { color: var(--ink-2); }
 .jp-now b { color: var(--ink); overflow-wrap: anywhere; }
 .jp-now + .jp-now { border-top: 1px solid var(--line); }
 .jp-w { display: flex; flex-direction: column; min-width: 0; }
@@ -2256,11 +2261,39 @@ details.card[open] > summary:not(.small) { font-size: 14px; font-weight: 600; ma
 .jp-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 8px; font-size: 12px; color: var(--ink-2); }
 .jp-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .jp-legend i { width: 4px; height: 14px; border-radius: 2px; background: var(--line-strong); }
-.jp-legend i[data-st="now"] { background: var(--brand); } .jp-legend i[data-st="wait"] { background: #d97a1c; } .jp-legend i[data-st="risk"] { background: var(--risk); } .jp-legend i[data-st="done"] { background: var(--ok); }
+.jp-legend i[data-st="now"] { background: var(--brand); } .jp-legend i[data-st="late"] { background: #d97a1c; } .jp-legend i[data-st="wait"] { background: #8a96a8; } .jp-legend i[data-st="later"] { background: var(--surface); border: 1px solid var(--line-strong); } .jp-legend i[data-st="risk"] { background: var(--risk); } .jp-legend i[data-st="done"] { background: var(--ok); }
+/* Every table in SOLU: a row wears on its left edge the colour of the strongest signal written in it, so the eye
+   finds what to open first. Red risk · amber attention · blue action · grey waiting · green fine. */
+.main tbody tr:not(.grpr):has(.sig.ok) > td:first-child { box-shadow: inset 4px 0 0 var(--ok); }
+.main tbody tr:not(.grpr):has(.sig.wait) > td:first-child { box-shadow: inset 4px 0 0 #8a96a8; }
+.main tbody tr:not(.grpr):has(.sig.info) > td:first-child { box-shadow: inset 4px 0 0 var(--brand); }
+.main tbody tr:not(.grpr):has(.sig.attn) > td:first-child { box-shadow: inset 4px 0 0 #d97a1c; }
+.main tbody tr:not(.grpr):has(.sig.risk, .sig.missed) > td:first-child { box-shadow: inset 4px 0 0 var(--risk); }
+/* A row can also say its state itself when it carries no pill */
+.main tbody tr[data-tone="ok"] > td:first-child { box-shadow: inset 4px 0 0 var(--ok); }
+.main tbody tr[data-tone="wait"] > td:first-child { box-shadow: inset 4px 0 0 #8a96a8; }
+.main tbody tr[data-tone="info"] > td:first-child { box-shadow: inset 4px 0 0 var(--brand); }
+.main tbody tr[data-tone="attn"] > td:first-child { box-shadow: inset 4px 0 0 #d97a1c; }
+.main tbody tr[data-tone="risk"] > td:first-child { box-shadow: inset 4px 0 0 var(--risk); }
+/* Mi Día as a route: the stops of today, in the order to take them */
+.route { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px; margin: 0 0 4px; padding: 0; list-style: none; font-size: 12px; color: var(--ink-2); }
+.route li { display: inline-flex; align-items: center; gap: 4px; }
+.route li + li::before { content: ""; width: 14px; height: 2px; background: var(--line-strong); }
+.route a { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 3px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; max-width: 190px; }
+.route a:hover { border-color: var(--brand); background: var(--brand-soft); text-decoration: none; }
+.route a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.route i, .att-n { font-style: normal; flex: none; width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font: 700 11px/1 var(--font-sans), sans-serif; background: #d97a1c; }
+.route i[data-t="risk"], .att-n[data-t="risk"] { background: var(--risk); }
+.route i[data-t="clarity"], .att-n[data-t="clarity"] { background: var(--surface); color: var(--attn); border: 2px dashed #d97a1c; }
+.att { scroll-margin-top: 84px; }
+.att:target { box-shadow: 0 0 0 3px var(--brand-soft); border-color: var(--brand); }
+.att-n { margin-right: 6px; }
 /* A card or a row on a list wears the same colour on its left edge */
 .deal[data-ask] { border-left: 4px solid var(--line-strong); }
 .deal[data-ask="now"] { border-left-color: var(--brand); }
-.deal[data-ask="wait"] { border-left-color: #d97a1c; }
+.deal[data-ask="late"] { border-left-color: #d97a1c; }
+.deal[data-ask="wait"] { border-left-color: #8a96a8; }
+.deal[data-ask="later"] { border-left-color: var(--line); }
 .deal[data-ask="risk"] { border-left-color: var(--risk); }
 .deal[data-ask="done"] { border-left-color: var(--ok); }
 /* Phone: the eleven steps fit in one row as dots; the boxes under the strip name the steps that matter */
@@ -2271,7 +2304,7 @@ details.card[open] > summary:not(.small) { font-size: 14px; font-weight: 600; ma
   .jp-l, .jp-s { display: none; }
   .jp-dot { width: 22px; height: 22px; font-size: 10px; }
   .jp-step::before { top: 10px; }
-  .jp-step[data-st="now"] .jp-dot, .jp-step[data-st="wait"] .jp-dot, .jp-step[data-st="risk"] .jp-dot { box-shadow: 0 0 0 3px var(--brand-soft); }
+  .jp-step[data-st="now"] .jp-dot, .jp-step[data-st="late"] .jp-dot, .jp-step[data-st="wait"] .jp-dot, .jp-step[data-st="risk"] .jp-dot { box-shadow: 0 0 0 3px var(--surface-sunken); }
   .jp-now .btn { width: 100%; justify-content: center; }
 }
 /* Phone (audit 2026-11-12): nothing spills sideways, and what you tap is big enough for a thumb */
