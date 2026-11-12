@@ -6,6 +6,7 @@ import { GOAL_METRICS, METRIC_KEYS, periodOf, shiftPeriod, validPeriod, type Pac
 import { periodStatus } from "@/lib/metric-dictionary";
 import { personReport, reportScope } from "@/lib/reports";
 import { HowCalc } from "@/components/HowCalc";
+import { Delta, Meter, Split } from "@/components/Viz";
 
 // Módulo 13 §4.1 · Mi desempeño: how am I doing, what must I move today, and am I building enough future.
 // Result, Future, Money to move and Risks side by side. No score: each dimension in its own words.
@@ -53,8 +54,8 @@ export default async function MyPerformancePage({ searchParams }: { searchParams
               <td><b>{t(GOAL_METRICS[k].es, GOAL_METRICS[k].en)}</b><span className="block"><HowCalc id={k} es={i.es} /></span></td>
               <td className="n mono"><b>{val(k, p.actual)}</b>{k === "ESAGARA_AMOUNT" && r.board.extras.esagaraPct != null && <span className="src block">{i.pct(r.board.extras.esagaraPct)}</span>}</td>
               <td className="n mono">{p.target != null ? val(k, p.target) : "—"}</td>
-              <td><span className={`sig ${P.tone}`}>{t(P.es, P.en)}</span>{p.perDayNeeded != null && <span className="src block">{t(`faltan ${val(k, p.remaining ?? 0)} en ${p.remainingDays} días hábiles`, `${val(k, p.remaining ?? 0)} to go in ${p.remainingDays} working days`)}</span>}</td>
-              <td className="n mono">{val(k, prev)}<span className={`src block ${p.actual - prev < 0 ? "risk-t" : ""}`}>{p.actual - prev > 0 ? "+" : p.actual - prev < 0 ? "−" : ""}{val(k, Math.abs(p.actual - prev))}</span></td>
+              <td><span className={`sig ${P.tone}`}>{t(P.es, P.en)}</span>{p.target ? <span className="block" style={{ margin: "6px 0 2px", maxWidth: 200 }}><Meter pct={(p.actual / p.target) * 100} tone={P.tone === "wait" ? "info" : (P.tone as "ok" | "attn" | "risk")} label={t(`${Math.round((p.actual / p.target) * 100)} % de la meta`, `${Math.round((p.actual / p.target) * 100)} % of the goal`)} mark={p.expected != null ? (p.expected / p.target) * 100 : null} markTip={t("Esperado a hoy", "Expected by today")} /></span> : p.target == null && personId === user.id ? <span className="src block"><Link href="/comercial/metas">{t("Ver mis metas", "See my goals")}</Link></span> : null}{p.perDayNeeded != null && <span className="src block">{t(`faltan ${val(k, p.remaining ?? 0)} en ${p.remainingDays} días hábiles`, `${val(k, p.remaining ?? 0)} to go in ${p.remainingDays} working days`)}</span>}</td>
+              <td className="n mono">{val(k, prev)}<span className="block" style={{ marginTop: 3 }}><Delta now={p.actual} prev={prev} same={t("igual", "same")} fmt={(a) => val(k, a).replace("USD ", "")} /></span></td>
             </tr>
           ); })}</tbody>
         </table></div>
@@ -86,6 +87,12 @@ export default async function MyPerformancePage({ searchParams }: { searchParams
       {showComm && (
         <section className="card" id="comision">
           <b>{t("MI COMISIÓN", "MY COMMISSION")}</b> <HowCalc id="COMMISSION" es={i.es} />
+          <Split label={t("Mi comisión por etapa", "My commission by stage")} parts={[
+            { key: "est", label: t("Estimada", "Estimated"), value: c.estimated.hi, tone: "wait", text: usd(c.estimated.hi) },
+            { key: "ear", label: t("Ganada, por aprobar", "Earned, to approve"), value: c.earned.hi, tone: "attn", text: usd(c.earned.hi) },
+            { key: "app", label: t("Aprobada, sin pagar", "Approved, not paid"), value: c.approved.hi, tone: "info", text: usd(c.approved.hi) },
+            { key: "pai", label: t("Pagada", "Paid"), value: c.paid.hi, tone: "ok", text: usd(c.paid.hi) },
+          ]} />
           <dl className="qv-dl">
             <dt>{t("Estimada (aún no ganada)", "Estimated (not earned yet)")}</dt><dd className="mono">{usd(c.estimated.hi)}</dd>
             <dt>{t("Ganada, por aprobar", "Earned, to approve")}</dt><dd className="mono">{usd(c.earned.hi)}</dd>

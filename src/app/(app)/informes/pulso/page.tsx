@@ -6,7 +6,12 @@ import { db } from "@/lib/db";
 import { periodOf, shiftPeriod, validPeriod } from "@/lib/goal-rules";
 import { computePulse, pulseGroups, type PulseData, type PulseMetric } from "@/lib/pulse";
 import { HowCalc } from "@/components/HowCalc";
+import { Delta, PairBar, type Good } from "@/components/Viz";
 import { closePulse, reopenPulse } from "./actions";
+
+// Which way is good news for each figure. Not listed = more is better. "none" = a change says nothing by itself
+// (money paid out, commissions approved): it gets no green or red.
+const GOOD: Record<string, Good> = { exceptionsOpened: "down", freightVariances: "down", withheld: "down", supplierPaid: "none", commissionsApproved: "none" };
 
 // Módulo 13 §5 · Business Pulse: the month by function. What happened in the period is compared with the previous
 // month; what is a snapshot of today is labelled as such. A closed month shows the figures saved at its close.
@@ -40,17 +45,19 @@ export default async function BusinessPulsePage({ searchParams }: { searchParams
       {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
 
+      <p className="small"><span className="vz-key"><i />{t("este mes", "this month")}</span><span className="vz-key"><i className="prev" />{t("mes anterior", "previous month")}</span><span className="vz-key"><span className="vz-d ok"><i aria-hidden="true">▲</i>{t("mejoró", "better")}</span></span><span className="vz-key"><span className="vz-d risk"><i aria-hidden="true">▼</i>{t("empeoró", "worse")}</span></span></p>
       {groups.map((g) => (
         <section className="card" key={g.key} id={g.key}>
           <b>{t(g.title.es, g.title.en).toUpperCase()}</b> <span className="small muted">{t(g.question.es, g.question.en)}</span>
           <div className="tscroll"><table>
-            <thead><tr><th>{t("Qué", "What")}</th><th className="n">{t("En el mes", "In the month")}</th><th className="n">{t("Mes anterior", "Previous month")}</th><th className="n">{t("Cambio", "Change")}</th></tr></thead>
-            <tbody>{g.metrics.map((m) => { const pv = m.kind === "PERIOD" ? prevOf(m.key) : null; const d = pv != null ? Math.round((m.value - pv) * 100) / 100 : null; return (
+            <thead><tr><th>{t("Qué", "What")}</th><th className="n">{t("En el mes", "In the month")}</th><th className="n">{t("Mes anterior", "Previous month")}</th><th className="vz-col">{t("Comparación", "Comparison")}</th><th className="n">{t("Cambio", "Change")}</th></tr></thead>
+            <tbody>{g.metrics.map((m) => { const pv = m.kind === "PERIOD" ? prevOf(m.key) : null; return (
               <tr key={m.key}>
                 <td>{m.href ? <Link href={m.href}>{t(m.label.es, m.label.en)}</Link> : t(m.label.es, m.label.en)}{m.kind === "STATE" && <span className="sig wait" style={{ marginLeft: 6 }}>{closed ? t("foto al cierre", "snapshot at close") : t("foto de hoy", "today's snapshot")}</span>}{m.note && <span className="src block">{t(m.note.es, m.note.en)}</span>}{m.metric && <span className="block"><HowCalc id={m.metric} es={i.es} /></span>}</td>
                 <td className="n mono"><b>{fmt(m, m.value)}</b></td>
                 <td className="n mono">{pv != null ? fmt(m, pv) : "—"}</td>
-                <td className="n mono">{d == null ? "—" : d === 0 ? t("igual", "same") : `${d > 0 ? "+" : "−"}${fmt(m, Math.abs(d)).replace("USD ", "")}`}</td>
+                <td className="vz-col">{pv != null && <PairBar now={m.value} prev={pv} label={t(`${t(m.label.es, m.label.en)}: este mes ${fmt(m, m.value)}, mes anterior ${fmt(m, pv)}`, `${m.label.en}: this month ${fmt(m, m.value)}, previous month ${fmt(m, pv)}`)} tipNow={`${t("Este mes", "This month")}: ${fmt(m, m.value)}`} tipPrev={`${t("Mes anterior", "Previous month")}: ${fmt(m, pv)}`} />}</td>
+                <td className="n mono"><Delta now={m.value} prev={pv} good={GOOD[m.key] ?? "up"} same={t("igual", "same")} fmt={(a) => fmt(m, a).replace("USD ", "")} /></td>
               </tr>
             ); })}</tbody>
           </table></div>

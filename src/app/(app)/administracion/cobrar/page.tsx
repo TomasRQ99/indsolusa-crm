@@ -5,9 +5,11 @@ import { makeI18n } from "@/lib/i18n";
 import { addDays, dayInput, today } from "@/lib/domain";
 import { loadReceivables, type ReceivableRow, type ReceivableState } from "@/lib/queries";
 import { receivableLabel } from "@/lib/labels";
+import { Split, type Tone } from "@/components/Viz";
 import { recordPromise } from "../actions";
 
 const ORDER: ReceivableState[] = ["BROKEN", "NEEDS_ACTION", "RECEIVED_PENDING", "WAITING", "UPCOMING"];
+const TONE: Record<ReceivableState, Tone> = { BROKEN: "risk", NEEDS_ACTION: "attn", RECEIVED_PENDING: "info", WAITING: "wait", UPCOMING: "ok", PAID: "ok" };
 
 export default async function ReceivablesPage({ searchParams }: { searchParams: Promise<{ f?: string; ok?: string }> }) {
   const user = await requireUser();
@@ -41,11 +43,12 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
       {ok === "correo" && <p className="note okn">{t("Recordatorio enviado desde la cuenta de la empresa. Quedó registrado en el Journey.", "Reminder sent from the company account. It's logged on the Journey.")}</p>}
       <section className="sum">
         <div><span className="k">{t("Por cobrar", "Outstanding")}</span><span className="v">{i.n(total)}</span><span className="s">USD · {rows.length} {t("facturas", "invoices")}</span></div>
-        <div><span className="k">{t("Compromiso incumplido", "Commitment missed")}</span><span className="v">{i.n(sumOf("BROKEN"))}</span><span className="s">{rows.filter((r) => r.state === "BROKEN").length} {t("facturas", "invoices")}</span></div>
-        <div><span className="k">{t("Vencido sin promesa", "Overdue, no promise")}</span><span className="v">{i.n(sumOf("NEEDS_ACTION"))}</span></div>
+        <div data-tone={sumOf("BROKEN") > 0 ? "risk" : undefined}><span className="k">{t("Compromiso incumplido", "Commitment missed")}</span><span className="v">{i.n(sumOf("BROKEN"))}</span><span className="s">{rows.filter((r) => r.state === "BROKEN").length} {t("facturas", "invoices")}</span></div>
+        <div data-tone={sumOf("NEEDS_ACTION") > 0 ? "attn" : undefined}><span className="k">{t("Vencido sin promesa", "Overdue, no promise")}</span><span className="v">{i.n(sumOf("NEEDS_ACTION"))}</span><span className="s">{rows.filter((r) => r.state === "NEEDS_ACTION").length} {t("facturas", "invoices")}</span></div>
         <div><span className="k">{t("Esperado en 14 días", "Expected in 14 days")}</span><span className="v">{i.n(next14)}</span><span className="s">{t("promesas y vencimientos", "promises and due dates")}</span></div>
         <div><span className="k">{t("Recibido, por conciliar", "Received, to reconcile")}</span><span className="v">{i.n(rows.reduce((s, r) => s + r.cash.pendingReconcile, 0))}</span><span className="s">{t("aún no es pagado", "not paid yet")}</span></div>
       </section>
+      <Split label={t("Lo que hay por cobrar, según su estado", "What is outstanding, by state")} caption={<><b>{t("CÓMO ESTÁ LO QUE NOS DEBEN", "HOW WHAT WE ARE OWED STANDS")}</b> · {t("rojo y naranja piden gestión hoy; azul y gris van con control; verde aún no vence", "red and orange need follow-up today; blue and grey are under control; green is not due yet")}</>} parts={ORDER.map((s) => ({ key: s, label: receivableLabel(i, s).text, value: sumOf(s), tone: TONE[s], text: i.money(sumOf(s)), n: rows.filter((r) => r.state === s).length }))} />
 
       <div className="two">
         <div className="card flush">

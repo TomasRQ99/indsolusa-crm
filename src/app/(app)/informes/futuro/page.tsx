@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { canFinance, canManageAll } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { HORIZONS, HORIZON_TEXT, futurePulse, interventionQueue } from "@/lib/future-pulse";
+import { CellBar } from "@/components/Viz";
 
 // Módulo 13 §6, §23 · Future Pulse and Gerencia's intervention queue. Four futures side by side, never one number;
 // and a short list of matters that need a decision, each with its impact, its owner and where to decide.
@@ -15,7 +16,7 @@ export default async function FuturePulsePage() {
   const [f, queue] = await Promise.all([futurePulse(), interventionQueue(user.id)]);
   const usd = (n: number) => `USD ${i.n2(n)}`;
   const Row = ({ label, b, money = true }: { label: string; b: Record<string, { n: number; usd: number }>; money?: boolean }) => (
-    <tr><td>{label}</td>{HORIZONS.map((h) => <td key={h} className={`n mono ${h === "OVERDUE" && b[h].n > 0 ? "risk-t" : ""}`}>{b[h].n === 0 ? "—" : money ? <>{i.n2(b[h].usd)}<span className="src block">{b[h].n}</span></> : b[h].n}</td>)}</tr>
+    <tr><td>{label}</td>{HORIZONS.map((h) => { const v = money ? b[h].usd : b[h].n; const max = Math.max(0, ...HORIZONS.map((x) => (money ? b[x].usd : b[x].n))); return <td key={h} className={`n mono ${h === "OVERDUE" && b[h].n > 0 ? "risk-t" : ""}`}>{b[h].n === 0 ? "—" : money ? <>{i.n2(b[h].usd)}<span className="src block">{b[h].n}</span></> : b[h].n}{b[h].n > 0 && <CellBar value={v} max={max} tone={h === "OVERDUE" ? "risk" : "info"} tip={`${label} · ${t(HORIZON_TEXT[h].es, HORIZON_TEXT[h].en)}`} />}</td>; })}</tr>
   );
   const Head = () => <thead><tr><th />{HORIZONS.map((h) => <th key={h} className="n">{t(HORIZON_TEXT[h].es, HORIZON_TEXT[h].en)}</th>)}</tr></thead>;
 

@@ -5,6 +5,7 @@ import { makeI18n } from "@/lib/i18n";
 import { dayInput } from "@/lib/domain";
 import { treasuryView } from "@/lib/treasury";
 import { BUCKETS, CONFIDENCE, PLAN_CATS, dirOf, type FItem } from "@/lib/treasury-rules";
+import { FlowCols } from "@/components/Viz";
 import { addPlanItem, addReserve, confirmBalance, endPlanItem, releaseReserve } from "./actions";
 
 // Módulo 14 §2A, §8, §17 · Tesorería. From what the bank shows to what is really free, line by line (AC1), and
@@ -60,6 +61,7 @@ export default async function TreasuryPage({ searchParams }: { searchParams: Pro
 
       <section className="card" id="proyeccion">
         <b>{t("CAJA PROYECTADA", "PROJECTED CASH")}</b>
+        {v.proj.rows.some((r) => r.inflow > 0 || r.outflow > 0) && <FlowCols label={t("Lo que entra y lo que sale, acumulado a 7, 30, 60 y 90 días, y la caja que resulta", "What comes in and goes out, accumulated at 7, 30, 60 and 90 days, and the resulting cash")} inLabel={t("Entra (acumulado)", "In (accumulated)")} outLabel={t("Sale (acumulado)", "Out (accumulated)")} netLabel={t("Debajo de cada par: caja proyectada, en rojo si queda bajo cero", "Under each pair: projected cash, in red when below zero")} fmt={(n) => `${n < 0 ? "−" : ""}${i.n(Math.abs(n))}`} cols={v.proj.rows.map((r) => ({ label: t(`A ${r.days} días`, `At ${r.days} days`), inflow: r.inflow, outflow: r.outflow, net: r.projected }))} />}
         <div className="tscroll"><table>
           <thead><tr><th>{t("Horizonte", "Horizon")}</th><th className="n">{t("Entra", "In")}</th><th className="n">{t("Sale", "Out")}</th><th className="n">{t("Caja proyectada", "Projected cash")}</th></tr></thead>
           <tbody>

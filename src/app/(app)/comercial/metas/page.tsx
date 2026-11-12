@@ -132,15 +132,15 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
         <section className="card" id="fijar">
           <b>{t(`Fijar metas de ${person.name} · ${monthName}`, `Set ${person.name}'s targets · ${monthName}`)}</b>
           {closed ? <p className="small muted">{t("Este mes ya cerró: sus metas quedan como estaban.", "This month is closed: its targets stay as they were.")}</p> : (
-            <form action={saveTargets.bind(null, personId, period)} className="qa-form" style={{ maxWidth: 620 }}>
+            <form action={saveTargets.bind(null, personId, period)} className="qa-form cols" style={{ maxWidth: 980 }}>
               {METRIC_KEYS.map((k) => (
                 <label key={k}>{t(GOAL_METRICS[k].es, GOAL_METRICS[k].en)}{GOAL_METRICS[k].unit === "usd" ? " (USD)" : ""}
                   <input name={k} type="number" min={0} step={GOAL_METRICS[k].unit === "usd" ? "0.01" : "1"} defaultValue={b.tOf(k) ? Number(b.tOf(k)!.target) : ""} />
                 </label>
               ))}
-              <label>{t("Por qué estas metas (obligatorio si cambias una ya fijada)", "Why these targets (required when changing one already set)")}<textarea name="rationale" rows={2} maxLength={500} /></label>
+              <label className="wide">{t("Por qué estas metas (obligatorio si cambias una ya fijada)", "Why these targets (required when changing one already set)")}<textarea name="rationale" rows={2} maxLength={500} /></label>
               <button type="submit">{t("Guardar metas", "Save targets")}</button>
-              <span className="src block">{t("Vacío o cero = sin meta. Cada cambio guarda una versión nueva.", "Empty or zero = no target. Each change saves a new version.")}</span>
+              <span className="src block wide">{t("Vacío o cero = sin meta. Cada cambio guarda una versión nueva.", "Empty or zero = no target. Each change saves a new version.")}</span>
             </form>
           )}
           {b.history.length > 0 && (

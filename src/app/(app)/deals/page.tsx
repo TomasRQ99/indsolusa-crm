@@ -6,6 +6,7 @@ import { makeI18n } from "@/lib/i18n";
 import { addDays, esagra, today } from "@/lib/domain";
 import { STAGES, stageLabel } from "@/lib/labels";
 import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
+import { Split } from "@/components/Viz";
 import { createDeal, moveDealStage } from "./actions";
 
 export default async function DealsPage({ searchParams }: { searchParams: Promise<{ mine?: string }> }) {
@@ -50,9 +51,10 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
 
       <section className="sum">
         <div><span className="k">{t("En curso", "In progress")}</span><span className="v">{open.length}</span><span className="s">{i.money(open.reduce((s, d) => s + Number(d.amount), 0))}</span></div>
-        <div><span className="k">{t("Sin siguiente movimiento", "No next movement")}</span><span className="v">{noMove.length}</span><span className="s">{t("conviene definir qué sigue", "worth deciding what's next")}</span></div>
+        <div data-tone={noMove.length > 0 ? "attn" : "ok"}><span className="k">{t("Sin siguiente movimiento", "No next movement")}</span><span className="v">{noMove.length}</span><span className="s">{noMove.length > 0 ? t("conviene definir qué sigue", "worth deciding what's next") : t("todos tienen qué sigue", "all have a next step")}</span>{noMove[0] && <Link className="go" href={`/deals/${noMove[0].id}`}>{t("Abrir el primero", "Open the first one")} →</Link>}</div>
         <div><span className="k">{t("OC aceptadas", "POs accepted")}</span><span className="v">{deals.filter((d) => d.stage === "WON").length}</span><span className="s">{t(`${closedCount} Journeys cerrados en el historial`, `${closedCount} closed Journeys in history`)}</span></div>
       </section>
+      <Split label={t("Valor en curso por etapa", "Value in progress by stage")} caption={<><b>{t("DÓNDE ESTÁ EL VALOR EN CURSO", "WHERE THE VALUE IN PROGRESS SITS")}</b> · {t("el azul se hace más profundo a medida que el Journey avanza", "the blue gets deeper as the Journey advances")}</>} parts={STAGES.filter((s) => s !== "WON" && s !== "LOST").map((s, n) => { const col = open.filter((d) => d.stage === s); const sum = col.reduce((x, d) => x + Number(d.amount), 0); return { key: s, label: stageLabel(i, s), value: sum, tone: (["s1", "s2", "s3", "s4"] as const)[Math.min(n, 3)], text: i.money(sum), n: col.length }; })} />
 
       <details className="card">
         <summary>{t("Nuevo Journey", "New Journey")}</summary>

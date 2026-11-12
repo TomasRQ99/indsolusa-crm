@@ -2097,3 +2097,91 @@ tr:target td { background: var(--brand-soft); }
   .pf-diary { padding-left: 12px; }
   .pf-entry::before { left: -19px; }
 }
+
+/* ---------- Shared charts (audit 2026-11-12) · src/components/Viz.tsx · prefix `vz-` ----------
+   Colour = state: green protected / good, amber attention, red risk, blue = plain magnitude, grey = waiting or past.
+   s1..s4 = one blue getting deeper, for steps in order (the same blues as the Journeys board). */
+.vz-legend i, .vz-split-bar i, .vz-meter i, .vz-cell i { background: var(--brand); }
+.vz-legend i.ok, .vz-split-bar i.ok, .vz-meter i.ok, .vz-cell i.ok { background: var(--ok); }
+.vz-legend i.attn, .vz-split-bar i.attn, .vz-meter i.attn, .vz-cell i.attn { background: #d97a1c; }
+.vz-legend i.risk, .vz-split-bar i.risk, .vz-meter i.risk, .vz-cell i.risk { background: var(--risk); }
+.vz-legend i.wait, .vz-split-bar i.wait, .vz-meter i.wait, .vz-cell i.wait { background: #8a96a8; }
+.vz-legend i.ai, .vz-split-bar i.ai, .vz-meter i.ai, .vz-cell i.ai { background: var(--ai); }
+.vz-legend i.s1, .vz-split-bar i.s1 { background: #a9c8f5; }
+.vz-legend i.s2, .vz-split-bar i.s2 { background: #73a6ee; }
+.vz-legend i.s3, .vz-split-bar i.s3 { background: #3f84e3; }
+.vz-legend i.s4, .vz-split-bar i.s4 { background: #1463d6; }
+/* Change against before: arrow + sign + colour */
+.vz-d { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vz-d i { font-style: normal; font-size: 9px; line-height: 1; }
+.vz-d.ok { background: var(--ok-soft); color: var(--ok); font-weight: 600; }
+.vz-d.risk { background: var(--risk-soft); color: var(--risk); font-weight: 600; }
+.vz-d.flat { background: var(--surface-sunken); color: var(--ink-2); }
+.vz-d.none { color: var(--ink-3); padding: 0; }
+/* This period over the previous one */
+.vz-pair { display: flex; flex-direction: column; gap: 2px; width: 100%; min-width: 90px; max-width: 200px; }
+.vz-pair i { display: block; height: 7px; border-radius: 0 4px 4px 0; }
+.vz-pair i.now { background: var(--brand); }
+.vz-pair i.prev { background: var(--line-strong); height: 5px; }
+td.vz-col { width: 18%; vertical-align: middle; }
+th.vz-col { width: 18%; }
+.vz-key { display: inline-flex; align-items: center; gap: 5px; margin-right: 12px; font-size: 11.5px; color: var(--ink-2); }
+.vz-key i { display: inline-block; width: 14px; height: 7px; border-radius: 0 3px 3px 0; background: var(--brand); }
+.vz-key i.prev { background: var(--line-strong); height: 5px; }
+/* Progress */
+.vz-meter { position: relative; display: block; height: 8px; min-width: 80px; border-radius: 4px; background: var(--surface-sunken); }
+.vz-meter i { display: block; height: 100%; border-radius: 4px; }
+.vz-meter em { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--ink); }
+.vz-meter-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(90px, 220px); gap: 12px; align-items: center; }
+/* One bar split into parts */
+.vz-split { margin: 0 0 16px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.card > .vz-split { margin: 8px 0 0; padding: 0; border: 0; }
+.vz-split figcaption { font-size: 12px; line-height: 16px; color: var(--ink-2); margin-bottom: 8px; }
+.vz-split figcaption b { color: var(--ink); letter-spacing: 0.03em; }
+.vz-split-bar { display: flex; gap: 2px; height: 16px; }
+.vz-split-bar i { display: block; min-width: 4px; }
+.vz-split-bar i:first-child { border-radius: 4px 0 0 4px; }
+.vz-split-bar i:last-child { border-radius: 0 4px 4px 0; }
+.vz-split-bar i:only-child { border-radius: 4px; }
+.vz-legend { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12px; line-height: 18px; color: var(--ink-2); }
+.vz-legend li { display: inline-flex; align-items: center; gap: 5px; }
+.vz-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.vz-legend b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.vz-legend .n { color: var(--ink-3); }
+/* Money in and out per horizon */
+.vz-flow { margin: 4px 0 10px; max-width: 640px; }
+.vz-flow svg { display: block; width: 100%; height: auto; }
+.vz-base { stroke: var(--line-strong); stroke-width: 1; }
+.vz-in { fill: var(--ok); }
+.vz-out { fill: #8a96a8; }
+.vz-v { font: 500 10px var(--font-sans), sans-serif; fill: var(--ink-2); }
+.vz-ax { font: 500 11px var(--font-sans), sans-serif; fill: var(--ink-2); }
+.vz-net { font: 700 12px var(--font-mono), monospace; fill: var(--ink); }
+.vz-net.risk { fill: var(--risk); }
+/* Bar inside a table cell */
+.vz-cell { display: block; height: 6px; margin-top: 3px; border-radius: 0 3px 3px 0; background: transparent; }
+.vz-cell i { display: block; height: 100%; margin-left: auto; border-radius: 3px 0 0 3px; }
+/* Summary tiles that speak: the tile takes the colour of its state */
+.sum > div[data-tone] { box-shadow: inset 0 -3px 0 var(--tn); }
+.sum > div[data-tone] .v { color: var(--tn); }
+.sum > div[data-tone="risk"] { --tn: var(--risk); background: var(--risk-soft); }
+.sum > div[data-tone="attn"] { --tn: var(--attn); background: var(--attn-soft); }
+.sum > div[data-tone="ok"] { --tn: var(--ok); }
+.sum > div[data-tone="info"] { --tn: var(--brand); }
+.sum > div a.go { font-size: 12px; font-weight: 600; margin-top: 2px; }
+/* Forms: short fields sit side by side instead of one long column */
+.qa-form.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 12px; align-items: end; }
+.qa-form.cols > .wide { grid-column: 1 / -1; }
+.qa-form.cols input, .qa-form.cols select, .qa-form.cols textarea { width: 100%; }
+.qa-form.cols > button { justify-self: start; }
+/* "Nuevo ..." / "Registrar ..." folded cards: while closed they read as what they are, a button that starts something */
+details.card:not([open]):has(> summary:not(.small)) { padding: 0; border: 1px dashed var(--brand-line); background: var(--surface); }
+details.card:not([open]) > summary:not(.small) { list-style: none; display: flex; align-items: center; gap: 10px; padding: 12px 16px; font-size: 14px; font-weight: 600; border-radius: var(--radius); }
+details.card:not([open]) > summary:not(.small)::-webkit-details-marker { display: none; }
+details.card:not([open]) > summary:not(.small)::before { content: "+"; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--brand); color: #fff; font: 700 16px/1 var(--font-sans), sans-serif; flex: none; }
+details.card:not([open]) > summary:not(.small):hover { background: var(--brand-soft); }
+details.card[open] > summary:not(.small) { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+/* Empty state that says what to do next */
+.vz-empty { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 14px 16px; border: 1px dashed var(--brand-line); border-radius: var(--radius); background: var(--brand-soft); font-size: 13px; line-height: 19px; color: var(--ink-2); margin-bottom: 16px; }
+.vz-empty b { color: var(--ink); }
+@media (max-width: 599px) { td.vz-col, th.vz-col { display: none; } .vz-meter-row { grid-template-columns: 1fr; gap: 4px; } }
