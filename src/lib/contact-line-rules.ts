@@ -90,10 +90,41 @@ export function ago(last: Date, today: Date): Txt {
   return m ? { es: `hace ${ys.es} y ${span(m).es}`, en: `${ys.en} and ${span(m).en} ago` } : { es: `hace ${ys.es}`, en: `${ys.en} ago` };
 }
 
-export type Channel = "CALL" | "MEETING" | "EMAIL" | "WHATSAPP";
+export type Channel = "CALL" | "VIDEO" | "MEETING" | "EMAIL" | "WHATSAPP";
 export const CHANNEL_LABEL: Record<Channel, Txt> = {
   CALL: { es: "Llamada", en: "Call" },
+  VIDEO: { es: "Videollamada", en: "Video call" },
   MEETING: { es: "Visita o reunión", en: "Visit or meeting" },
   EMAIL: { es: "Correo", en: "Email" },
   WHATSAPP: { es: "WhatsApp", en: "WhatsApp" },
 };
+
+// ---------- How a registered contact ended (Activity.outcome) ----------
+
+export type RegisterKind = "CALL" | "VIDEO" | "EMAIL" | "MEETING";
+export type Outcome = Txt & { key: string; /** the line written in the company's history */ record: Txt; /** does it count as "we were in contact"? */ counts: boolean };
+export const OUTCOMES: Record<RegisterKind, Outcome[]> = {
+  CALL: [
+    { key: "ANSWERED", es: "Contestó", en: "Answered", record: { es: "Llamada contestada", en: "Call answered" }, counts: true },
+    { key: "UNANSWERED", es: "No contestó", en: "Unanswered", record: { es: "Llamada sin respuesta", en: "Call not answered" }, counts: false },
+  ],
+  // A video call is stored as a CALL interaction; its outcome (VIDEO_…) is what tells it apart.
+  VIDEO: [
+    { key: "VIDEO_DONE", es: "Videollamada realizada", en: "Completed the video call", record: { es: "Videollamada realizada", en: "Video call completed" }, counts: true },
+    { key: "VIDEO_ARRANGING", es: "Programando la videollamada", en: "Arranging the video call", record: { es: "Programando la videollamada", en: "Arranging the video call" }, counts: false },
+    { key: "VIDEO_CANCELLED", es: "Videollamada cancelada", en: "Cancelled video call", record: { es: "Videollamada cancelada", en: "Video call cancelled" }, counts: false },
+  ],
+  EMAIL: [
+    { key: "PENDING_REPLY", es: "Pendiente de respuesta", en: "Pending answer", record: { es: "Correo enviado, pendiente de respuesta", en: "Email sent, pending answer" }, counts: true },
+    { key: "REPLIED", es: "Recibimos respuesta", en: "Received a reply", record: { es: "Correo con respuesta recibida", en: "Email with a reply received" }, counts: true },
+  ],
+  MEETING: [
+    { key: "DONE", es: "Visita realizada", en: "Completed the visit", record: { es: "Visita realizada", en: "Visit completed" }, counts: true },
+    { key: "ARRANGING", es: "Organizando la visita", en: "Arranging the visit", record: { es: "Organizando la visita", en: "Arranging the visit" }, counts: false },
+    { key: "CANCELLED", es: "Visita cancelada", en: "Cancelled visit", record: { es: "Visita cancelada", en: "Visit cancelled" }, counts: false },
+  ],
+};
+export const outcomeOf = (kind: string, key: unknown): Outcome | null => (OUTCOMES[kind as RegisterKind] ?? []).find((o) => o.key === String(key ?? "")) ?? null;
+/** Outcomes that do not move a company to "al día": nobody answered, or the visit has not happened. */
+export const OUTCOMES_NOT_CONTACT = Object.values(OUTCOMES).flat().filter((o) => !o.counts).map((o) => o.key);
+export const isVideo = (outcome: string | null | undefined) => !!outcome && outcome.startsWith("VIDEO_");

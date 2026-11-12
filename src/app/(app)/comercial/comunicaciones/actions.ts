@@ -8,7 +8,7 @@ import { refreshApp } from "@/lib/revalidate";
 import { today } from "@/lib/domain";
 import { valueKindOf } from "@/lib/goal-rules";
 import { CONTACT_LINE_SOURCE, getContactLinePolicy } from "@/lib/contact-line";
-import { CONTACT_LINE_KEY, parseCuts } from "@/lib/contact-line-rules";
+import { CONTACT_LINE_KEY, outcomeOf, parseCuts } from "@/lib/contact-line-rules";
 
 // Comercial · Línea de comunicaciones. Registering a call, an email or a note from the slide, and the cut points.
 
@@ -25,7 +25,7 @@ function back(fd: FormData, extra: Record<string, string>): never {
   redirect(`${BASE}?${p}`);
 }
 
-const KINDS = { CALL: "llamada", EMAIL: "correo", NOTE: "nota" } as const;
+const KINDS = { CALL: "llamada", VIDEO: "video", MEETING: "visita", EMAIL: "correo", NOTE: "nota" } as const;
 
 /** Anyone can register a contact with any customer (same rule as the customer page); it is signed with their name. */
 export async function registerContact(fd: FormData) {
@@ -34,9 +34,20 @@ export async function registerContact(fd: FormData) {
   const type = String(fd.get("type") ?? "") as keyof typeof KINDS;
   const account = accountId ? await db.account.findFirst({ where: { id: accountId, internal: false }, select: { id: true } }) : null;
   if (!account || !(type in KINDS)) back(fd, { err: "cliente" });
-  const subject = String(fd.get("subject") ?? "").trim().slice(0, 200);
-  if (!subject) back(fd, { cliente: accountId, err: "texto", a: KINDS[type] });
-  const body = String(fd.get("body") ?? "").trim().slice(0, 2000) || null;
+  const notes = String(fd.get("body") ?? "").replace(/\r\n/g, "\n").trim().slice(0, 2000);
+  const firstLine = notes.split("\n")[0].trim();
+
+  // A note is only its text: it never counts as a contact, so the person stays on the company.
+  if (type === "NOTE") {
+    if (!notes) back(fd, { cliente: accountId, err: "texto", a: KINDS.NOTE });
+    const subject = firstLine.slice(0, 200);
+    await db.activity.create({ data: { type: "NOTE", subject, body: notes === subject ? null : notes, userId: user.id, accountId, source: CONTACT_LINE_SOURCE } });
+    back(fd, { cliente: accountId, ok: "nota" });
+  }
+
+  // Call, video call, email, visit: how it ended is required (one of the check boxes); the notes are optional.
+  const outcome = outcomeOf(type, fd.get("outcome"));
+  if (!outcome) back(fd, { cliente: accountId, err: "estado", a: KINDS[type] });
 
   // The day it happened: today keeps the real time; an earlier day is stored as that calendar day. Never the future.
   const T = today();
@@ -50,13 +61,16 @@ export async function registerContact(fd: FormData) {
 
   await db.activity.create({
     data: {
-      type, subject, body, occurredAt, userId: user.id, accountId, contactId: contact?.id ?? null, source: CONTACT_LINE_SOURCE,
-      valueKind: type === "NOTE" ? null : valueKindOf(fd.get("valueKind")),
+      type: type === "VIDEO" ? "CALL" : (type as "CALL" | "MEETING" | "EMAIL"), outcome: outcome.key, occurredAt, userId: user.id, accountId, contactId: contact?.id ?? null, source: CONTACT_LINE_SOURCE,
+      // The history line says how it ended, then the first line of the notes; the full notes stay below it.
+      subject: (firstLine ? `${outcome.record.es}: ${firstLine}` : outcome.record.es).slice(0, 200),
+      body: notes && notes !== firstLine ? notes : null,
+      // "What did it leave?" only applies when the contact really happened.
+      valueKind: outcome.counts && outcome.key !== "PENDING_REPLY" ? valueKindOf(fd.get("valueKind")) : null,
     },
   });
-  // A note leaves the company where it was, so the person stays on it; a call or an email moves it to "al día".
-  if (type === "NOTE") back(fd, { cliente: accountId, ok: "nota" });
-  back(fd, { ok: KINDS[type], hecho: accountId });
+  // Something that counts moves the company, so the person goes back to the list; otherwise they stay on the company.
+  back(fd, { ok: "reg", k: type, o: outcome.key, hecho: accountId, ...(outcome.counts ? {} : { cliente: accountId }) });
 }
 
 export async function saveContactLinePolicy(fd: FormData) {

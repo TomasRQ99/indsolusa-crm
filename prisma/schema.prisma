@@ -777,6 +777,9 @@ model Activity {
   // Comercial C7 §39: what this contact produced (INFO, NEED, RELATIONSHIP, DECISION_MAKER, NEXT_MOVE, OBJECTION,
   // DECISION_WINDOW). Null = nothing useful (an attempt with no answer), so it never counts as a useful contact.
   valueKind  String?
+  // Línea de comunicaciones: how the contact ended. CALL: ANSWERED | UNANSWERED · EMAIL: PENDING_REPLY | REPLIED ·
+  // MEETING (visit): DONE | ARRANGING | CANCELLED. Null = recorded elsewhere, taken as a contact that happened.
+  outcome    String?
 
   @@index([accountId, occurredAt])
   @@index([occurredAt])

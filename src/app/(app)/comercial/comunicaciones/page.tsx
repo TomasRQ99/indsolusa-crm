@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { dayInput } from "@/lib/domain";
 import { VALUE_KINDS } from "@/lib/goal-rules";
 import { contactLine, contactLineCompany, getContactLinePolicy, type LineRow } from "@/lib/contact-line";
-import { CHANNEL_LABEL, ago, span } from "@/lib/contact-line-rules";
+import { CHANNEL_LABEL, OUTCOMES, ago, isVideo, outcomeOf, span } from "@/lib/contact-line-rules";
 import { ContactRegister } from "@/components/ContactRegister";
 import { registerContact, saveContactLinePolicy } from "./actions";
 
@@ -14,7 +14,7 @@ import { registerContact, saveContactLinePolicy } from "./actions";
 // were in contact. A band opens a slide with its companies; choosing one lets the person register a call, an email
 // or a note, or go to Visitas to plan a visit. Cut points are a versioned policy that management can change.
 
-type SP = { u?: string; rango?: string; cliente?: string; a?: string; ok?: string; err?: string; hecho?: string };
+type SP = { u?: string; rango?: string; cliente?: string; a?: string; ok?: string; err?: string; hecho?: string; k?: string; o?: string };
 
 export default async function ContactLinePage({ searchParams }: { searchParams: Promise<SP> }) {
   const user = await requireUser();
@@ -50,22 +50,32 @@ export default async function ContactLinePage({ searchParams }: { searchParams: 
   const lastLine = (r: LineRow) => r.last
     ? `${t("Último contacto", "Last contact")}: ${i.date(r.last)} · ${t(ago(r.last, line.today).es, ago(r.last, line.today).en)}${r.channel ? ` · ${t(CHANNEL_LABEL[r.channel].es, CHANNEL_LABEL[r.channel].en)}` : ""}`
     : t("Sin contacto registrado", "No contact on record");
+  // What was just registered: how it ended, with which company, and where the company stands now.
+  const reg = sp.ok === "reg" ? outcomeOf(sp.k ?? "", sp.o) : null;
+  const doneBand = sp.hecho ? line.bands.find((b) => b.rows.some((r) => r.id === sp.hecho)) ?? null : null;
+  const regMsg = reg
+    ? `${t(reg.record.es, reg.record.en)}${done ? ` · ${done.name}` : ""}. ${doneBand ? (reg.counts
+      ? t(`La empresa está ahora en «${doneBand.title.es}».`, `The company is now in “${doneBand.title.en}”.`)
+      : t(`Todavía no cuenta como contacto: la empresa sigue en «${doneBand.title.es}».`, `It doesn't count as a contact yet: the company stays in “${doneBand.title.en}”.`)) : ""}`
+    : "";
   const okMsg: Record<string, string> = {
-    llamada: t(`Llamada registrada${done ? ` con ${done.name}` : ""}. La empresa pasó a «Al día».`, `Call saved${done ? ` with ${done.name}` : ""}. The company moved to “Up to date”.`),
-    correo: t(`Correo registrado${done ? ` con ${done.name}` : ""}. La empresa pasó a «Al día».`, `Email saved${done ? ` with ${done.name}` : ""}. The company moved to “Up to date”.`),
+    reg: regMsg,
     nota: t("Nota guardada en la historia de la empresa.", "Note saved in the company's history."),
     rangos: t("Rangos guardados como nueva versión.", "Ranges saved as a new version."), igual: t("Sin cambios.", "No changes."),
   };
   const errMsg: Record<string, string> = {
     cliente: t("Esa empresa no existe.", "That company doesn't exist."),
-    texto: t("Escribe en una línea qué pasó.", "Write in one line what happened."),
+    texto: t("Escribe la nota antes de guardar.", "Write the note before saving."),
+    estado: t("Marca una de las casillas para decir cómo quedó.", "Tick one of the boxes to say how it ended."),
     fecha: t("La fecha no puede ser futura.", "The date can't be in the future."),
     permiso: t("Solo la dirección cambia los rangos.", "Only management changes the ranges."),
     rangos: t("Escribe entre 2 y 6 cortes en meses, de menor a mayor. Ejemplo: 1, 3, 6, 12.", "Write 2 to 6 cuts in months, smallest first. Example: 1, 3, 6, 12."),
   };
   const kinds = Object.entries(VALUE_KINDS).map(([key, v]) => ({ key, label: t(v.es, v.en) }));
   const typeLabel: Record<string, string> = { CALL: t("Llamada", "Call"), MEETING: t("Visita o reunión", "Visit or meeting"), EMAIL: t("Correo", "Email"), NOTE: t("Nota", "Note") };
-  const initial = sp.a === "llamada" ? "CALL" : sp.a === "correo" ? "EMAIL" : sp.a === "nota" ? "NOTE" : null;
+  const initial = sp.a === "llamada" ? "CALL" : sp.a === "video" ? "VIDEO" : sp.a === "visita" ? "MEETING" : sp.a === "correo" ? "EMAIL" : sp.a === "nota" ? "NOTE" : null;
+  const opt = (k: "CALL" | "VIDEO" | "MEETING" | "EMAIL") => OUTCOMES[k].map((o) => ({ key: o.key, label: t(o.es, o.en), counts: o.counts }));
+  const outcomes = { CALL: opt("CALL"), VIDEO: opt("VIDEO"), MEETING: opt("MEETING"), EMAIL: opt("EMAIL") };
   const inSlide = !!open;
 
   return (
@@ -118,7 +128,7 @@ export default async function ContactLinePage({ searchParams }: { searchParams: 
               </li>
             ))}
           </ol>
-          <p className="src">{t("Cuenta como contacto una llamada, una visita o reunión, un correo o una conversación de WhatsApp registrados en SOLU. Una nota no cuenta.", "A call, a visit or meeting, an email or a WhatsApp conversation recorded in SOLU counts as a contact. A note doesn't.")}</p>
+          <p className="src">{t("Cuenta como contacto una llamada, una videollamada, una visita o reunión, un correo o una conversación de WhatsApp registrados en SOLU. No cuentan: una nota, una llamada sin respuesta, ni una visita o videollamada que se está organizando o se canceló.", "A call, a video call, a visit or meeting, an email or a WhatsApp conversation recorded in SOLU counts as a contact. These don't: a note, an unanswered call, or a visit or video call that is being arranged or was cancelled.")}</p>
         </>
       )}
 
@@ -149,6 +159,7 @@ export default async function ContactLinePage({ searchParams }: { searchParams: 
             <div className="cl-sbody">
               {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}
               {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
+              {reg?.key === "ARRANGING" && sp.hecho && <Link className="qa-btn" style={{ alignSelf: "flex-start" }} href={`/visitas?cliente=${sp.hecho}#proximas`}>{t("Planearla en Visitas", "Plan it in Visits")} →</Link>}
 
               {company ? (
                 <>
@@ -158,7 +169,7 @@ export default async function ContactLinePage({ searchParams }: { searchParams: 
                     <p className="small">{companyRow ? lastLine(companyRow) : ""}</p>
                     <p className="src">{t("Responsable", "Owner")}: {company.owner.name}{company.phone ? ` · ${t("Tel.", "Phone")} ${company.phone}` : ""} · <Link href={`/accounts/${company.id}`}>{t("Abrir la ficha del cliente", "Open the customer page")}</Link></p>
                   </div>
-                  <ContactRegister key={company.id} es={i.es} action={registerContact} accountId={company.id} u={u} rango={String(open.index)} todayInput={dayInput(line.today)} kinds={kinds} initial={initial}
+                  <ContactRegister key={company.id} es={i.es} action={registerContact} accountId={company.id} u={u} rango={String(open.index)} todayInput={dayInput(line.today)} kinds={kinds} outcomes={outcomes} initial={initial}
                     contacts={company.contacts.map((c) => ({ id: c.id, label: `${c.firstName} ${c.lastName}${c.title ? ` · ${c.title}` : ""}` }))} />
                   {company.contacts.length > 0 && (
                     <div className="cl-sec">
@@ -170,7 +181,7 @@ export default async function ContactLinePage({ searchParams }: { searchParams: 
                     <b>{t("Lo último registrado", "Latest on record")}</b>
                     {company.activities.length === 0 ? <p className="small muted">{t("Nada todavía.", "Nothing yet.")}</p> : (
                       <ul className="mk-ul">{company.activities.map((a) => (
-                        <li key={a.id} className="small"><span className="sig wait">{typeLabel[a.type]}</span> {a.subject}
+                        <li key={a.id} className="small"><span className="sig wait">{isVideo(a.outcome) ? t("Videollamada", "Video call") : typeLabel[a.type]}</span> {a.subject}
                           <span className="src block">{i.date(a.occurredAt)} · {a.user.name}{a.contact ? ` · ${t("con", "with")} ${a.contact.firstName} ${a.contact.lastName}` : ""}</span>
                           {a.body && <span className="muted block">{a.body.slice(0, 240)}</span>}
                         </li>
@@ -180,7 +191,7 @@ export default async function ContactLinePage({ searchParams }: { searchParams: 
                 </>
               ) : open.rows.length === 0 ? <p className="small muted">{t("Ninguna empresa en este rango.", "No company in this range.")}</p> : (
                 <>
-                  <p className="src">{t("Elige una empresa para registrar una llamada, una visita, un correo o una nota. Primero las que más llevan esperando.", "Choose a company to register a call, a visit, an email or a note. The longest wait comes first.")}</p>
+                  <p className="src">{t("Elige una empresa para registrar una llamada, una videollamada, una visita, un correo o una nota. Primero las que más llevan esperando.", "Choose a company to register a call, a video call, a visit, an email or a note. The longest wait comes first.")}</p>
                   <ul className="cl-list">
                     {open.rows.map((r) => (
                       <li key={r.id}>

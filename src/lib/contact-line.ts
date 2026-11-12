@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { today } from "./domain";
-import { CONTACT_LINE_KEY, DEFAULT_CONTACT_LINE, bandOf, bandsOf, cutsOf, type Band, type Channel, type ContactLinePolicy } from "./contact-line-rules";
+import { CONTACT_LINE_KEY, DEFAULT_CONTACT_LINE, OUTCOMES_NOT_CONTACT, isVideo, bandOf, bandsOf, cutsOf, type Band, type Channel, type ContactLinePolicy } from "./contact-line-rules";
 
 // Comercial · Línea de comunicaciones. One truth, derived: nothing is stored about "last contact" — it is read from
 // what SOLU already has (interactions, visits, conversations, tracked mail), so it can never drift from the record.
@@ -28,8 +28,8 @@ export async function contactLine(ownerId: string | null, cuts: number[]): Promi
   const [accounts, acts, threads, mails] = await Promise.all([
     db.account.findMany({ where: scope, orderBy: { name: "asc" }, select: { id: true, name: true, ownerId: true, owner: { select: { name: true } } } }),
     db.activity.groupBy({
-      by: ["accountId", "type"],
-      where: { account: scope, type: { in: ["CALL", "MEETING", "EMAIL"] }, uncertain: false, occurredAt: { lte: now }, OR: [{ source: null }, { source: { notIn: NOT_CUSTOMER_CONTACT } }] },
+      by: ["accountId", "type", "outcome"],
+      where: { account: scope, type: { in: ["CALL", "MEETING", "EMAIL"] }, uncertain: false, occurredAt: { lte: now }, AND: [{ OR: [{ source: null }, { source: { notIn: NOT_CUSTOMER_CONTACT } }] }, { OR: [{ outcome: null }, { outcome: { notIn: OUTCOMES_NOT_CONTACT } }] }] },
       _max: { occurredAt: true },
     }),
     db.commThread.groupBy({ by: ["accountId", "channel"], where: { account: scope, channel: { not: "NOTE" }, lastAt: { lte: now } }, _max: { lastAt: true } }),
@@ -41,7 +41,7 @@ export async function contactLine(ownerId: string | null, cuts: number[]): Promi
     const cur = best.get(id);
     if (!cur || at > cur.at) best.set(id, { at, channel });
   };
-  for (const a of acts) see(a.accountId, a._max.occurredAt, a.type as Channel);
+  for (const a of acts) see(a.accountId, a._max.occurredAt, isVideo(a.outcome) ? "VIDEO" : (a.type as Channel));
   for (const t of threads) see(t.accountId, t._max.lastAt, t.channel as Channel);
   for (const m of mails) see(m.accountId, m._max.sentAt, "EMAIL");
 
@@ -64,7 +64,7 @@ export async function contactLineCompany(accountId: string) {
       activities: {
         where: { OR: [{ type: { in: ["CALL", "MEETING", "EMAIL"] } }, { type: "NOTE", phase: null }] },
         orderBy: { occurredAt: "desc" }, take: 6,
-        select: { id: true, type: true, subject: true, body: true, occurredAt: true, user: { select: { name: true } }, contact: { select: { firstName: true, lastName: true } } },
+        select: { id: true, type: true, subject: true, body: true, outcome: true, occurredAt: true, user: { select: { name: true } }, contact: { select: { firstName: true, lastName: true } } },
       },
     },
   });
