@@ -86,6 +86,12 @@ export const canAssignBudgets = (u: U) => u.role === "GERENCIA" || u.role === "F
 export const canSetPay = (u: U) => u.role === "GERENCIA";
 
 /** Mercado §18: loading economic datasets is for Management and Marketing. */
+/** Explorar prospectos (Apollo): who may search, reveal a person (it costs credits) and pass them to Mercado. */
+export const PROSPECT_ROLES = ["GERENCIA", "DIRECTOR_COMERCIAL", "NEGOCIADOR_COMERCIAL", "MARKETING"];
+export function canProspect(u: U) {
+  return PROSPECT_ROLES.includes(u.role);
+}
+
 export function canImportData(u: U) {
   return canManageAll(u) || u.role === "MARKETING";
 }

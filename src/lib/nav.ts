@@ -44,6 +44,7 @@ export const MODULES: NavModule[] = [
     key: "mercado", es: "MERCADO", en: "MARKET", match: ["/mercado", "/accounts", "/contacts", "/suppliers", "/localizar", "/productos"],
     tabs: [
       { href: "/mercado", es: "Explorar", en: "Explore" },
+      { href: "/mercado/prospectos", es: "Explorar prospectos", en: "Explore prospects", roles: ["GERENCIA", "DIRECTOR_COMERCIAL", "NEGOCIADOR_COMERCIAL", "MARKETING"] },
       { href: "/mercado/economia", es: "Economía", en: "Economy" },
       { href: "/mercado/fuentes", es: "Fuentes", en: "Sources", roles: ["GERENCIA", "DIRECTOR_COMERCIAL", "MARKETING"] },
       { href: "/accounts", es: "Clientes", en: "Customers" },

@@ -8,6 +8,7 @@ import { eventsOf } from "./domain-events";
 /** Tracked fields per model; "all" = every scalar field the write touches. */
 export const AUDITED: Record<string, readonly string[] | "all"> = {
   User: ["role", "active", "email", "name"],
+  Prospect: ["status", "email", "contactId", "accountId", "revealedById"],
   Account: ["creditLimit", "paymentTermsDays", "allowsPartialBilling", "taxId", "requiresReceptionCode", "requiresPortal", "ownerId"],
   Deal: ["sellerKey", "amount", "supplierCost", "freightCost", "otherCosts", "stage", "ownerId", "promisedDate", "poAcceptedAt", "creditExceptionById", "creditExceptionAt", "creditExceptionNote", "closedAt", "explorationId", "plantId", "originRef"],
   DealItem: ["qty", "unitPrice", "code", "description"],

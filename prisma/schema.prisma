@@ -5266,3 +5266,55 @@ model RoleGapReview {
 
   @@index([userId, roleKey])
 }
+
+// ---------- Mercado · Explorar prospectos (Apollo) ----------
+
+/// A person found in Apollo and revealed by someone in SOLU (costs Apollo credits). Fuente: Apollo.
+/// One row per Apollo person: revealing the same person again reads this row and spends nothing.
+model Prospect {
+  id             String   @id @default(cuid())
+  apolloId       String   @unique
+  firstName      String
+  lastName       String
+  title          String?
+  email          String?
+  /// As Apollo reports it: verified, unverified, likely to engage, unavailable
+  emailStatus    String?
+  linkedinUrl    String?
+  city           String?
+  state          String?
+  country        String?
+  orgName        String?
+  orgDomain      String?
+  orgWebsite     String?
+  orgIndustry    String?
+  orgEmployees   Int?
+  /// What the person was searched for, as written in the search that found them
+  foundWith      String?
+  /// NEW | ADDED (now a contact in Mercado) | DISMISSED
+  status         String   @default("NEW")
+  contactId      String?
+  accountId      String?
+  credits        Int      @default(0)
+  revealedById   String
+  revealedByName String
+  revealedAt     DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status, revealedAt])
+}
+
+/// Every call to Apollo that can cost credits, and the searches, so the monthly cap is counted from facts.
+model ApolloUsage {
+  id        String   @id @default(cuid())
+  /// PEOPLE_SEARCH (free) | REVEAL
+  kind      String
+  /// Credits SOLU counts for this call (Apollo's own count is the one that bills)
+  credits   Int      @default(0)
+  ok        Boolean  @default(true)
+  detail    String?
+  userName  String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

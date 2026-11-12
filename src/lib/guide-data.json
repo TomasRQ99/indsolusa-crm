@@ -154,6 +154,22 @@
    "expect": "Una señal sola no crea una oportunidad de venta. Solo una necesidad real pasa a Comercial."
   },
   {
+   "id": "prospectos",
+   "m": "mercado",
+   "t": "Explorar prospectos (Apollo)",
+   "path": "MERCADO → Explorar prospectos (Gerencia, Dirección Comercial, Negociador Comercial, Mercadeo)",
+   "why": "Encuentra personas que SOLU todavía no conoce, por cargo y empresa, en la base de datos de Apollo. Buscar no cuesta; revelar a una persona usa 1 crédito de Apollo.",
+   "steps": [
+    "Abre [[Explorar prospectos]]. Si dice que Apollo aún no está conectado, Gerencia sigue los cinco pasos que aparecen ahí.",
+    "Escribe los cargos separados por comas (en español y en inglés), dónde vive la persona o la sede de la empresa, y haz clic en [[Buscar en Apollo]].",
+    "Lee los resultados: nombre, apellido incompleto, cargo, empresa y si Apollo tiene su correo.",
+    "En la persona que valga la pena, haz clic en [[Revelar · 1 crédito]] y confirma. Queda en «Prospectos revelados» con nombre completo, correo de trabajo y LinkedIn.",
+    "Para trabajarla en SOLU, haz clic en [[Pasar a Clientes y Contactos]]: se crea el cliente si no existía y la persona queda como contacto.",
+    "Si no sirve, [[Descartar]]."
+   ],
+   "expect": "Arriba ves los créditos usados en el mes y el tope. Revelar dos veces a la misma persona no gasta otro crédito. Si la empresa o la persona ya estaban en SOLU, se enlazan sin duplicar. Cada prospecto dice quién lo reveló, cuándo y con qué búsqueda. SOLU nunca pide correos personales ni teléfonos."
+  },
+  {
    "id": "economia",
    "m": "mercado",
    "t": "Economía (datos de Supersociedades)",
