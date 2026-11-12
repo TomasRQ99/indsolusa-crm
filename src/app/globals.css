@@ -1966,3 +1966,55 @@ tr:target td { background: var(--brand-soft); }
   .guide-panel { left: 8px; right: 8px; bottom: 72px; width: auto; max-width: none; max-height: 46vh; }
   .guide-min { bottom: 76px; right: 8px; }
 }
+
+/* ---------- Comercial · Línea de comunicaciones (2026-11-12) ----------
+   A row of time bands, fresh on the left and cold on the right; a band opens a slide on the right edge.
+   Tone = state colour: calm (green) · plan (blue) · act (amber) · risk (red). Classes use the `cl-` prefix. */
+.cl-sum { font-size: 14px; line-height: 20px; margin: 0 0 12px; color: var(--ink); }
+.cl-sum b { font-size: 18px; }
+.cl-line { list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 0; }
+.cl-band { --tone: var(--ink-3); --tone-soft: var(--surface-sunken); position: relative; display: flex; flex-direction: column; gap: 4px; padding: 26px 14px 14px; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--tone); margin: 0 -1px -1px 0; min-width: 0; }
+.cl-band:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.cl-band:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.cl-band[data-tone="calm"], .cl-slide[data-tone="calm"] { --tone: var(--ok); --tone-soft: var(--ok-soft); }
+.cl-band[data-tone="plan"], .cl-slide[data-tone="plan"] { --tone: var(--brand); --tone-soft: var(--brand-soft); }
+.cl-band[data-tone="act"], .cl-slide[data-tone="act"] { --tone: var(--attn); --tone-soft: var(--attn-soft); }
+.cl-band[data-tone="risk"], .cl-slide[data-tone="risk"] { --tone: var(--risk); --tone-soft: var(--risk-soft); }
+.cl-dot { position: absolute; top: -9px; left: 14px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); border: 4px solid var(--tone); }
+.cl-title { font-size: 13px; line-height: 18px; color: var(--tone); }
+.cl-count { font: 700 30px/34px var(--font-sans), sans-serif; color: var(--ink); font-variant-numeric: tabular-nums; }
+.cl-names { list-style: none; margin: 6px 0 0; padding: 6px 0 0; border-top: 1px solid var(--line); display: grid; gap: 4px; font-size: 12.5px; line-height: 17px; }
+.cl-names li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-open { margin-top: auto; align-self: flex-start; }
+.cl-names + .cl-open { margin-top: 10px; }
+.cl-veil { position: fixed; inset: 0; z-index: 70; background: rgba(15, 27, 45, 0.32); cursor: default; }
+.cl-slide { --tone: var(--brand); --tone-soft: var(--brand-soft); position: fixed; top: 0; right: 0; bottom: 0; z-index: 71; width: 480px; max-width: 100vw; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--line); box-shadow: -16px 0 40px rgba(15, 27, 45, 0.2); animation: cl-in 0.18s ease-out; }
+@keyframes cl-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cl-slide { animation: none; } }
+.cl-shead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 16px; background: var(--tone-soft); border-bottom: 1px solid var(--line); border-top: 4px solid var(--tone); }
+.cl-shead b { font-size: 16px; line-height: 22px; color: var(--tone); }
+.cl-sbody { flex: 1; overflow-y: auto; padding: 14px 16px 24px; display: flex; flex-direction: column; gap: 12px; }
+.cl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cl-list a { display: block; padding: 10px 12px; border: 1px solid var(--line); border-left: 4px solid var(--tone); border-radius: var(--radius); color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+.cl-list a:hover { border-color: var(--brand); border-left-color: var(--tone); background: var(--brand-soft); text-decoration: none; }
+.cl-list a b { color: var(--brand); font-size: 13.5px; }
+.cl-co h2 { font-size: 18px; line-height: 24px; margin: 0 0 2px; overflow-wrap: anywhere; }
+.cl-co p { margin: 0 0 2px; }
+.cl-reg { border: 1px solid var(--brand-line); border-radius: 8px; padding: 12px; background: var(--brand-soft); display: flex; flex-direction: column; gap: 10px; }
+.cl-reg > .src { margin: 0; }
+.cl-acts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.cl-acts button, .cl-acts a { display: inline-flex; align-items: center; justify-content: center; height: 38px; padding: 0 6px; border-radius: 6px; border: 1px solid var(--brand-line); background: var(--surface); color: var(--brand); font: 600 13px/16px var(--font-sans), sans-serif; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.cl-acts button:hover, .cl-acts a:hover { border-color: var(--brand); background: #fff; text-decoration: none; }
+.cl-acts button.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.cl-form { background: var(--surface); border-radius: 6px; padding: 12px; border: 1px solid var(--line); }
+.cl-form .qa-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.cl-form .qa-row > label { flex: 1 1 140px; min-width: 0; }
+.cl-sec > b { display: block; font-size: 12px; letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 4px; }
+@media (max-width: 599px) {
+  .cl-line { grid-template-columns: 1fr 1fr; }
+  .cl-band, .cl-band:first-child, .cl-band:last-child { border-radius: 0; }
+  .cl-slide { width: 100vw; }
+  .cl-sbody { padding-bottom: 88px; }
+}
+.cl-form .qa-row { align-items: flex-start; }
+.cl-form .qa-row label > input, .cl-form .qa-row label > select { flex: none; width: 100%; }

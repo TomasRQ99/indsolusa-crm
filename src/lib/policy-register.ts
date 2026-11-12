@@ -15,5 +15,6 @@ export const POLICY_REGISTER: PolicyEntry[] = [
   { key: "opsPolicy", es: "Operaciones: tolerancias de flete, courier o carga, inventario", en: "Operations: freight tolerances, courier or cargo, stock", whoEs: "Gerencia", whoEn: "Management", href: "/operaciones/configuracion" },
   { key: "authPolicy", es: "Rangos de autorización por nivel", en: "Authorisation ranges by level", whoEs: "Gerencia", whoEn: "Management", href: "/profile/autorizaciones" },
   { key: "focusPolicy", es: "Foco de alto valor", en: "High-value focus", whoEs: "Gerencia o Dirección", whoEn: "Management or Direction", href: "/comercial/foco" },
+  { key: "contactLine", es: "Línea de comunicaciones: rangos de tiempo sin contacto", en: "Communication line: time ranges without contact", whoEs: "Gerencia o Dirección", whoEn: "Management or Direction", href: "/comercial/comunicaciones#rangos" },
   { key: "econThresholds", es: "Señales económicas de Mercado", en: "Market economic signals", whoEs: "Gerencia", whoEn: "Management", href: "/mercado/fuentes" },
 ];
