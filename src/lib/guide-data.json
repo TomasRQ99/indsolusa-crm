@@ -518,6 +518,37 @@
    "expect": "El borrador de notas con IA está apagado hasta tener la llave. El dinero del viaje (presupuesto, anticipo, gastos y liquidación) se explica en Administración → Viajes."
   },
   {
+   "id": "linea-comunicaciones",
+   "m": "comercial",
+   "t": "Línea de comunicaciones",
+   "path": "COMERCIAL → Línea de comunicaciones",
+   "why": "Cada empresa según la última vez que hablamos, para que ningún cliente pase meses sin saber de nosotros.",
+   "steps": [
+    "Abre [[Línea de comunicaciones]]. Cada rango dice cuántas empresas llevan ese tiempo sin contacto; entre más a la derecha, más tiempo.",
+    "Abre un rango y elige una empresa.",
+    "Elige qué registrar: [[Llamada]], [[Videollamada]], [[Visita]], [[Correo]] o [[Nota]].",
+    "Marca la casilla que dice cómo quedó (por ejemplo «Contestó» o «No contestó»), escribe las notas y guarda con [[Registrar llamada]].",
+    "Gerencia o Dirección: abajo, cambia los cortes en meses y haz clic en [[Guardar rangos]]."
+   ],
+   "expect": "Una llamada contestada, una videollamada o visita realizada y un correo mueven la empresa a «Al día». Una nota, una llamada sin respuesta o una visita que se está organizando quedan en la historia, pero la empresa sigue en su rango. Desde la empresa puedes abrir su perfil y diario."
+  },
+  {
+   "id": "perfiles",
+   "m": "comercial",
+   "t": "Perfiles: el diario de cada cliente",
+   "path": "COMERCIAL → Perfiles",
+   "why": "Qué le duele a cada cliente, con qué lucha y cómo lo vive cada persona en su trabajo, escrito después de cada conversación, para presentar nuestro servicio como la solución a esa lucha.",
+   "steps": [
+    "Abre [[Perfiles]] y elige un cliente. Arriba ves qué le duele, con qué lucha y el próximo seguimiento.",
+    "Haz clic en [[Escribir en el diario]]. Elige de qué conversación sale: una llamada, videollamada o visita ya registrada, una nueva, o ninguna si es solo una nota.",
+    "Escribe el dolor, la lucha, el impacto y lo personal. En «Presupuesto, decisión y acuerdo» está el resto.",
+    "En «Plan de seguimiento», escribe qué vas a hacer y cuándo. Guarda con [[Guardar en el diario]].",
+    "En Personas, usa [[+ Anotar algo de esta persona]]: qué quiere lograr, qué le complica el día, qué le preocupa, cómo decide. Siempre con cómo lo sabemos.",
+    "Abajo, guarda lo que conviene tener a la mano con [[+ Agregar documento]], [[+ Agregar producto]] o [[+ Agregar marca]]: una foto o PDF, un enlace, o los dos."
+   ],
+   "expect": "El seguimiento queda como un pendiente tuyo con su fecha en MI DÍA → Pendientes. Una llamada, videollamada o visita nueva queda también en la historia del cliente y cuenta en la Línea de comunicaciones. Lo que se anota de una persona es sobre su trabajo: SOLU no guarda datos de salud, religión, política ni vida familiar, ni calificativos, y explica por qué. Esa parte la ve solo el equipo comercial; Finanzas y Administración ven el diario."
+  },
+  {
    "id": "metas",
    "m": "comercial",
    "t": "Mis metas",
