@@ -15,17 +15,18 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
   const i = makeI18n(user.lang);
   const { t } = i;
   const sp = await searchParams;
-  const [locations, lots, a, b, c, d] = await Promise.all([
+  const [locations, lots, a, b, c, d, e] = await Promise.all([
     db.stockLocation.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
     db.stockLot.findMany({ where: { outAt: null }, orderBy: [{ state: "asc" }, { createdAt: "asc" }], include: { deal: { select: { id: true, code: true, title: true, account: { select: { name: true } } } }, receiptLine: { select: { exceptionKind: true, receipt: { select: { code: true, receivedAt: true, supplierPoId: true } } } } } }),
     db.goodsReceiptPhoto.aggregate({ _sum: { size: true }, _count: true }),
     db.visitAttachment.aggregate({ _sum: { size: true } }),
     db.missionExpense.aggregate({ _sum: { receiptSize: true } }),
     db.accountDocument.aggregate({ _sum: { size: true } }),
+    db.profileItem.aggregate({ _sum: { size: true } }),
   ]);
   const sum = stockSummary(lots);
   const blocked = lots.filter((l) => LOT_STATES[l.state]?.blocked);
-  const usedFiles = (a._sum.size ?? 0) + (b._sum.size ?? 0) + (c._sum.receiptSize ?? 0) + (d._sum.size ?? 0);
+  const usedFiles = (a._sum.size ?? 0) + (b._sum.size ?? 0) + (c._sum.receiptSize ?? 0) + (d._sum.size ?? 0) + (e._sum.size ?? 0);
   const mb = (n: number) => i.n2(n / 1024 / 1024);
   const errMsg: Record<string, string> = { nota: t("Escribe el motivo.", "Write the reason."), permiso: t("No tienes permiso sobre ese lote.", "You don't have permission on that lot."), bloqueado: t("Unidades en cuarentena o dañadas no salen hacia un cliente.", "Units in quarantine or damaged don't leave towards a customer."), accion: t("Ese cambio no aplica a este lote.", "That change doesn't apply to this lot."), salio: t("Ese lote ya salió.", "That lot already left."), lote: t("Ese lote no existe.", "That lot doesn't exist.") };
 

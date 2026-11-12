@@ -167,7 +167,7 @@ export default async function ContactLinePage({ searchParams }: { searchParams: 
                   <div className="cl-co">
                     <h2>{company.name}</h2>
                     <p className="small">{companyRow ? lastLine(companyRow) : ""}</p>
-                    <p className="src">{t("Responsable", "Owner")}: {company.owner.name}{company.phone ? ` · ${t("Tel.", "Phone")} ${company.phone}` : ""} · <Link href={`/accounts/${company.id}`}>{t("Abrir la ficha del cliente", "Open the customer page")}</Link></p>
+                    <p className="src">{t("Responsable", "Owner")}: {company.owner.name}{company.phone ? ` · ${t("Tel.", "Phone")} ${company.phone}` : ""} · <Link href={`/accounts/${company.id}`}>{t("Abrir la ficha del cliente", "Open the customer page")}</Link> · <Link href={`/comercial/perfiles/${company.id}`}>{t("Abrir su perfil y diario", "Open their profile and diary")}</Link></p>
                   </div>
                   <ContactRegister key={company.id} es={i.es} action={registerContact} accountId={company.id} u={u} rango={String(open.index)} todayInput={dayInput(line.today)} kinds={kinds} outcomes={outcomes} initial={initial}
                     contacts={company.contacts.map((c) => ({ id: c.id, label: `${c.firstName} ${c.lastName}${c.title ? ` · ${c.title}` : ""}` }))} />

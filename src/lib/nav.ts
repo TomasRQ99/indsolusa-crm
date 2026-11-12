@@ -62,6 +62,7 @@ export const MODULES: NavModule[] = [
       { href: "/comercial/foco", es: "Foco de alto valor", en: "High-value focus", group: "negocios" },
       { href: "/visitas", es: "Visitas", en: "Visits", group: "negocios" },
       { href: "/comercial/comunicaciones", es: "Línea de comunicaciones", en: "Communication line", group: "negocios" },
+      { href: "/comercial/perfiles", es: "Perfiles", en: "Profiles", group: "negocios" },
       { href: "/comercial/dinero", es: "Dinero por mover", en: "Money to move", group: "dinero" },
       { href: "/comercial/fugas", es: "Fugas de caja", en: "Cash leakage", group: "dinero" },
       { href: "/comercial/esagara", es: "Excepciones de Eságara", en: "Eságara exceptions", group: "dinero" },

@@ -175,6 +175,11 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   DevelopmentOpportunity: ["userId", "source", "dimension", "status"],
   ReadinessAssessment: ["userId", "roleKey", "level", "state", "assessedByName", "assessedOn", "supersededAt"],
   RoleBackup: "all",
+  // Comercial · Perfiles. What a diary or a reading says about a customer's person is not copied into the change
+  // history (that screen is open to more roles): only that it was written, about whom, when and by whom.
+  ProfileDiaryEntry: ["accountId", "contactId", "activityId", "happenedOn", "ecsa", "followUpOn", "authorName"],
+  PersonReading: ["contactId", "aspect", "observedOn", "authorName", "supersededAt"],
+  ProfileItem: ["accountId", "kind", "title", "url", "fileName", "mime", "size", "uploadedByName"],
   RoleGapReview: ["userId", "roleKey", "version", "dimension", "result", "reviewedByName", "reviewedOn", "supersededAt"],
 };
 const MASK = new Set(["bankAccount", "docAccount"]);

@@ -2026,3 +2026,74 @@ tr:target td { background: var(--brand-soft); }
 .cl-form .cl-checks label.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand-strong); font-weight: 600; }
 .cl-checks input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex: none; accent-color: var(--brand); }
 .cl-form button[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* ---------- Comercial · Perfiles (2026-11-12) ----------
+   A customer's diary. Top strip = what the diary says today (zones: risk = pain, act = struggle, flow = next
+   follow-up). Entries read as a timeline. Classes use the `pf-` prefix. */
+.pf { display: flex; flex-direction: column; gap: 4px; max-width: 1240px; }
+.pf-filter { margin-bottom: 12px; flex-wrap: wrap; }
+.pf-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.pf-card { --edge: var(--line-strong); display: flex; flex-direction: column; gap: 5px; height: 100%; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--edge); border-radius: var(--radius); color: var(--ink); text-decoration: none; min-width: 0; overflow-wrap: anywhere; }
+.pf-card[data-state="on"] { --edge: var(--brand); }
+.pf-card[data-state="late"] { --edge: var(--attn); }
+.pf-card:hover { border-color: var(--brand); border-left-color: var(--edge); background: var(--brand-soft); text-decoration: none; }
+.pf-chead { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.pf-chead b { color: var(--brand); font-size: 14.5px; line-height: 20px; }
+.pf-pain { font-size: 13px; line-height: 18px; }
+.pf-pain .k, .pf-aspect { font: 600 11px/16px var(--font-sans), sans-serif; letter-spacing: 0.04em; text-transform: uppercase; color: var(--risk); margin-right: 4px; }
+.pf-aspect { color: var(--brand); }
+.pf-empty { font-size: 12.5px; color: var(--ink-3); }
+.pf-next { margin: 4px 0 0; font-size: 12.5px; line-height: 18px; color: var(--brand-strong, var(--brand)); font-weight: 600; }
+.pf-next.late { color: var(--attn); }
+.pf-next .sig { margin-left: 6px; }
+.pf-now { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 8px; }
+.pf-now .card { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.pf-now .card > b { font-size: 11.5px; }
+.pf-quote { margin: 0; font-size: 14.5px; line-height: 21px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pf-sec { margin-top: 20px; scroll-margin-top: 72px; }
+.pf-sec > h2 { display: flex; align-items: center; gap: 8px; font-size: 17px; line-height: 24px; margin: 0 0 8px; }
+.pf-n { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--surface-sunken); color: var(--ink-2); font: 600 12px/22px var(--font-sans), sans-serif; }
+.pf-lead { margin: 0 0 10px; max-width: 860px; }
+.pf-new > summary { cursor: pointer; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.pf-new > summary b { color: var(--brand); font-size: 14px; }
+.pf-new[open] > summary { margin-bottom: 12px; }
+.pf-form { gap: 12px; }
+.pf-form textarea, .pf-form input:not([type="checkbox"]):not([type="file"]), .pf-form select { width: 100%; }
+.pf-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+.pf-row > label { flex: 1 1 190px; min-width: 0; }
+.pf-row > label.grow { flex: 3 1 280px; }
+.pf-qs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.pf-form label.pf-q { gap: 2px; }
+.pf-q > b { font-size: 13px; color: var(--ink); }
+.pf-q > span { font-size: 12px; line-height: 16px; color: var(--ink-2); margin-bottom: 3px; }
+.pf-more > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--brand); }
+.pf-more[open] > summary { margin-bottom: 10px; }
+.pf-plan { border: 1px solid var(--brand-line); background: var(--brand-soft); border-radius: 8px; margin: 0; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pf-plan legend { padding: 0 6px; font: 600 12px/16px var(--font-sans), sans-serif; color: var(--brand); }
+.pf-diary { list-style: none; margin: 0; padding: 0 0 0 18px; border-left: 2px solid var(--line); display: grid; gap: 14px; }
+.pf-entry { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; scroll-margin-top: 72px; }
+.pf-entry::before { content: ""; position: absolute; left: -26px; top: 16px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 3px solid var(--brand); }
+.pf-entry > header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pf-entry > header .grow { flex: 1; }
+.pf-dl { margin: 0; display: grid; gap: 8px; }
+.pf-dl > div { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 10px; }
+.pf-dl dt { font: 600 11px/18px var(--font-sans), sans-serif; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+.pf-dl [data-k="pain"] dt { color: var(--risk); }
+.pf-dl [data-k="struggle"] dt { color: var(--attn); }
+.pf-dl dd { margin: 0; font-size: 13.5px; line-height: 19px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pf-people, .pf-mat { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; align-items: start; }
+.pf-people .card, .pf-mat .card { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; scroll-margin-top: 72px; }
+.pf-add > summary { list-style: none; cursor: pointer; width: fit-content; }
+.pf-add > summary::-webkit-details-marker { display: none; }
+.pf-add[open] > summary { margin-bottom: 10px; }
+.pf-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pf-items li { display: flex; gap: 10px; align-items: flex-start; min-width: 0; overflow-wrap: anywhere; }
+.pf-items li > div { min-width: 0; flex: 1; }
+.pf-items li b { font-size: 13.5px; }
+.pf-thumb { flex: none; width: 64px; height: 64px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-sunken); overflow: hidden; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; color: var(--ink-2); text-decoration: none; }
+.pf-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (max-width: 599px) {
+  .pf-dl > div { grid-template-columns: 1fr; gap: 0; }
+  .pf-diary { padding-left: 12px; }
+  .pf-entry::before { left: -19px; }
+}

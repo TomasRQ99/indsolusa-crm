@@ -211,6 +211,8 @@ model Account {
   backup               RelationshipBackup?
   deliveryRequirements DeliveryRequirement[]
   strategic            StrategicAccount?
+  profileEntries       ProfileDiaryEntry[]
+  profileItems         ProfileItem[]
 
   @@index([ownerId])
   @@index([name])
@@ -247,14 +249,16 @@ model Contact {
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
-  deals       Deal[]
-  tasks       Task[]
-  activities  Activity[]
-  threads     CommThread[]
-  employments Employment[]
-  personNotes PersonNote[]
-  openLoops   OpenLoop[]
-  prepared    PreparedMessage[]
+  deals          Deal[]
+  tasks          Task[]
+  activities     Activity[]
+  threads        CommThread[]
+  employments    Employment[]
+  personNotes    PersonNote[]
+  openLoops      OpenLoop[]
+  prepared       PreparedMessage[]
+  profileEntries ProfileDiaryEntry[]
+  readings       PersonReading[]
 
   @@index([accountId])
   @@index([lastName, firstName])
@@ -5320,4 +5324,80 @@ model ApolloUsage {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// ---------- Comercial · Perfiles (user request 2026-11-12) ----------
+// Each customer has a profile with a diary. An entry is what one conversation taught us, written by the person who
+// had it, following the Sandler order (pain, struggle, impact, what it means for the person, budget, decision,
+// agreement) and the ECSA moment. Nothing here is written or inferred by SOLU.
+
+/// One diary entry of a customer. `activityId` is the call, video call or visit it comes from (null = no meeting).
+model ProfileDiaryEntry {
+  id         String    @id @default(cuid())
+  accountId  String
+  account    Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  contactId  String?
+  contact    Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  activityId String?
+  happenedOn DateTime
+  /// EXPLORAR | CONECTAR | SOLUCIONAR | ACOMPANAR
+  ecsa       String?
+  pain       String?
+  struggle   String?
+  impact     String?
+  personal   String?
+  budget     String?
+  decision   String?
+  agreement  String?
+  notes      String?
+  /// Follow-up plan: what we will do and when. The dated plan is one Task (taskId) of the author.
+  followUp   String?
+  followUpOn DateTime?
+  taskId     String?
+  authorId   String
+  authorName String
+  createdAt  DateTime  @default(now())
+
+  @@index([accountId, happenedOn])
+  @@index([activityId])
+}
+
+/// How a person lives their work: what moves them, what worries them, how they decide. Written by a person,
+/// always with what the customer said or did (evidence). Seen only by the commercial side.
+/// aspect: MOVES | WORRIES | PRESSURE | DECIDES | TRUST | STYLE
+model PersonReading {
+  id           String    @id @default(cuid())
+  contactId    String
+  contact      Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  aspect       String
+  statement    String
+  evidence     String
+  observedOn   DateTime
+  authorId     String
+  authorName   String
+  supersededAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([contactId])
+}
+
+/// Material kept in a customer's profile: a document, a product they may need, or a brand they already use.
+/// It can carry a file (photo shrunk in the browser, or a PDF), a link, or both.
+/// kind: DOCUMENT | PRODUCT_NEED | BRAND_USED
+model ProfileItem {
+  id             String   @id @default(cuid())
+  accountId      String
+  account        Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  kind           String
+  title          String
+  note           String?
+  url            String?
+  fileName       String?
+  mime           String?
+  size           Int      @default(0)
+  data           Bytes?
+  uploadedByName String
+  createdAt      DateTime @default(now())
+
+  @@index([accountId, kind])
 }
