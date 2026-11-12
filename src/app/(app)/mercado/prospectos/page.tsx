@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { canManageAll, canProspect } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { apolloConfigured, apolloCreditsThisMonth, apolloMonthlyCap, describeFilters, filtersFrom, hasCriteria, searchPeople, SENIORITIES, SIZES, type PeopleResult } from "@/lib/apollo";
-import { addToMarket, reveal, setProspectStatus } from "./actions";
+import { addToMarket, probe, reveal, revealClue, setProspectStatus } from "./actions";
 
 // Mercado · Explorar prospectos. People SOLU does not know yet, found in Apollo by role and company.
 // Searching is free. Revealing one person (name, work email, LinkedIn) costs 1 Apollo credit, so it is
@@ -27,6 +27,7 @@ const ERR: Record<string, [string, string]> = {
   credits: ["Apollo dice que a la cuenta no le quedan créditos para esto. Buscar sigue siendo gratis; revelar vuelve cuando Apollo renueve los créditos del plan.", "Apollo says the account has no credits left for this. Searching stays free; revealing returns when Apollo renews the plan's credits."],
   down: ["Apollo no respondió. No sabemos si alcanzó a recibir la solicitud; conviene esperar un minuto y revisar la lista de prospectos antes de intentar de nuevo.", "Apollo did not respond. We don't know if it received the request; it is worth waiting a minute and checking the prospects list before trying again."],
   notfound: ["Apollo no devolvió datos de esa persona. No se usó ningún crédito.", "Apollo returned no data for that person. No credit was used."],
+  pista: ["Para pedir los datos hace falta el enlace del perfil de LinkedIn, o el nombre, el apellido y la empresa (o su sitio web).", "To get the data, the LinkedIn profile link is needed, or the first name, last name and company (or its website)."],
   permiso: ["Tu rol no puede revelar ni pasar prospectos.", "Your role cannot reveal or pass prospects."],
 };
 const SENIORITY: Record<(typeof SENIORITIES)[number], [string, string]> = {
@@ -63,7 +64,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
   // The same search, as a link: used to come back after revealing, and to move between pages.
   const qs = (extra: Record<string, string> = {}) => {
     const p = new URLSearchParams();
-    for (const [k, v] of Object.entries(sp)) { if (k === "ok" || k === "err") continue; for (const x of Array.isArray(v) ? v : v ? [v] : []) p.append(k, x); }
+    for (const [k, v] of Object.entries(sp)) { if (["ok", "err", "prueba", "dijo"].includes(k)) continue; for (const x of Array.isArray(v) ? v : v ? [v] : []) p.append(k, x); }
     for (const [k, v] of Object.entries(extra)) { p.delete(k); if (v) p.set(k, v); }
     const s = p.toString();
     return `/mercado/prospectos${s ? `?${s}` : ""}`;
@@ -76,6 +77,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
     ? await db.apolloUsage.findFirst({ where: { ok: false, userName: user.name, createdAt: { gte: new Date(Date.now() - 120_000) } }, orderBy: { createdAt: "desc" }, select: { detail: true } })
     : null;
   const said = (result && !result.ok ? result.said : undefined) || (lastFail?.detail?.includes("Apollo: ") ? lastFail.detail.split("Apollo: ").slice(-1)[0] : "");
+  const probed = one("prueba") ? (one("prueba").split(",").slice(0, 2) as [string, string]) : null;
   const pages = result?.ok ? Math.min(500, Math.ceil(result.total / result.perPage)) : 0;
 
   return (
@@ -141,6 +143,39 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
           </div>
         </form>
       </section>
+
+      <section className="card" data-zone="flow" id="pista">
+        <b>{t("REVELAR A ALGUIEN QUE YA ENCONTRASTE", "REVEAL SOMEONE YOU ALREADY FOUND")}</b> <span className="small muted">{t("en la página de Apollo, en LinkedIn o en una tarjeta · 1 crédito si Apollo tiene sus datos", "on Apollo's website, on LinkedIn or on a business card · 1 credit if Apollo has their data")}</span>
+        <form action={revealClue} className="pr-form" data-confirm={t(`¿Pedir a Apollo los datos de esta persona? Usa 1 crédito si los tiene. Quedan ${left} este mes.`, `Ask Apollo for this person's data? It uses 1 credit if it has them. ${left} left this month.`)}>
+          <input type="hidden" name="back" value={back} />
+          <label className="wide">{t("Enlace de su perfil de LinkedIn (lo más seguro)", "Link to their LinkedIn profile (the surest)")}<input name="linkedin" placeholder="https://www.linkedin.com/in/nombre-apellido" /></label>
+          <p className="wide src" style={{ margin: 0 }}>{t("O, si no tienes el enlace, su nombre completo y la empresa:", "Or, without the link, their full name and the company:")}</p>
+          <label>{t("Nombre", "First name")}<input name="nombre" /></label>
+          <label>{t("Apellido", "Last name")}<input name="apellido" /></label>
+          <label>{t("Empresa", "Company")}<input name="empresa" /></label>
+          <label>{t("Sitio web de la empresa", "Company website")}<input name="web" placeholder="alpina.com" /></label>
+          <div className="wide row">
+            <button type="submit" disabled={!on || left === 0}>{t("Pedir sus datos · 1 crédito", "Get their data · 1 credit")}</button>
+            <span className="small muted">{t("Si esa persona ya está en la lista de abajo, no se gasta nada.", "If that person is already in the list below, nothing is spent.")}</span>
+          </div>
+        </form>
+      </section>
+
+      {on && canManageAll(user) && (
+        <section className="card" data-zone="plan" id="conexion">
+          <b>{t("QUÉ PERMITE LA CUENTA DE APOLLO", "WHAT THE APOLLO ACCOUNT ALLOWS")}</b> <span className="small muted">{t("solo Gerencia y Dirección · la prueba no gasta créditos", "Management and Direction only · the check uses no credits")}</span>
+          {probed && (
+            <ul className="plain" style={{ margin: "8px 0" }}>
+              <li>{t("Buscar personas", "Search people")}: {probed[0] === "ok" ? <span className="sig ok">{t("Permitido", "Allowed")}</span> : <span className="sig attn">{t("No permitido", "Not allowed")}</span>} {probed[0] !== "ok" && <span className="src">{es ? ERR[probed[0]]?.[0] : ERR[probed[0]]?.[1]}</span>}</li>
+              <li>{t("Revelar una persona", "Reveal a person")}: {probed[1] === "ok" ? <span className="sig ok">{t("Permitido", "Allowed")}</span> : <span className="sig attn">{t("No permitido", "Not allowed")}</span>} {probed[1] !== "ok" && <span className="src">{es ? ERR[probed[1]]?.[0] : ERR[probed[1]]?.[1]}</span>}</li>
+              {one("dijo") && <li className="src">{t("Lo que respondió Apollo", "What Apollo answered")}: «{one("dijo")}»</li>}
+              {probed[0] !== "ok" && probed[1] === "ok" && <li>{t("Con esta cuenta se puede trabajar así: busca a la persona en la página de Apollo o en LinkedIn, y pide sus datos aquí arriba, en «Revelar a alguien que ya encontraste».", "With this account you can work like this: find the person on Apollo's website or LinkedIn, and get their data above, in “Reveal someone you already found”.")}</li>}
+              {probed[0] !== "ok" && probed[1] !== "ok" && <li>{t("Esta cuenta no permite usar Apollo desde SOLU. Las opciones son preguntarle a Apollo si la habilita, o un plan pago.", "This account does not allow using Apollo from SOLU. The options are asking Apollo to enable it, or a paid plan.")}</li>}
+            </ul>
+          )}
+          <form action={probe} style={{ marginTop: 8 }}><input type="hidden" name="back" value="/mercado/prospectos" /><button type="submit" className="secondary sm">{t("Probar qué permite la cuenta", "Check what the account allows")}</button></form>
+        </section>
+      )}
 
       {result?.ok && (
         <section className="card" id="resultados">

@@ -3,9 +3,9 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canProspect } from "@/lib/permissions";
+import { canManageAll, canProspect } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
-import { revealPerson } from "@/lib/apollo";
+import { clueEnough, probeApollo, revealByClue, revealPerson } from "@/lib/apollo";
 
 // Explorar prospectos (Apollo). Revealing costs credits, so it is always one person, by one click, by a named user.
 
@@ -32,6 +32,29 @@ export async function reveal(formData: FormData) {
   refreshApp();
   if (!r.ok) redirect(withParam(back, "err", r.error));
   redirect(withParam(back, "ok", r.fresh ? "revelado" : "yaestaba") + `#p-${r.prospectId}`);
+}
+
+/** Reveal someone the person already found elsewhere: by LinkedIn profile, or by name and company. */
+export async function revealClue(formData: FormData) {
+  const user = await requireUser();
+  const back = backTo(formData.get("back"));
+  if (!canProspect(user)) redirect(withParam(back, "err", "permiso"));
+  const s = (k: string) => String(formData.get(k) ?? "").trim().slice(0, 200);
+  const clue = { linkedinUrl: s("linkedin"), firstName: s("nombre"), lastName: s("apellido"), org: s("empresa"), domain: s("web") };
+  if (!clueEnough(clue)) redirect(withParam(back, "err", "pista"));
+  const r = await revealByClue(clue, user);
+  refreshApp();
+  if (!r.ok) redirect(withParam(back, "err", r.error));
+  redirect(withParam(back, "ok", r.fresh ? "revelado" : "yaestaba") + `#p-${r.prospectId}`);
+}
+
+/** Free check of what this Apollo account allows. Managers only: it is about the account, not about a person. */
+export async function probe(formData: FormData) {
+  const user = await requireUser();
+  const back = backTo(formData.get("back"));
+  if (!canManageAll(user)) redirect(withParam(back, "err", "permiso"));
+  const r = await probeApollo(user.name);
+  redirect(withParam(withParam(back, "prueba", `${r.search},${r.reveal}`), "dijo", r.said.slice(0, 200)) + "#conexion");
 }
 
 /** Pass a revealed person to Mercado: the company becomes (or is matched to) a customer record, the person a contact. */

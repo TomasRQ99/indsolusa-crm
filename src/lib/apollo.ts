@@ -117,27 +117,68 @@ export type RevealResult = { ok: true; prospectId: string; fresh: boolean } | { 
 export async function revealPerson(apolloId: string, foundWith: string, user: { id: string; name: string }): Promise<RevealResult> {
   const known = await db.prospect.findUnique({ where: { apolloId }, select: { id: true } });
   if (known) return { ok: true, prospectId: known.id, fresh: false };
+  return matchAndSave(new URLSearchParams({ id: apolloId }), apolloId, foundWith, user);
+}
+
+/** What a person can give SOLU to find someone in Apollo without the search: a LinkedIn profile, or a name and a company. */
+export type Clue = { linkedinUrl: string; firstName: string; lastName: string; org: string; domain: string };
+export const cleanDomain = (d: string) => d.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "").replace(/^.*@/, "");
+/** A clue is enough when it is a LinkedIn profile, or a full name with the company or its website. */
+export const clueEnough = (c: Clue) => /linkedin\.com\/in\//i.test(c.linkedinUrl) || (!!c.firstName && !!c.lastName && (!!c.org || !!c.domain));
+
+/**
+ * Reveal a person the user already found somewhere else (Apollo's website, LinkedIn, a business card).
+ * Same cost and same rules as revealing from a search: 1 credit when Apollo returns data, never phones or personal emails.
+ */
+export async function revealByClue(c: Clue, user: { id: string; name: string }): Promise<RevealResult> {
+  if (!clueEnough(c)) return { ok: false, error: "notfound" };
+  const linkedin = /linkedin\.com\/in\//i.test(c.linkedinUrl) ? c.linkedinUrl.trim().split(/[?#]/)[0].replace(/\/+$/, "") : "";
+  // Already revealed? Then it is read from SOLU and nothing is spent.
+  if (linkedin) {
+    const slug = linkedin.split("/in/")[1]?.toLowerCase();
+    const known = slug ? await db.prospect.findFirst({ where: { linkedinUrl: { contains: `/in/${slug}`, mode: "insensitive" } }, select: { id: true } }) : null;
+    if (known) return { ok: true, prospectId: known.id, fresh: false };
+  }
+  const p = new URLSearchParams();
+  if (linkedin) p.set("linkedin_url", linkedin);
+  if (c.firstName) p.set("first_name", c.firstName);
+  if (c.lastName) p.set("last_name", c.lastName);
+  if (c.org) p.set("organization_name", c.org);
+  if (c.domain) p.set("domain", cleanDomain(c.domain));
+  const how = linkedin ? "perfil de LinkedIn" : `nombre y empresa: ${[c.firstName, c.lastName].join(" ")} · ${c.org || cleanDomain(c.domain)}`;
+  return matchAndSave(p, linkedin || `${c.firstName} ${c.lastName}`.trim(), `Escrito a mano · ${how}`, user);
+}
+
+async function matchAndSave(p: URLSearchParams, tag: string, foundWith: string, user: { id: string; name: string }): Promise<RevealResult> {
   if (!apolloConfigured()) return { ok: false, error: "off" };
   if ((await apolloCreditsThisMonth()) >= apolloMonthlyCap()) return { ok: false, error: "cap" };
-
-  const p = new URLSearchParams({ id: apolloId, reveal_personal_emails: "false", reveal_phone_number: "false" });
+  p.set("reveal_personal_emails", "false");
+  p.set("reveal_phone_number", "false");
   let status = 0, json: unknown = null;
   try {
     ({ status, json } = await call("/api/v1/people/match", p));
   } catch {
     // The call may or may not have reached Apollo: say so in the log, count nothing, and let the person try again.
-    await db.apolloUsage.create({ data: { kind: "REVEAL", ok: false, detail: `sin respuesta · ${apolloId}`, userName: user.name } });
+    await db.apolloUsage.create({ data: { kind: "REVEAL", ok: false, detail: `sin respuesta · ${tag}`, userName: user.name } });
     return { ok: false, error: "down" };
   }
   if (status !== 200) {
     const said = saidBy(json);
-    await db.apolloUsage.create({ data: { kind: "REVEAL", ok: false, detail: `HTTP ${status} · ${apolloId}${said ? ` · Apollo: ${said}` : ""}`, userName: user.name } });
+    await db.apolloUsage.create({ data: { kind: "REVEAL", ok: false, detail: `HTTP ${status} · ${tag}${said ? ` · Apollo: ${said}` : ""}`, userName: user.name } });
     return { ok: false, error: errorOf(status, said) };
   }
   const person = ((json ?? {}) as { person?: Record<string, unknown> | null }).person;
   if (!person || !str(person.first_name)) {
-    await db.apolloUsage.create({ data: { kind: "REVEAL", credits: 0, detail: `sin datos · ${apolloId}`, userName: user.name } });
+    await db.apolloUsage.create({ data: { kind: "REVEAL", credits: 0, detail: `sin datos · ${tag}`, userName: user.name } });
     return { ok: false, error: "notfound" };
+  }
+  const apolloId = str(person.id) ?? p.get("id");
+  if (!apolloId) return { ok: false, error: "notfound" };
+  // Found by a clue, and it turns out this person was already revealed: keep the one row. Apollo was asked, so the credit is counted.
+  const already = await db.prospect.findUnique({ where: { apolloId }, select: { id: true } });
+  if (already) {
+    await db.apolloUsage.create({ data: { kind: "REVEAL", credits: 1, detail: `${apolloId} · ya estaba`, userName: user.name } });
+    return { ok: true, prospectId: already.id, fresh: false };
   }
   const org = (person.organization ?? {}) as Record<string, unknown>;
   const email = str(person.email);
@@ -159,6 +200,30 @@ export async function revealPerson(apolloId: string, foundWith: string, user: { 
     return row;
   });
   return { ok: true, prospectId: saved.id, fresh: true };
+}
+
+export type Probe = { search: "ok" | ApolloError; reveal: "ok" | ApolloError; said: string };
+
+/**
+ * Asks Apollo, at no cost, which of the two functions this account may use: one search for a single result,
+ * and one reveal of a person that does not exist (Apollo charges nothing when it returns no data).
+ */
+export async function probeApollo(userName: string): Promise<Probe> {
+  if (!apolloConfigured()) return { search: "off", reveal: "off", said: "" };
+  const one = async (path: string, p: URLSearchParams, okWhen: (j: unknown) => boolean, lenient = false): Promise<["ok" | ApolloError, string]> => {
+    try {
+      const { status, json } = await call(path, p);
+      if (status === 200 && okWhen(json)) return ["ok", ""];
+      // "That person does not exist" (404 or 422) still means Apollo let the call through.
+      if (lenient && (status === 404 || status === 422) && errorOf(status, saidBy(json)) === "down") return ["ok", ""];
+      const said = saidBy(json);
+      return [status === 200 ? "down" : errorOf(status, said), said];
+    } catch { return ["down", ""]; }
+  };
+  const [search, s1] = await one("/api/v1/mixed_people/api_search", new URLSearchParams({ q_keywords: "manager", page: "1", per_page: "1" }), (j) => !!j && typeof j === "object");
+  const [reveal, s2] = await one("/api/v1/people/match", new URLSearchParams({ id: "000000000000000000000000", reveal_personal_emails: "false", reveal_phone_number: "false" }), (j) => !!j && typeof j === "object", true);
+  await db.apolloUsage.create({ data: { kind: "PROBE", ok: search === "ok" || reveal === "ok", detail: `buscar: ${search} · revelar: ${reveal}${s1 || s2 ? ` · Apollo: ${s1 || s2}` : ""}`, userName } });
+  return { search, reveal, said: [s1, s2].filter(Boolean).filter((x, k, a) => a.indexOf(x) === k).join(" / ") };
 }
 
 /** Reads the search form. Lists are written with commas. */

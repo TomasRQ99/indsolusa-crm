@@ -165,9 +165,11 @@
     "Lee los resultados: nombre, apellido incompleto, cargo, empresa y si Apollo tiene su correo.",
     "En la persona que valga la pena, haz clic en [[Revelar · 1 crédito]] y confirma. Queda en «Prospectos revelados» con nombre completo, correo de trabajo y LinkedIn.",
     "Para trabajarla en SOLU, haz clic en [[Pasar a Clientes y Contactos]]: se crea el cliente si no existía y la persona queda como contacto.",
-    "Si no sirve, [[Descartar]]."
+    "Si no sirve, [[Descartar]].",
+    "Si ya encontraste a la persona en otro lado (la página de Apollo, LinkedIn, una tarjeta): en «Revelar a alguien que ya encontraste» pega el enlace de su perfil de LinkedIn, o escribe nombre, apellido y empresa, y haz clic en [[Pedir sus datos · 1 crédito]].",
+    "Gerencia o Dirección: [[Probar qué permite la cuenta]] dice, sin gastar créditos, si la cuenta de Apollo deja buscar y revelar desde SOLU."
    ],
-   "expect": "Arriba ves los créditos usados en el mes y el tope. Revelar dos veces a la misma persona no gasta otro crédito. Si la empresa o la persona ya estaban en SOLU, se enlazan sin duplicar. Cada prospecto dice quién lo reveló, cuándo y con qué búsqueda. SOLU nunca pide correos personales ni teléfonos."
+   "expect": "Con el plan gratis de Apollo la búsqueda desde SOLU puede estar bloqueada: la pantalla lo dice con las palabras de Apollo, y se trabaja pegando el enlace de LinkedIn. Arriba ves los créditos usados en el mes y el tope. Revelar dos veces a la misma persona no gasta otro crédito. Si la empresa o la persona ya estaban en SOLU, se enlazan sin duplicar. Cada prospecto dice quién lo reveló, cuándo y con qué búsqueda. SOLU nunca pide correos personales ni teléfonos."
   },
   {
    "id": "economia",
