@@ -63,7 +63,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
 
       <section className="card" id="resumen">
         <b>{t("POR BODEGA Y REFERENCIA", "BY WAREHOUSE AND PART")}</b>
-        {sum.length === 0 ? <p className="small muted">{t("Aún no hay inventario. Aparece al registrar la recepción de una compra.", "No stock yet. It appears when the receipt of a purchase is recorded.")}</p> : (
+        {sum.length === 0 ? <p className="small muted">{t("Aún no hay inventario. Aparece al registrar la recepción de una compra.", "No stock yet. It appears when the receipt of a purchase is recorded.")} <a href="/compras">{t("Abrir Compras para registrar una recepción", "Open Purchases to record a receipt")} →</a></p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Bodega", "Warehouse")}</th><th>{t("Referencia", "Part")}</th><th className="n">{t("Físico", "Physical")}</th><th className="n">{t("Comprometido", "Allocated")}</th><th className="n">{t("Disponible", "Available")}</th><th className="n">{t("En duda", "In doubt")}</th></tr></thead>
             <tbody>{sum.map((g, k) => <tr key={k}><td className="small">{locations.find((x) => x.id === g.locationId)?.name ?? "—"}</td><td>{g.code ? <b className="mono">{g.code}</b> : null} <span className="small">{g.description}</span></td><td className="n mono">{g.physical}</td><td className="n mono">{g.allocated}</td><td className="n mono"><b>{g.available}</b></td><td className={`n mono${g.blocked ? " risk-t" : ""}`}>{g.blocked}</td></tr>)}</tbody>

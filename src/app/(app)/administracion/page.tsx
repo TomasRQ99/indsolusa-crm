@@ -43,7 +43,7 @@ export default async function AdminHomePage() {
         <p>{h.total === 0 ? t("Nada pide atención ahora. Lo normal se mueve en silencio.", "Nothing asks for attention now. What is normal moves silently.") : t(`${h.total} asunto(s). Cada uno dice cuánto pesa, por qué y dónde se resuelve.`, `${h.total} matter(s). Each says how much it weighs, why and where it is resolved.`)}</p>
         <p className="small">{t("calculado", "as of")} {i.date(h.asOf)} · <Link href="/administracion/exposicion">{t("Exposición de recursos", "Resource exposure")}</Link></p></div></div>
       {h.sections.map((s) => (
-        <section key={s.key} className="card" id={s.key}>
+        <section key={s.key} className="card" id={s.key} data-zone={s.items.some((x) => x.tone === "risk") ? "risk" : s.items.length ? "act" : "calm"}>
           <b>{t(s.title.es, s.title.en)}</b>{s.items.length ? <span className="small muted"> · {s.items.length}</span> : null} <span className="small">· <Link href={s.href}>{t("abrir", "open")}</Link></span>
           {s.items.length === 0 ? <p className="small"><span className="sig ok">{t(s.quiet.es, s.quiet.en)}</span></p> : (
             <div className="tscroll"><table>

@@ -6,6 +6,7 @@ import { GOAL_METRICS, METRIC_KEYS, periodOf, shiftPeriod, validPeriod } from "@
 import { periodStatus } from "@/lib/metric-dictionary";
 import { commercialFunction, insightsFor } from "@/lib/report-insights";
 import { HowCalc } from "@/components/HowCalc";
+import { CellBar, Delta, Meter, Split } from "@/components/Viz";
 
 // Módulo 13 §4.4, §13–14 · Functional review for Dirección: how the Commercial function did in the month, why Eságara
 // is where it is against its goal, what SOLU noticed (facts with evidence), and the people behind the figures.
@@ -50,8 +51,8 @@ export default async function FunctionReviewPage({ searchParams }: { searchParam
           <tbody>{METRIC_KEYS.map((k) => (
             <tr key={k}><td><b>{t(GOAL_METRICS[k].es, GOAL_METRICS[k].en)}</b><span className="block"><HowCalc id={k} es={i.es} /></span></td>
               <td className="n mono"><b>{val(k, f.total[k])}</b>{k === "ESAGARA_AMOUNT" && f.esagaraPct != null && <span className="src block">{i.pct(f.esagaraPct)} {t("de", "of")} {usd(f.sale)}</span>}</td>
-              <td className="n mono">{f.goal[k] != null ? <>{val(k, f.goal[k]!)}<span className="src block">{i.pct((f.total[k] / f.goal[k]!) * 100)}</span></> : <span className="muted">{t("sin metas", "no goals")}</span>}</td>
-              <td className="n mono">{val(k, f.prev[k])}</td></tr>
+              <td className="n mono">{f.goal[k] != null && f.goal[k]! > 0 ? <>{val(k, f.goal[k]!)}<span className="src block">{i.pct((f.total[k] / f.goal[k]!) * 100)}</span><span className="block" style={{ marginTop: 4, maxWidth: 180, marginLeft: "auto" }}><Meter pct={(f.total[k] / f.goal[k]!) * 100} tone={f.total[k] >= f.goal[k]! ? "ok" : "info"} label={t(`${Math.round((f.total[k] / f.goal[k]!) * 100)} % de la meta`, `${Math.round((f.total[k] / f.goal[k]!) * 100)} % of the goal`)} /></span></> : <span className="muted">{t("sin metas", "no goals")} · <Link href="/comercial/metas">{t("Fijar metas", "Set goals")}</Link></span>}</td>
+              <td className="n mono">{val(k, f.prev[k])}<span className="block" style={{ marginTop: 3 }}><Delta now={f.total[k]} prev={f.prev[k]} same={t("igual", "same")} fmt={(a) => val(k, a).replace("USD ", "")} /></span></td></tr>
           ))}</tbody>
         </table></div>
       </section>
@@ -61,6 +62,7 @@ export default async function FunctionReviewPage({ searchParams }: { searchParam
         {!g ? <p className="small muted">{t("No hay meta de Eságara para este mes: sin meta no hay diferencia que explicar.", "There is no Eságara goal for this month: without a goal there is no difference to explain.")} <Link href="/comercial/metas">{t("Fijar metas", "Set goals")}</Link></p>
           : g.gap <= 0 ? <p className="small"><span className="sig ok">{t("La meta se cumplió", "The goal was met")}</span></p> : (
             <>
+              <Split label={t("De qué está hecha la diferencia frente a la meta", "What the difference against the goal is made of")} parts={[...g.causes.map((c, n) => ({ key: c.key, label: t(c.text.es, c.text.en), value: c.usd, tone: (n === 0 ? "risk" : n === 1 ? "attn" : "deep") as "risk" | "attn" | "deep", text: `USD ${i.n2(c.usd)}` })), { key: "rest", label: t("Faltan ventas o son más pequeñas", "Sales missing or smaller"), value: g.unexplained, tone: "wait" as const, text: `USD ${i.n2(g.unexplained)}` }]} />
               <div className="tscroll"><table>
                 <thead><tr><th>{t("Causa", "Cause")}</th><th className="n">USD</th><th className="n">{t("Parte de la diferencia", "Share of the difference")}</th></tr></thead>
                 <tbody>
@@ -78,7 +80,7 @@ export default async function FunctionReviewPage({ searchParams }: { searchParam
         <b>{t("LAS PERSONAS", "THE PEOPLE")}</b>
         <div className="tscroll"><table>
           <thead><tr><th>{t("Persona", "Person")}</th>{METRIC_KEYS.map((k) => <th key={k} className="n">{t(GOAL_METRICS[k].es, GOAL_METRICS[k].en)}</th>)}</tr></thead>
-          <tbody>{f.people.map((p) => <tr key={p.id}><td><Link href={`/informes?u=${p.id}&mes=${period}`}><b>{p.name}</b></Link>{!p.hasGoal && <span className="src block">{t("sin metas este mes", "no goals this month")}</span>}</td>{METRIC_KEYS.map((k) => <td key={k} className="n mono">{GOAL_METRICS[k].unit === "usd" ? i.n2(p.values[k]) : Math.round(p.values[k])}</td>)}</tr>)}</tbody>
+          <tbody>{f.people.map((p) => <tr key={p.id}><td><Link href={`/informes?u=${p.id}&mes=${period}`}><b>{p.name}</b></Link>{!p.hasGoal && <span className="src block">{t("sin metas este mes", "no goals this month")}</span>}</td>{METRIC_KEYS.map((k) => <td key={k} className="n mono">{GOAL_METRICS[k].unit === "usd" ? i.n2(p.values[k]) : Math.round(p.values[k])}<CellBar value={p.values[k]} max={Math.max(0, ...f.people.map((x) => x.values[k]))} tip={`${p.name} · ${t(GOAL_METRICS[k].es, GOAL_METRICS[k].en)}`} /></td>)}</tr>)}</tbody>
         </table></div>
         <p className="src">{t("En orden alfabético: es para ver quién construye qué, no un ranking. La suma de las personas es la cifra de la función.", "In alphabetical order: it shows who is building what, not a ranking. The people add up to the function's figure.")} <Link href="/informes/equipo">{t("Ver por equipo", "See by team")}</Link></p>
       </section>

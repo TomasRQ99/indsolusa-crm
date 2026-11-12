@@ -21,7 +21,7 @@ type Txt = { es: string; en: string };
 const tx = (es: string, en: string): Txt => ({ es, en });
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
-export type Figure = { label: Txt; value: number; unit: "usd" | "n" | "pct"; href: string; prev?: number | null; note?: Txt; tone?: "risk" | "attn"; metric?: string; state?: boolean };
+export type Figure = { label: Txt; value: number; unit: "usd" | "n" | "pct"; href: string; prev?: number | null; note?: Txt; tone?: "risk" | "attn"; metric?: string; state?: boolean; /** which way is good news; not set = more is better */ good?: "up" | "down" | "none" };
 export type Tile = { key: string; title: Txt; question: Txt; figures: Figure[]; href: string };
 
 /** The figures the daily picture keeps, so a change is a fact (§14). */
@@ -65,7 +65,7 @@ export async function gerenciaHome(u: { id: string; role: Role }) {
     ] },
     { key: "exceptions", title: tx("Excepciones operativas", "Operational exceptions"), question: tx("¿Qué se salió de lo normal?", "What left the normal path?"), href: "/operaciones", figures: [
       { label: tx("Abiertas hoy", "Open today"), value: s.openExc, unit: "n", href: "/operaciones", state: true, tone: s.openExc ? "attn" : undefined },
-      { label: tx("Abiertas en el mes", "Opened this month"), value: c.exceptionsOpened, unit: "n", prev: p.exceptionsOpened, href: "/operaciones" },
+      { label: tx("Abiertas en el mes", "Opened this month"), value: c.exceptionsOpened, unit: "n", prev: p.exceptionsOpened, href: "/operaciones", good: "down" },
       { label: tx("Resueltas en el mes", "Resolved this month"), value: c.exceptionsResolved, unit: "n", prev: p.exceptionsResolved, href: "/operaciones" },
     ] },
     { key: "resources", title: tx("Recursos expuestos", "Resources exposed"), question: tx("¿Dónde está el riesgo?", "Where is the risk?"), href: "/administracion/exposicion", figures: [

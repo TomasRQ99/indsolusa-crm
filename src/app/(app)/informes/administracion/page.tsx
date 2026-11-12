@@ -9,6 +9,7 @@ import { matchState } from "@/lib/bank-csv";
 import { HORIZONS, HORIZON_TEXT, futurePulse } from "@/lib/future-pulse";
 import { profitSummary } from "@/lib/profit-summary";
 import { HowCalc } from "@/components/HowCalc";
+import { CellBar, Split } from "@/components/Viz";
 
 // Módulo 13 §4.5 · Administración: receivables by age, what is due in and out, credit exposure, what the bank shows
 // that nobody has explained, Eságara and commissions. A snapshot of today; each block links to where it is worked.
@@ -36,6 +37,7 @@ export default async function AdminReportPage() {
   const over = accounts.map((a) => ({ ...a, owed: Math.round((byAcc.get(a.id) ?? 0) * 100) / 100 })).filter((a) => a.owed > Number(a.creditLimit) + 0.005).sort((a, b) => b.owed - a.owed);
   const unexplained = txs.map((x) => matchState(Number(x.amount), sumMoney(x.matches.map((m) => m.amount)), x.classifiedAs)).filter((m) => m.state === "UNMATCHED" || m.state === "PARTIAL");
   const usd = (n: number) => `USD ${i.n2(n)}`;
+  const calMax = Math.max(0, ...HORIZONS.flatMap((h) => [f.cashIn[h].usd, f.cashOut[h].usd, f.contracted.toInvoice[h].usd]));
 
   return (
     <>
@@ -44,6 +46,7 @@ export default async function AdminReportPage() {
 
       <section className="card" id="cartera">
         <b>{t("CARTERA POR EDAD", "RECEIVABLES BY AGE")}</b> <HowCalc id="OUTSTANDING" es={i.es} />
+        <Split label={t("Cartera por edad", "Receivables by age")} parts={aging.map((a, k) => ({ key: String(k), label: a.label, value: a.usd, tone: (["ok", "attn", "risk", "deep"] as const)[k], text: usd(a.usd), n: a.n }))} />
         <div className="tscroll"><table>
           <thead><tr><th>{t("Edad", "Age")}</th><th className="n">{t("Facturas", "Invoices")}</th><th className="n">USD</th></tr></thead>
           <tbody>{aging.map((a, k) => <tr key={k}><td>{a.label}</td><td className="n mono">{a.n}</td><td className={`n mono ${k > 0 && a.usd > 0 ? "risk-t" : ""}`}>{i.n2(a.usd)}</td></tr>)}
@@ -57,9 +60,9 @@ export default async function AdminReportPage() {
         <div className="tscroll"><table>
           <thead><tr><th />{HORIZONS.map((h) => <th key={h} className="n">{t(HORIZON_TEXT[h].es, HORIZON_TEXT[h].en)}</th>)}</tr></thead>
           <tbody>
-            <tr><td>{t("Por cobrar a clientes", "To collect from customers")}</td>{HORIZONS.map((h) => <td key={h} className="n mono">{f.cashIn[h].n ? i.n2(f.cashIn[h].usd) : "—"}</td>)}</tr>
-            <tr><td>{t("Por pagar a proveedores", "To pay suppliers")}</td>{HORIZONS.map((h) => <td key={h} className="n mono">{f.cashOut[h].n ? i.n2(f.cashOut[h].usd) : "—"}</td>)}</tr>
-            <tr><td>{t("Por facturar de lo contratado", "To invoice from what is contracted")}</td>{HORIZONS.map((h) => <td key={h} className="n mono">{f.contracted.toInvoice[h].n ? i.n2(f.contracted.toInvoice[h].usd) : "—"}</td>)}</tr>
+            {([[t("Por cobrar a clientes", "To collect from customers"), f.cashIn, "ok"], [t("Por pagar a proveedores", "To pay suppliers"), f.cashOut, "wait"], [t("Por facturar de lo contratado", "To invoice from what is contracted"), f.contracted.toInvoice, "info"]] as const).map(([label, b, tone]) => (
+              <tr key={label}><td>{label}</td>{HORIZONS.map((h) => <td key={h} className={`n mono ${h === "OVERDUE" && b[h].n > 0 ? "risk-t" : ""}`}>{b[h].n ? <>{i.n2(b[h].usd)}<CellBar value={b[h].usd} max={calMax} tone={h === "OVERDUE" ? "risk" : tone} tip={`${label} · ${t(HORIZON_TEXT[h].es, HORIZON_TEXT[h].en)}`} /></> : "—"}</td>)}</tr>
+            ))}
           </tbody>
         </table></div>
         <p className="src">{t("Por fecha de vencimiento o prometida, no por cuándo se paga de verdad. El saldo en bancos, lo comprometido y la caja proyectada están en Tesorería.", "By due or promised date, not by when it is really paid. Bank balances, what is committed and projected cash are in Treasury.")} <Link href="/administracion/tesoreria">{t("Tesorería", "Treasury")}</Link> · <Link href="/informes/futuro">{t("Pulso del futuro", "Future pulse")}</Link></p>

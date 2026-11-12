@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Split } from "@/components/Viz";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { canManageAll, isGerencia, isMoneyRole } from "@/lib/permissions";
@@ -87,10 +88,16 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
 
       <section className="sum">
         <div><span className="k">{t("Estimada", "Estimated")}</span><span className="v">{totals.estimated.count ? `≈ ${fmtRange(totals.estimated)}` : "0"}</span><span className="s">{totals.estimated.count} {t("mitades por ganar", "halves to earn")}</span></div>
-        <div><span className="k">{t("Ganada · por aprobar", "Earned · to approve")}</span><span className="v">{i.n2(totals.earned.hi)}</span><span className="s">{totals.earned.count} {t("mitades", "halves")}</span></div>
-        <div><span className="k">{t("Aprobada", "Approved")}</span><span className="v">{i.n2(totals.approved.hi)}</span><span className="s">{totals.approved.count} {t("mitades · nómina", "halves · payroll")}</span></div>
-        <div><span className="k">{t("Pagada", "Paid")}</span><span className="v">{i.n2(totals.paid.hi)}</span><span className="s">{totals.paid.count} {t("mitades", "halves")}</span></div>
+        <div data-tone={totals.earned.hi > 0 ? "attn" : undefined}><span className="k">{t("Ganada · por aprobar", "Earned · to approve")}</span><span className="v">{i.n2(totals.earned.hi)}</span><span className="s">{totals.earned.count} {t("mitades", "halves")}</span>{totals.earned.hi > 0 && <Link className="go" href="/gerencia/liquidacion">{t("Abrir la liquidación", "Open the settlement")} →</Link>}</div>
+        <div data-tone={totals.approved.hi > 0 ? "info" : undefined}><span className="k">{t("Aprobada", "Approved")}</span><span className="v">{i.n2(totals.approved.hi)}</span><span className="s">{totals.approved.count} {t("mitades · nómina", "halves · payroll")}</span></div>
+        <div data-tone={totals.paid.hi > 0 ? "ok" : undefined}><span className="k">{t("Pagada", "Paid")}</span><span className="v">{i.n2(totals.paid.hi)}</span><span className="s">{totals.paid.count} {t("mitades", "halves")}</span></div>
       </section>
+      <Split label={t("Comisión por etapa", "Commission by stage")} caption={<><b>{t("EN QUÉ ETAPA ESTÁ LA COMISIÓN", "WHAT STAGE THE COMMISSION IS AT")}</b> · {t("gris: aún no ganada · naranja: espera aprobación · azul: aprobada · verde: pagada", "grey: not earned yet · orange: awaiting approval · blue: approved · green: paid")}</>} parts={[
+        { key: "est", label: t("Estimada", "Estimated"), value: totals.estimated.hi, tone: "wait", text: `USD ${i.n2(totals.estimated.hi)}` },
+        { key: "ear", label: t("Ganada, por aprobar", "Earned, to approve"), value: totals.earned.hi, tone: "attn", text: `USD ${i.n2(totals.earned.hi)}` },
+        { key: "app", label: t("Aprobada", "Approved"), value: totals.approved.hi, tone: "info", text: `USD ${i.n2(totals.approved.hi)}` },
+        { key: "pai", label: t("Pagada", "Paid"), value: totals.paid.hi, tone: "ok", text: `USD ${i.n2(totals.paid.hi)}` },
+      ]} />
 
       <div className="two">
         <div className="card flush">

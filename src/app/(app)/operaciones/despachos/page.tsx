@@ -44,7 +44,7 @@ export default async function DispatchListPage() {
         </section>
       )}
 
-      {items.length === 0 ? <section className="card"><p className="small muted">{t("No hay despachos abiertos. Se crean desde la página de despacho de un Journey con PO aceptada.", "No open dispatch orders. They are created from the dispatch page of a Journey with an accepted PO.")}</p></section> : ORDER.map((key) => {
+      {items.length === 0 ? <section className="card"><p className="small muted">{t("No hay despachos abiertos. Se crean desde la página de despacho de un Journey con PO aceptada.", "No open dispatch orders. They are created from the dispatch page of a Journey with an accepted PO.")} <a href="/operaciones/sin-despachar">{t("Ver lo que está listo sin despachar", "See what is ready and not dispatched")} →</a> · <a href="/deals">{t("Abrir Journeys", "Open Journeys")}</a></p></section> : ORDER.map((key) => {
         const g = items.filter((x) => x.st.key === key);
         if (!g.length) return null;
         const S = STATES[key];

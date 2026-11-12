@@ -26,7 +26,7 @@ export default async function WarrantiesPage() {
       <div className="ph"><div><h1>{t("Garantías y reclamos", "Warranties and claims")}</h1><p>{t("Los casos abiertos de clientes y las garantías vigentes. Se registran desde cada Journey.", "Open customer cases and active warranties. They are recorded from each Journey.")}</p></div></div>
       <section className="card">
         <b>{t("CASOS ABIERTOS", "OPEN CASES")} · {claims.length}</b>
-        {claims.length === 0 ? <p className="small muted">{t("Ningún caso abierto.", "No open cases.")}</p> : (
+        {claims.length === 0 ? <p className="small muted"><span className="sig ok">{t("Ningún caso abierto", "No open cases")}</span> {t("Un caso nuevo se registra en la pestaña de garantía del Journey del cliente.", "A new case is recorded on the warranty tab of the customer's Journey.")} <Link href="/deals">{t("Abrir Journeys", "Open Journeys")} →</Link></p> : (
           <ul className="plain small">{claims.map((c) => <li key={c.id}><Link href={`/deals/${c.deal.id}/garantia#c-${c.id}`}><b className="mono">{c.code}</b></Link> · {t(CLAIM_KINDS[c.kind]?.es ?? c.kind, CLAIM_KINDS[c.kind]?.en ?? c.kind)} · {c.deal.account.name} · {c.whatHappened.slice(0, 120)}<span className="muted"> · {t(`${Math.max(0, Math.floor((+T - +c.reportedAt) / 864e5))} días abierto`, `${Math.max(0, Math.floor((+T - +c.reportedAt) / 864e5))} days open`)} · {t(`${c._count.notes} notas`, `${c._count.notes} notes`)}</span></li>)}</ul>
         )}
       </section>

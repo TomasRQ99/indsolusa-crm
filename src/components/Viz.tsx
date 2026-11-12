@@ -5,7 +5,7 @@
 
 import type { ReactNode } from "react";
 
-export type Tone = "ok" | "attn" | "risk" | "info" | "wait" | "ai" | "s1" | "s2" | "s3" | "s4";
+export type Tone = "ok" | "attn" | "risk" | "deep" | "info" | "wait" | "ai" | "s1" | "s2" | "s3" | "s4";
 /** Which direction is good news for a figure. "none" = a change is neither good nor bad by itself. */
 export type Good = "up" | "down" | "none";
 
@@ -98,6 +98,12 @@ export function FlowCols({ cols, label, inLabel, outLabel, netLabel, fmt }: { la
       </ul>
     </figure>
   );
+}
+
+/** A change around zero: the bar grows to the right in green when it is a gain, to the left in red when it is a loss. */
+export function GapBar({ value, max, tip }: { value: number; max: number; tip: string }) {
+  const w = max > 0 && Math.abs(value) > 0.005 ? Math.max(4, (Math.abs(value) / max) * 50) : 0;
+  return <span className="vz-gap" title={tip} aria-hidden="true">{w > 0 && <i className={value < 0 ? "risk" : "ok"} style={value < 0 ? { right: "50%", width: `${w}%` } : { left: "50%", width: `${w}%` }} />}</span>;
 }
 
 /** A bar inside a table cell, behind nothing: figure on the left, bar on the right, shared scale `max`. */

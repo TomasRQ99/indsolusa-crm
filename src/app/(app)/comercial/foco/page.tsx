@@ -59,24 +59,24 @@ export default async function FocusPage({ searchParams }: { searchParams: Promis
       )}
 
       {v.attention.length > 0 && (
-        <section className="card" id="atencion">
+        <section className="card" data-zone="act" id="atencion">
           <b>{t(`Alto valor sin movimiento (≥ ${i.money(pol.value.materialEsagaraUsd)} de Eságara, ${pol.value.staleDays}+ días)`, `High value without movement (≥ ${i.money(pol.value.materialEsagaraUsd)} Eságara, ${pol.value.staleDays}+ days)`)}</b>
           <Table rows={v.attention} empty="" />
         </section>
       )}
-      <section className="card" id="top5"><b>{t("Top 5 por Eságara", "Top 5 by Eságara")}</b><Table rows={v.top5} empty={t("Aún no hay Journeys con cotización.", "No Journeys with a quote yet.")} /></section>
-      <section className="card" id="mes"><b>{t("Lo que se mueve este mes", "Month movers")}</b><p className="src">{t("Decisiones del cliente esperadas antes de que termine el mes.", "Customer decisions expected before the month ends.")}</p><Table rows={v.monthMovers} empty={t("Ninguna decisión esperada este mes.", "No decisions expected this month.")} /></section>
-      <section className="card" id="decisiones"><b>{t(`Decisiones que vienen (${pol.value.decisionsDays} días)`, `Decisions coming (${pol.value.decisionsDays} days)`)}</b><Table rows={v.decisionsComing} empty={t("Nada en este horizonte.", "Nothing in this horizon.")} /></section>
-      <section className="card" id="proteger"><b>{t("Negocios para proteger", "Deals to protect")}</b><p className="src">{t("Aceptados y en ejecución, con algún riesgo abierto.", "Accepted and in execution, with an open risk.")}</p><Table rows={v.toProtect} empty={t("Ningún negocio aceptado con riesgo abierto.", "No accepted deal with an open risk.")} /></section>
+      <section className="card" data-zone="plan" id="top5"><b>{t("Top 5 por Eságara", "Top 5 by Eságara")}</b><Table rows={v.top5} empty={t("Aún no hay Journeys con cotización.", "No Journeys with a quote yet.")} /></section>
+      <section className="card" data-zone="flow" id="mes"><b>{t("Lo que se mueve este mes", "Month movers")}</b><p className="src">{t("Decisiones del cliente esperadas antes de que termine el mes.", "Customer decisions expected before the month ends.")}</p><Table rows={v.monthMovers} empty={t("Ninguna decisión esperada este mes.", "No decisions expected this month.")} /></section>
+      <section className="card" data-zone="flow" id="decisiones"><b>{t(`Decisiones que vienen (${pol.value.decisionsDays} días)`, `Decisions coming (${pol.value.decisionsDays} days)`)}</b><Table rows={v.decisionsComing} empty={t("Nada en este horizonte.", "Nothing in this horizon.")} /></section>
+      <section className="card" data-zone="risk" id="proteger"><b>{t("Negocios para proteger", "Deals to protect")}</b><p className="src">{t("Aceptados y en ejecución, con algún riesgo abierto.", "Accepted and in execution, with an open risk.")}</p><Table rows={v.toProtect} empty={t("Ningún negocio aceptado con riesgo abierto.", "No accepted deal with an open risk.")} /></section>
 
-      <section className="card" id="dinero">
+      <section className="card" data-zone="flow" id="dinero">
         <b>{t("Dinero por mover", "Money to move")}</b> · <Link href="/comercial/dinero" className="small">{t("Ver todo", "See all")} →</Link>
         {v.moneyToMove.length === 0 ? <p className="small muted">{t("Sin caja bloqueada.", "No blocked cash.")}</p> : (
           <ul className="mk-ul">{v.moneyToMove.map((b) => <li key={b.id}><b className="mono">{i.money(b.blockedValue)}</b> · {b.deal.account.name} · <Link href={`/deals/${b.deal.id}`}>{b.deal.code ?? b.deal.title}</Link> — {b.narrative}<span className="muted"> → {b.nextMovement}{showOwner ? ` · ${b.deal.owner.name}` : ""}</span></li>)}</ul>
         )}
       </section>
 
-      <section className="card" id="futuro">
+      <section className="card" data-zone="plan" id="futuro">
         <b>{t("Constructores de futuro", "Future builders")}</b>
         <p className="src">{t("Necesidades nuevas (90 días) aún sin cotización, y futuro visible en los próximos 12 meses.", "New needs (90 days) not yet quoted, and visible future in the next 12 months.")}</p>
         {v.futureBuilders.length === 0 && v.futures.length === 0 ? <p className="small muted">{t("Nada por ahora.", "Nothing for now.")}</p> : (

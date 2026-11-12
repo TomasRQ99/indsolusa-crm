@@ -3,6 +3,7 @@ import type { I18n } from "@/lib/i18n";
 import type { Figure, Tile } from "@/lib/gerencia-home";
 import type { NeededItem } from "@/lib/gerencia-store";
 import { AREAS } from "@/lib/gerencia-rules";
+import { Delta } from "@/components/Viz";
 
 // Módulo 15 · pieces shared by the Gerencia screens.
 
@@ -28,7 +29,7 @@ function FigureRow({ f, i, plain }: { f: Figure; i: I18n; plain: boolean }) {
     <div className="gm-fig">
       <span>{plain ? t(f.label) : <Link href={f.href}>{t(f.label)}</Link>}{f.note ? <span className="src block">{t(f.note)}</span> : null}</span>
       <span><b className={f.tone ?? ""}>{fmtFig(i, f.unit, f.value)}</b>
-        <span className="src block">{f.state ? i.t("hoy", "today") : d == null ? i.t("sin mes anterior", "no previous month") : d === 0 ? i.t("igual al mes anterior", "same as last month") : `${d > 0 ? "+" : "−"}${fmtFig(i, f.unit, Math.abs(d)).replace("USD ", "")} ${i.t("vs. mes anterior", "vs last month")}`}</span></span>
+        <span className="src block">{f.state ? i.t("hoy", "today") : d == null ? i.t("sin mes anterior", "no previous month") : d === 0 ? i.t("igual al mes anterior", "same as last month") : <><Delta now={f.value} prev={f.prev ?? null} good={f.good ?? "up"} same="" fmt={(a) => fmtFig(i, f.unit, a).replace("USD ", "")} /> {i.t("vs. mes anterior", "vs last month")}</>}</span></span>
     </div>
   );
 }

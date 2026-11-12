@@ -2161,6 +2161,13 @@ th.vz-col { width: 18%; }
 /* Bar inside a table cell */
 .vz-cell { display: block; height: 6px; margin-top: 3px; border-radius: 0 3px 3px 0; background: transparent; }
 .vz-cell i { display: block; height: 100%; margin-left: auto; border-radius: 3px 0 0 3px; }
+.vz-legend i.deep, .vz-split-bar i.deep, .vz-meter i.deep, .vz-cell i.deep { background: #6e120c; }
+/* Change around zero: loss grows left in red, gain grows right in green */
+.vz-gap { position: relative; display: block; height: 8px; min-width: 70px; margin-top: 3px; background: linear-gradient(var(--line-strong), var(--line-strong)) center / 1px 100% no-repeat; }
+.vz-gap i { position: absolute; top: 1px; bottom: 1px; }
+.vz-gap i.risk { background: var(--risk); border-radius: 3px 0 0 3px; }
+.vz-gap i.ok { background: var(--ok); border-radius: 0 3px 3px 0; }
+.vz-cell.left i { margin-left: 0; border-radius: 0 3px 3px 0; }
 /* Summary tiles that speak: the tile takes the colour of its state */
 .sum > div[data-tone] { box-shadow: inset 0 -3px 0 var(--tn); }
 .sum > div[data-tone] .v { color: var(--tn); }
@@ -2184,4 +2191,18 @@ details.card[open] > summary:not(.small) { font-size: 14px; font-weight: 600; ma
 /* Empty state that says what to do next */
 .vz-empty { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 14px 16px; border: 1px dashed var(--brand-line); border-radius: var(--radius); background: var(--brand-soft); font-size: 13px; line-height: 19px; color: var(--ink-2); margin-bottom: 16px; }
 .vz-empty b { color: var(--ink); }
+/* Phone (audit 2026-11-12): nothing spills sideways, and what you tap is big enough for a thumb */
+.main select, .main input, .main textarea { max-width: 100%; }
+@media (max-width: 599px) {
+  .main .sig { white-space: normal; height: auto; min-height: 20px; max-width: 100%; text-align: left; }
+  .main select { max-width: calc(100vw - 56px); }
+  .main form.inline, .main .qa-row { flex-wrap: wrap; }
+  .main form.inline > label, .main .qa-row > label { min-width: 0; max-width: 100%; }
+  .main label { min-width: 0; max-width: 100%; }
+  .main p.src, .main li, .main td { overflow-wrap: anywhere; }
+  .main button, .main a.btn, .main .qa-btn, .main select, .main input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]) { min-height: 38px; }
+  .sum { grid-auto-flow: row; }
+  .sum > div { border-left: 0; border-top: 1px solid var(--line); }
+  .sum > div:first-child { border-top: 0; }
+}
 @media (max-width: 599px) { td.vz-col, th.vz-col { display: none; } .vz-meter-row { grid-template-columns: 1fr; gap: 4px; } }
