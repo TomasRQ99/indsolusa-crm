@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GuideWhy } from "@/components/GuideWhy";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -295,6 +296,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
                 {!B.canAccept && <p className="src" style={{ marginTop: 6 }}>{t("Se habilita cuando todas las precondiciones estén en verde.", "Enabled when every precondition is green.")}</p>}
               </>
             )}
+            {!open && <GuideWhy button="Aceptar PO">{B.accepted ? t("«Aceptar PO» ya no aparece: esta OC ya está aceptada y el registro no se edita. Lo que sigue es la instrucción de despacho y la compra al proveedor.", "“Accept PO” is no longer shown: this PO is already accepted and the record can't be edited. Next are the dispatch instruction and the supplier purchase.") : t("«Aceptar PO» no aparece porque esta OC se registró como no aceptada.", "“Accept PO” isn't shown because this PO was recorded as not accepted.")}</GuideWhy>}
             {B.accepted && acc && <p className="small">{t("Aceptada por", "Accepted by")} <b>{acc.acceptedByName}</b> · {i.date(acc.acceptedAt)}</p>}
             {open && editable && ctx.supply && !ctx.supply.ok && (
               <details className="scp-add" open><summary className="qa-btn">{t("Registrar que revalidé stock y precio", "Record that I re-confirmed stock and price")}</summary>

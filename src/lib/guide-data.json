@@ -367,10 +367,10 @@
    "steps": [
     "En la Necesidad, abre la pestaña [[Cotización]] y haz clic en [[Preparar cotización]].",
     "Agrega las líneas ([[Agregar]]) y los costos del proveedor ([[Guardar costos]]). Mira la Eságara en $ y %, antes y después del costo de financiar el plazo de pago.",
-    "Opcional: ofrece alternativas con [[Agregar escenario]] y marca una con [[Recomendar este]].",
-    "Resuelve cada punto de la lista \"Lista para presentar\".",
-    "Descarga el PDF en inglés o español para revisarlo.",
-    "Haz clic en [[Presentar al cliente]]. Los precios quedan fijos."
+    "Opcional: ofrece alternativas con [[+ Escenario]] y [[Agregar escenario]], y marca una con [[Recomendar este]].",
+    "Resuelve cada punto con «!» de la lista READY TO PRESENT (columna derecha): cada uno dice qué falta.",
+    "Revisa el documento con [[Ver PDF]] (arriba), en inglés o español.",
+    "Con la lista completa, haz clic en [[Presentar al cliente]] (debajo de la lista). Los precios quedan fijos."
    ],
    "expect": "Después de presentarla, los cambios requieren [[Crear revisión]] (Rev. 1, mismo número). La cotización pasa a Futuro comercial."
   },
@@ -417,9 +417,10 @@
    "id": "po",
    "m": "comercial",
    "t": "OC del cliente frente a la cotización",
-   "path": "Se abre después de Registrar y comparar",
+   "path": "Necesidad → Cotización presentada → Llegó la PO · registrarla",
    "why": "Detecta diferencias entre lo que pidió el cliente y lo que cotizamos, antes de comprometernos.",
    "steps": [
+    "En la cotización presentada, abre [[Llegó la PO · registrarla]], escribe el número de la OC y haz clic en [[Registrar y comparar]].",
     "Revisa la comparación: cada línea, precio, cantidad, condiciones y vigencia.",
     "Para cada diferencia importante, elige una solución con [[Elegir esta opción]] y registra la confirmación del cliente con [[Registrar confirmación]].",
     "Cuando nada bloquee, haz clic en [[Aceptar PO]]."
@@ -445,10 +446,10 @@
    "path": "Necesidad → Resultado",
    "why": "Confirma que el cliente realmente obtuvo el resultado que necesitaba. Si no, recupéralo.",
    "steps": [
-    "Registra la evidencia del resultado (lo que confirmó el cliente).",
+    "Registra lo que confirmó el cliente con [[Confirmar resultado del cliente]] o [[Agregar evidencia]].",
     "Si algo salió mal, elige la causa y haz clic en [[Abrir Recovery]]. Escoge una opción con [[Elegir]].",
-    "Termínala con [[Recovery exitosa]], [[No se recuperó]] o [[Ya no aplica]].",
-    "Cierra con [[Cerrar Necesidad]]. Anota cualquier señal de una necesidad futura (continuidad), con una fecha de seguimiento."
+    "Termínala en [[Resolver Recovery]]: exitosa, no se recuperó o ya no aplica.",
+    "Cuando la lista PREPARACIÓN PARA EL CIERRE esté completa, cierra con [[Cerrar Necesidad]]. Anota cualquier señal de una necesidad futura (continuidad), con una fecha de seguimiento."
    ],
    "expect": "Una señal de continuidad crea una tarea de seguimiento. No crea una oportunidad de venta por sí sola."
   },
@@ -621,9 +622,9 @@
    "why": "Compra exactamente lo cotizado, guarda versiones y programa los pagos al proveedor.",
    "steps": [
     "En la pestaña Ejecución de la Necesidad, haz clic en [[Preparar Supplier PO desde la cotización]].",
-    "Revísala en [[Compras]]. Guarda cambios con [[Guardar borrador]] o [[Crear versión]].",
-    "Libérala al proveedor.",
-    "Para cada hito de pago, haz clic en [[Solicitar este pago]]."
+    "SOLU abre la orden. Revísala y guarda los cambios con [[Guardar borrador]].",
+    "Cuando la lista LISTA PARA LIBERAR (columna derecha) no tenga pendientes, haz clic en [[Liberar Supplier PO]].",
+    "En PLAN DE PAGO, haz clic en [[Solicitar este pago]] en cada hito. Si después hay que cambiar la orden: [[Crear nueva versión]]."
    ],
    "expect": "Las solicitudes de pago van a Administración → Pagos a proveedores para verificación."
   },
@@ -634,9 +635,9 @@
    "path": "OPERACIONES → Envíos",
    "why": "Dónde está la mercancía, cuándo llegará de verdad y si el resultado del cliente está en riesgo.",
    "steps": [
-    "Abre un envío. Actualiza la ETA del transportista con [[Guardar]].",
-    "Si la aduana lo retiene: [[Registrar retención]], y luego [[✓ Liberado por la aduana]] cuando se libere.",
-    "Al llegar: [[Registrar entrega]]. Si algo no cuadra: [[Registrar discrepancia]]."
+    "Abre un envío. Actualiza la fecha en [[Nueva ETA del transportista]].",
+    "Si la aduana lo retiene: [[Retenido en aduana]], y luego [[✓ Liberado por la aduana]] cuando se libere.",
+    "Al llegar: [[El transportista entregó]]. Si algo no cuadra: [[Registrar discrepancia]]."
    ],
    "expect": "Confirmar la entrega crea la remisión. Las fechas de la Necesidad se actualizan desde el envío."
   },
@@ -788,7 +789,7 @@
    "path": "Necesidad → Despacho → Entrega física · OPERACIONES → Despachos",
    "why": "La entrega física al cliente: despachado, entregado y listo para facturar son tres hechos distintos.",
    "steps": [
-    "En la Necesidad, abre Despacho y haz clic en [[+ Nuevo despacho]].",
+    "En la Necesidad, abre Despacho, haz clic en [[+ Nuevo despacho]], elige las unidades y [[Crear despacho]]. Ábrelo desde la lista.",
     "Registra lo que exige el cliente con [[+ Agregar requisito del cliente]] y márcalo cumplido.",
     "Haz clic en [[Salió hacia el cliente]].",
     "Al entregar: quién recibió y [[Entregado: crear remisión]]. Si no se pudo: [[No se pudo entregar]].",
@@ -893,10 +894,10 @@
    "path": "Necesidad → Finanzas → Facturación",
    "why": "Emite una factura solo cuando todo lo que exige el cliente esté listo.",
    "steps": [
-    "Revisa la lista \"¿Listo para facturar?\", construida con el perfil de facturación del cliente.",
-    "Agrega lo que falte: [[Registrar solicitud]], [[Registrar evidencia]].",
-    "Emite la factura cuando la lista esté completa. Descarga el PDF.",
-    "Registra su estado en contabilidad: [[Confirmar ID contable]], [[Enviada, esperando su ID]] o [[No sabemos si se creó]]."
+    "Revisa la lista REQUISITOS PARA FACTURAR, construida con el perfil de facturación del cliente.",
+    "Agrega lo que falte en cada requisito: [[Pedir al cliente]] o [[Llegó: registrar]].",
+    "Cuando la entrega diga «Listo para facturar», haz clic en [[Emitir factura]]. Descarga el PDF.",
+    "Registra su estado en contabilidad en [[Puente contable]]: ID confirmado, enviada esperando su ID, o no sabemos si se creó."
    ],
    "expect": "El PDF de la factura todavía no lleva datos bancarios (ver \"Todavía sin conectar\")."
   },

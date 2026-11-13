@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GuideWhy } from "@/components/GuideWhy";
 import { SellerLine } from "@/components/SellerLine";
 import { QuoteDocMoney } from "@/components/QuoteDocMoney";
 import { quoteDocView } from "@/lib/sellers";
@@ -67,8 +68,8 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   }[q.status];
 
   const okMsg: Record<string, string> = {
-    correo: t("Correo enviado al cliente desde la cuenta de la empresa. Quedó registrado en el Journey.", "Email sent to the customer from the company account. It's logged on the Journey."),
-    creada: t("Cotización creada con los productos y costos del Journey.", "Quote created from the Journey's products and costs."),
+    correo: t("Correo enviado al cliente desde la cuenta de la empresa. Quedó registrado en la Necesidad.", "Email sent to the customer from the company account. It's logged on the Necessity."),
+    creada: t("Cotización creada con los productos y costos de la Necesidad.", "Quote created from the Necessity's products and costs."),
     abierta: t("Ya había un borrador abierto: es este.", "There was already an open draft: this one."),
     solucion: t("Solución y promesa guardadas.", "Solution and promise saved."),
     costos: t("Costos guardados. SOLU recalculó la economía esperada.", "Costs saved. SOLU recalculated the expected economics."),
@@ -80,7 +81,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     recomendado: t("Escenario recomendado: el plazo de la cotización lo sigue.", "Scenario recommended: the quote's lead time follows it."),
     presentada: t("Presentada. La economía quedó protegida y esta versión ya no cambia. Ahora el foco es cómo decide el cliente.", "Presented. Economics are protected and this version no longer changes. Now the focus is how the customer decides."),
     revision: t("Revisión creada con el mismo número. La versión presentada queda intacta.", "Revision created with the same number. The presented version stays intact."),
-    aceptada: t("Aceptada. La OC quedó en el Journey; ya se puede facturar al entregar.", "Accepted. The PO is on the Journey; it can be invoiced on delivery."),
+    aceptada: t("Aceptada. La OC quedó en la Necesidad; ya se puede facturar al entregar.", "Accepted. The PO is on the Necessity; it can be invoiced on delivery."),
     rechazada: t("Registrado: el cliente no aceptó.", "Recorded: the customer did not accept."),
     espera: t("Esperando con control. SOLU lo devuelve a Mi Día en la fecha indicada.", "Waiting with control. SOLU brings it back to My Day on the given date."),
     ...EXC_OK(t),
@@ -96,8 +97,8 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     "doc-no-rate": t("La cotización está en pesos y no tiene tasa fijada: guárdala en «Moneda e IVA del documento».", "The quote is in pesos and has no fixed rate: save it under “Document currency and IVA”."),
     "doc-exempt-no-reason": t("Falta el motivo de la exención de IVA.", "The IVA exemption reason is missing."),
     "vendedor-inactivo": t("Esa empresa aún no está activa: Gerencia debe completar sus datos en Comercial → Configuración → Empresas que venden.", "That company isn't active yet: Management must complete its details in Commercial → Setup → Selling companies."),
-    "vendedor-fijo": t("El cliente ya vio una cotización de esta empresa (o hay factura): la empresa que vende ya no cambia en este Journey.", "The customer already saw a quote from this company (or there's an invoice): the seller no longer changes on this Journey."),
-    permiso: t("No tienes permiso para cambiar este Journey.", "You don't have permission to change this Journey."),
+    "vendedor-fijo": t("El cliente ya vio una cotización de esta empresa (o hay factura): la empresa que vende ya no cambia en esta Necesidad.", "The customer already saw a quote from this company (or there's an invoice): the seller no longer changes on this Necessity."),
+    permiso: t("No tienes permiso para cambiar esta Necesidad.", "You don't have permission to change this Necessity."),
     presentada: t("Esta versión ya fue presentada y no cambia. Crea una revisión.", "This version was already presented and doesn't change. Create a revision."),
     bloqueada: t("Todavía hay puntos que impiden presentarla (ver «Lista para presentar»).", "There are still items that block presenting it (see “Ready to Present”)."),
     "sin-oc": t("Escribe el número de OC del cliente.", "Write the customer's PO number."),
@@ -126,7 +127,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const Header = () => (
     <header className="jh">
       <div className="jh-top">
-        <p className="crumb k"><Link href={`/deals/${d.id}?tab=quote`}>{d.code ?? "Journey"}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
+        <p className="crumb k"><Link href={`/deals/${d.id}?tab=quote`}>{d.code ?? t("Necesidad", "Necessity")}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
         <span className="jid">Quote Nº {quoteNo(q)}</span>
         <span className="grow" />
         <div className="jh-act">
@@ -138,6 +139,9 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
           {editable && !draft && q.status !== "SUPERSEDED" && q.status !== "ACCEPTED" && (
             <form action={createRevision.bind(null, q.id)}><button type="submit" className="qa-btn">{t("Crear revisión", "Create revision")}</button></form>
           )}
+          {!draft && ["Presentar al cliente", "Agregar", "Guardar costos", "Agregar escenario", "Recomendar este"].map((b) => (
+            <GuideWhy key={b} button={b}>{t(`«${b}» ya no aparece: esta versión de la cotización ya se presentó y no cambia. Para cambiarla se usa «Crear revisión», aquí arriba.`, `“${b}” is no longer shown: this version of the quote was already presented and doesn't change. To change it use “Create revision”, up here.`)}</GuideWhy>
+          ))}
         </div>
       </div>
       <div className="jh-title">
@@ -498,6 +502,8 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
             <span className="src">{t("Crea la versión que ya no cambia y protege su economía. Descarga el PDF para enviarlo.", "Creates the version that no longer changes and protects its economics. Download the PDF to send it.")}</span>
           </form>
         )}
+        {B.blocking.length > 0 && <GuideWhy button="Presentar al cliente">{t(`«Presentar al cliente» aparece aquí, debajo de la lista READY TO PRESENT, cuando ningún punto tenga «!». Ahora hay ${B.blocking.length} pendiente(s): resuélvelos primero (cada uno dice qué hacer).`, `“Present to customer” shows here, under the READY TO PRESENT list, once no item has a “!”. There are ${B.blocking.length} open now: resolve them first (each one says what to do).`)}</GuideWhy>}
+        {B.blocking.length === 0 && !editable && <GuideWhy button="Presentar al cliente">{t("La lista está completa, pero solo el responsable de esta Necesidad (o Dirección) puede presentar la cotización.", "The list is complete, but only the owner of this Necessity (or management) can present the quote.")}</GuideWhy>}
       </div>
       <div>
         <div className="jbh"><b>{t("SI EL CLIENTE DICE SÍ HOY", "READY IF CUSTOMER SAYS YES")}</b></div>
@@ -581,7 +587,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
                     </form>
                   </QA>
                 )}
-                <Link className="qa-btn" href={`/deals/${d.id}`}>{t("Ver Journey", "Open Journey")}</Link>
+                <Link className="qa-btn" href={`/deals/${d.id}`}>{t("Ver Necesidad", "Open Necessity")}</Link>
               </div>
             )}
           </div>

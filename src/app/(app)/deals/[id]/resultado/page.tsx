@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GuideWhy } from "@/components/GuideWhy";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -43,14 +44,14 @@ export default async function ResultClosurePage({ params, searchParams }: { para
     evidencia: t("Evidencia registrada.", "Evidence recorded."),
     contradice: t("Esta evidencia contradice el resultado logrado. Si el cliente perdió el resultado, abre una Recovery.", "This evidence contradicts the achieved result. If the customer lost the result, open a Recovery."),
     recovery: t("Recovery abierta. Elige una opción con fecha de recuperación.", "Recovery opened. Choose an option with a recovery date."),
-    opcion: t("Opción elegida. Quedó como siguiente movimiento del Journey.", "Option chosen. It's now the Journey's next movement."),
+    opcion: t("Opción elegida. Quedó como siguiente movimiento de la Necesidad.", "Option chosen. It's now the Necessity's next movement."),
     "recovery-recovered": t("Recovery exitosa: el cliente confirmó el resultado.", "Recovery successful: the customer confirmed the result."),
     "recovery-not_recovered": t("Recovery cerrada sin recuperar. El resultado queda como no logrado.", "Recovery closed without recovering. The result stays not achieved."),
     "recovery-no_longer_relevant": t("Recovery cerrada: ya no aplica.", "Recovery closed: no longer relevant."),
-    senal: t("Señal de continuidad registrada. No es una oportunidad ni crea un Journey.", "Continuity signal recorded. It's not an opportunity and creates no Journey."),
-    cerrado: t("Journey cerrado.", "Journey closed."),
-    "ya-cerrado": t("Este Journey ya estaba cerrado.", "This Journey was already closed."),
-    reabierto: t("Journey reabierto.", "Journey reopened."),
+    senal: t("Señal de continuidad registrada. No es una oportunidad ni crea una Necesidad.", "Continuity signal recorded. It's not an opportunity and creates no Necessity."),
+    cerrado: t("Necesidad cerrada.", "Necessity closed."),
+    "ya-cerrado": t("Esta Necesidad ya estaba cerrada.", "This Necessity was already closed."),
+    reabierto: t("Necesidad reabierta.", "Necessity reopened."),
   };
   const errMsg: Record<string, string> = {
     estado: t("Elige un estado.", "Pick a state."),
@@ -66,7 +67,7 @@ export default async function ResultClosurePage({ params, searchParams }: { para
     "no-listo": t("Aún no se puede cerrar: revisa la preparación para el cierre.", "It can't be closed yet: check closure readiness."),
     cierre: t("Escribe qué pasó y una línea de aprendizaje.", "Write what happened and one line of learning."),
     "sin-senal": t("Registra una señal de continuidad o di por qué no hay una legítima.", "Record a continuity signal or say why there isn't a legitimate one."),
-    cerrado: t("El Journey está cerrado.", "The Journey is closed."),
+    cerrado: t("La Necesidad está cerrada.", "The Necessity is closed."),
   };
 
   const EvKind = ({ name = "evKind" }: { name?: string }) => (
@@ -118,7 +119,7 @@ export default async function ResultClosurePage({ params, searchParams }: { para
 
       {closed && (
         <section className="fwd-banner ok rclosed">
-          <span className="k">{t(`Journey cerrado · ${i.day(deal.closedAt)} · ${deal.closedByName ?? ""}`, `Journey closed · ${i.day(deal.closedAt)} · ${deal.closedByName ?? ""}`)}</span>
+          <span className="k">{t(`Necesidad cerrada · ${i.day(deal.closedAt)} · ${deal.closedByName ?? ""}`, `Necessity closed · ${i.day(deal.closedAt)} · ${deal.closedByName ?? ""}`)}</span>
           <p><b className="small">{t("Qué pasó", "What happened")}</b> {deal.closureSummary}</p>
           <p><b className="small">{t("Qué aprendimos", "What we learned")}</b> {deal.closureLearning}</p>
           <p><b className="small">{t("Señal futura", "Future signal")}</b> {deal.continuity.length ? deal.continuity.map((c) => c.what).join(" · ") : t(`Ninguna legítima: ${deal.closureNoSignalReason ?? "—"}`, `None legitimate: ${deal.closureNoSignalReason ?? "—"}`)}</p>
@@ -230,6 +231,7 @@ export default async function ResultClosurePage({ params, searchParams }: { para
                   </li>
                 ))}
               </ul>
+              {blocking.length > 0 && <GuideWhy button="Cerrar Necesidad">{t(`«Cerrar Necesidad» aparece aquí, debajo de la lista PREPARACIÓN PARA EL CIERRE, cuando ningún punto tenga «!». Ahora faltan ${blocking.length}: cada uno dice qué hace falta.`, `“Close Necessity” shows here, under the CLOSURE READINESS list, once no item has a “!”. ${blocking.length} are missing now: each one says what is needed.`)}</GuideWhy>}
               {blocking.length === 0 && editable && (
                 <form action={closeJourney.bind(null, deal.id)} className="stack jform rclose">
                   <label>{t("Qué pasó", "What happened")}<textarea name="summary" rows={3} defaultValue={whatHappened(deal, i)} required /></label>
@@ -238,7 +240,7 @@ export default async function ResultClosurePage({ params, searchParams }: { para
                     ? <p className="small">{t("Señal futura", "Future signal")}: {deal.continuity.map((c) => c.what).join(" · ")}</p>
                     : <label>{t("¿Por qué no hay una señal futura legítima?", "Why is there no legitimate future signal?")}<input name="noSignalReason" placeholder={t("Ej.: compra única; el cliente no tiene más equipos de este tipo", "E.g.: one-off purchase; the customer has no more equipment of this type")} /></label>}
                   <span className="src">{t("Sin encuesta y sin seguimientos automáticos. Si hay una razón real para volver, regístrala como señal de continuidad.", "No survey and no automatic follow-ups. If there's a real reason to come back, record it as a continuity signal.")}</span>
-                  <button type="submit">{t("Cerrar Journey", "Close Journey")}</button>
+                  <button type="submit">{t("Cerrar Necesidad", "Close Necessity")}</button>
                 </form>
               )}
             </section>
@@ -313,7 +315,7 @@ export default async function ResultClosurePage({ params, searchParams }: { para
                     <label>{t("Fecha", "Date")}<input name="triggerOn" type="date" /></label>
                     <label>{t("o evento", "or event")}<input name="triggerEvent" placeholder={t("Ej.: cuando aprueben el presupuesto 2027", "E.g.: when the 2027 budget is approved")} /></label>
                   </div>
-                  <span className="src">{t("No es una oportunidad: no crea Journey ni valor en el pipeline. Una fecha crea un solo recordatorio.", "Not an opportunity: it creates no Journey and no pipeline value. A date creates a single reminder.")}</span>
+                  <span className="src">{t("No es una oportunidad: no crea Necesidad ni valor en el pipeline. Una fecha crea un solo recordatorio.", "Not an opportunity: it creates no Necessity and no pipeline value. A date creates a single reminder.")}</span>
                   <button type="submit">{t("Guardar", "Save")}</button>
                 </form>
               </div></details>

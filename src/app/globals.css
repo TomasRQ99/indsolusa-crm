@@ -1953,6 +1953,20 @@ tr:target td { background: var(--brand-soft); }
 .g-steps li.done button i { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
 .g-ui { display: inline-block; padding: 0 6px; border-radius: 4px; background: var(--surface); border: 1px solid var(--brand-line); color: var(--brand); font-weight: 600; font-size: 12px; line-height: 17px; }
 .g-miss { font-size: 12px; line-height: 17px; color: var(--ink-3); }
+/* The guide follows the case on screen (2026-11-13): which case, why a button is not there, samples to practise with */
+.guide-panel.left { right: auto; left: 16px; }
+.g-ring.see { border: 2px dashed var(--attn); }
+.g-case { display: flex; flex-direction: column; font-size: 12.5px; line-height: 17px; font-weight: 600; color: var(--ink); background: var(--surface-sunken); border-radius: 6px; padding: 6px 10px; }
+.g-case small { font: 700 10.5px/14px var(--font-sans), sans-serif; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
+.g-jump { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.g-notyet { background: var(--attn-soft); color: var(--attn); }
+.g-why { font-size: 12.5px; line-height: 18px; background: var(--attn-soft); color: var(--attn); border-radius: 8px; padding: 8px 10px; }
+.g-ex { display: flex; flex-direction: column; gap: 5px; }
+.g-ex > b { font: 700 10.5px/15px var(--font-sans), sans-serif; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
+.g-ex p { font-size: 12px; line-height: 17px; color: var(--ink-3); }
+.g-ex .g-exb { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; white-space: normal; height: auto; padding: 6px 9px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); border-radius: 8px; font-weight: 500; font-size: 12.5px; line-height: 17px; }
+.g-ex .g-exb:hover { border-color: var(--brand); background: var(--brand-soft); }
+.g-ex .g-exb small { font-size: 11.5px; color: var(--brand); font-weight: 600; }
 .g-expect { font-size: 12.5px; line-height: 18px; background: var(--ok-soft); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
 .g-expect b { display: block; font: 700 10.5px/15px var(--font-sans), sans-serif; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ok); }
 .g-also { font-size: 12.5px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
