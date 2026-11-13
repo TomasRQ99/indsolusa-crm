@@ -1313,6 +1313,18 @@ model Quote {
   supplierStatus     String?
   freightStatus      String?
   otherStatus        String?
+  /// Cost settlement ("liquidación de costos"), USD: the parts of otherCosts, typed one by one.
+  /// otherCosts stays the total every other screen reads: tax + customs + packing + wire + anything else − credit.
+  taxCost            Decimal   @default(0) @db.Decimal(14, 2)
+  customsCost        Decimal   @default(0) @db.Decimal(14, 2)
+  packingCost        Decimal   @default(0) @db.Decimal(14, 2)
+  /// What the bank charges for wiring the money to the supplier ("valor de giro").
+  wireCost           Decimal   @default(0) @db.Decimal(14, 2)
+  /// Balance in our favor with the supplier or the carrier: lowers the cost, and says where it comes from.
+  creditAmount       Decimal   @default(0) @db.Decimal(14, 2)
+  creditSrc          String?
+  /// Days the goods travel (informative; the lead time printed on the document is set under the terms).
+  transitDays        Int?
   changeNote         String?
   // Protected economics: fixed when presented, never changed afterwards
   protSale           Decimal?  @db.Decimal(14, 2)

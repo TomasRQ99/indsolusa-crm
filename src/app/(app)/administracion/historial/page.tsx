@@ -82,7 +82,7 @@ const GROUPS: { key: string; es: string; en: string; models: string[] }[] = [
 ];
 const FIELDS: Record<string, [string, string]> = {
   amount: ["Monto", "Amount"], amountUsd: ["Monto USD", "Amount USD"], currency: ["Moneda", "Currency"], status: ["Estado", "Status"], state: ["Estado", "State"], stage: ["Etapa", "Stage"],
-  unitPrice: ["Precio unitario", "Unit price"], unitCost: ["Costo unitario", "Unit cost"], qty: ["Cantidad", "Quantity"], supplierCost: ["Costo proveedor", "Supplier cost"], freightCost: ["Flete", "Freight"], otherCosts: ["Otros costos", "Other costs"],
+  unitPrice: ["Precio unitario", "Unit price"], unitCost: ["Costo unitario", "Unit cost"], qty: ["Cantidad", "Quantity"], supplierCost: ["Costo proveedor", "Supplier cost"], freightCost: ["Flete", "Freight"], otherCosts: ["Otros costos", "Other costs"], taxCost: ["Impuestos", "Taxes"], customsCost: ["Aduana", "Customs"], packingCost: ["Empaque", "Packing"], wireCost: ["Giro", "Bank wire"], creditAmount: ["Crédito a favor", "Credit in our favor"],
   fxRate: ["Tasa de cambio", "Exchange rate"], protSale: ["Venta protegida", "Protected sale"], protCost: ["Costo protegido", "Protected cost"], protEsagra: ["Eságara protegida", "Protected eságara"], esagraAtIssue: ["Eságara al emitir", "Eságara at issue"],
   bankBeneficiary: ["Beneficiario", "Beneficiary"], bankName: ["Banco", "Bank"], bankAccount: ["Cuenta", "Account"], bankSwift: ["SWIFT", "SWIFT"], bankVerifiedAt: ["Banco verificado", "Bank verified"],
   docBeneficiary: ["Beneficiario (documento)", "Beneficiary (document)"], docBankName: ["Banco (documento)", "Bank (document)"], docAccount: ["Cuenta (documento)", "Account (document)"], docSwift: ["SWIFT (documento)", "SWIFT (document)"],

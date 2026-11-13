@@ -11,7 +11,8 @@ import { quoteFloor } from "@/lib/esagara-gate";
 import { scopeState } from "@/lib/scope";
 import { costDrops } from "@/lib/esagara-rules";
 import { makeI18n } from "@/lib/i18n";
-import { money2, mulMoney } from "@/lib/money";
+import { money2, mulMoney, sumMoney } from "@/lib/money";
+import { otherTotal } from "@/lib/cost-lines";
 import { COST_STATUS } from "@/lib/proposal-rules";
 import { sellerMissing, sellerOf } from "@/lib/sellers";
 import { RATE_MAX, RATE_MIN, docBlockers, effectiveIvaPct, type SellerSnap } from "@/lib/quote-doc";
@@ -146,9 +147,19 @@ export async function saveCosts(id: string, fd: FormData) {
     const m = await marketRate(cur, { wait: false });
     if (m && Math.abs(fxRate - m.usdPerUnit) / m.usdPerUnit < 0.005) usdAfter = usdBefore;
   }
+  // Cost settlement: the other costs are typed one by one and stored with their total (otherCosts).
+  const parts = {
+    tax: num(fd, "taxCost") ?? 0, customs: num(fd, "customsCost") ?? 0, packing: num(fd, "packingCost") ?? 0,
+    wire: num(fd, "wireCost") ?? 0, misc: num(fd, "miscCost") ?? 0, credit: num(fd, "creditAmount") ?? 0,
+  };
+  const creditSrc = txt(fd, "creditSrc", 200);
+  // A credit in our favor lowers the cost: it must say where it comes from (credit note, balance with the carrier…).
+  if (parts.credit > 0 && !creditSrc) back(id, "err=credito-fuente");
+  const otherCosts = otherTotal(parts);
+  // The drop rule looks at the costs before the credit: the credit is explained by its own source.
   const drops = costDrops(
-    { supplierCost: usdBefore, freightCost: Number(q.freightCost), otherCosts: Number(q.otherCosts) },
-    { supplierCost: usdAfter, freightCost: num(fd, "freightCost") ?? 0, otherCosts: num(fd, "otherCosts") ?? 0 },
+    { supplierCost: usdBefore, freightCost: Number(q.freightCost), otherCosts: sumMoney([q.otherCosts, q.creditAmount]) },
+    { supplierCost: usdAfter, freightCost: num(fd, "freightCost") ?? 0, otherCosts: sumMoney([otherCosts, parts.credit]) },
   );
   if (drops.length && !txt(fd, "changeNote", 300)) back(id, "err=motivo-costo");
   await db.quote.update({
@@ -161,9 +172,16 @@ export async function saveCosts(id: string, fd: FormData) {
       supplierSrc: txt(fd, "supplierSrc", 200),
       freightCost: num(fd, "freightCost") ?? 0,
       freightSrc: txt(fd, "freightSrc", 200),
-      otherCosts: num(fd, "otherCosts") ?? 0,
+      otherCosts,
       otherSrc: txt(fd, "otherSrc", 200),
-      // C5 §15: how firm each cost is (empty = SOLU derives it from amount, source and supplier confirmation).
+      taxCost: parts.tax,
+      customsCost: parts.customs,
+      packingCost: parts.packing,
+      wireCost: parts.wire,
+      creditAmount: parts.credit,
+      creditSrc: parts.credit > 0 ? creditSrc : null,
+      transitDays: int(fd, "transitDays"),
+      // C5 §15: how firm each cost is. The form no longer asks: SOLU derives it from amount, source and supplier confirmation.
       supplierStatus: costStatus(fd, "supplierStatus"),
       freightStatus: costStatus(fd, "freightStatus"),
       otherStatus: costStatus(fd, "otherStatus"),

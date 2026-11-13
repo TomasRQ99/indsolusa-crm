@@ -26,6 +26,8 @@ import { lineAmount, mulMoney, subMoney, sumMoney } from "@/lib/money";
 import { BASE_CURRENCY, rateGapPct, rateText } from "@/lib/currencies";
 import { marketRate, rateSourceText } from "@/lib/fx-market";
 import { CostFxFields } from "@/components/CostFxFields";
+import { CostTotal } from "@/components/CostTotal";
+import { COST_LINES, costDetail } from "@/lib/cost-lines";
 import { COST_STATUS, costStatusOf, quoteDiff, weakest, type QV } from "@/lib/proposal-rules";
 
 export default async function QuotePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; cmp?: string }> }) {
@@ -112,14 +114,15 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     espera: t("Escribe qué esperas y hasta cuándo.", "Write what you're waiting for and until when."),
     estado: t("Esta acción no aplica en el estado actual.", "This action doesn't apply in the current state."),
     "tasa-mercado": t("No se pudo consultar la tasa del mercado ahora. Intenta de nuevo en un minuto, o abre «Editar costos» y escribe la tasa del banco con su fuente.", "Couldn't get the market rate right now. Try again in a minute, or open “Edit costs” and type the bank's rate with its source."),
-    "motivo-costo": t("Un costo bajó: escribe por qué en «Motivo del cambio» (por ejemplo, nueva proforma). Así nadie sube la Eságara quitando costos reales.", "A cost went down: write why in “Reason for change” (e.g., new proforma). That way nobody lifts Eságara by removing real costs."),
+    "credito-fuente": t("Escribiste un crédito a favor: di de dónde sale (nota crédito, saldo con el transportador). No se guardó nada todavía.", "You typed a credit in our favor: say where it comes from (credit note, balance with the carrier). Nothing was saved yet."),
+    "motivo-costo": t("Un costo bajó: escribe por qué en «Si algún costo bajó, ¿por qué?», al final de «Editar costos» (por ejemplo, nueva proforma). No se guardó nada todavía. Así nadie sube la Eságara quitando costos reales.", "A cost went down: write why in “If a cost went down, why?”, at the end of “Edit costs” (e.g., new proforma). Nothing was saved yet. That way nobody lifts Eságara by removing real costs."),
     ...EXC_ERR(t),
   };
 
-  const QA = ({ label, children, wide, right, cls = "" }: { label: React.ReactNode; children: React.ReactNode; wide?: boolean; right?: boolean; cls?: string }) => (
+  const QA = ({ label, children, wide, right, cls = "", popCls = "" }: { label: React.ReactNode; children: React.ReactNode; wide?: boolean; right?: boolean; cls?: string; popCls?: string }) => (
     <details className={`qa ${cls}`}>
       <summary className="qa-btn">{label}</summary>
-      <div className={`qa-pop${wide ? " wide" : ""}${right ? " right" : ""}`}>{children}</div>
+      <div className={`qa-pop${wide ? " wide" : ""}${right ? " right" : ""}${popCls ? ` ${popCls}` : ""}`}>{children}</div>
     </details>
   );
   const money = (v: number | null | undefined) => (v == null ? "—" : `USD ${i.n2(v)}`);
@@ -220,19 +223,24 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const Economics = () => {
     const v = B.versions;
     const showVersions = v.length > 1;
-    const rows: { k: string; label: string; src: string | null; get: (x: (typeof v)[number]) => number }[] = [
-      { k: "supplier", label: t("Proveedor", "Supplier"), src: q.supplierSrc, get: (x) => x.supplier },
-      { k: "freight", label: t("Fletes", "Freight"), src: q.freightSrc, get: (x) => x.freight },
-      { k: "other", label: t("Otros (aduana, logística local, seguro, contingencia)", "Other (customs, local logistics, insurance, contingency)"), src: q.otherSrc, get: (x) => x.other },
-    ];
     const cur = v.find((x) => x.current) ?? v[0];
+    const det = costDetail(q);
+    const used = (get: (x: (typeof v)[number]) => number) => v.some((x) => Math.abs(get(x)) > 0.004);
+    // The settlement in the order the team works. "Otros" and the credit only show when they have a value.
+    const rows: { k: string; label: string; src: string | null; sub?: boolean; minus?: boolean; get: (x: (typeof v)[number]) => number }[] = [
+      { k: "supplier", label: t("Producto (proveedor)", "Product (supplier)"), src: q.supplierSrc, get: (x) => x.supplier },
+      { k: "freight", label: t("Envío (transporte)", "Shipping (transport)"), src: [q.freightSrc, q.transitDays != null ? t(`${q.transitDays} días de transporte`, `${q.transitDays} transit days`) : null].filter(Boolean).join(" · ") || null, get: (x) => x.freight },
+      ...COST_LINES.filter((c) => c.k !== "misc" || used((x) => x.detail.misc)).map((c) => ({ k: c.k, label: t(c.es, c.en), src: q.otherSrc, sub: true, get: (x: (typeof v)[number]) => x.detail[c.k] })),
+      ...(used((x) => x.detail.credit) ? [{ k: "credit", label: t("Crédito a favor (resta)", "Credit in our favor (subtracts)"), src: q.creditSrc, sub: true, minus: true, get: (x: (typeof v)[number]) => x.detail.credit }] : []),
+    ];
+    const otherGross = sumMoney([cur.other, det.credit]);
     const st: Record<string, string> = {
       supplier: costStatusOf(q.supplierStatus, cur.supplier, q.supplierSrc, q.supplyConfirmed),
       freight: costStatusOf(q.freightStatus, cur.freight, q.freightSrc),
-      other: costStatusOf(q.otherStatus, cur.other, q.otherSrc),
+      // No other costs typed is a valid answer (nothing to pay), not a pending one.
+      ...(otherGross > 0 ? { other: costStatusOf(q.otherStatus, otherGross, q.otherSrc) } : {}),
     };
     const weak = weakest(Object.values(st));
-    const StatusSel = ({ name, value }: { name: string; value: string | null }) => <label>{t("Estado", "Status")}<select name={name} defaultValue={value ?? ""}><option value="">{t("Automático", "Automatic")}</option>{Object.entries(COST_STATUS).map(([k, x]) => <option key={k} value={k}>{t(x.es, x.en)}</option>)}</select></label>;
     const prev = v.length > 1 ? v[v.findIndex((x) => x.current) - 1] : undefined;
     const why = q.changeNote;
     // Supplier paid in its own currency: the quote's rate next to the market's, and what the difference is worth.
@@ -244,13 +252,60 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
       <section className="jblock">
         <div className="jbh"><b>ECONOMICS</b><span className="grow" />
           {editable && draft && (
-            <QA label={t("Editar costos", "Edit costs")} wide right>
+            <QA label={t("Editar costos", "Edit costs")} wide right popCls="liq">
               <form action={saveCosts.bind(null, q.id)} className="qa-form">
-                <CostFxFields lang={user.lang} currency={q.costCurrency} rate={q.fxRate ? Number(q.fxRate) : null} source={q.fxSource} />
-                <div className="qa-row"><label>{foreignCost ? t(`Proveedor (en ${q.costCurrency})`, `Supplier (in ${q.costCurrency})`) : t("Proveedor", "Supplier")}<input name="supplierCost" type="number" step="0.01" min="0" defaultValue={Number(q.supplierCost)} /></label><label>{t("Fuente", "Source")}<input name="supplierSrc" maxLength={200} defaultValue={q.supplierSrc ?? ""} placeholder="Proforma…" /></label><StatusSel name="supplierStatus" value={q.supplierStatus} /></div>
-                <div className="qa-row"><label>{t("Fletes USD", "Freight USD")}<input name="freightCost" type="number" step="0.01" min="0" defaultValue={Number(q.freightCost)} /></label><label>{t("Fuente", "Source")}<input name="freightSrc" maxLength={200} defaultValue={q.freightSrc ?? ""} /></label><StatusSel name="freightStatus" value={q.freightStatus} /></div>
-                <div className="qa-row"><label>{t("Otros USD", "Other USD")}<input name="otherCosts" type="number" step="0.01" min="0" defaultValue={Number(q.otherCosts)} /></label><label>{t("Fuente", "Source")}<input name="otherSrc" maxLength={200} defaultValue={q.otherSrc ?? ""} /></label><StatusSel name="otherStatus" value={q.otherStatus} /></div>
-                <label>{t("¿Por qué cambió respecto a la versión anterior?", "Why did it change from the previous version?")}<input name="changeNote" maxLength={300} defaultValue={q.changeNote ?? ""} /></label>
+                <b>{t("Liquidación de costos", "Cost settlement")}</b>
+                <span className="src">{t("Llena lo que aplique, en este orden. Lo que no aplique se deja en 0.", "Fill in what applies, in this order. Leave at 0 what doesn't.")}</span>
+
+                <div className="liq-step">
+                  <b>1 · {t("Producto", "Product")} <small>{t("lo que cobra el proveedor", "what the supplier charges")}</small></b>
+                  <CostFxFields lang={user.lang} currency={q.costCurrency} rate={q.fxRate ? Number(q.fxRate) : null} source={q.fxSource} />
+                  <div className="qa-row">
+                    <label>{t("Costo del producto", "Product cost")}{foreignCost ? ` (${q.costCurrency})` : ""}<input name="supplierCost" type="number" step="0.01" min="0" defaultValue={Number(q.supplierCost)} /></label>
+                    <label>{t("¿De dónde sale? (proforma, correo)", "Where is it from? (proforma, email)")}<input name="supplierSrc" maxLength={200} defaultValue={q.supplierSrc ?? ""} placeholder="Proforma…" /></label>
+                  </div>
+                </div>
+
+                <div className="liq-step">
+                  <b>2 · {t("Envío", "Shipping")} <small>{t("transporte hasta el cliente, en USD", "transport to the customer, in USD")}</small></b>
+                  <div className="qa-row">
+                    <label>{t("Costo del transporte USD", "Transport cost USD")}<input name="freightCost" type="number" step="0.01" min="0" defaultValue={Number(q.freightCost)} /></label>
+                    <label>{t("Días de transporte", "Transit days")}<input name="transitDays" type="number" step="1" min="0" max="365" defaultValue={q.transitDays ?? ""} /></label>
+                  </div>
+                  <label>{t("¿De dónde sale? (cotización DHL, transportador)", "Where is it from? (DHL quote, carrier)")}<input name="freightSrc" maxLength={200} defaultValue={q.freightSrc ?? ""} /></label>
+                </div>
+
+                <div className="liq-step">
+                  <b>3 · {t("Impuestos, aduana, empaque y giro", "Taxes, customs, packing and bank wire")} <small>USD</small></b>
+                  {COST_LINES.map((c) => (
+                    <label key={c.k} className="liq-line">
+                      <span>{t(c.es, c.en)}<small>{t(c.hintEs, c.hintEn)}</small></span>
+                      <input name={c.name} type="number" step="0.01" min="0" defaultValue={Math.max(0, det[c.k])} />
+                    </label>
+                  ))}
+                  <label>{t("¿De dónde salen estos valores?", "Where are these amounts from?")}<input name="otherSrc" maxLength={200} defaultValue={q.otherSrc ?? ""} placeholder={t("Ej.: agencia de aduana, banco", "E.g.: customs broker, bank")} /></label>
+                </div>
+
+                <div className="liq-step">
+                  <b>4 · {t("Crédito a favor", "Credit in our favor")} <small>{t("saldo a favor con el proveedor o el transportador: se resta del costo", "balance in our favor with the supplier or the carrier: subtracted from the cost")}</small></b>
+                  <div className="qa-row">
+                    <label>{t("Valor USD (se resta)", "Amount USD (subtracted)")}<input name="creditAmount" type="number" step="0.01" min="0" defaultValue={det.credit} /></label>
+                    <label>{t("¿De dónde sale? (nota crédito, saldo)", "Where is it from? (credit note, balance)")}<input name="creditSrc" maxLength={200} defaultValue={q.creditSrc ?? ""} /></label>
+                  </div>
+                </div>
+
+                <div className="liq-step">
+                  <b>{t("Hábitos de pago del cliente", "Customer payment habits")} <small>{t("SOLU lo trae solo; no se escribe", "SOLU brings it; nothing to type")}</small></b>
+                  <p className="liq-info">
+                    {pay
+                      ? <>{t(`Plazo pactado: ${pay.contractualDays} días.`, `Agreed terms: ${pay.contractualDays} days.`)} {pay.expectedDays != null ? t(`Suele pagar a los ${pay.expectedDays} días (${pay.n} factura(s) cobrada(s)).`, `Usually pays in ${pay.expectedDays} days (${pay.n} collected invoice(s)).`) : t("Todavía no hay facturas cobradas para saber cómo paga.", "No collected invoices yet to know how they pay.")}</>
+                      : t("Sin datos de pago de este cliente.", "No payment data for this customer.")}
+                    {!fin.rateMissing && finSale > 0 && <> {t(`Financiar esos ${fin.days} días cuesta ${money(fin.cost)}.`, `Financing those ${fin.days} days costs ${money(fin.cost)}.`)}</>}
+                  </p>
+                </div>
+
+                <CostTotal lang={user.lang} sale={B.sale} />
+                <label>{t("Si algún costo bajó, ¿por qué?", "If a cost went down, why?")}<input name="changeNote" maxLength={300} defaultValue={q.changeNote ?? ""} placeholder={t("Ej.: nueva proforma", "E.g.: new proforma")} /></label>
                 <button type="submit">{t("Guardar costos", "Save costs")}</button>
               </form>
             </QA>
@@ -295,15 +350,15 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.k}>
+                <tr key={r.k} className={r.sub ? "sub" : undefined}>
                   <td>{r.label}</td>
                   {(showVersions ? v : v.filter((x) => x.current)).map((x) => {
                     const p = prev && x.current ? r.get(prev) : null;
                     const changed = p != null && Math.abs(p - r.get(x)) > 0.5;
-                    return <td key={x.id} className={`n val${x.current ? " cur" : ""}${changed ? " chg" : ""}`}>{i.n2(r.get(x))}{changed && <span className="delta">{r.get(x) > p! ? "▲" : "▼"} {i.n2(Math.abs(r.get(x) - p!))}</span>}</td>;
+                    return <td key={x.id} className={`n val${x.current ? " cur" : ""}${changed ? " chg" : ""}`}>{r.minus && r.get(x) > 0 ? "− " : ""}{i.n2(r.get(x))}{changed && <span className="delta">{r.get(x) > p! ? "▲" : "▼"} {i.n2(Math.abs(r.get(x) - p!))}</span>}</td>;
                   })}
-                  <td className="src">{r.src ?? (r.get(v.find((x) => x.current) ?? v[0]) > 0 ? <span className="attn-t">{t("sin fuente", "no source")}</span> : "—")}</td>
-                  <td><span className={`sig ${COST_STATUS[st[r.k]].tone}`}>{t(COST_STATUS[st[r.k]].es, COST_STATUS[st[r.k]].en)}</span></td>
+                  <td className="src">{r.get(cur) > 0 ? (r.src ?? <span className="attn-t">{t("sin fuente", "no source")}</span>) : r.k === "freight" && r.src ? r.src : "—"}</td>
+                  <td>{st[r.k] ? <span className={`sig ${COST_STATUS[st[r.k]].tone}`}>{t(COST_STATUS[st[r.k]].es, COST_STATUS[st[r.k]].en)}</span> : null}</td>
                 </tr>
               ))}
               <tr className="tot">

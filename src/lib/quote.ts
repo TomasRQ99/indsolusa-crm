@@ -3,6 +3,7 @@ import { db } from "./db";
 import { linesTotal, money2, mulMoney, subMoney, sumMoney } from "./money";
 import { addDays, daysBetween, today } from "./domain";
 import type { makeI18n } from "./i18n";
+import { costDetail } from "./cost-lines";
 
 // Quote v3: a Quote is the solution that protects a customer result (solution · economics · promise).
 // Before presenting: "is it ready?". After presenting: "how and when does the customer decide?".
@@ -19,7 +20,7 @@ export const quoteInclude = {
       account: true,
       contact: true,
       owner: { select: { id: true, name: true, email: true } },
-      quotes: { orderBy: [{ number: "desc" }, { rev: "asc" }], select: { id: true, number: true, rev: true, status: true, supplierCost: true, freightCost: true, otherCosts: true, fxRate: true, changeNote: true, presentedAt: true, createdAt: true, lines: { select: { qty: true, unitPrice: true } } } },
+      quotes: { orderBy: [{ number: "desc" }, { rev: "asc" }], select: { id: true, number: true, rev: true, status: true, supplierCost: true, freightCost: true, otherCosts: true, taxCost: true, customsCost: true, packingCost: true, wireCost: true, creditAmount: true, fxRate: true, changeNote: true, presentedAt: true, createdAt: true, lines: { select: { qty: true, unitPrice: true } } } },
       invoices: { select: { amount: true, applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } } } },
     },
   },
@@ -91,7 +92,7 @@ export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null;
   // Versions of the landed cost (one column per version of this number).
   const versions = d.quotes
     .filter((x) => x.number === q.number)
-    .map((x) => ({ id: x.id, rev: x.rev, status: x.status, supplier: x.fxRate ? mulMoney(x.supplierCost, x.fxRate) : money2(x.supplierCost), freight: money2(x.freightCost), other: money2(x.otherCosts), sale: saleOf(x.lines), note: x.changeNote, current: x.id === q.id }));
+    .map((x) => ({ id: x.id, rev: x.rev, status: x.status, supplier: x.fxRate ? mulMoney(x.supplierCost, x.fxRate) : money2(x.supplierCost), freight: money2(x.freightCost), other: money2(x.otherCosts), detail: costDetail(x), sale: saleOf(x.lines), note: x.changeNote, current: x.id === q.id }));
 
   // ---------- Ready to Present (blocks) and Ready If Customer Says Yes (doesn't block) ----------
   const ready: Check[] = [
