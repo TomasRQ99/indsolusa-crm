@@ -375,6 +375,24 @@
    "expect": "Después de presentarla, los cambios requieren [[Crear revisión]] (Rev. 1, mismo número). La cotización pasa a Futuro comercial."
   },
   {
+   "id": "liquidacion-costos",
+   "m": "comercial",
+   "t": "Liquidación de costos de la cotización",
+   "path": "Necesidad → Cotización → abrir la cotización → Editar costos",
+   "why": "Antes de poner el precio, haz la cuenta completa de lo que cuesta traer el producto: producto, envío, impuestos, aduana, empaque, giro y crédito a favor. Es una sola cuenta para toda la cotización, y de ella sale la Eságara.",
+   "steps": [
+    "Abre la cotización en borrador y, en el bloque ECONOMICS, haz clic en [[Editar costos]]. Se abre «Liquidación de costos». Llena lo que aplique, en orden; lo que no aplique se deja en 0.",
+    "1 · Producto: elige la moneda en que se le paga al proveedor, escribe el costo del producto y de dónde sale (proforma, correo). Si no es en dólares, SOLU trae la tasa del mercado y muestra el costo en USD.",
+    "2 · Envío: escribe el costo del transporte hasta el cliente en USD, los días de transporte y de dónde sale (cotización de DHL o del transportador).",
+    "3 · Impuestos, aduana, empaque y giro: escribe cada valor en USD. «Giro» es lo que cobra el banco por enviar el dinero, no el monto enviado. «Otros» es para seguro, logística local o imprevistos. Escribe de dónde salen los valores.",
+    "4 · Crédito a favor: si hay un saldo a nuestro favor con el proveedor o el transportador, escribe el valor y de dónde sale (nota crédito, saldo). Se resta del costo.",
+    "Lee «Hábitos de pago del cliente»: SOLU muestra el plazo pactado, a cuántos días suele pagar y cuánto cuesta financiar ese plazo. No se escribe nada.",
+    "Mira abajo el «Costo total» frente a la «Venta». Si algún costo bajó frente a lo guardado, escribe por qué (por ejemplo, nueva proforma).",
+    "Haz clic en [[Guardar costos]]."
+   ],
+   "expect": "El bloque ECONOMICS muestra cada costo con su fuente y la Eságara en $ y %, recalculada. Si un costo bajó y no escribiste el motivo, SOLU no guarda nada y te lo pide: así nadie sube la Eságara quitando costos reales. El crédito a favor aparece como una línea que resta. Los días de transporte son informativos. «Editar costos» solo aparece mientras la cotización es un borrador; después de presentarla se cambia con «Crear revisión»."
+  },
+  {
    "id": "solucion",
    "m": "comercial",
    "t": "Caso de solución y propuesta imprimible",

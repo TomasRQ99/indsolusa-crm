@@ -290,7 +290,7 @@ export async function setCarrierEta(poId: string, fd: FormData) {
 export async function confirmFact(activityId: string, fd: FormData) {
   const user = await requireUser();
   const a = await db.activity.findUniqueOrThrow({ where: { id: activityId }, include: { deal: { select: { id: true, ownerId: true } } } });
-  if (!a.deal) throw new Error("Not a Necessity fact");
+  if (!a.deal) throw new Error("Not a Need fact");
   assertCanEdit(user, a.deal.ownerId);
   await db.activity.update({ where: { id: activityId }, data: { uncertain: false, source: txt(fd, "source", 200) ?? a.source } });
   jback(a.deal.id, fd, "confirmed");

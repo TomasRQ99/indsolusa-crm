@@ -87,7 +87,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
 
       <header className="jh">
         <div className="jh-top">
-          <p className="crumb k"><Link href={`/deals/${d.id}?tab=execute`}>{d.code ?? t("Necesidad", "Necessity")}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
+          <p className="crumb k"><Link href={`/deals/${d.id}?tab=execute`}>{d.code ?? t("Necesidad", "Need")}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
           <span className="jid">{spo.code} · v{spo.version}</span>
           <span className="grow" />
           {B.released && !spo.shippedAt && <Link className="btn secondary" href={`/correo/nuevo?tpl=DELIVERY&id=${spo.id}`}>{t("Pedir fecha de despacho", "Ask for ship date")}</Link>}
@@ -102,7 +102,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
 
       {/* Why this money must move */}
       <section className="spo-why">
-        <div><span className="k">{t("Necesidad", "Necessity")}</span><b><Link href={`/deals/${d.id}`}>{d.code}</Link> · {d.title}</b><span className="src">{acct}{d.customerPo ? ` · OC ${d.customerPo}` : ""}</span></div>
+        <div><span className="k">{t("Necesidad", "Need")}</span><b><Link href={`/deals/${d.id}`}>{d.code}</Link> · {d.title}</b><span className="src">{acct}{d.customerPo ? ` · OC ${d.customerPo}` : ""}</span></div>
         <div><span className="k">{t("Se compra", "Buying")}</span><b>{spo.lines.map((l) => `${l.qty} × ${l.code ?? l.description}`).join(" · ")}</b><span className="src">{t("a", "from")} {s.name}</span></div>
         <div className="prom"><span className="k">{t("Promesa que protege", "Promise it protects")}</span><b>{d.promiseText ?? "—"}</b><span className="mono">{i.dateShort(d.promisedDate)}</span>{B.pr.atDestinationBy && <span className="src">{B.pr.clearance ? t(`Debe estar en destino el ${i.day(B.pr.atDestinationBy)} (+${B.pr.clearance} aduana +1 entrega)`, `Must be at destination by ${i.day(B.pr.atDestinationBy)} (+${B.pr.clearance} customs +1 delivery)`) : t(`Debe estar en destino el ${i.day(B.pr.atDestinationBy)} (proveedor nacional: +1 entrega)`, `Must be at destination by ${i.day(B.pr.atDestinationBy)} (domestic supplier: +1 delivery)`)}</span>}</div>
       </section>
@@ -111,7 +111,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
         <div className="jmain">
           {/* Purchase Requirement */}
           <section className="jblock">
-            <div className="jbh"><b>{t("REQUERIMIENTO DE COMPRA", "PURCHASE REQUIREMENT")}</b><span className="grow" /><span className="src">{t("Derivado de la Necesidad; nadie lo digita", "Derived from the Necessity; nobody types it")}</span></div>
+            <div className="jbh"><b>{t("REQUERIMIENTO DE COMPRA", "PURCHASE REQUIREMENT")}</b><span className="grow" /><span className="src">{t("Derivado de la Necesidad; nadie lo digita", "Derived from the Need; nobody types it")}</span></div>
             <dl className="qv-dl">
               <dt>{t("Qué", "What")}</dt><dd>{B.pr.lines.map((l, k) => <span key={k} className="block">{l.qty} × <span className="mono">{l.code ?? ""}</span> {l.description}</span>)}</dd>
               <dt>{t("Base de suministro", "Supply basis")}</dt><dd>{B.pr.supply ?? "—"}{B.pr.supplyAlt && <span className="src block">{t("Alternativa", "Alternative")}: {B.pr.supplyAlt}</span>}</dd>

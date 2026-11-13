@@ -108,13 +108,13 @@ export default async function JourneyPage({
 
   const sellerErr: Record<string, string> = {
     "vendedor-inactivo": t("Esa empresa aún no está activa: Gerencia debe completar sus datos en Comercial → Configuración → Empresas que venden.", "That company isn't active yet: Management must complete its details in Commercial → Setup → Selling companies."),
-    "vendedor-fijo": t("El cliente ya vio una cotización de esta empresa (o hay factura): la empresa que vende ya no cambia en esta Necesidad.", "The customer already saw a quote from this company (or there's an invoice): the seller no longer changes on this Necessity."),
+    "vendedor-fijo": t("El cliente ya vio una cotización de esta empresa (o hay factura): la empresa que vende ya no cambia en esta Necesidad.", "The customer already saw a quote from this company (or there's an invoice): the seller no longer changes on this Need."),
     vendedor: t("Empresa no válida.", "Invalid company."),
-    permiso: t("No tienes permiso para cambiar esta Necesidad.", "You don't have permission to change this Necessity."),
+    permiso: t("No tienes permiso para cambiar esta Necesidad.", "You don't have permission to change this Need."),
   };
   const okMsg: Record<string, string> = {
     vendedor: t("Empresa que vende actualizada.", "Selling company updated."),
-    mercado: t("Necesidad creada. Ya trae lo que Mercado sabía: no hace falta volver a escribirlo.", "Necessity created. It already carries what Mercado knew: no need to retype it."),
+    mercado: t("Necesidad creada. Ya trae lo que Mercado sabía: no hace falta volver a escribirlo.", "Need created. It already carries what Mercado knew: no need to retype it."),
     need: t("Necesidad guardada.", "Need saved."),
     promise: t("Promesa al cliente guardada. Queda en «Qué cambió».", "Customer promise saved. It shows in “What changed”."),
     source: t("Fuente y costos guardados.", "Source and costs saved."),
@@ -129,7 +129,7 @@ export default async function JourneyPage({
     espera: t("Espera con control guardada.", "Controlled wait saved."),
     hecho: t("Movimiento hecho y registrado.", "Movement done and logged."),
     pospuesto: t(`Pospuesto al ${sp.d ?? ""}.`, `Postponed to ${sp.d ?? ""}.`),
-    registrado: t("Registrado en la Necesidad.", "Logged on the Necessity."),
+    registrado: t("Registrado en la Necesidad.", "Logged on the Need."),
     promesa: t("Promesa de pago registrada.", "Payment promise recorded."),
     reservado: t(`Tiempo reservado a las ${sp.t ?? ""}.`, `Time reserved at ${sp.t ?? ""}.`),
     agendado: t(`Agendado a las ${sp.t ?? ""}.`, `Scheduled at ${sp.t ?? ""}.`),
@@ -174,7 +174,7 @@ export default async function JourneyPage({
           <ValueKindSelect es={i.es} />
           <label>{t("Fuente (quién o qué lo dice)", "Source (who or what says so)")}<input name="source" maxLength={200} placeholder={t("Ej.: correo de Carlos Duarte", "E.g.: email from Carlos Duarte")} /></label>
           <label className="chk"><input type="checkbox" name="uncertain" value="1" /> {t("Aún no está confirmado", "Not confirmed yet")}</label>
-          <button type="submit">{t("Guardar en la Necesidad", "Save to the Necessity")}</button>
+          <button type="submit">{t("Guardar en la Necesidad", "Save to the Need")}</button>
         </form>
       </QA>
     );
@@ -454,7 +454,7 @@ export default async function JourneyPage({
             )}
           </>
         ) : (
-          <p className="why">{J.lost ? t("Necesidad cerrada.", "Necessity closed.") : t("Resultado logrado. No hace falta un movimiento.", "Result achieved. No movement needed.")}</p>
+          <p className="why">{J.lost ? t("Necesidad cerrada.", "Need closed.") : t("Resultado logrado. No hace falta un movimiento.", "Result achieved. No movement needed.")}</p>
         )}
         {J.forward.mode !== "none" && J.suggestion && J.suggestion.what !== J.forward.what && (
           <span className="src"><Spark s={10} /> {t("SOLU también ve:", "SOLU also sees:")} {J.suggestion.what}</span>
@@ -618,7 +618,7 @@ export default async function JourneyPage({
       </section>
       {deal.supplierPos.length > 0 && (
         <section className="jblock">
-          <div className="jbh"><b>{t("PROVEEDORES EN ESTA NECESIDAD", "SUPPLIERS ON THIS NECESSITY")}</b></div>
+          <div className="jbh"><b>{t("PROVEEDORES EN ESTA NECESIDAD", "SUPPLIERS ON THIS NEED")}</b></div>
           <ul className="plain">{deal.supplierPos.map((p) => <li key={p.id}><b>{p.supplier.name}</b> · {p.code} · {p.currency} {i.n2(p.amount)}</li>)}</ul>
         </section>
       )}
@@ -647,9 +647,9 @@ export default async function JourneyPage({
         {editable && !quotes.some((x) => x.status === "DRAFT") && (
           <form action={createQuote.bind(null, deal.id)}><button type="submit" className="btn sm">{quotes.length ? t("Nueva cotización", "New quote") : t("Preparar cotización", "Prepare quote")}</button></form>
         )}
-        {quotes.length > 0 && <GuideWhy button="Preparar cotización">{quotes.some((x) => x.status === "DRAFT") ? t("«Preparar cotización» no aparece porque esta Necesidad ya tiene una cotización en borrador: ábrela en la lista COTIZACIONES (haz clic en su número).", "“Prepare quote” isn't shown because this Necessity already has a draft quote: open it in the QUOTES list (click its number).") : t("Esta Necesidad ya tuvo una cotización: aquí el botón se llama «Nueva cotización». Para ver la que existe, haz clic en su número en la lista COTIZACIONES.", "This Necessity already had a quote: here the button is called “New quote”. To see the existing one, click its number in the QUOTES list.")}</GuideWhy>}
+        {quotes.length > 0 && <GuideWhy button="Preparar cotización">{quotes.some((x) => x.status === "DRAFT") ? t("«Preparar cotización» no aparece porque esta Necesidad ya tiene una cotización en borrador: ábrela en la lista COTIZACIONES (haz clic en su número).", "“Prepare quote” isn't shown because this Need already has a draft quote: open it in the QUOTES list (click its number).") : t("Esta Necesidad ya tuvo una cotización: aquí el botón se llama «Nueva cotización». Para ver la que existe, haz clic en su número en la lista COTIZACIONES.", "This Need already had a quote: here the button is called “New quote”. To see the existing one, click its number in the QUOTES list.")}</GuideWhy>}
       </div>
-      {quotes.length === 0 ? <p className="quiet-p">{t("Aún no hay cotización. Se prepara con solución, economía y promesa; los productos y costos de la Necesidad se copian.", "No quote yet. It's prepared with solution, economics and promise; the Necessity's products and costs are copied.")}</p> : (
+      {quotes.length === 0 ? <p className="quiet-p">{t("Aún no hay cotización. Se prepara con solución, economía y promesa; los productos y costos de la Necesidad se copian.", "No quote yet. It's prepared with solution, economics and promise; the Need's products and costs are copied.")}</p> : (
         <ul className="plain">
           {quotes.map((x) => {
             const total = linesTotal(x.lines, (l) => l.qty, (l) => l.unitPrice);
@@ -758,7 +758,7 @@ export default async function JourneyPage({
       </section>
       <section className="jblock">
         <div className="jbh"><b>{t("ESÁGARA REAL", "REAL ESÁGARA")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/economia`}>{t("Abrir", "Open")}</Link></div>
-        <p className="quiet-p">{t("Costos reales de la Necesidad, la Eságara protegida frente a la esperada hoy, y por qué cambió.", "The Necessity's real costs, protected Eságara against expected today, and why it changed.")}</p>
+        <p className="quiet-p">{t("Costos reales de la Necesidad, la Eságara protegida frente a la esperada hoy, y por qué cambió.", "The Need's real costs, protected Eságara against expected today, and why it changed.")}</p>
       </section>
       <section className="jblock">
         <div className="jbh"><b>{t("GARANTÍA Y RECLAMOS", "WARRANTY AND CLAIMS")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/garantia`}>{t("Abrir", "Open")}</Link></div>
@@ -942,7 +942,7 @@ export default async function JourneyPage({
       <section className="jblock">
         <div className="jbh"><b>{t("EXPEDIENTE", "BUSINESS FILE")}</b></div>
         <dl className="filedl">
-          <dt>{t("Necesidad", "Necessity")}</dt><dd className="mono">{deal.code ?? "—"}</dd>
+          <dt>{t("Necesidad", "Need")}</dt><dd className="mono">{deal.code ?? "—"}</dd>
           <dt>{t("Cliente", "Customer")}</dt><dd><Link href={`/accounts/${deal.account.id}`}>{deal.account.name}</Link></dd>
           <dt>{t("Contacto", "Contact")}</dt><dd>{deal.contact ? `${deal.contact.firstName} ${deal.contact.lastName}` : "—"}</dd>
           <dt>{t("Responsable", "Owner")}</dt><dd>{deal.owner.name}</dd>
@@ -985,7 +985,7 @@ export default async function JourneyPage({
       </section>
       {editable && deal.invoices.length === 0 && (
         <details>
-          <summary className="small">{t("Eliminar esta Necesidad", "Delete this Necessity")}</summary>
+          <summary className="small">{t("Eliminar esta Necesidad", "Delete this Need")}</summary>
           <form action={deleteDeal.bind(null, deal.id)}><button className="danger sm" type="submit">{t("Eliminar definitivamente", "Delete permanently")}</button></form>
         </details>
       )}
@@ -1037,7 +1037,7 @@ export default async function JourneyPage({
 
       <header className="jh">
         <div className="jh-top">
-          <span className="crumb"><Link href="/deals">{t("COMERCIAL · NECESIDADES", "COMMERCIAL · NECESSITIES")}</Link></span>
+          <span className="crumb"><Link href="/deals">{t("COMERCIAL · NECESIDADES", "COMMERCIAL · NEEDS")}</Link></span>
           {deal.code && <span className="jid">{deal.code}</span>}
           <span className="grow" />
           <div className="jh-act">
@@ -1053,18 +1053,18 @@ export default async function JourneyPage({
             <QA label={t("Ponerme al día", "Catch me up")} wide right>
               <b className="pop-t">{t("En 20 segundos", "In 20 seconds")}</b>
               <div className="story">{J.story.map((s, k) => <p key={k}>{s}</p>)}</div>
-              <span className="src">{t("Armado con los datos de esta Necesidad.", "Built from this Necessity's data.")}</span>
+              <span className="src">{t("Armado con los datos de esta Necesidad.", "Built from this Need's data.")}</span>
             </QA>
             <QA label={t("Pedir a Gerencia", "Ask Management")} wide right>
               <b className="pop-t">{t("Cuando esto supera lo que puedes resolver", "When this is beyond what you can resolve")}</b>
               <ul className="plain small">
-                <li><Link href={`/gerencia/decisiones?${new URLSearchParams({ href: self, label: `${deal.code ?? ""} · ${deal.title}`.trim(), area: "COMERCIAL" })}#pedir`}>{t("Pedir una decisión sobre esta Necesidad", "Ask for a decision about this Necessity")}</Link></li>
+                <li><Link href={`/gerencia/decisiones?${new URLSearchParams({ href: self, label: `${deal.code ?? ""} · ${deal.title}`.trim(), area: "COMERCIAL" })}#pedir`}>{t("Pedir una decisión sobre esta Necesidad", "Ask for a decision about this Need")}</Link></li>
                 {canManageAll(user) && <li><Link href={`/gerencia/escenarios?${new URLSearchParams({ href: self, label: `${deal.code ?? ""} · ${deal.title}`.trim() })}#nuevo`}>{t("Comparar opciones en un escenario", "Compare options in a scenario")}</Link></li>}
               </ul>
-              <span className="src">{t("La solicitud lleva el enlace a esta Necesidad. Escribe los hechos y las opciones: Gerencia decide con eso.", "The request carries the link to this Necessity. Write the facts and the options: Management decides with that.")}</span>
+              <span className="src">{t("La solicitud lleva el enlace a esta Necesidad. Escribe los hechos y las opciones: Gerencia decide con eso.", "The request carries the link to this Need. Write the facts and the options: Management decides with that.")}</span>
             </QA>
             <QA label={<><Spark /> {t("Pregúntale a SOLU", "Ask SOLU")}</>} wide right cls="ask">
-              <b className="pop-t"><Spark /> {t("Sobre esta Necesidad", "About this Necessity")}</b>
+              <b className="pop-t"><Spark /> {t("Sobre esta Necesidad", "About this Need")}</b>
               <div className="answers">
                 {J.answers.map((a) => (
                   <details key={a.q} className="ans">
@@ -1073,7 +1073,7 @@ export default async function JourneyPage({
                   </details>
                 ))}
               </div>
-              <span className="src">{t("Respuestas calculadas con los datos de esta Necesidad. Las preguntas libres llegarán cuando conectemos la IA.", "Answers calculated from this Necessity's data. Free-form questions will come when AI is connected.")}</span>
+              <span className="src">{t("Respuestas calculadas con los datos de esta Necesidad. Las preguntas libres llegarán cuando conectemos la IA.", "Answers calculated from this Need's data. Free-form questions will come when AI is connected.")}</span>
             </QA>
           </div>
         </div>
@@ -1110,7 +1110,7 @@ export default async function JourneyPage({
             <span className={`sig ${toneCls(J.promiseState.tone)}`}>{J.promiseState.text}</span>
           </div>
         </div>
-        <nav className="jtabs" aria-label={t("Fases de la Necesidad", "Necessity phases")}>
+        <nav className="jtabs" aria-label={t("Fases de la Necesidad", "Need phases")}>
           {shown.map((k) => <Link key={k} href={k === "resumen" ? self : `${self}?tab=${k}`} className={`jtab${k === tab ? " on" : ""}`} aria-current={k === tab ? "page" : undefined}>{tabLabel[k]}</Link>)}
           {later.length > 0 && (
             <span className="later">{t("Más adelante:", "Later:")} {later.map((k, n) => <span key={k}>{n > 0 && " · "}<Link href={`${self}?tab=${k}`}>{tabLabel[k]}</Link></span>)}</span>

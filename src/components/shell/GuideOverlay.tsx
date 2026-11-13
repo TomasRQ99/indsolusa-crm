@@ -365,7 +365,7 @@ export function GuideOverlay({ lang, path }: { lang: "ES" | "EN"; path: string }
         )}
 
         <div className="g-body">
-          {kase && wantsCase && <p className="g-case"><small>{t("Siguiendo la Necesidad", "Following Necessity")}{kase.demo ? t(" · ejemplo", " · sample") : ""}</small>{kase.name}</p>}
+          {kase && wantsCase && <p className="g-case"><small>{t("Siguiendo la Necesidad", "Following Need")}{kase.demo ? t(" · ejemplo", " · sample") : ""}</small>{kase.name}</p>}
           <div className="g-stage">
             {guide.stages.length > 1 && <small>{t(`Etapa ${si + 1} de ${guide.stages.length}`, `Stage ${si + 1} of ${guide.stages.length}`)}</small>}
             <b>{stage.title}</b>
@@ -378,8 +378,8 @@ export function GuideOverlay({ lang, path }: { lang: "ES" | "EN"; path: string }
           {apart >= 0 && (
             <div className="g-tip g-jump">
               <p>{apart > si
-                ? t(`En esta Necesidad esta etapa ya quedó atrás. Va en la etapa ${apart + 1}: ${stageName(kase!.current)}.`, `On this Necessity this stage is already behind. It is at stage ${apart + 1}: ${stageName(kase!.current)}.`)
-                : t(`Esta Necesidad todavía va en la etapa ${apart + 1}: ${stageName(kase!.current)}. Lo de aquí viene después.`, `This Necessity is still at stage ${apart + 1}: ${stageName(kase!.current)}. This part comes later.`)}</p>
+                ? t(`En esta Necesidad esta etapa ya quedó atrás. Va en la etapa ${apart + 1}: ${stageName(kase!.current)}.`, `On this Need this stage is already behind. It is at stage ${apart + 1}: ${stageName(kase!.current)}.`)
+                : t(`Esta Necesidad todavía va en la etapa ${apart + 1}: ${stageName(kase!.current)}. Lo de aquí viene después.`, `This Need is still at stage ${apart + 1}: ${stageName(kase!.current)}. This part comes later.`)}</p>
               <button type="button" className="sm" onClick={() => { const c = kase!.stages[kase!.current!]; go(apart, startOf(apart)); if (c && !c.at.includes(path)) router.push(c.href); }}>{t(`Ir a la etapa ${apart + 1}`, `Go to stage ${apart + 1}`)}</button>
             </div>
           )}
@@ -390,11 +390,11 @@ export function GuideOverlay({ lang, path }: { lang: "ES" | "EN"; path: string }
           ) : !here && (
             <div className="g-where">
               {cs ? (
-                <><p>{t("Esta etapa está en otra página de esta Necesidad.", "This stage is on another page of this Necessity.")}</p><button type="button" className="sm" onClick={() => router.push(cs.href)}>{t("Llévame a esa página", "Take me to that page")}</button></>
+                <><p>{t("Esta etapa está en otra página de esta Necesidad.", "This stage is on another page of this Need.")}</p><button type="button" className="sm" onClick={() => router.push(cs.href)}>{t("Llévame a esa página", "Take me to that page")}</button></>
               ) : stage.needsJourney ? (
                 path === "/deals"
-                  ? <p>{t("Esta etapa se hace dentro de una Necesidad. Haz clic en el título de la tarjeta de la Necesidad que quieres avanzar.", "This stage happens inside a Necessity. Click the title of the card of the Necessity you want to move.")}</p>
-                  : <><p>{t("Esta etapa se hace dentro de una Necesidad. Abre la que quieres avanzar.", "This stage happens inside a Necessity. Open the one you want to move.")}</p><button type="button" className="sm" onClick={() => router.push("/deals")}>{t("Llévame a Necesidades", "Take me to Necessities")}</button></>
+                  ? <p>{t("Esta etapa se hace dentro de una Necesidad. Haz clic en el título de la tarjeta de la Necesidad que quieres avanzar.", "This stage happens inside a Need. Click the title of the card of the Need you want to move.")}</p>
+                  : <><p>{t("Esta etapa se hace dentro de una Necesidad. Abre la que quieres avanzar.", "This stage happens inside a Need. Open the one you want to move.")}</p><button type="button" className="sm" onClick={() => router.push("/deals")}>{t("Llévame a Necesidades", "Take me to Needs")}</button></>
               ) : (
                 <><p>{t("Esto está en otra pantalla. Sigue lo que está marcado con línea punteada, o:", "This is on another screen. Follow what is marked with a dashed line, or:")}</p><button type="button" className="sm" onClick={() => router.push(stage.href!)}>{t(`Llévame a ${target}`, `Take me to ${target}`)}</button></>
               )}

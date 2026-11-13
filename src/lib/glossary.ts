@@ -32,15 +32,16 @@ export const GLOSS_AREAS: Record<GlossArea, Txt> = {
 export const GLOSSARY: GlossTerm[] = [
   // ── En todo SOLU ──
   {
-    id: "necesidad", area: "general", name: { es: "Necesidad", en: "Necessity" },
-    forms: ["Necesidad", "Necesidades", "Necessity", "Necessities"],
+    id: "necesidad", area: "general", name: { es: "Necesidad", en: "Need" },
+    // exact capitals: in English "need" is also an everyday verb, which must not get a bubble
+    forms: ["Necesidad", "Necesidades", "necesidad", "necesidades", "NECESIDAD", "NECESIDADES", "Need", "Needs", "NEED", "NEEDS"], cs: true,
     def: { es: "El caso completo de un cliente: lo que necesita, la cotización, la compra al proveedor, la entrega, la factura, el cobro y el resultado que logró. Todo lo de ese pedido vive en un solo lugar y tiene un código (J-año-mes-número).", en: "A customer's whole case: what they need, the quote, the supplier purchase, the delivery, the invoice, the collection and the result they achieved. Everything about that order lives in one place and has a code (J-year-month-number)." },
     ctx: [
       { sel: ".kanban .column > h2", where: { es: "Título de la primera columna del tablero", en: "Title of the board's first column" }, es: "Aquí es la primera etapa: ya sabemos qué necesita el cliente, pero aún no hay proveedor ni precio.", en: "Here it is the first stage: we know what the customer needs, but there is no supplier or price yet." },
-      { at: ["/deals"], sel: "[role=tab], .tabs a", where: { es: "Pestaña dentro de una Necesidad", en: "Tab inside a Necessity" }, es: "Aquí es la pestaña donde se escribe qué pidió el cliente y qué resultado busca.", en: "Here it is the tab where you write what the customer asked for and the result they want." },
-      { at: ["/mercado"], where: { es: "Mercado", en: "Market" }, es: "En Mercado, una señal se vuelve Necesidad cuando el cliente cuenta una dificultad concreta. Al confirmarla, pasa a Comercial con todo lo que Mercado ya sabía.", en: "In Market, a signal becomes a Necessity when the customer describes a concrete difficulty. Once confirmed it moves to Commercial with everything Market already knew." },
-      { at: ["/compras", "/operaciones", "/logistica"], where: { es: "Compras y Operaciones", en: "Purchasing and Operations" }, es: "Aquí dice para qué cliente y para qué pedido es esta compra, envío o entrega. Lo que no está asignado a una Necesidad es inventario.", en: "Here it tells which customer and order this purchase, shipment or delivery is for. What is not assigned to a Necessity is stock." },
-      { at: ["/administracion", "/gerencia"], where: { es: "Administración y Gerencia", en: "Administration and Management" }, es: "Aquí es la unidad con la que se mide el dinero: cada factura, costo, comisión y Eságara pertenece a una Necesidad.", en: "Here it is the unit money is measured by: every invoice, cost, commission and Eságara belongs to a Necessity." },
+      { at: ["/deals"], sel: "[role=tab], .tabs a", where: { es: "Pestaña dentro de una Necesidad", en: "Tab inside a Need" }, es: "Aquí es la pestaña donde se escribe qué pidió el cliente y qué resultado busca.", en: "Here it is the tab where you write what the customer asked for and the result they want." },
+      { at: ["/mercado"], where: { es: "Mercado", en: "Market" }, es: "En Mercado, una señal se vuelve Necesidad cuando el cliente cuenta una dificultad concreta. Al confirmarla, pasa a Comercial con todo lo que Mercado ya sabía.", en: "In Market, a signal becomes a Need when the customer describes a concrete difficulty. Once confirmed it moves to Commercial with everything Market already knew." },
+      { at: ["/compras", "/operaciones", "/logistica"], where: { es: "Compras y Operaciones", en: "Purchasing and Operations" }, es: "Aquí dice para qué cliente y para qué pedido es esta compra, envío o entrega. Lo que no está asignado a una Necesidad es inventario.", en: "Here it tells which customer and order this purchase, shipment or delivery is for. What is not assigned to a Need is stock." },
+      { at: ["/administracion", "/gerencia"], where: { es: "Administración y Gerencia", en: "Administration and Management" }, es: "Aquí es la unidad con la que se mide el dinero: cada factura, costo, comisión y Eságara pertenece a una Necesidad.", en: "Here it is the unit money is measured by: every invoice, cost, commission and Eságara belongs to a Need." },
     ],
   },
   {
@@ -60,7 +61,7 @@ export const GLOSSARY: GlossTerm[] = [
   {
     id: "esagara-real", area: "administracion", name: { es: "Eságara real", en: "Real Eságara" },
     forms: ["Eságara real", "Eságara esperada", "Eságara final", "Real Eságara", "expected Eságara", "final Eságara"],
-    def: { es: "Lo que la Necesidad deja de verdad con los costos reales. «Esperada» es el cálculo de hoy, mientras aún pueden llegar costos; «final» es la cifra cuando la economía se cierra. Se compara con la protegida y se explica la diferencia.", en: "What the Necessity really leaves with real costs. \"Expected\" is today's figure, while costs can still arrive; \"final\" is the figure once the economics are closed. It is compared with the protected one and the difference is explained." },
+    def: { es: "Lo que la Necesidad deja de verdad con los costos reales. «Esperada» es el cálculo de hoy, mientras aún pueden llegar costos; «final» es la cifra cuando la economía se cierra. Se compara con la protegida y se explica la diferencia.", en: "What the Need really leaves with real costs. \"Expected\" is today's figure, while costs can still arrive; \"final\" is the figure once the economics are closed. It is compared with the protected one and the difference is explained." },
   },
   {
     id: "siguiente-movimiento", area: "general", name: { es: "Siguiente movimiento", en: "Next movement" },
@@ -82,7 +83,7 @@ export const GLOSSARY: GlossTerm[] = [
   {
     id: "resultado-logrado", area: "general", name: { es: "Resultado logrado", en: "Result achieved" },
     forms: ["Resultado logrado", "resultado logrado", "resultado confirmado", "Resultado del cliente", "Result achieved", "result achieved"],
-    def: { es: "El cliente confirmó que consiguió lo que buscaba. Entregar no es lo mismo: una Necesidad puede estar entregada y aún no tener resultado.", en: "The customer confirmed they got what they wanted. Delivering is not the same: a Necessity can be delivered and still have no result." },
+    def: { es: "El cliente confirmó que consiguió lo que buscaba. Entregar no es lo mismo: una Necesidad puede estar entregada y aún no tener resultado.", en: "The customer confirmed they got what they wanted. Delivering is not the same: a Need can be delivered and still have no result." },
   },
   {
     id: "promesa", area: "general", name: { es: "Promesa", en: "Promise" },
@@ -113,17 +114,17 @@ export const GLOSSARY: GlossTerm[] = [
     forms: ["OC del cliente", "OC aceptada", "OC aceptadas", "OC", "PO del cliente", "Customer PO", "customer PO", "PO accepted", "PO aceptada"], cs: true,
     def: { es: "El documento con el que el cliente nos compra. Cuando la aceptamos, la venta es firme: se protegen la promesa y la Eságara, y Operaciones puede empezar.", en: "The document the customer buys from us with. Once we accept it the sale is firm: the promise and the Eságara are protected and Operations can start." },
     ctx: [
-      { sel: ".kanban .column > h2", where: { es: "Columna del tablero", en: "Board column" }, es: "Aquí es la etapa de las Necesidades con venta firme: lo que sigue es comprar, entregar, facturar y cobrar.", en: "Here it is the stage of Necessities with a firm sale: next come buying, delivering, invoicing and collecting." },
+      { sel: ".kanban .column > h2", where: { es: "Columna del tablero", en: "Board column" }, es: "Aquí es la etapa de las Necesidades con venta firme: lo que sigue es comprar, entregar, facturar y cobrar.", en: "Here it is the stage of Needs with a firm sale: next come buying, delivering, invoicing and collecting." },
       { at: ["/administracion/cupos", "/operaciones/sin-despachar"], where: { es: "Cupos y Sin despachar", en: "Credit limits and Not dispatched" }, es: "Aquí cuenta como dinero ya comprometido con el cliente aunque todavía no se haya facturado.", en: "Here it counts as money already committed with the customer even though it has not been invoiced yet." },
     ],
   },
   {
     id: "supplier-po", area: "operaciones", name: { es: "Supplier PO", en: "Supplier PO" }, forms: ["Supplier PO", "Supplier POs"], cs: true,
-    def: { es: "Nuestra orden de compra al proveedor. Nace de la Necesidad (nadie la digita desde cero) y existe para cumplir una promesa a un cliente. Los pagos al proveedor se piden por hito desde ella.", en: "Our purchase order to the supplier. It is born from the Necessity (nobody types it from scratch) and exists to keep a promise to a customer. Supplier payments are requested by milestone from it." },
+    def: { es: "Nuestra orden de compra al proveedor. Nace de la Necesidad (nadie la digita desde cero) y existe para cumplir una promesa a un cliente. Los pagos al proveedor se piden por hito desde ella.", en: "Our purchase order to the supplier. It is born from the Need (nobody types it from scratch) and exists to keep a promise to a customer. Supplier payments are requested by milestone from it." },
   },
   {
     id: "rfq", area: "operaciones", name: { es: "RFQ", en: "RFQ" }, forms: ["RFQ", "RFQs"], cs: true,
-    def: { es: "Solicitud de cotización a un proveedor (Request for Quotation): le pedimos precio y plazo para una parte. Su respuesta alimenta la fuente de la Necesidad.", en: "Request for Quotation to a supplier: we ask for price and lead time for a part. The answer feeds the Necessity's source." },
+    def: { es: "Solicitud de cotización a un proveedor (Request for Quotation): le pedimos precio y plazo para una parte. Su respuesta alimenta la fuente de la Necesidad.", en: "Request for Quotation to a supplier: we ask for price and lead time for a part. The answer feeds the Need's source." },
   },
   {
     id: "cotizacion", area: "comercial", name: { es: "Cotización", en: "Quote" }, forms: ["Cotización", "cotización", "cotizaciones", "Cotizaciones", "Quote", "quote", "quotes", "Quotes"],
@@ -185,7 +186,7 @@ export const GLOSSARY: GlossTerm[] = [
   },
   {
     id: "cobertura", area: "comercial", name: { es: "Cobertura", en: "Coverage" }, forms: ["Cobertura", "cobertura", "coberturas", "Coverage", "coverage"],
-    def: { es: "Cuando alguien se ausenta, otra persona actúa sobre sus Necesidades por un tiempo definido. El dueño sigue siendo responsable y el permiso vence solo. Las aprobaciones por rol nunca se delegan así.", en: "When someone is away, another person acts on their Necessities for a set time. The owner stays responsible and the permission expires by itself. Role approvals are never delegated this way." },
+    def: { es: "Cuando alguien se ausenta, otra persona actúa sobre sus Necesidades por un tiempo definido. El dueño sigue siendo responsable y el permiso vence solo. Las aprobaciones por rol nunca se delegan así.", en: "When someone is away, another person acts on their Needs for a set time. The owner stays responsible and the permission expires by itself. Role approvals are never delegated this way." },
     ctx: [{ at: ["/gerencia/cuentas"], where: { es: "Cuentas clave", en: "Key accounts" }, es: "Aquí es quién de nosotros atiende a ese cliente.", en: "Here it is who among us looks after that customer." }],
   },
   {
@@ -194,7 +195,7 @@ export const GLOSSARY: GlossTerm[] = [
   },
   {
     id: "foco", area: "comercial", name: { es: "Foco de alto valor", en: "High-value focus" }, forms: ["Foco de alto valor", "High-value focus"],
-    def: { es: "Las Necesidades cuya Eságara supera el umbral definido. Se miran aparte porque un atraso en ellas pesa más.", en: "The Necessities whose Eságara is above the set threshold. They are watched separately because a delay there weighs more." },
+    def: { es: "Las Necesidades cuya Eságara supera el umbral definido. Se miran aparte porque un atraso en ellas pesa más.", en: "The Needs whose Eságara is above the set threshold. They are watched separately because a delay there weighs more." },
   },
   {
     id: "contacto-util", area: "comercial", name: { es: "Contacto útil", en: "Useful contact" }, forms: ["Contacto útil", "Contactos útiles", "contactos útiles", "Useful contacts", "useful contacts"],
@@ -209,14 +210,14 @@ export const GLOSSARY: GlossTerm[] = [
     id: "senal", area: "mercado", name: { es: "Señal", en: "Signal" }, forms: ["Señal", "señal", "señales", "Señales", "Signal", "signal", "signals"],
     def: { es: "Un indicio de que algo puede venir: un dato, un comentario o un cambio que todavía no es un pedido.", en: "A hint that something may be coming: a fact, a comment or a change that is not an order yet." },
     ctx: [
-      { at: ["/mercado"], where: { es: "Mercado", en: "Market" }, es: "Aquí es algo que vimos u oímos de una empresa (una parada programada, una ampliación, un cambio de persona). Se guarda con su fuente; cuando el cliente cuenta una dificultad concreta, pasa a ser una Necesidad.", en: "Here it is something we saw or heard about a company (a planned shutdown, an expansion, a change of person). It is stored with its source; when the customer describes a concrete difficulty it becomes a Necessity." },
-      { at: ["/deals"], where: { es: "Resultado de una Necesidad", en: "Result of a Necessity" }, es: "Aquí es una señal de continuidad: algo que el cliente dijo al cerrar y que puede traer un pedido futuro. No crea una Necesidad ni suma valor al pipeline; solo deja un recordatorio.", en: "Here it is a continuity signal: something the customer said at closing that may bring a future order. It creates no Necessity and adds no pipeline value; it only leaves a reminder." },
+      { at: ["/mercado"], where: { es: "Mercado", en: "Market" }, es: "Aquí es algo que vimos u oímos de una empresa (una parada programada, una ampliación, un cambio de persona). Se guarda con su fuente; cuando el cliente cuenta una dificultad concreta, pasa a ser una Necesidad.", en: "Here it is something we saw or heard about a company (a planned shutdown, an expansion, a change of person). It is stored with its source; when the customer describes a concrete difficulty it becomes a Need." },
+      { at: ["/deals"], where: { es: "Resultado de una Necesidad", en: "Result of a Need" }, es: "Aquí es una señal de continuidad: algo que el cliente dijo al cerrar y que puede traer un pedido futuro. No crea una Necesidad ni suma valor al pipeline; solo deja un recordatorio.", en: "Here it is a continuity signal: something the customer said at closing that may bring a future order. It creates no Need and adds no pipeline value; it only leaves a reminder." },
       { at: ["/gerencia/prioridades"], where: { es: "Prioridades", en: "Priorities" }, es: "Aquí es lo que nos avisará temprano si la prioridad va bien o mal.", en: "Here it is what will tell us early whether the priority is going well or badly." },
     ],
   },
   {
     id: "exploracion", area: "mercado", name: { es: "Exploración", en: "Exploration" }, forms: ["Exploración", "exploración", "exploraciones", "Exploraciones", "Exploration", "exploration", "explorations"],
-    def: { es: "Un trabajo con fecha para entender una empresa, una planta o un sector antes de proponer nada: qué sabemos, qué no sabemos y con quién hablar. Cerrarla sin una Necesidad es un resultado válido.", en: "Dated work to understand a company, plant or sector before proposing anything: what we know, what we don't and who to talk to. Closing it without a Necessity is a valid outcome." },
+    def: { es: "Un trabajo con fecha para entender una empresa, una planta o un sector antes de proponer nada: qué sabemos, qué no sabemos y con quién hablar. Cerrarla sin una Necesidad es un resultado válido.", en: "Dated work to understand a company, plant or sector before proposing anything: what we know, what we don't and who to talk to. Closing it without a Need is a valid outcome." },
   },
   {
     id: "espacio-sin-explorar", area: "mercado", name: { es: "Espacio sin explorar", en: "White space" }, forms: ["Espacios sin explorar", "Espacio sin explorar", "espacios en blanco", "White space", "white space"],
@@ -224,7 +225,7 @@ export const GLOSSARY: GlossTerm[] = [
   },
   {
     id: "oportunidad-futura", area: "mercado", name: { es: "Oportunidad futura", en: "Future opportunity" }, forms: ["Oportunidad futura", "oportunidad futura", "oportunidades futuras", "Oportunidades futuras", "Future opportunity", "future opportunities"],
-    def: { es: "Un proyecto, una parada o una nueva planta que todavía no es una Necesidad. Se guarda con fecha para llegar a tiempo; no cuenta como venta.", en: "A project, shutdown or new plant that is not a Necessity yet. It is stored with a date so we arrive on time; it does not count as a sale." },
+    def: { es: "Un proyecto, una parada o una nueva planta que todavía no es una Necesidad. Se guarda con fecha para llegar a tiempo; no cuenta como venta.", en: "A project, shutdown or new plant that is not a Need yet. It is stored with a date so we arrive on time; it does not count as a sale." },
   },
   {
     id: "prospecto", area: "mercado", name: { es: "Prospecto", en: "Prospect" }, forms: ["Prospecto", "prospecto", "prospectos", "Prospectos", "Prospect", "prospects", "Prospects"],
@@ -237,12 +238,12 @@ export const GLOSSARY: GlossTerm[] = [
   // ── Operaciones ──
   {
     id: "requerimiento", area: "operaciones", name: { es: "Requerimiento", en: "Requirement" }, forms: ["Requerimiento", "requerimiento", "requerimientos", "Requerimientos", "Requirement", "requirements", "Requirements"],
-    def: { es: "Lo que hay que comprar y para qué, antes de hacer la orden al proveedor. Lo comprado para un cliente va asignado a su Necesidad; lo que sobra es inventario y pide su propia autorización.", en: "What must be bought and what for, before placing the supplier order. What is bought for a customer is assigned to their Necessity; the rest is stock and needs its own authorisation." },
+    def: { es: "Lo que hay que comprar y para qué, antes de hacer la orden al proveedor. Lo comprado para un cliente va asignado a su Necesidad; lo que sobra es inventario y pide su propia autorización.", en: "What must be bought and what for, before placing the supplier order. What is bought for a customer is assigned to their Need; the rest is stock and needs its own authorisation." },
   },
   {
     id: "despacho", area: "operaciones", name: { es: "Despacho", en: "Dispatch" }, forms: ["Despacho", "despacho", "despachos", "Despachos", "Dispatch", "dispatch", "dispatches"],
     def: { es: "La salida física de la mercancía hacia el cliente. Despachado, entregado y listo para facturar son tres momentos distintos.", en: "The physical departure of the goods to the customer. Dispatched, delivered and ready to invoice are three different moments." },
-    ctx: [{ at: ["/deals"], where: { es: "Dentro de una Necesidad", en: "Inside a Necessity" }, es: "Aquí Comercial da la instrucción de despacho (qué sale, a dónde y a quién); sin ella Operaciones no despacha.", en: "Here Commercial gives the dispatch instruction (what leaves, where to and to whom); without it Operations does not dispatch." }],
+    ctx: [{ at: ["/deals"], where: { es: "Dentro de una Necesidad", en: "Inside a Need" }, es: "Aquí Comercial da la instrucción de despacho (qué sale, a dónde y a quién); sin ella Operaciones no despacha.", en: "Here Commercial gives the dispatch instruction (what leaves, where to and to whom); without it Operations does not dispatch." }],
   },
   {
     id: "remision", area: "operaciones", name: { es: "Remisión", en: "Delivery note" }, forms: ["Remisión", "remisión", "remisiones", "Remisiones", "Delivery note", "delivery note", "delivery notes"],
@@ -254,7 +255,7 @@ export const GLOSSARY: GlossTerm[] = [
   },
   {
     id: "garantia", area: "operaciones", name: { es: "Garantía", en: "Warranty" }, forms: ["Garantía", "garantía", "garantías", "Garantías", "Warranty", "warranty", "warranties"],
-    def: { es: "El tiempo durante el cual respondemos por lo entregado. Un caso de garantía se registra en la Necesidad; SOLU dice si estaba vigente el día del reporte, y su costo entra a los costos reales.", en: "The time during which we answer for what was delivered. A warranty case is recorded on the Necessity; SOLU says whether it was in force on the report date, and its cost goes into real costs." },
+    def: { es: "El tiempo durante el cual respondemos por lo entregado. Un caso de garantía se registra en la Necesidad; SOLU dice si estaba vigente el día del reporte, y su costo entra a los costos reales.", en: "The time during which we answer for what was delivered. A warranty case is recorded on the Need; SOLU says whether it was in force on the report date, and its cost goes into real costs." },
   },
   {
     id: "handoff", area: "operaciones", name: { es: "Handoff (entrega a Operaciones)", en: "Handoff" }, forms: ["Handoff", "handoff"],
@@ -262,13 +263,13 @@ export const GLOSSARY: GlossTerm[] = [
   },
   {
     id: "expediente", area: "operaciones", name: { es: "Expediente", en: "File" }, forms: ["Expediente", "expediente", "Business file"],
-    def: { es: "Todos los documentos de la Necesidad en un solo lugar: cotización, OC, órdenes al proveedor, remisiones y facturas.", en: "All the Necessity's documents in one place: quote, PO, supplier orders, delivery notes and invoices." },
+    def: { es: "Todos los documentos de la Necesidad en un solo lugar: cotización, OC, órdenes al proveedor, remisiones y facturas.", en: "All the Need's documents in one place: quote, PO, supplier orders, delivery notes and invoices." },
   },
   {
     id: "comprometido", area: "operaciones", name: { es: "Comprometido", en: "Committed" }, forms: ["Comprometido", "comprometido", "comprometida", "comprometidos", "comprometidas", "Committed", "committed"],
     def: { es: "Ya está reservado para algo, aunque todavía no haya salido o no se haya pagado.", en: "Already reserved for something, even though it has not left or been paid yet." },
     ctx: [
-      { at: ["/operaciones/inventario"], where: { es: "Inventario", en: "Stock" }, es: "Aquí son las unidades en bodega que ya pertenecen a una Necesidad: no están disponibles para otro cliente.", en: "Here they are the units in the warehouse that already belong to a Necessity: not available for another customer." },
+      { at: ["/operaciones/inventario"], where: { es: "Inventario", en: "Stock" }, es: "Aquí son las unidades en bodega que ya pertenecen a una Necesidad: no están disponibles para otro cliente.", en: "Here they are the units in the warehouse that already belong to a Need: not available for another customer." },
       { at: ["/administracion", "/comercial/dinero"], where: { es: "Dinero", en: "Money" }, es: "Aquí es dinero que ya tiene destino (órdenes aceptadas, compras aprobadas): ya ocupa el presupuesto o el cupo aunque no se haya pagado ni facturado.", en: "Here it is money that already has a destination (accepted orders, approved purchases): it already uses the budget or the credit limit even if it has not been paid or invoiced." },
     ],
   },
@@ -307,7 +308,7 @@ export const GLOSSARY: GlossTerm[] = [
   },
   {
     id: "cierre-economico", area: "administracion", name: { es: "Cierre económico", en: "Economic close" }, forms: ["Cierre económico", "cierre económico", "economía cerrada", "Economic close", "economic close"],
-    def: { es: "Dar por terminada la cuenta de una Necesidad. «Sustancialmente completa» evita dejarla abierta por diferencias pequeñas; «final» guarda las cifras de ese día y bloquea nuevos costos hasta reabrir.", en: "Declaring a Necessity's account finished. \"Substantially complete\" avoids keeping it open over small differences; \"final\" stores that day's figures and blocks new costs until reopened." },
+    def: { es: "Dar por terminada la cuenta de una Necesidad. «Sustancialmente completa» evita dejarla abierta por diferencias pequeñas; «final» guarda las cifras de ese día y bloquea nuevos costos hasta reabrir.", en: "Declaring a Need's account finished. \"Substantially complete\" avoids keeping it open over small differences; \"final\" stores that day's figures and blocks new costs until reopened." },
   },
   {
     id: "comision", area: "administracion", name: { es: "Comisión", en: "Commission" }, forms: ["Comisión", "comisión", "comisiones", "Comisiones", "Commission", "commission", "commissions"],

@@ -97,7 +97,7 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
           <span className="src">{[recoveredN ? t(`${recoveredN} tras Recovery`, `${recoveredN} after recovery`) : null, count("PARTIAL") ? t(`${count("PARTIAL")} parcial`, `${count("PARTIAL")} partial`) : null, count("NOT_ACHIEVED") ? t(`${count("NOT_ACHIEVED")} no logrado`, `${count("NOT_ACHIEVED")} not achieved`) : null].filter(Boolean).join(" · ") || t("entregar no cuenta como resultado", "delivering doesn't count as a result")}</span>
         </div>
         <div className={`x3-f${active.some((d) => d.recoveries.some((r) => !r.resolvedAt)) ? " risk" : ""}`}>
-          <span className="k">{t("NECESIDADES ACTIVAS", "ACTIVE NECESSITIES")}</span>
+          <span className="k">{t("NECESIDADES ACTIVAS", "ACTIVE NEEDS")}</span>
           <b>{active.length || t("Ninguno", "None")}</b>
           <span className="src">{active.filter((d) => d.recoveries.some((r) => !r.resolvedAt)).length ? t(`${active.filter((d) => d.recoveries.some((r) => !r.resolvedAt)).length} con Recovery abierta`, `${active.filter((d) => d.recoveries.some((r) => !r.resolvedAt)).length} with an open recovery`) : t("sin Recovery abierta", "no open recovery")}</span>
         </div>
@@ -117,7 +117,7 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
       <div className="jbody">
         <div className="jmain">
           <section className="jblock">
-            <div className="jbh"><b>{t("NECESIDADES ACTIVAS", "ACTIVE NECESSITIES")}</b><span className="grow" /><span className="src">{t("entra a la Necesidad para actuar", "enter the Necessity to act")}</span></div>
+            <div className="jbh"><b>{t("NECESIDADES ACTIVAS", "ACTIVE NEEDS")}</b><span className="grow" /><span className="src">{t("entra a la Necesidad para actuar", "enter the Need to act")}</span></div>
             {active.length === 0 ? <p className="quiet-p">{t("Nada en curso.", "Nothing in progress.")}</p> : (
               <ul className="x3-j">{active.map((d) => {
                 const rec = d.recoveries.find((r) => !r.resolvedAt);
@@ -336,7 +336,7 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
                 <details style={{ marginTop: 10 }}>
                   <summary className="small">{t("Eliminar cliente", "Delete customer")}</summary>
                   <form action={deleteAccount.bind(null, a.id)}>
-                    <p className="src" style={{ marginBottom: 6 }}>{t("Borra también sus Necesidades, facturas y pagos.", "Also deletes its Necessities, invoices and payments.")}</p>
+                    <p className="src" style={{ marginBottom: 6 }}>{t("Borra también sus Necesidades, facturas y pagos.", "Also deletes its Needs, invoices and payments.")}</p>
                     <button className="danger sm" type="submit">{t("Eliminar definitivamente", "Delete permanently")}</button>
                   </form>
                 </details>

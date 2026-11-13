@@ -71,10 +71,10 @@ function build(d: CaseDeal, es: boolean): GuideCase {
 
   const quoteDone = !!shownQ || !!d.quoteSentAt || won;
   raw.quote = draft
-    ? { href: `/cotizaciones/${draft.id}`, at: [`/cotizaciones/${draft.id}`], startStep: 1, done: false, note: t(`Esta Necesidad ya tiene la cotización ${qNo(draft)} en borrador: sigue desde el paso 2.`, `This Necessity already has quote ${qNo(draft)} in draft: continue from step 2.`) }
+    ? { href: `/cotizaciones/${draft.id}`, at: [`/cotizaciones/${draft.id}`], startStep: 1, done: false, note: t(`Esta Necesidad ya tiene la cotización ${qNo(draft)} en borrador: sigue desde el paso 2.`, `This Need already has quote ${qNo(draft)} in draft: continue from step 2.`) }
     : shownQ
-      ? { href: `/cotizaciones/${shownQ.id}`, at: [`/cotizaciones/${shownQ.id}`], startStep: 0, done: true, note: t(`La cotización ${qNo(shownQ)} de esta Necesidad ya se presentó: sus precios están fijos. Para cambiarla se usa «Crear revisión». Lo que sigue es la OC del cliente.`, `Quote ${qNo(shownQ)} of this Necessity was already presented: its prices are fixed. To change it use “Create revision”. Next is the customer PO.`) }
-      : { href: `${self}?tab=quote`, at: [self], startStep: 0, done: quoteDone, note: quoteDone ? t("Esta Necesidad se cotizó sin un documento de cotización en SOLU.", "This Necessity was quoted without a quote document in SOLU.") : null };
+      ? { href: `/cotizaciones/${shownQ.id}`, at: [`/cotizaciones/${shownQ.id}`], startStep: 0, done: true, note: t(`La cotización ${qNo(shownQ)} de esta Necesidad ya se presentó: sus precios están fijos. Para cambiarla se usa «Crear revisión». Lo que sigue es la OC del cliente.`, `Quote ${qNo(shownQ)} of this Need was already presented: its prices are fixed. To change it use “Create revision”. Next is the customer PO.`) }
+      : { href: `${self}?tab=quote`, at: [self], startStep: 0, done: quoteDone, note: quoteDone ? t("Esta Necesidad se cotizó sin un documento de cotización en SOLU.", "This Need was quoted without a quote document in SOLU.") : null };
 
   const poDone = !!d.poAcceptedAt || d.customerPos.some((p) => !!p.acceptance);
   raw.po = livePo
@@ -82,30 +82,30 @@ function build(d: CaseDeal, es: boolean): GuideCase {
     : presented
       ? { href: `/cotizaciones/${presented.id}`, at: [`/cotizaciones/${presented.id}`], startStep: 0, done: poDone, note: null }
       : poDone
-        ? { href: `${self}?tab=execute`, at: [self], startStep: 0, done: true, note: t(`La OC del cliente${d.customerPo ? ` (${d.customerPo})` : ""} ya está aceptada en esta Necesidad.`, `The customer PO${d.customerPo ? ` (${d.customerPo})` : ""} is already accepted on this Necessity.`) }
+        ? { href: `${self}?tab=execute`, at: [self], startStep: 0, done: true, note: t(`La OC del cliente${d.customerPo ? ` (${d.customerPo})` : ""} ya está aceptada en esta Necesidad.`, `The customer PO${d.customerPo ? ` (${d.customerPo})` : ""} is already accepted on this Need.`) }
         : { href: raw.quote.href, at: [], startStep: 0, done: false, note: t("Todavía no: la OC del cliente se registra sobre una cotización presentada. Primero presenta la cotización (etapa anterior).", "Not yet: the customer PO is recorded on a presented quote. Present the quote first (previous stage).") };
 
   raw.compras = spo
-    ? { href: `/compras/${spo.id}`, at: [`/compras/${spo.id}`], startStep: 1, done: d.supplierPos.every((p) => !!p.confirmedAt), note: t(`Esta Necesidad ya tiene la orden ${spo.code}: sigue desde el paso 2.`, `This Necessity already has order ${spo.code}: continue from step 2.`) }
-    : { href: `${self}?tab=execute`, at: [self], startStep: 0, done: false, note: won ? null : t("Esta Necesidad aún no tiene la OC del cliente aceptada. La compra al proveedor normalmente se prepara después de aceptarla.", "This Necessity has no accepted customer PO yet. The supplier purchase is normally prepared after accepting it.") };
+    ? { href: `/compras/${spo.id}`, at: [`/compras/${spo.id}`], startStep: 1, done: d.supplierPos.every((p) => !!p.confirmedAt), note: t(`Esta Necesidad ya tiene la orden ${spo.code}: sigue desde el paso 2.`, `This Need already has order ${spo.code}: continue from step 2.`) }
+    : { href: `${self}?tab=execute`, at: [self], startStep: 0, done: false, note: won ? null : t("Esta Necesidad aún no tiene la OC del cliente aceptada. La compra al proveedor normalmente se prepara después de aceptarla.", "This Need has no accepted customer PO yet. The supplier purchase is normally prepared after accepting it.") };
 
   raw.logistica = ship
     ? { href: `/logistica/${ship.id}`, at: [`/logistica/${ship.id}`], startStep: 0, done: fullyDelivered || d.shipments.every((s) => !!s.deliveredAt), note: null }
-    : { href: `${self}?tab=execute`, at: [self], startStep: 0, done: fullyDelivered, note: t("Esta Necesidad aún no tiene un envío. Se registra en la pestaña Ejecución, sección ENVÍOS, con «Registrar envío externo» (aparece cuando la OC del cliente está aceptada).", "This Necessity has no shipment yet. It is recorded on the Execute tab, SHIPMENTS section, with “Record external shipment” (shown once the customer PO is accepted).") };
+    : { href: `${self}?tab=execute`, at: [self], startStep: 0, done: fullyDelivered, note: t("Esta Necesidad aún no tiene un envío. Se registra en la pestaña Ejecución, sección ENVÍOS, con «Registrar envío externo» (aparece cuando la OC del cliente está aceptada).", "This Need has no shipment yet. It is recorded on the Execute tab, SHIPMENTS section, with “Record external shipment” (shown once the customer PO is accepted).") };
 
   raw["ops-despachos"] = order
     ? { href: `/operaciones/despachos/${order.id}`, at: [`/operaciones/despachos/${order.id}`, `${self}/despacho`], startStep: 1, done: fullyDelivered, note: null }
-    : { href: `${self}/despacho`, at: [`${self}/despacho`], startStep: 0, done: fullyDelivered, note: fullyDelivered ? t("Esta Necesidad ya está entregada completa.", "This Necessity is already fully delivered.") : won ? null : t("Todavía no: el despacho al cliente se prepara cuando su OC está aceptada.", "Not yet: the dispatch to the customer is prepared once their PO is accepted.") };
+    : { href: `${self}/despacho`, at: [`${self}/despacho`], startStep: 0, done: fullyDelivered, note: fullyDelivered ? t("Esta Necesidad ya está entregada completa.", "This Need is already fully delivered.") : won ? null : t("Todavía no: el despacho al cliente se prepara cuando su OC está aceptada.", "Not yet: the dispatch to the customer is prepared once their PO is accepted.") };
 
   raw.facturacion = {
     href: `${self}/facturacion`, at: [`${self}/facturacion`], startStep: 0,
     done: d.deliveries.length > 0 && d.deliveries.every((x) => !!x.invoice),
-    note: d.deliveries.length === 0 ? t("Esta Necesidad aún no tiene entregas: la factura se habilita después de entregar. Por ahora la página muestra lo que el cliente pedirá.", "This Necessity has no deliveries yet: the invoice unlocks after delivering. For now the page shows what the customer will require.") : null,
+    note: d.deliveries.length === 0 ? t("Esta Necesidad aún no tiene entregas: la factura se habilita después de entregar. Por ahora la página muestra lo que el cliente pedirá.", "This Need has no deliveries yet: the invoice unlocks after delivering. For now the page shows what the customer will require.") : null,
   };
 
   raw.resultado = {
     href: `${self}/resultado`, at: [`${self}/resultado`], startStep: 0, done: !!d.closedAt,
-    note: d.closedAt ? t("Esta Necesidad ya está cerrada.", "This Necessity is already closed.") : fullyDelivered ? null : t("Aún no se ha entregado todo: el resultado se confirma con el cliente después de la entrega.", "Not everything is delivered yet: the result is confirmed with the customer after delivery."),
+    note: d.closedAt ? t("Esta Necesidad ya está cerrada.", "This Need is already closed.") : fullyDelivered ? null : t("Aún no se ha entregado todo: el resultado se confirma con el cliente después de la entrega.", "Not everything is delivered yet: the result is confirmed with the customer after delivery."),
   };
 
   const cur = d.closedAt ? null : ORDER.find((k) => !raw[k].done) ?? null;

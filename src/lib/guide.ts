@@ -40,9 +40,9 @@ const BY_ID = new Map(FEATURES.map((f) => [f.id, f]));
 /** The life of an order, in the order it happens. Asking for a late stage offers the whole way to it. */
 const LIFE = ["journeys-board", "need-source", "quote", "po", "compras", "logistica", "ops-despachos", "facturacion", "cobrar", "resultado"];
 /** Screens that are another door to a stage of the life of an order. */
-const SAME_STAGE: Record<string, string> = { "por-facturar": "facturacion", remisiones: "facturacion", "pagos-recibidos": "cobrar", despacho: "ops-despachos", "sin-despachar": "ops-despachos", "ops-negociacion": "compras", "ops-requerimientos": "compras" };
+const SAME_STAGE: Record<string, string> = { "por-facturar": "facturacion", remisiones: "facturacion", "pagos-recibidos": "cobrar", despacho: "ops-despachos", "sin-despachar": "ops-despachos", "ops-negociacion": "compras", "ops-requerimientos": "compras", "liquidacion-costos": "quote" };
 /** Lists where the cases that already reached a stage are waiting. */
-const ALSO: Record<string, string[]> = { facturacion: ["por-facturar"], cobrar: ["pagos-recibidos"], "ops-despachos": ["sin-despachar"], compras: ["ops-requerimientos"] };
+const ALSO: Record<string, string[]> = { quote: ["liquidacion-costos"], facturacion: ["por-facturar"], cobrar: ["pagos-recibidos"], "ops-despachos": ["sin-despachar"], compras: ["ops-requerimientos"] };
 /** Where a stage starts when its path in the Guía de campo is not a menu path. */
 const START: Record<string, { href: string | null; needsJourney?: boolean; way?: string[] }> = {
   po: { href: "/deals", needsJourney: true, way: ["Cotización"] },
@@ -144,7 +144,7 @@ const EN_ES: Record<string, string> = {
   note: "remision", po: "oc", rfq: "cotizacion", job: "trabajo", cost: "costo", costs: "costo", price: "precio", refund: "devolucion", recovery: "recovery",
 };
 // Other ways people name the same thing in Spanish.
-const ES_ES: Record<string, string> = { pedido: "necesidad", pedidos: "necesidad", negocio: "necesidad", negocios: "necesidad", oportunidad: "necesidad", caso: "necesidad", casos: "necesidad", journey: "necesidad", journeys: "necesidad", necessity: "necesidad", necessities: "necesidad", necesidades: "necesidad", cartera: "cobrar", recaudo: "cobrar", margen: "esagara", utilidad: "esagara", vendedor: "negociador", despachar: "despacho", comprar: "compra", pagar: "pagar", orden: "oc", usuario: "persona", usuarios: "persona", calendario: "agenda", tarea: "pendiente", tareas: "pendiente", whatsapp: "comunicacion", reunion: "conversacion", viaticos: "viaje" };
+const ES_ES: Record<string, string> = { pedido: "necesidad", pedidos: "necesidad", negocio: "necesidad", negocios: "necesidad", oportunidad: "necesidad", caso: "necesidad", casos: "necesidad", journey: "necesidad", journeys: "necesidad", necessity: "necesidad", necessities: "necesidad", needs: "necesidad", necesidades: "necesidad", cartera: "cobrar", recaudo: "cobrar", margen: "esagara", utilidad: "esagara", vendedor: "negociador", despachar: "despacho", comprar: "compra", pagar: "pagar", orden: "oc", usuario: "persona", usuarios: "persona", calendario: "agenda", tarea: "pendiente", tareas: "pendiente", whatsapp: "comunicacion", reunion: "conversacion", viaticos: "viaje" };
 
 /** "facturación", "facturar" and "facturas" are the same subject: compare the first letters. */
 const stem = (w: string) => { const s = w.length > 4 ? w.replace(/(es|s)$/, "") : w; return s.length > 5 ? s.slice(0, 5) : s; };

@@ -11,7 +11,7 @@ export const EXPORT_KINDS: Record<string, Txt & { noteEs: string; noteEn: string
   SUPPLIER_INVOICES: { es: "Facturas de proveedores", en: "Supplier invoices", noteEs: "Por fecha de la factura, con su orden o compra interna.", noteEn: "By invoice date, with its order or internal purchase." },
   RECEIPTS: { es: "Dinero recibido de clientes y retenciones", en: "Cash received from customers and withholdings", noteEs: "Por fecha de recibo. Una fila por cada factura a la que se aplicó.", noteEn: "By date received. One row per invoice it was applied to." },
   PAYMENTS: { es: "Pagos hechos a proveedores", en: "Payments made to suppliers", noteEs: "Solo pagos confirmados por el banco, por la fecha en que se enviaron.", noteEn: "Only payments confirmed by the bank, by the date they were sent." },
-  COSTS: { es: "Costos asignados a Necesidades", en: "Costs allocated to Necessities", noteEs: "Costos reales registrados en el libro de costos, con su método de reparto.", noteEn: "Real costs recorded in the cost ledger, with their split method." },
+  COSTS: { es: "Costos asignados a Necesidades", en: "Costs allocated to Needs", noteEs: "Costos reales registrados en el libro de costos, con su método de reparto.", noteEn: "Real costs recorded in the cost ledger, with their split method." },
   ASSETS: { es: "Movimientos de activos", en: "Asset movements", noteEs: "Compras, bajas y costos de mantenimiento de activos.", noteEn: "Acquisitions, disposals and maintenance costs of assets." },
 };
 const d = (x: Date | null | undefined) => (x ? x.toISOString().slice(0, 10) : "");

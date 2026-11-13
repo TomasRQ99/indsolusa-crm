@@ -301,7 +301,7 @@ export default async function CompanyExplorationPage({ params, searchParams }: {
               <thead><tr><th>Necesidad</th><th>{t("Estado", "Stage")}</th><th>{t("Fecha", "Date")}</th></tr></thead>
               <tbody>{a.deals.map((d) => <tr key={d.id}><td><Link href={`/deals/${d.id}`}>{d.title}</Link><span className="src">{d.code}</span></td><td className="small">{t(...(STAGE[d.stage] ?? [d.stage, d.stage]))}</td><td className="small">{i.day(d.createdAt)}</td></tr>)}</tbody>
             </table>
-            <p className="src" style={{ padding: "8px 16px" }}>{t(`${a._count.deals} Necesidad(es) en total, ${data.won} ganada(s).`, `${a._count.deals} Necessity(ies) in total, ${data.won} won.`)}</p>
+            <p className="src" style={{ padding: "8px 16px" }}>{t(`${a._count.deals} Necesidad(es) en total, ${data.won} ganada(s).`, `${a._count.deals} Need(s) in total, ${data.won} won.`)}</p>
           </div>
         )}
       </section>
