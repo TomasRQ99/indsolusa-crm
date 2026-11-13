@@ -53,7 +53,7 @@ export function JourneyPath({ path, self, es }: { path: Path; self: string; es: 
         </div>
       ) : (
         <div className="jp-now" data-st="later">
-          <span className="jp-k">{path.lost ? (es ? "Journey perdido" : "Journey lost") : path.closed ? (es ? "Journey cerrado" : "Journey closed") : es ? "Camino completo" : "Path complete"}</span>
+          <span className="jp-k">{path.lost ? (es ? "Necesidad perdida" : "Necessity lost") : path.closed ? (es ? "Necesidad cerrada" : "Necessity closed") : es ? "Camino completo" : "Path complete"}</span>
           <b>{es ? "No queda ningún paso por mover." : "No step is left to move."}</b>
         </div>
       )}

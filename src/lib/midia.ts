@@ -117,7 +117,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
     if (a) return { text: a.subject + (a.body ? ` — ${a.body.slice(0, 140)}` : ""), src: t(`${a.type === "EMAIL" ? "Correo" : a.type === "CALL" ? "Llamada" : a.type === "MEETING" ? "Reunión" : "Nota"} · ${i.dateShort(a.occurredAt)} · ${a.user.name}`, `${a.type.toLowerCase()} · ${i.dateShort(a.occurredAt)} · ${a.user.name}`) };
     const idle = daysBetween(d.updatedAt, new Date());
     return idle >= 2
-      ? { text: t(`Nada nuevo en ${idle} días: ni correo, ni llamada, ni cambio en el Journey.`, `Nothing new in ${idle} days: no email, call or Journey change.`), src: t(`Última actualización ${i.date(d.updatedAt)}`, `Last update ${i.date(d.updatedAt)}`) }
+      ? { text: t(`Nada nuevo en ${idle} días: ni correo, ni llamada, ni cambio en la Necesidad.`, `Nothing new in ${idle} days: no email, call or Necessity change.`), src: t(`Última actualización ${i.date(d.updatedAt)}`, `Last update ${i.date(d.updatedAt)}`) }
       : { text: t("Sin hechos nuevos registrados desde la última actualización.", "No new facts recorded since the last update."), src: t(`Actualizado ${i.date(d.updatedAt)}`, `Updated ${i.date(d.updatedAt)}`) };
   };
   const dealImpact = (d: D): Fact => {
@@ -127,7 +127,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
     let text = t(`Está en juego ${parts.join(" · ")} en etapa ${stageLabel(i, d.stage)}.`, `${parts.join(" · ")} at stake, stage ${stageLabel(i, d.stage)}.`);
     if (d.promisedDate && d.promisedDate >= now) text += " " + t(`Le prometiste al cliente: «${d.promiseText ?? d.title}» para el ${i.dateShort(d.promisedDate)}.`, `You promised the customer "${d.promiseText ?? d.title}" by ${i.dateShort(d.promisedDate)}.`);
     else if (d.closeDate && d.closeDate >= now) text += " " + t(`El cliente decide hacia el ${i.dateShort(d.closeDate)}.`, `The customer decides around ${i.dateShort(d.closeDate)}.`);
-    return { text, src: Number(d.supplierCost) > 0 ? t("Eságara calculada con los costos del Journey", "Margin calculated from the Journey costs") : undefined };
+    return { text, src: Number(d.supplierCost) > 0 ? t("Eságara calculada con los costos de la Necesidad", "Margin calculated from the Necessity costs") : undefined };
   };
   const whoDeal = (d: D) => ({
     title: strip(d.account.name),
@@ -243,7 +243,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
           changed: lastChange(d),
           impact: dealImpact(d),
           next,
-          primary: { label: t("Abrir Journey", "Open Journey"), href: `/deals/${d.id}` },
+          primary: { label: t("Abrir Necesidad", "Open Necessity"), href: `/deals/${d.id}` },
           context: `/deals/${d.id}`,
           schedule: sched(d, next),
           journey: { dealId: d.id, mode: "wait", waitingFor: d.waitingFor },
@@ -262,7 +262,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
           changed: lastChange(d),
           impact: dealImpact(d),
           next: d.nextMove,
-          primary: { label: t("Abrir Journey", "Open Journey"), href: `/deals/${d.id}` },
+          primary: { label: t("Abrir Necesidad", "Open Necessity"), href: `/deals/${d.id}` },
           context: `/deals/${d.id}`,
           schedule: sched(d, d.nextMove),
           journey: { dealId: d.id, mode: "move" },
@@ -274,7 +274,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
       key: `n-${d.id}`, tone: "clarity", rank: 5, at: now.getTime() + 864e5,
       due: { main: t("sin fecha", "no date") },
       who,
-      why: withMeeting({ text: t("Nadie sabe qué sigue: el Journey no tiene siguiente movimiento ni una espera con control.", "Nobody knows what's next: the Journey has no next move or controlled wait.") }, d.account),
+      why: withMeeting({ text: t("Nadie sabe qué sigue: la Necesidad no tiene siguiente movimiento ni una espera con control.", "Nobody knows what's next: the Necessity has no next move or controlled wait.") }, d.account),
       changed: lastChange(d),
       impact: dealImpact(d),
       next: t("Definir el siguiente movimiento con fecha, o una espera con control.", "Set the next move with a date, or a controlled wait."),
@@ -333,7 +333,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
       future.push({ key: `o-${d.id}`, at: d.offerValidUntil, window: true, title: t(`Oferta a ${strip(d.account.name)} vence el ${i.day(d.offerValidUntil)}`, `Offer to ${strip(d.account.name)} expires ${i.day(d.offerValidUntil)}`), text: t(`${d.title} · ${i.money(d.amount)}. Hablar antes de la fecha permite renovarla en tus términos, no bajo presión.`, `${d.title} · ${i.money(d.amount)}. Talking before the date lets you renew on your terms, not under pressure.`), chip: t(`vence ${rel(d.offerValidUntil)}`, `expires ${rel(d.offerValidUntil)}`), link: { label: t("Preparar renovación", "Prepare renewal"), href: `/deals/${d.id}` } });
     }
     if (d.closeDate && d.closeDate > now && d.closeDate <= horizon && d.stage !== "WON") {
-      future.push({ key: `cl-${d.id}`, at: d.closeDate, window: false, title: t(`${strip(d.account.name)} decide hacia el ${i.day(d.closeDate)}`, `${strip(d.account.name)} decides around ${i.day(d.closeDate)}`), text: t(`${d.title}: confirmar ahora quién decide y qué necesita ver evita perder la decisión por silencio.`, `${d.title}: confirming now who decides and what they need avoids losing it to silence.`), chip: rel(d.closeDate), link: { label: t("Abrir Journey", "Open Journey"), href: `/deals/${d.id}` } });
+      future.push({ key: `cl-${d.id}`, at: d.closeDate, window: false, title: t(`${strip(d.account.name)} decide hacia el ${i.day(d.closeDate)}`, `${strip(d.account.name)} decides around ${i.day(d.closeDate)}`), text: t(`${d.title}: confirmar ahora quién decide y qué necesita ver evita perder la decisión por silencio.`, `${d.title}: confirming now who decides and what they need avoids losing it to silence.`), chip: rel(d.closeDate), link: { label: t("Abrir Necesidad", "Open Necessity"), href: `/deals/${d.id}` } });
     }
     if (d.stage === "WON" && d.promisedDate && d.promisedDate >= now && d.promisedDate <= horizon) {
       const unconfirmed = d.supplierPos.find((s) => !s.confirmedAt);
@@ -379,7 +379,7 @@ export async function buildMiDia(user: SessionUser, i: I18n, opts: { agenda?: bo
   for (const d of deals) if (d.stage !== "WON") openAccounts.set(d.accountId, d.account);
   for (const [id, acc] of openAccounts) {
     const m = meetingFor(acc);
-    if (m && signals.length < 3) signals.push({ key: `mt-${id}`, title: t(`Reunión con ${strip(acc.name)} ${rel(new Date(Date.UTC(m.start.getUTCFullYear(), m.start.getUTCMonth(), m.start.getUTCDate())))} a las ${hhmm(m.start, loc)}`, `Meeting with ${strip(acc.name)} ${rel(new Date(Date.UTC(m.start.getUTCFullYear(), m.start.getUTCMonth(), m.start.getUTCDate())))} at ${hhmm(m.start, loc)}`), text: t(`«${m.subject}». Llega con el estado de sus Journeys y facturas abiertas.`, `"${m.subject}". Go in knowing their open Journeys and invoices.`), src: t("Calendario de Outlook", "Outlook calendar"), href: m.webLink || undefined });
+    if (m && signals.length < 3) signals.push({ key: `mt-${id}`, title: t(`Reunión con ${strip(acc.name)} ${rel(new Date(Date.UTC(m.start.getUTCFullYear(), m.start.getUTCMonth(), m.start.getUTCDate())))} a las ${hhmm(m.start, loc)}`, `Meeting with ${strip(acc.name)} ${rel(new Date(Date.UTC(m.start.getUTCFullYear(), m.start.getUTCMonth(), m.start.getUTCDate())))} at ${hhmm(m.start, loc)}`), text: t(`«${m.subject}». Llega con el estado de sus Necesidades y facturas abiertas.`, `"${m.subject}". Go in knowing their open Necessities and invoices.`), src: t("Calendario de Outlook", "Outlook calendar"), href: m.webLink || undefined });
   }
   const overdueBy = new Map<string, { name: string; n: number; total: number }>();
   for (const r of receivables) {

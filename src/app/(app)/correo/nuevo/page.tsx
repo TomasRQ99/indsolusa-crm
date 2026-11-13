@@ -24,7 +24,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
   const langHref = `/correo/nuevo?${new URLSearchParams({ tpl, id: sp.id!, lang: other })}`;
   const errs: Record<string, string> = {
     correo: t("El correo de la empresa no está configurado.", "Company email isn't configured."),
-    permiso: t("Solo el responsable del Journey (o un administrador) puede enviar este correo.", "Only the Journey owner (or an admin) can send this email."),
+    permiso: t("Solo el responsable de la Necesidad (o un administrador) puede enviar este correo.", "Only the Necessity owner (or an admin) can send this email."),
     destino: t("Escribe un correo de destino válido.", "Enter a valid recipient email."),
     asunto: t("Escribe el asunto.", "Enter the subject."),
     texto: t("El mensaje está vacío.", "The message is empty."),

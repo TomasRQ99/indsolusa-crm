@@ -21,11 +21,11 @@ export default async function OpsHomePage({ searchParams }: { searchParams: Prom
     db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.deal.findMany({ where: { poAcceptedAt: { not: null }, resultAchievedAt: null, stage: { not: "LOST" } }, orderBy: { poAcceptedAt: "desc" }, take: 80, select: { id: true, code: true, title: true, account: { select: { name: true } } } }),
   ]);
-  const okMsg: Record<string, string> = { "exc-abierta": t("Excepción registrada con su dueño y fecha.", "Exception recorded with its owner and date."), "exc-resuelta": t("Excepción resuelta. Quedó en el historial del Journey.", "Exception resolved. It's in the Journey's history.") };
+  const okMsg: Record<string, string> = { "exc-abierta": t("Excepción registrada con su dueño y fecha.", "Exception recorded with its owner and date."), "exc-resuelta": t("Excepción resuelta. Quedó en el historial de la Necesidad.", "Exception resolved. It's in the Necessity's history.") };
   const errMsg: Record<string, string> = {
     "exc-campos": t("Una excepción necesita: qué pasó, qué se esperaba, qué ocurrió, el próximo paso recomendado, un dueño y una fecha.", "An exception needs: what happened, what was expected, what occurred, the recommended next step, an owner and a date."),
-    "exc-permiso": t("No tienes permiso sobre ese Journey.", "You don't have permission on that Journey."),
-    "exc-journey": t("Elige el Journey.", "Pick the Journey."),
+    "exc-permiso": t("No tienes permiso sobre esa Necesidad.", "You don't have permission on that Necessity."),
+    "exc-journey": t("Elige la Necesidad.", "Pick the Necessity."),
     "exc-resolucion": t("Escribe cómo se resolvió.", "Write how it was resolved."),
   };
   const dealLabel = (d: OpsRow["deal"]) => <><Link href={`/deals/${d.id}`}>{d.code ?? d.title}</Link> · {d.account.name}</>;
@@ -55,7 +55,7 @@ export default async function OpsHomePage({ searchParams }: { searchParams: Prom
             <div className="qa-pop wide right">
               <form action={openException} className="qa-form">
                 <input type="hidden" name="back" value="/operaciones" />
-                <label>Journey<select name="dealId" required defaultValue=""><option value="" disabled>{t("Elige…", "Choose…")}</option>{deals.map((d) => <option key={d.id} value={d.id}>{d.code ?? d.title} · {d.account.name}</option>)}</select></label>
+                <label>{t("Necesidad", "Necessity")}<select name="dealId" required defaultValue=""><option value="" disabled>{t("Elige…", "Choose…")}</option>{deals.map((d) => <option key={d.id} value={d.id}>{d.code ?? d.title} · {d.account.name}</option>)}</select></label>
                 <label>{t("Tipo", "Kind")}<select name="kind" defaultValue="SUPPLIER_DELAY">{Object.entries(EXC_KINDS).map(([k, v]) => <option key={k} value={k}>{t(v.es, v.en)}</option>)}</select></label>
                 <label>{t("Qué pasó", "What happened")}<input name="whatHappened" required maxLength={300} /></label>
                 <div className="qa-row">
@@ -116,7 +116,7 @@ export default async function OpsHomePage({ searchParams }: { searchParams: Prom
         <p className="src">{t(`La promesa al cliente se compara con lo que hoy se espera; la fecha del transportador informa, no reemplaza la promesa. ${h.protectedCount === 1 ? "1 promesa protegida no se lista" : `${h.protectedCount} promesas protegidas no se listan`}.`, `The customer promise is compared with what is expected today; the carrier's date informs, it doesn't replace the promise. ${h.protectedCount === 1 ? "1 protected promise is not listed" : `${h.protectedCount} protected promises are not listed`}.`)}</p>
         {h.atRisk.length === 0 ? <p className="small muted"><span className="sig ok">{t("Ninguna promesa en riesgo.", "No promise at risk.")}</span></p> : (
           <div className="tscroll"><table>
-            <thead><tr><th>Journey</th><th>{t("Promesa", "Promise")}</th><th>{t("Esperado hoy", "Expected today")}</th><th>{t("Lectura", "Reading")}</th></tr></thead>
+            <thead><tr><th>{t("Necesidad", "Necessity")}</th><th>{t("Promesa", "Promise")}</th><th>{t("Esperado hoy", "Expected today")}</th><th>{t("Lectura", "Reading")}</th></tr></thead>
             <tbody>{h.atRisk.map((p) => <tr key={p.deal.id}><td className="small">{dealLabel(p.deal)}<span className="src block">{p.deal.title}</span></td><td className="mono small">{i.day(p.promise)}</td><td className="mono small">{p.expected ? i.day(p.expected) : "—"}</td><td><span className={`sig ${tone[p.health]}`}>{word[p.health]}</span><span className="src block">{t(p.reason.es, p.reason.en)}</span></td></tr>)}</tbody>
           </table></div>
         )}

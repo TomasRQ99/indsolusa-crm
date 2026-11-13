@@ -53,7 +53,7 @@ export default async function SupplierPaymentsPage() {
                 }),
               ];
             })}
-            {rows.length === 0 && <tr><td colSpan={6} className="empty"><b>{t("No hay pagos a proveedores", "No supplier payments")}</b>{t("Se preparan desde la Supplier PO de un Journey.", "They are prepared from a Journey's supplier PO.")}</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={6} className="empty"><b>{t("No hay pagos a proveedores", "No supplier payments")}</b>{t("Se preparan desde la Supplier PO de una Necesidad.", "They are prepared from a Necessity's supplier PO.")}</td></tr>}
           </tbody>
         </table>
       </div>

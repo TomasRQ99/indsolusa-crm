@@ -85,11 +85,11 @@ export default async function UnshippedPage() {
         };
       }
       if (!cause && d.supplierPos.length === 0) {
-        cause = { key: "nopo", label: t("Sin compra al proveedor", "No supplier PO"), cls: "attn", detail: t("Aún no hay Supplier PO para este Journey.", "No supplier PO for this Journey yet."), missing: [t("Crear la Supplier PO", "Create the supplier PO")], href: `/deals/${d.id}`, cta: t("Abrir Journey", "Open Journey"), who: d.owner.name, urgent: true };
+        cause = { key: "nopo", label: t("Sin compra al proveedor", "No supplier PO"), cls: "attn", detail: t("Aún no hay Supplier PO para esta Necesidad.", "No supplier PO for this Necessity yet."), missing: [t("Crear la Supplier PO", "Create the supplier PO")], href: `/deals/${d.id}`, cta: t("Abrir Necesidad", "Open Necessity"), who: d.owner.name, urgent: true };
       }
       const unconfirmed = d.supplierPos.find((p) => !p.confirmedAt);
       if (!cause && unconfirmed) {
-        cause = { key: "src", label: t("Fuente sin confirmar", "Source not confirmed"), cls: "attn", detail: t(`${unconfirmed.supplier.name} no ha confirmado la Supplier PO ${unconfirmed.code}.`, `${unconfirmed.supplier.name} hasn't confirmed supplier PO ${unconfirmed.code}.`), missing: [t("Confirmación del proveedor", "Supplier confirmation")], href: `/deals/${d.id}`, cta: t("Abrir Journey", "Open Journey"), who: d.owner.name, urgent: true };
+        cause = { key: "src", label: t("Fuente sin confirmar", "Source not confirmed"), cls: "attn", detail: t(`${unconfirmed.supplier.name} no ha confirmado la Supplier PO ${unconfirmed.code}.`, `${unconfirmed.supplier.name} hasn't confirmed supplier PO ${unconfirmed.code}.`), missing: [t("Confirmación del proveedor", "Supplier confirmation")], href: `/deals/${d.id}`, cta: t("Abrir Necesidad", "Open Necessity"), who: d.owner.name, urgent: true };
       }
       const transit = d.supplierPos.find((p) => p.shippedAt && !p.receivedAt);
       if (!cause && transit) {
@@ -141,7 +141,7 @@ export default async function UnshippedPage() {
       </section>
       <div className="card flush">
         <table>
-          <thead><tr><th>{t("OC cliente · Journey", "Customer PO · Journey")}</th><th>{t("Cliente", "Customer")}</th><th className="n">{t("Pendiente", "Pending")}</th><th>{t("Promesa al cliente", "Customer promise")}</th><th>{t("Causa derivada", "Derived cause")}</th><th>{t("Qué falta para liberar", "What's needed to release")}</th><th className="n">{t("Movimiento", "Move")}</th></tr></thead>
+          <thead><tr><th>{t("OC cliente · Necesidad", "Customer PO · Necessity")}</th><th>{t("Cliente", "Customer")}</th><th className="n">{t("Pendiente", "Pending")}</th><th>{t("Promesa al cliente", "Customer promise")}</th><th>{t("Causa derivada", "Derived cause")}</th><th>{t("Qué falta para liberar", "What's needed to release")}</th><th className="n">{t("Movimiento", "Move")}</th></tr></thead>
           <tbody>
             {act.length > 0 && <tr className="grpr"><td colSpan={7}>{t("Requiere un movimiento", "Needs a move")} <span>· {t("la promesa depende de esto", "the promise depends on it")}</span></td></tr>}
             {act.map((r) => <Row key={r.d.id} r={r} />)}

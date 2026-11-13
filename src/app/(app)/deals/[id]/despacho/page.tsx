@@ -38,7 +38,7 @@ export default async function DispatchPage({ params, searchParams }: { params: P
 
   const okMsg: Record<string, string> = { emitida: t("Instrucción emitida a Operaciones. La versión anterior queda en el historial.", "Instruction issued to Operations. The previous version stays in history.") };
   const errMsg: Record<string, string> = {
-    permiso: t("Solo quien lleva el Journey o la dirección emiten la instrucción.", "Only the Journey owner or management issue the instruction."),
+    permiso: t("Solo quien lleva la Necesidad o la dirección emiten la instrucción.", "Only the Necessity owner or management issue the instruction."),
     "sin-po": t("Primero acepta la PO del cliente: sin compromiso aceptado no hay despacho.", "Accept the customer's PO first: no accepted commitment, no dispatch."),
     campos: t("Indica al menos un producto con cantidad y el destino.", "Give at least one product with quantity and the destination."),
     ventana: t("La ventana termina antes de empezar.", "The window ends before it starts."),
@@ -93,7 +93,7 @@ export default async function DispatchPage({ params, searchParams }: { params: P
         <p className="jh-sub">{t("Comercial define la obligación con el cliente; Operaciones ejecuta lo físico.", "Commercial defines the customer obligation; Operations runs the physical execution.")}</p>
       </header>
 
-      {!po ? <section className="jblock"><p className="quiet-p">{t("Todavía no hay una PO aceptada en este Journey. La instrucción nace al aceptar la PO.", "No accepted PO on this Journey yet. The instruction is born when the PO is accepted.")}</p></section> : (
+      {!po ? <section className="jblock"><p className="quiet-p">{t("Todavía no hay una PO aceptada en esta Necesidad. La instrucción nace al aceptar la PO.", "No accepted PO on this Necessity yet. The instruction is born when the PO is accepted.")}</p></section> : (
         <>
           {pos.length > 1 && <p className="small">{t("PO", "PO")}: {pos.map((p) => <Link key={p.id} href={`/deals/${d.id}/despacho?po=${p.id}`} className={p.id === po.id ? "val" : ""} style={{ marginRight: 8 }}>{p.number}</Link>)}</p>}
           {current && <section className="jblock"><div className="jbh"><b>{t("VIGENTE PARA OPERACIONES", "CURRENT FOR OPERATIONS")}</b></div><Show x={current} /></section>}

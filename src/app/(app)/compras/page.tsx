@@ -33,7 +33,7 @@ export default async function ComprasPage() {
         <div>
           <div className="crumb">{t("Operaciones", "Operations")}</div>
           <h1>{t("Compras a proveedores", "Supplier purchasing")}</h1>
-          <p>{t("Cada Supplier PO nace del Journey y protege una promesa al cliente. Aprobado o enviado al banco no es pagado: solo cuenta lo confirmado.", "Every supplier PO is born from a Journey and protects a customer promise. Approved or sent to the bank isn't paid: only confirmed counts.")}</p>
+          <p>{t("Cada Supplier PO nace de la Necesidad y protege una promesa al cliente. Aprobado o enviado al banco no es pagado: solo cuenta lo confirmado.", "Every supplier PO is born from a Necessity and protects a customer promise. Approved or sent to the bank isn't paid: only confirmed counts.")}</p>
         </div>
       </div>
       <section className="sum">
@@ -67,7 +67,7 @@ export default async function ComprasPage() {
                 )),
               ];
             })}
-            {rows.length === 0 && <tr><td colSpan={6} className="empty"><b>{t("No hay compras a proveedores", "No supplier purchases")}</b>{t("Se preparan con un clic desde la pestaña Ejecutar de un Journey con OC aceptada.", "They're prepared in one click from the Execute tab of a Journey with an accepted PO.")}</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={6} className="empty"><b>{t("No hay compras a proveedores", "No supplier purchases")}</b>{t("Se preparan con un clic desde la pestaña Ejecutar de una Necesidad con OC aceptada.", "They're prepared in one click from the Execute tab of a Necessity with an accepted PO.")}</td></tr>}
           </tbody>
         </table>
       </div>

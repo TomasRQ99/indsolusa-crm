@@ -43,10 +43,10 @@ export default async function SupplyPage({ params, searchParams }: { params: Pro
     descartada: t("Opción descartada con su motivo (queda en el historial).", "Option discarded with its reason (kept in history)."),
     pago: t("Forma de pago actualizada.", "Payment option updated."),
     base: t("Base de suministro registrada. La anterior queda como historial. No se creó ninguna orden de compra.", "Supply basis recorded. The previous one stays as history. No purchase order was created."),
-    busqueda: t("Búsqueda guardada en el Journey.", "Search saved on the Journey."),
+    busqueda: t("Búsqueda guardada en la Necesidad.", "Search saved on the Necessity."),
   };
   const errMsg: Record<string, string> = {
-    permiso: t("Solo quien lleva el Journey, un Negociador Operativo o la dirección pueden cambiar el abastecimiento.", "Only the Journey owner, an Operations Negotiator or management can change sourcing."),
+    permiso: t("Solo quien lleva la Necesidad, un Negociador Operativo o la dirección pueden cambiar el abastecimiento.", "Only the Necessity owner, an Operations Negotiator or management can change sourcing."),
     opcion: t("Elige el proveedor y describe qué ofrece.", "Pick the supplier and describe what they offer."),
     fuente: t("Di de dónde salen los datos (correo, proforma, llamada…): sin fuente no se guardan.", "Say where the values come from (email, proforma, call…): without a source they aren't saved."),
     fecha: t("La fecha de la respuesta no puede ser futura.", "The answer date can't be in the future."),
@@ -170,7 +170,7 @@ export default async function SupplyPage({ params, searchParams }: { params: Pro
       {/* 2 · Comparison */}
       <section className="jblock" id="comparar">
         <div className="jbh"><b>{t("COMPARAR OPCIONES", "COMPARE OPTIONS")}</b><span className="grow" /><span className="src">{urgent ? t("Es urgente: primero las más rápidas", "It's urgent: fastest first") : t("Primero las más baratas", "Cheapest first")} · {t("sin puntaje", "no score")} · {SUPPLY_RULES}</span></div>
-        {!W.eq.known && W.live.length > 1 && <p className="note attn">{t("Este Journey no tiene matriz de alcance: SOLU no puede saber si las ofertas incluyen lo mismo. Revisa «Incluye / No incluye» antes de comparar precios.", "This Journey has no scope matrix: SOLU can't tell whether offers include the same. Check “Includes / Excludes” before comparing prices.")} <Link href={`/deals/${d.id}/alcance`}>{t("Abrir alcance", "Open scope")}</Link></p>}
+        {!W.eq.known && W.live.length > 1 && <p className="note attn">{t("Esta Necesidad no tiene matriz de alcance: SOLU no puede saber si las ofertas incluyen lo mismo. Revisa «Incluye / No incluye» antes de comparar precios.", "This Necessity has no scope matrix: SOLU can't tell whether offers include the same. Check “Includes / Excludes” before comparing prices.")} <Link href={`/deals/${d.id}/alcance`}>{t("Abrir alcance", "Open scope")}</Link></p>}
         {rows.length === 0 ? <p className="quiet-p">{t("Sin opciones todavía.", "No options yet.")}</p> : (
           <div className="tscroll"><table className="scp-mx">
             <thead><tr><th>{t("Opción", "Option")}</th><th>{t("Alcance", "Scope")}</th><th className="n">{t("Precio", "Price")}</th><th>{t("Plazo", "Lead time")}</th><th className="n">{t("Stock", "Stock")}</th><th>{t("Vigencia", "Validity")}</th><th>{t("Origen", "Origin")}</th><th>{t("Importación", "Import")}</th><th>{t("Dato", "Data")}</th></tr></thead>
@@ -279,7 +279,7 @@ export default async function SupplyPage({ params, searchParams }: { params: Pro
         )}
         {W.offers.length > 0 && (
           <div className="scp-sug">
-            <p className="src">{t("Ofertas registradas de proveedores para las partes de este Journey (aún no usadas aquí):", "Supplier offers recorded for this Journey's parts (not used here yet):")}</p>
+            <p className="src">{t("Ofertas registradas de proveedores para las partes de esta Necesidad (aún no usadas aquí):", "Supplier offers recorded for this Necessity's parts (not used here yet):")}</p>
             <ul>{W.offers.slice(0, 12).map((of) => (
               <li key={of.id}><b>{of.supplier.name}</b> · <span className="mono">{of.part.mpn}</span> · {of.currency} {i.n2(Number(of.unitPrice))}{of.qty ? ` × ${of.qty}` : ""}{of.validUntil ? ` · ${t("vigente hasta", "valid until")} ${i.day(of.validUntil)}` : ""} <span className="src">· {i.day(of.createdAt)}</span>
                 {editable && <form action={optionFromOffer.bind(null, d.id, of.id)} className="inline"><button type="submit" className="linkb">{t("Usar como opción", "Use as option")}</button></form>}
@@ -294,7 +294,7 @@ export default async function SupplyPage({ params, searchParams }: { params: Pro
       <section className="jblock" id="rfq">
         <div className="jbh"><b>{t("PEDIR COTIZACIÓN", "REQUEST QUOTES")}</b><span className="grow" />{W.parts.length > 0 && <Link className="qa-btn" href={`/localizar/rfq/nueva?${partsQs}&deal=${d.id}`}>{t("Nueva RFQ", "New RFQ")}</Link>}</div>
         {W.parts.length === 0 && <p className="src">{t("Para pedir cotización, primero busca la parte en Localizar repuestos (desde la pestaña Fuente).", "To request quotes, first find the part in Find parts (from the Source tab).")}</p>}
-        {W.rfqs.length === 0 ? <p className="quiet-p">{t("Ninguna RFQ enviada para este Journey.", "No RFQ sent for this Journey.")}</p> : (
+        {W.rfqs.length === 0 ? <p className="quiet-p">{t("Ninguna RFQ enviada para esta Necesidad.", "No RFQ sent for this Necessity.")}</p> : (
           <ul className="exc-hist">{W.rfqs.map((r) => {
             const asked = Array.isArray(r.asked) ? (r.asked as { key: AskKey; level: AskLevel }[]) : [];
             return (
@@ -325,7 +325,7 @@ export default async function SupplyPage({ params, searchParams }: { params: Pro
       {/* 6 · Logistics passport + import precedents */}
       <section className="jblock" id="logistica">
         <div className="jbh"><b>{t("LOGÍSTICA E IMPORTACIÓN DE ESTAS PARTES", "LOGISTICS & IMPORT OF THESE PARTS")}</b></div>
-        {W.passports.length === 0 ? <p className="quiet-p">{t("Las partes de este Journey aún no están en el catálogo.", "This Journey's parts aren't in the catalog yet.")}</p> : (
+        {W.passports.length === 0 ? <p className="quiet-p">{t("Las partes de esta Necesidad aún no están en el catálogo.", "This Necessity's parts aren't in the catalog yet.")}</p> : (
           <ul className="exc-hist">{W.passports.map(({ part, passport: pp, learning, count }) => (
             <li key={part.id}><Link href={`/localizar/${part.id}#pasaporte`} className="mono">{part.mpn}</Link> <span className="src">· {t(`${count} observación(es)`, `${count} observation(s)`)}</span>
               <span className="block small">{pp.grossKg ? <>{t("Peso bruto", "Gross weight")} <b>{pp.grossKg.value} kg</b> ({L(OBS_STATUS[pp.grossKg.status])}, {i.day(pp.grossKg.at)}{pp.grossKg.qtyContext ? t(`, para ${pp.grossKg.qtyContext} u.`, `, for ${pp.grossKg.qtyContext} pcs`) : ""}){pp.grossKg.stale && <span className="attn-t"> · {t("revalidar", "re-confirm")}</span>}</> : t("Peso: sin datos", "Weight: no data")}

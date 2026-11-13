@@ -74,7 +74,7 @@ function stageOf(f: Feature, user: U): GuideStage {
   let mod: ModuleKey | null = (MODULES.find((x) => x.key === f.m)?.key ?? null) as ModuleKey | null;
 
   if (over) { href = over.href; needsJourney = !!over.needsJourney; }
-  else if (norm(segs[0] ?? "") === "journey") { href = "/deals"; needsJourney = true; }
+  else if (["journey", "necesidad"].includes(norm(segs[0] ?? ""))) { href = "/deals"; needsJourney = true; }
   else {
     const module_ = MODULES.find((x) => norm(x.es) === norm(segs[0] ?? "")) ?? MODULES.find((x) => x.key === f.m);
     if (module_) {
@@ -91,7 +91,7 @@ function stageOf(f: Feature, user: U): GuideStage {
 
   const way = (over?.way ?? segs.flatMap((s) => s.split(" / ")))
     .map((s) => s.trim())
-    .filter((s) => s && norm(s) !== "journey" && !/^(un|una|el|la)\s/i.test(s))
+    .filter((s) => s && !["journey", "necesidad"].includes(norm(s)) && !/^(un|una|el|la)\s/i.test(s))
     .map((s) => words.get(norm(s)) ?? s);
 
   const also = (ALSO[f.id] ?? []).flatMap((id) => {
@@ -144,7 +144,7 @@ const EN_ES: Record<string, string> = {
   note: "remision", po: "oc", rfq: "cotizacion", job: "trabajo", cost: "costo", costs: "costo", price: "precio", refund: "devolucion", recovery: "recovery",
 };
 // Other ways people name the same thing in Spanish.
-const ES_ES: Record<string, string> = { pedido: "journey", pedidos: "journey", negocio: "journey", negocios: "journey", oportunidad: "journey", caso: "journey", casos: "journey", cartera: "cobrar", recaudo: "cobrar", margen: "esagara", utilidad: "esagara", vendedor: "negociador", despachar: "despacho", comprar: "compra", pagar: "pagar", orden: "oc", usuario: "persona", usuarios: "persona", calendario: "agenda", tarea: "pendiente", tareas: "pendiente", whatsapp: "comunicacion", reunion: "conversacion", viaticos: "viaje" };
+const ES_ES: Record<string, string> = { pedido: "necesidad", pedidos: "necesidad", negocio: "necesidad", negocios: "necesidad", oportunidad: "necesidad", caso: "necesidad", casos: "necesidad", journey: "necesidad", journeys: "necesidad", necessity: "necesidad", necessities: "necesidad", necesidades: "necesidad", cartera: "cobrar", recaudo: "cobrar", margen: "esagara", utilidad: "esagara", vendedor: "negociador", despachar: "despacho", comprar: "compra", pagar: "pagar", orden: "oc", usuario: "persona", usuarios: "persona", calendario: "agenda", tarea: "pendiente", tareas: "pendiente", whatsapp: "comunicacion", reunion: "conversacion", viaticos: "viaje" };
 
 /** "facturación", "facturar" and "facturas" are the same subject: compare the first letters. */
 const stem = (w: string) => { const s = w.length > 4 ? w.replace(/(es|s)$/, "") : w; return s.length > 5 ? s.slice(0, 5) : s; };

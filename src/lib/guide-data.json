@@ -91,7 +91,7 @@
    "m": "midia",
    "t": "Pendientes",
    "path": "MI DÍA → Pendientes",
-   "why": "Tareas pequeñas que no pertenecen a una tarjeta de Journey.",
+   "why": "Tareas pequeñas que no pertenecen a una tarjeta de Necesidad.",
    "steps": [
     "Escribe la tarea, elige la fecha y haz clic en [[Agregar]].",
     "Cambia los minutos estimados si hace falta.",
@@ -108,7 +108,7 @@
    "steps": [
     "Pega un mensaje de WhatsApp o el resumen de una llamada y haz clic en [[Guardar y que SOLU lo lea]].",
     "Revisa el panel \"SOLU entendió\": hechos e inferencias están marcados. Haz clic en [[Guardar]] para conservar un punto o en [[Descartar]] si no aplica.",
-    "Vincula la conversación a un Journey con [[Vincular]] (o elige \"Nuevo Journey\").",
+    "Vincula la conversación a una Necesidad con [[Vincular]] (o elige \"Nueva Necesidad\").",
     "Responde con [[Enviar desde el correo de la empresa]], o ciérrala con [[Nada más que hacer aquí]]."
    ],
    "expect": "Las conversaciones urgentes o sin responder también aparecen en Mi Día. Los correos salen desde sales@indsolusa.com."
@@ -135,7 +135,7 @@
    "steps": [
     "Envía una solicitud de cotización desde Localizar repuestos (ver Mercado).",
     "Abre [[Respuestas]] y busca la solicitud: cada proveedor muestra si respondió y cuándo.",
-    "Abre una respuesta y pasa el precio y el plazo a la fuente del Journey."
+    "Abre una respuesta y pasa el precio y el plazo a la fuente de la Necesidad."
    ],
    "expect": "Las respuestas automáticas (fuera de oficina) y los rebotes se muestran aparte. SOLU revisa el buzón cada 15 minutos."
   },
@@ -148,7 +148,7 @@
    "steps": [
     "Abre [[Explorar]] y entra a «Mercado lácteo colombiano» (ejemplo).",
     "Revisa las señales y las preguntas abiertas de cada empresa y planta.",
-    "Cuando aparezca una necesidad real, pásala a Comercial: se abre un Journey con todo el contexto.",
+    "Cuando aparezca una necesidad real, pásala a Comercial: se abre una Necesidad con todo el contexto.",
     "Define un siguiente movimiento: se crea una tarea con fecha."
    ],
    "expect": "Una señal sola no crea una oportunidad de venta. Solo una necesidad real pasa a Comercial."
@@ -202,13 +202,13 @@
    "m": "mercado",
    "t": "Clientes y Cliente 360",
    "path": "MERCADO → Clientes → un cliente",
-   "why": "Todo sobre un cliente: Journeys abiertos, historia, cómo paga y qué equipos tiene.",
+   "why": "Todo sobre un cliente: Necesidades abiertas, historia, cómo paga y qué equipos tiene.",
    "steps": [
     "Abre \"Nuevo cliente\". En \"Documentos del cliente\" elige el RUT (PDF descargado de la DIAN) y, si quieres, el certificado de Cámara de Comercio.",
     "SOLU llena razón social, RUT/NIT, dirección, teléfono y correo para facturas, marcados \"del RUT\". Revísalos (si el dígito de verificación no cuadra, lo avisa) y haz clic en [[Crear cliente]].",
     "Haz clic en el nombre del cliente para abrir su vista 360. En \"Documentos\" puedes abrir el RUT, ver lo que SOLU leyó o subir más archivos con [[Subir]].",
     "Revisa la historia, el patrón de facturación y los equipos instalados.",
-    "Inicia una necesidad nueva desde aquí con [[Crear y abrir]]. Se abre un Journey.",
+    "Inicia una necesidad nueva desde aquí con [[Crear y abrir]]. Se abre una Necesidad.",
     "Perfil de facturación: indica si acepta facturas parciales y quién recibe las facturas, y [[Guardar]]."
    ],
    "expect": "Si ya existe un cliente con ese RUT/NIT, SOLU no crea otro y te lleva al existente. Los RUT escaneados o en foto se guardan, pero las casillas se llenan a mano. Las gráficas solo aparecen con al menos 3 datos."
@@ -223,7 +223,7 @@
     "Completa nombre, cliente, correo y teléfono, y haz clic en [[Crear]].",
     "Usa [[Buscar]] para encontrar a alguien."
    ],
-   "expect": "El contacto aparece en el 360 del cliente y en la lista de contactos del Journey. Eliminar pide confirmación."
+   "expect": "El contacto aparece en el 360 del cliente y en la lista de contactos de la Necesidad. Eliminar pide confirmación."
   },
   {
    "id": "relacion",
@@ -294,21 +294,21 @@
   {
    "id": "journeys-board",
    "m": "comercial",
-   "t": "Tablero de Journeys",
-   "path": "COMERCIAL → Journeys",
+   "t": "Tablero de Necesidades",
+   "path": "COMERCIAL → Necesidades",
    "why": "Cada necesidad abierta por etapa, con monto, Eságara y siguiente movimiento.",
    "steps": [
-    "Haz clic en \"Nuevo Journey\", completa cliente y necesidad, y haz clic en [[Crear y abrir]].",
+    "Haz clic en \"Nueva Necesidad\", completa cliente y necesidad, y haz clic en [[Crear y abrir]].",
     "En cualquier tarjeta, usa la lista desplegable para moverla a otra etapa.",
     "Las tarjetas en rojo dicen \"Sin siguiente movimiento\": nadie ha decidido qué sigue."
    ],
-   "expect": "Se ocultan los Journeys cerrados y las pérdidas de hace más de 90 días. Las columnas largas muestran 8 tarjetas y un botón \"Ver N más\". Al mover una tarjeta, cambia de columna enseguida."
+   "expect": "Se ocultan las Necesidades cerradas y las pérdidas de hace más de 90 días. Las columnas largas muestran 8 tarjetas y un botón \"Ver N más\". Al mover una tarjeta, cambia de columna enseguida."
   },
   {
    "id": "journey",
    "m": "comercial",
-   "t": "Página del Journey",
-   "path": "COMERCIAL → Journeys → una tarjeta",
+   "t": "Página de la Necesidad",
+   "path": "COMERCIAL → Necesidades → una tarjeta",
    "why": "El único espacio de trabajo para una necesidad: qué pasa ahora, qué viene, y tres fechas lado a lado (ETA del transportista, fecha esperada por SOLU y promesa al cliente).",
    "steps": [
     "Lee la señal y su causa en la parte de arriba.",
@@ -322,24 +322,24 @@
    "id": "journey-catchup",
    "m": "comercial",
    "t": "¿Qué cambió? y Ponerme al día",
-   "path": "Journey → Resumen",
-   "why": "Entiende un Journey en segundos, aunque no lo hayas visto en días.",
+   "path": "Necesidad → Resumen",
+   "why": "Entiende una Necesidad en segundos, aunque no la hayas visto en días.",
    "steps": [
-    "Abre el Journey SJ-01842 de ABC Foods.",
+    "Abre la Necesidad SJ-01842 de ABC Foods.",
     "Haz clic en [[¿Qué cambió?]] para ver lo nuevo desde tu última visita.",
     "Haz clic en [[Ponerme al día]] para ver dónde está y qué sigue.",
-    "Usa [[Pregúntale a SOLU]] dentro del Journey para preguntas sobre ese caso."
+    "Usa [[Pregúntale a SOLU]] dentro de la Necesidad para preguntas sobre ese caso."
    ],
-   "expect": "Las respuestas se arman con los datos del Journey; todavía no es IA."
+   "expect": "Las respuestas se arman con los datos de la Necesidad; todavía no es IA."
   },
   {
    "id": "alcance",
    "m": "comercial",
    "t": "Matriz de alcance",
-   "path": "Journey → Alcance",
+   "path": "Necesidad → Alcance",
    "why": "Separa lo pedido, lo requerido, lo cotizado, lo incluido, lo excluido y lo que falta confirmar, para que nadie descubra en la entrega que faltaba algo.",
    "steps": [
-    "Abre el Journey «Bombas dosificadoras» de Papeles del Sur (ejemplo) y la pestaña Alcance.",
+    "Abre la Necesidad «Bombas dosificadoras» de Papeles del Sur (ejemplo) y la pestaña Alcance.",
     "Revisa cada línea y su estado.",
     "Para una línea «por confirmar», usa el mensaje sugerido para preguntarle al cliente."
    ],
@@ -349,7 +349,7 @@
    "id": "need-source",
    "m": "comercial",
    "t": "Necesidad y fuente",
-   "path": "Journey → Necesidad / Fuente",
+   "path": "Necesidad → Necesidad / Fuente",
    "why": "Registra exactamente qué necesita el cliente y de dónde vendrá, antes de cotizar.",
    "steps": [
     "Pestaña Necesidad: describe la necesidad y haz clic en [[Guardar necesidad]].",
@@ -362,10 +362,10 @@
    "id": "quote",
    "m": "comercial",
    "t": "Crear y presentar una cotización",
-   "path": "Journey → Cotización → Preparar cotización",
+   "path": "Necesidad → Cotización → Preparar cotización",
    "why": "Arma la solución, revisa la economía, define la promesa y presenta solo cuando esté completa.",
    "steps": [
-    "En el Journey, abre la pestaña [[Cotización]] y haz clic en [[Preparar cotización]].",
+    "En la Necesidad, abre la pestaña [[Cotización]] y haz clic en [[Preparar cotización]].",
     "Agrega las líneas ([[Agregar]]) y los costos del proveedor ([[Guardar costos]]). Mira la Eságara en $ y %, antes y después del costo de financiar el plazo de pago.",
     "Opcional: ofrece alternativas con [[Agregar escenario]] y marca una con [[Recomendar este]].",
     "Resuelve cada punto de la lista \"Lista para presentar\".",
@@ -378,10 +378,10 @@
    "id": "solucion",
    "m": "comercial",
    "t": "Caso de solución y propuesta imprimible",
-   "path": "Journey → Solución",
+   "path": "Necesidad → Solución",
    "why": "Explica al cliente por qué esta solución resuelve su necesidad, solo con atributos de valor que tengan evidencia en este caso.",
    "steps": [
-    "Abre la pestaña Solución del Journey.",
+    "Abre la pestaña Solución de la Necesidad.",
     "Elige los atributos de valor que apliquen y su evidencia.",
     "Abre la propuesta imprimible y revísala."
    ],
@@ -430,7 +430,7 @@
    "id": "promise",
    "m": "comercial",
    "t": "Promesa al cliente",
-   "path": "Journey → franja de promesa",
+   "path": "Necesidad → franja de promesa",
    "why": "La fecha de entrega comprometida, y un registro honesto cuando cambia.",
    "steps": [
     "Define la fecha y haz clic en [[Guardar promesa]].",
@@ -442,13 +442,13 @@
    "id": "resultado",
    "m": "comercial",
    "t": "Resultado, Recovery y cierre",
-   "path": "Journey → Resultado",
+   "path": "Necesidad → Resultado",
    "why": "Confirma que el cliente realmente obtuvo el resultado que necesitaba. Si no, recupéralo.",
    "steps": [
     "Registra la evidencia del resultado (lo que confirmó el cliente).",
     "Si algo salió mal, elige la causa y haz clic en [[Abrir Recovery]]. Escoge una opción con [[Elegir]].",
     "Termínala con [[Recovery exitosa]], [[No se recuperó]] o [[Ya no aplica]].",
-    "Cierra con [[Cerrar Journey]]. Anota cualquier señal de una necesidad futura (continuidad), con una fecha de seguimiento."
+    "Cierra con [[Cerrar Necesidad]]. Anota cualquier señal de una necesidad futura (continuidad), con una fecha de seguimiento."
    ],
    "expect": "Una señal de continuidad crea una tarea de seguimiento. No crea una oportunidad de venta por sí sola."
   },
@@ -474,7 +474,7 @@
    "steps": [
     "Abre [[Fugas de caja]].",
     "Mira la etapa con más días de demora.",
-    "Revisa los Journeys detrás de esa demora."
+    "Revisa las Necesidades detrás de esa demora."
    ],
    "expect": "Las reglas con que se mide están escritas en la pantalla."
   },
@@ -501,7 +501,7 @@
     "Recorre el Top 5 y abre uno.",
     "Revisa lo grande que lleva días quieto y define un movimiento."
    ],
-   "expect": "Cada fila lleva a su Journey."
+   "expect": "Cada fila lleva a su Necesidad."
   },
   {
    "id": "visitas",
@@ -566,14 +566,14 @@
    "m": "comercial",
    "t": "Cobertura por ausencia",
    "path": "COMERCIAL → Cobertura",
-   "why": "Cuando te ausentas, otra persona atiende tus Journeys por un tiempo.",
+   "why": "Cuando te ausentas, otra persona atiende tus Necesidades por un tiempo.",
    "steps": [
     "Abre [[Cobertura]].",
     "Elige quién te cubre, las fechas y, si no es todo, para qué es la cobertura.",
     "Revisa la entrega de turno: cada pendiente dice si debe moverse, si es probable una decisión del cliente, si está en espera, si puede esperar o si está protegido.",
     "Al regresar, abre la cobertura: lee qué pasó y haz clic en [[Ya lo leí: recibir mi trabajo de vuelta]]."
    ],
-   "expect": "La cobertura vence sola en la fecha final. Nunca delega aprobaciones. Tú sigues siendo responsable de tus Journeys: al regresar, lo único que vuelve son los pendientes abiertos a nombre de quien te cubrió."
+   "expect": "La cobertura vence sola en la fecha final. Nunca delega aprobaciones. Tú sigues siendo responsable de tus Necesidades: al regresar, lo único que vuelve son los pendientes abiertos a nombre de quien te cubrió."
   },
   {
    "id": "mejora",
@@ -605,11 +605,11 @@
    "id": "despacho",
    "m": "operaciones",
    "t": "Instrucción de despacho",
-   "path": "Journey → Despacho",
+   "path": "Necesidad → Despacho",
    "why": "Después de aceptar la OC del cliente, dice exactamente qué despachar, a dónde y con qué documentos.",
    "steps": [
     "Acepta una OC con [[Aceptar PO]].",
-    "Abre la pestaña Despacho del Journey y revisa la instrucción."
+    "Abre la pestaña Despacho de la Necesidad y revisa la instrucción."
    ],
    "expect": "Sale del compromiso aceptado (la OC congelada), no de la cotización editable."
   },
@@ -617,10 +617,10 @@
    "id": "compras",
    "m": "operaciones",
    "t": "Órdenes de compra a proveedores",
-   "path": "Journey → Ejecución → Preparar Supplier PO desde la cotización",
+   "path": "Necesidad → Ejecución → Preparar Supplier PO desde la cotización",
    "why": "Compra exactamente lo cotizado, guarda versiones y programa los pagos al proveedor.",
    "steps": [
-    "En la pestaña Ejecución del Journey, haz clic en [[Preparar Supplier PO desde la cotización]].",
+    "En la pestaña Ejecución de la Necesidad, haz clic en [[Preparar Supplier PO desde la cotización]].",
     "Revísala en [[Compras]]. Guarda cambios con [[Guardar borrador]] o [[Crear versión]].",
     "Libérala al proveedor.",
     "Para cada hito de pago, haz clic en [[Solicitar este pago]]."
@@ -638,7 +638,7 @@
     "Si la aduana lo retiene: [[Registrar retención]], y luego [[✓ Liberado por la aduana]] cuando se libere.",
     "Al llegar: [[Registrar entrega]]. Si algo no cuadra: [[Registrar discrepancia]]."
    ],
-   "expect": "Confirmar la entrega crea la remisión. Las fechas del Journey se actualizan desde el envío."
+   "expect": "Confirmar la entrega crea la remisión. Las fechas de la Necesidad se actualizan desde el envío."
   },
   {
    "id": "sin-despachar",
@@ -648,7 +648,7 @@
    "why": "Cada pedido aceptado que aún no sale, con la razón y quién tiene el siguiente paso.",
    "steps": [
     "Lee la causa de cada fila (sin compra al proveedor, fuente sin confirmar, en tránsito…).",
-    "Haz clic en el botón para abrir el Journey y resolver lo que falta."
+    "Haz clic en el botón para abrir la Necesidad y resolver lo que falta."
    ],
    "expect": "Lo atrasado se muestra como urgente. Las filas en tránsito muestran la fecha estimada de llegada, o dicen que aún no hay fecha del transportista."
   },
@@ -662,7 +662,7 @@
     "Haz clic en [[Nueva remisión]], complétala y haz clic en [[Registrar remisión]].",
     "Desde la remisión, haz clic en [[Emitir factura]] cuando esté lista."
    ],
-   "expect": "La remisión aparece en el Expediente del Journey."
+   "expect": "La remisión aparece en el Expediente de la Necesidad."
   },
   {
    "id": "por-facturar",
@@ -687,18 +687,18 @@
     "Lee primero «Necesita atención» y abre una fila.",
     "Revisa «Listo para el siguiente paso»: cada fila lleva a la pantalla donde se hace."
    ],
-   "expect": "Cada fila dice qué falta y de qué Journey es. Lo que va bien aparece como espera, sin alarma."
+   "expect": "Cada fila dice qué falta y de qué Necesidad es. Lo que va bien aparece como espera, sin alarma."
   },
   {
    "id": "ops-altovalor",
    "m": "operaciones",
    "t": "Compromisos de alto valor",
    "path": "OPERACIONES → Alto valor",
-   "why": "Cada Journey aceptado con Eságara de USD 2.000 o más, visible hasta que se entrega todo y se cobra todo.",
+   "why": "Cada Necesidad aceptada con Eságara de USD 2.000 o más, visible hasta que se entrega todo y se cobra todo.",
    "steps": [
     "Abre [[Alto valor]].",
     "Lee una tarjeta: promesa, lo que está en juego, dinero ya comprometido, siguiente hito y riesgos.",
-    "Haz clic en el código para abrir el Journey."
+    "Haz clic en el código para abrir la Necesidad."
    ],
    "expect": "Los que tienen riesgo salen primero. «Sin riesgo conocido» significa que SOLU no ve nada material con lo registrado."
   },
@@ -707,7 +707,7 @@
    "m": "operaciones",
    "t": "Requerimientos y aprobación de compras",
    "path": "OPERACIONES → Requerimientos",
-   "why": "Antes de comprar: qué se necesita, para qué Journey o para inventario, y si la compra necesita aprobación.",
+   "why": "Antes de comprar: qué se necesita, para qué Necesidad o para inventario, y si la compra necesita aprobación.",
    "steps": [
     "Abre un requerimiento y revisa «¿Lista para comprar?».",
     "Si pide aprobación, haz clic en [[Pedir aprobación]] y escribe el motivo.",
@@ -785,10 +785,10 @@
    "id": "ops-despachos",
    "m": "operaciones",
    "t": "Despachos al cliente",
-   "path": "Journey → Despacho → Entrega física · OPERACIONES → Despachos",
+   "path": "Necesidad → Despacho → Entrega física · OPERACIONES → Despachos",
    "why": "La entrega física al cliente: despachado, entregado y listo para facturar son tres hechos distintos.",
    "steps": [
-    "En el Journey, abre Despacho y haz clic en [[+ Nuevo despacho]].",
+    "En la Necesidad, abre Despacho y haz clic en [[+ Nuevo despacho]].",
     "Registra lo que exige el cliente con [[+ Agregar requisito del cliente]] y márcalo cumplido.",
     "Haz clic en [[Salió hacia el cliente]].",
     "Al entregar: quién recibió y [[Entregado: crear remisión]]. Si no se pudo: [[No se pudo entregar]].",
@@ -840,14 +840,14 @@
    "id": "ops-garantias",
    "m": "operaciones",
    "t": "Garantías y reclamos del cliente",
-   "path": "Journey → Ejecución → Garantía y reclamos · OPERACIONES → Garantías",
+   "path": "Necesidad → Ejecución → Garantía y reclamos · OPERACIONES → Garantías",
    "why": "Qué quedó cubierto y por cuánto tiempo, y los casos que abre el cliente después de la entrega.",
    "steps": [
-    "En el Journey, abre «Garantía y reclamos» y haz clic en [[+ Registrar garantía]].",
+    "En la Necesidad, abre «Garantía y reclamos» y haz clic en [[+ Registrar garantía]].",
     "Si el cliente reporta un problema: [[+ Abrir caso del cliente]].",
     "Agrega notas a medida que avance y ciérralo con qué se hizo, quién fue responsable y lo que costó."
    ],
-   "expect": "SOLU dice si estaba dentro de la garantía el día del reporte. El costo del caso entra a los costos reales del Journey."
+   "expect": "SOLU dice si estaba dentro de la garantía el día del reporte. El costo del caso entra a los costos reales de la Necesidad."
   },
   {
    "id": "ops-experiencias",
@@ -890,7 +890,7 @@
    "id": "facturacion",
    "m": "administracion",
    "t": "Listo para facturar y facturación",
-   "path": "Journey → Finanzas → Facturación",
+   "path": "Necesidad → Finanzas → Facturación",
    "why": "Emite una factura solo cuando todo lo que exige el cliente esté listo.",
    "steps": [
     "Revisa la lista \"¿Listo para facturar?\", construida con el perfil de facturación del cliente.",
@@ -993,12 +993,12 @@
    "id": "adm-esagara",
    "m": "administracion",
    "t": "Eságara real",
-   "path": "ADMINISTRACIÓN → Eságara real · Journey → Ejecución → Eságara real",
-   "why": "Cuánto dejó de verdad cada Journey: la Eságara protegida frente a la esperada hoy con los costos reales, y por qué cambió.",
+   "path": "ADMINISTRACIÓN → Eságara real · Necesidad → Ejecución → Eságara real",
+   "why": "Cuánto dejó de verdad cada Necesidad: la Eságara protegida frente a la esperada hoy con los costos reales, y por qué cambió.",
    "steps": [
-    "Abre [[Eságara real]] y haz clic en un Journey.",
+    "Abre [[Eságara real]] y haz clic en una Necesidad.",
     "Lee las tres cifras y la tabla «Por qué cambió».",
-    "Agrega un costo que no esté en otro lado con [[+ Agregar un costo de este Journey]].",
+    "Agrega un costo que no esté en otro lado con [[+ Agregar un costo de esta Necesidad]].",
     "Finanzas, Administración o Gerencia marcan el cierre: abierta, sustancialmente completa o final."
    ],
    "expect": "Las líneas de «Por qué cambió» siempre suman el cambio total. «Final» guarda las cifras de ese día y bloquea nuevos costos hasta reabrir."
@@ -1381,7 +1381,7 @@
     "Abre [[INFORMES]] en el menú.",
     "Lee «Resultado y futuro»: lo de este mes, la meta, el ritmo y el mes anterior.",
     "Haz clic en [[¿Cómo se calcula?]] junto a cualquier cifra.",
-    "Revisa «Dinero que debo mover» y «Riesgos y lo que viene»; cada línea lleva al Journey."
+    "Revisa «Dinero que debo mover» y «Riesgos y lo que viene»; cada línea lleva a la Necesidad."
    ],
    "expect": "Dice si el mes está cerrado o es provisional y la fecha de cálculo. Nada se escribe para este informe."
   },
@@ -1490,7 +1490,7 @@
     "Escribe un nombre y haz clic en [[Guardar vista]]. Gerencia, Dirección y los roles de dinero pueden marcar [[Compartir con todos]].",
     "Abre la vista desde «Vistas guardadas»; bórrala con [[Borrar]] si es tuya."
    ],
-   "expect": "Las filas suman el total. Una vista guarda la pregunta, no las cifras: cada persona ve solo sus Journeys y los de los equipos que lidera. El orden es alfabético, no un ranking."
+   "expect": "Las filas suman el total. Una vista guarda la pregunta, no las cifras: cada persona ve solo sus Necesidades y las de los equipos que lidera. El orden es alfabético, no un ranking."
   },
   {
    "id": "ger-inicio",
@@ -1517,7 +1517,7 @@
     "Escribe la pregunta, el contexto, cuánto pesa, al menos dos opciones (una por línea), los hechos y, aparte, los supuestos. Haz clic en [[Pedir la decisión]].",
     "Gerencia: ábrela, escribe qué se decide, por qué, qué se espera que pase, cuándo se revisa y quién queda a cargo, y haz clic en [[Registrar la decisión]].",
     "Si ya no hace falta, quien la pidió la retira con el motivo.",
-    "También desde un Journey: arriba, [[Pedir a Gerencia]] abre la solicitud con el Journey ya enlazado."
+    "También desde una Necesidad: arriba, [[Pedir a Gerencia]] abre la solicitud con la Necesidad ya enlazada."
    ],
    "expect": "Con una sola opción no se guarda: no hacer nada cuenta como opción. Una decisión tomada no se edita ni se borra. Cada persona ve las que pidió o las que le quedaron a cargo; Gerencia y Dirección las ven todas. La campana le avisa a Gerencia."
   },
@@ -1569,7 +1569,7 @@
    "why": "La dirección elegida: por qué, qué resultado se busca, qué señales lo anuncian, quién responde y qué registros reales la llevan.",
    "steps": [
     "Gerencia: en «Nueva prioridad», escribe el título, por qué, el resultado, el horizonte, el responsable y al menos una señal temprana. Haz clic en [[Crear la prioridad]].",
-    "Vincúlala a un cliente, un Journey, una exploración, una decisión o un escenario con [[Vincular]].",
+    "Vincúlala a un cliente, una Necesidad, una exploración, una decisión o un escenario con [[Vincular]].",
     "El responsable escribe cómo va de verdad en «Revisar» y [[Guardar la revisión]].",
     "Al terminar: «Cerrarla: lograda o abandonada», con el porqué."
    ],
@@ -1701,7 +1701,7 @@
    "why": "Cuando vende más de una empresa, las mismas cifras separadas por empresa.",
    "steps": [
     "En el Inicio de Gerencia, baja a «Por empresa vendedora».",
-    "Haz clic en una empresa: abre el Puente al futuro solo con sus Journeys, facturas y compras.",
+    "Haz clic en una empresa: abre el Puente al futuro solo con sus Necesidades, facturas y compras.",
     "Vuelve a «Todas las empresas» con la pestaña de arriba."
    ],
    "expect": "Solo aparece cuando hay más de una empresa con datos o activada; hoy vende solo la de Estados Unidos, así que es normal no verlo. Las empresas suman el total. Las oportunidades futuras no pertenecen a una empresa."
@@ -1728,7 +1728,7 @@
    "steps": [
     "Cambia de vista: Mes, Forward, Causas, Recovery.",
     "Filtra por persona, sector o certeza, y [[Aplicar]].",
-    "Haz clic en una barra o un nombre para entrar al Journey o la causa.",
+    "Haz clic en una barra o un nombre para entrar a la Necesidad o la causa.",
     "Usa los botones de \"Pregúntale a SOLU\" para ver causas y dependencias."
    ],
    "expect": "Durante los primeros 7 días del mes, Mes muestra el mes anterior. No hay conteos de mensajes, llamadas ni tiempo conectado. Es intencional."
@@ -1750,14 +1750,14 @@
    "id": "m12-reparto",
    "m": "gerencia",
    "t": "Quién recibe la comisión de una venta",
-   "path": "Journey → Ejecución → Eságara real → Quién recibe la comisión",
+   "path": "Necesidad → Ejecución → Eságara real → Quién recibe la comisión",
    "why": "El fondo de comisión se reparte entre Comercial y Operativo, y Gerencia nombra a las personas de cada función.",
    "steps": [
-    "Abre la página Eságara real de un Journey.",
+    "Abre la página Eságara real de una Necesidad.",
     "Mira quién recibe hoy y qué porcentaje del fondo.",
     "Gerencia: [[Cambiar el reparto]], nombra hasta tres personas por función con su porcentaje y el motivo, y [[Guardar reparto]]."
    ],
-   "expect": "Sin nadie nombrado, quien lleva el Journey recibe todo. Dentro de cada función los porcentajes deben sumar 100. Lo ya aprobado o pagado no cambia."
+   "expect": "Sin nadie nombrado, quien lleva la Necesidad recibe todo. Dentro de cada función los porcentajes deben sumar 100. Lo ya aprobado o pagado no cambia."
   },
   {
    "id": "m12-liquidacion",
@@ -1803,11 +1803,11 @@
    "m": "administracion",
    "t": "Cierre y comisiones (inicio de Administración)",
    "path": "ADMINISTRACIÓN → Cierre y comisiones",
-   "why": "Qué Journeys se pueden cerrar hoy, qué falta en los demás y qué comisiones están listas.",
+   "why": "Qué Necesidades se pueden cerrar hoy, qué falta en las demás y qué comisiones están listas.",
    "steps": [
     "Abre [[Cierre y comisiones]].",
     "En «Listos para cerrar», abre uno y márcalo como final.",
-    "En «Falta algo para cerrar», lee qué falta y abre el Journey para resolverlo."
+    "En «Falta algo para cerrar», lee qué falta y abre la Necesidad para resolverlo."
    ],
    "expect": "Cada línea lleva a la pantalla donde se resuelve."
   },
@@ -1815,21 +1815,21 @@
    "id": "auth-rangos",
    "m": "equipo",
    "t": "Rangos de autorización por nivel",
-   "path": "EQUIPO → Mi perfil → Configuración → Rangos de autorización · Journey → Ejecución → Autorización por nivel",
+   "path": "EQUIPO → Mi perfil → Configuración → Rangos de autorización · Necesidad → Ejecución → Autorización por nivel",
    "why": "Hasta qué valor puede autorizar cada persona sola, y quién debe autorizar por encima: compañero, MMS y mentor, o Gerencia.",
    "steps": [
     "Gerencia: abre los rangos, revisa los valores (hoy son los de 2025) y asigna el nivel de cada persona.",
-    "En un Journey, abre «Autorización por nivel»: SOLU convierte la venta a pesos con la TRM del día y dice quién debe autorizar.",
+    "En una Necesidad, abre «Autorización por nivel»: SOLU convierte la venta a pesos con la TRM del día y dice quién debe autorizar.",
     "Haz clic en [[+ Registrar autorización]] y escribe quién autorizó."
    ],
-   "expect": "SOLU informa y guarda el registro; no bloquea ningún paso. Si quien lleva el Journey no tiene nivel, lo dice."
+   "expect": "SOLU informa y guarda el registro; no bloquea ningún paso. Si quien lleva la Necesidad no tiene nivel, lo dice."
   },
   {
    "id": "search",
    "m": "global",
    "t": "Búsqueda",
    "path": "Barra superior · Ctrl K o /",
-   "why": "Salta a cualquier cliente, Journey, factura, proveedor o repuesto.",
+   "why": "Salta a cualquier cliente, Necesidad, factura, proveedor o repuesto.",
    "steps": [
     "Presiona [[Ctrl K]] y escribe o pega parte de un nombre, un código, un NIT o un número de factura.",
     "Presiona Enter. Si hay un solo resultado, SOLU lo abre directamente."
@@ -1844,7 +1844,7 @@
    "why": "Escribe lo que necesitas hacer y SOLU te lleva a donde empieza y te muestra los pasos de esta guía sobre la pantalla real, marcando dónde hacer clic.",
    "steps": [
     "Haz clic en la barra de búsqueda sin escribir nada: aparece el trabajo de todos los días, cada uno con su botón [[Guíame]].",
-    "Escribe «hacer factura» (o «make invoice»). En la primera fila haz clic en [[Desde el inicio · 8 etapas]]: SOLU abre el tablero de Journeys con la guía en la esquina.",
+    "Escribe «hacer factura» (o «make invoice»). En la primera fila haz clic en [[Desde el inicio · 8 etapas]]: SOLU abre el tablero de Necesidades con la guía en la esquina.",
     "Sigue los pasos con [[Siguiente paso]]. El anillo azul con número marca el botón o la pestaña que nombra el paso.",
     "Si el paso está en otra pantalla, sigue la línea punteada o usa el botón «Llévame a…» de la guía.",
     "Si tu caso ya va adelantado, toca el número de su etapa en la guía. Con [[Solo esta parte]] ves una sola función.",
@@ -1864,7 +1864,7 @@
     "Pasa el cursor por una tabla: la fila que lleva a algún lado se pone azul.",
     "En Mi Día, mira los títulos de cada sección: ámbar es «necesita de ti», azul es «para mover», verde es «esperando con control»."
    ],
-   "expect": "Verde, ámbar y rojo siguen significando protegido, atención y riesgo. El morado sigue siendo solo para la ayuda de SOLU. En el tablero de Journeys las columnas se hacen más azules a medida que el Journey avanza; «OC aceptada» es verde."
+   "expect": "Verde, ámbar y rojo siguen significando protegido, atención y riesgo. El morado sigue siendo solo para la ayuda de SOLU. En el tablero de Necesidades las columnas se hacen más azules a medida que la Necesidad avanza; «OC aceptada» es verde."
   },
   {
    "id": "ask",

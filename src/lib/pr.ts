@@ -45,7 +45,7 @@ export async function ensurePrForSpo(tx: Prisma.TransactionClient, spo: { id: st
   const code = await nextPrCode(tx);
   const pr = await tx.purchaseRequirement.create({ data: {
     code, purpose: "CUSTOMER_FULFILLMENT", sellerKey, requesterId: user.id, dealId: spo.dealId, supplierId: spo.supplierId, currency: spo.currency, neededBy: spo.shipBy, supplierPoId: spo.id, createdByName: user.name,
-    sourceEvidence: "Derivado del Journey al preparar la compra",
+    sourceEvidence: "Derivado de la Necesidad al preparar la compra",
     lines: { create: spo.lines.map((l) => ({ position: l.position, code: l.code, description: l.description, qty: l.qty, expectedUnitCost: l.unitCost, allocations: { create: [{ dealId: spo.dealId, qty: l.qty }] } })) },
   } });
   return pr.id;

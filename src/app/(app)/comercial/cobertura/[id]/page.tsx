@@ -62,7 +62,7 @@ export default async function CoverageDetail({ params, searchParams }: { params:
       <section className="jblock">
         <div className="jbh"><b>{t("AUTORIDAD TEMPORAL", "TEMPORARY AUTHORITY")}</b><span className="grow" />{!ended && <form action={revokeCoverage.bind(null, c.id)}><button type="submit" className="secondary">{t("Terminar ahora", "End now")}</button></form>}</div>
         <ul className="mk-ul small">
-          <li>{t(`Mientras esté activa, ${c.actingUser.name} puede actuar en los Journeys de ${c.originalUser.name}: hechos, próximos pasos, cotizaciones, POs, despacho y cobro.`, `While active, ${c.actingUser.name} can act on ${c.originalUser.name}'s Journeys: facts, next steps, quotes, POs, dispatch and collection.`)}</li>
+          <li>{t(`Mientras esté activa, ${c.actingUser.name} puede actuar en las Necesidades de ${c.originalUser.name}: hechos, próximos pasos, cotizaciones, POs, despacho y cobro.`, `While active, ${c.actingUser.name} can act on ${c.originalUser.name}'s Necessities: facts, next steps, quotes, POs, dispatch and collection.`)}</li>
           <li>{t("No se delegan aprobaciones por rol: excepciones de Eságara, crédito y pagos siguen con quien las tiene.", "Role approvals aren't delegated: Eságara exceptions, credit and payments stay with whoever holds them.")}</li>
           <li>{t(`Vence sola al terminar el ${i.date(addDays(c.endsAt, -1))}. ${c.originalUser.name} sigue siendo responsable.`, `Expires by itself at the end of ${i.date(addDays(c.endsAt, -1))}. ${c.originalUser.name} stays accountable.`)}</li>
         </ul>
@@ -91,17 +91,17 @@ export default async function CoverageDetail({ params, searchParams }: { params:
       {back && (
         <section className="jblock" id="regreso">
           <div className="jbh"><b>{t("AL REGRESAR: QUÉ PASÓ MIENTRAS NO ESTABAS", "ON RETURN: WHAT HAPPENED WHILE YOU WERE AWAY")}</b></div>
-          {back.activities.length + back.decided.length + back.pos.length + back.newDeals.length === 0 ? <p className="small muted">{t("Nadie registró movimientos en tus Journeys durante la cobertura.", "Nobody logged movements on your Journeys during the coverage.")}</p> : (
+          {back.activities.length + back.decided.length + back.pos.length + back.newDeals.length === 0 ? <p className="small muted">{t("Nadie registró movimientos en tus Necesidades durante la cobertura.", "Nobody logged movements on your Necessities during the coverage.")}</p> : (
             <ul className="mk-ul small">
               {back.decided.map((q) => <li key={q.id}>{q.status === "ACCEPTED" ? t("Aceptada", "Accepted") : t("Rechazada", "Declined")}: <Link href={`/cotizaciones/${q.id}`}>Quote Nº {q.number}{q.rev ? `-R${q.rev}` : ""}</Link> · {q.deal.title}</li>)}
               {back.pos.map((p) => <li key={p.id}>{t("PO recibida", "PO received")}: <Link href={`/po/${p.id}`}>{p.number}</Link> · {p.deal.title}</li>)}
-              {back.newDeals.map((d) => <li key={d.id}>{t("Journey nuevo", "New Journey")}: <Link href={`/deals/${d.id}`}>{d.code ?? d.title}</Link> · {d.title}</li>)}
+              {back.newDeals.map((d) => <li key={d.id}>{t("Necesidad nueva", "New Necessity")}: <Link href={`/deals/${d.id}`}>{d.code ?? d.title}</Link> · {d.title}</li>)}
               {back.activities.map((a) => <li key={a.id}>{i.day(a.occurredAt)} · {a.user.name}: {a.subject}{a.dealId && <> · <Link href={`/deals/${a.dealId}`}>{a.deal?.code ?? a.deal?.title}</Link></>}</li>)}
             </ul>
           )}
           {ended && (
             <div style={{ marginTop: 10 }}>
-              <p className="small"><b>{t("Trabajo que vuelve a su dueño", "Work that goes back to its owner")}</b> <span className="muted">· {t(`${c.originalUser.name} nunca dejó de ser responsable de sus Journeys y clientes; lo único que cambió de manos son los pendientes abiertos a nombre de ${c.actingUser.name}.`, `${c.originalUser.name} never stopped being accountable for their Journeys and customers; the only thing that changed hands are the to-dos opened in ${c.actingUser.name}'s name.`)}</span></p>
+              <p className="small"><b>{t("Trabajo que vuelve a su dueño", "Work that goes back to its owner")}</b> <span className="muted">· {t(`${c.originalUser.name} nunca dejó de ser responsable de sus Necesidades y clientes; lo único que cambió de manos son los pendientes abiertos a nombre de ${c.actingUser.name}.`, `${c.originalUser.name} never stopped being accountable for their Necessities and customers; the only thing that changed hands are the to-dos opened in ${c.actingUser.name}'s name.`)}</span></p>
               {c.returnedAt ? <p className="small"><span className="sig ok">{t("Regreso confirmado", "Return confirmed")}</span> {i.date(c.returnedAt)} · {c.returnedByName}{c.returnNote ? ` · ${c.returnNote}` : ""}</p> : (
                 <>
                   {toReturn.length === 0 ? <p className="small muted">{t("No quedó ningún pendiente abierto a nombre de quien cubría.", "No to-do was left open in the name of whoever covered.")}</p> : <ul className="mk-ul small">{toReturn.map((x) => <li key={x.id}>{x.title}{x.dueDate ? ` · ${i.day(x.dueDate)}` : ""}{x.dealId ? <> · <Link href={`/deals/${x.dealId}`}>{x.deal?.code ?? x.deal?.title}</Link></> : null}</li>)}</ul>}

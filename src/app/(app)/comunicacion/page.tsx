@@ -64,7 +64,7 @@ export default async function ComunicacionPage({ searchParams }: { searchParams:
     result: t("Resultado deseado", "Desired result"),
     date: t("Fecha", "Date"),
     urgency: t("Urgencia", "Urgency"),
-    journey: "Journey",
+    journey: t("Necesidad", "Necessity"),
   };
   const showValue = (field: string, v: string) => (field === "date" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? i.date(new Date(`${v}T00:00:00Z`)) : v);
   const chan = (c: string) => (c === "WHATSAPP" ? "WhatsApp" : c === "EMAIL" ? t("Correo", "Email") : c === "CALL" ? t("Llamada", "Call") : t("Nota", "Note"));
@@ -81,7 +81,7 @@ export default async function ComunicacionPage({ searchParams }: { searchParams:
     confirmed: t("Confirmado.", "Confirmed."),
     corrected: t("Corregido. SOLU usará tu dato.", "Corrected. SOLU will use your value."),
     rejected: t("Descartado.", "Discarded."),
-    journey: t("Listo: la necesidad quedó en el Journey con su fuente.", "Done: the need is on the Journey with its source."),
+    journey: t("Listo: quedó guardado en la Necesidad con su fuente.", "Done: saved on the Necessity with its source."),
     enviado: t("Respuesta enviada desde el correo de la empresa.", "Reply sent from the company mailbox."),
     incierto: t("Microsoft no confirmó el envío: puede que sí haya salido. Antes de reenviarla, revisa la carpeta Enviados de sales@ en Outlook para no duplicarla.", "Microsoft didn't confirm the send: it may have gone out. Before resending, check sales@'s Sent Items in Outlook so it isn't duplicated."),
     respuesta: t("Respuesta registrada.", "Reply recorded."),
@@ -258,7 +258,7 @@ export default async function ComunicacionPage({ searchParams }: { searchParams:
                   <span className="src">{[th.contact?.title, th.account && strip(th.account.name), chan(th.channel), th.partyAddr].filter(Boolean).join(" · ")}</span>
                 </div>
                 <span className="grow" />
-                {th.deal && <Link href={`/deals/${th.deal.id}`} className="qa-btn">{th.deal.code ?? "Journey"} →</Link>}
+                {th.deal && <Link href={`/deals/${th.deal.id}`} className="qa-btn">{th.deal.code ?? t("Necesidad", "Necessity")} →</Link>}
               </div>
               {th.subject && <p className="ci-subject">{th.subject}</p>}
               <div className="ci-msgs">
@@ -344,14 +344,14 @@ export default async function ComunicacionPage({ searchParams }: { searchParams:
                 <form action={applyToJourney.bind(null, th.id)} className="ci-cta">
                   <label>{t("Llevar a", "Take to")}
                     <select name="dealId" defaultValue={defaultDeal}>
-                      <option value="new">{t("Nuevo Journey", "New Journey")}</option>
+                      <option value="new">{t("Nueva Necesidad", "New Necessity")}</option>
                       {openDeals.map((d) => <option key={d.id} value={d.id}>{d.code ?? ""} {d.title}</option>)}
                     </select>
                   </label>
                   <button type="submit" className="wide">
                     {proposed.length > 0
-                      ? t(`Confirmar ${proposed.length === 1 ? "la inferencia" : `las ${proposed.length} inferencias`} y guardar en el Journey`, `Confirm ${proposed.length === 1 ? "the inference" : `the ${proposed.length} inferences`} and save to the Journey`)
-                      : t("Guardar la necesidad en el Journey", "Save the need to the Journey")}
+                      ? t(`Confirmar ${proposed.length === 1 ? "la inferencia" : `las ${proposed.length} inferencias`} y guardar en la Necesidad`, `Confirm ${proposed.length === 1 ? "the inference" : `the ${proposed.length} inferences`} and save to the Necessity`)
+                      : t("Guardar en la Necesidad", "Save to the Necessity")}
                   </button>
                   <span className="src">{t("Queda como hecho confirmado, con la conversación como fuente. Lo que descartes no se guarda.", "It's saved as a confirmed fact, with the conversation as its source. Anything you discard isn't saved.")}</span>
                 </form>

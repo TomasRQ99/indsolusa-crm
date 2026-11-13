@@ -43,7 +43,7 @@ export function paymentStateLabel(i: I18n, s: PaymentState): { text: string; cls
 export function blockerLabel(i: I18n, b: "RECEPTION_CODE" | "PO" | "PORTAL" | "POD" | "TAX") {
   const map = {
     RECEPTION_CODE: [i.t("Código de recepción", "Receipt code"), i.t("El cliente exige un código de recepción de mercancía para radicar la factura.", "The customer requires a goods-receipt code to accept the invoice.")],
-    PO: [i.t("OC del cliente", "Customer PO"), i.t("Falta el número de OC del cliente en el Journey.", "The customer PO number is missing on the Journey.")],
+    PO: [i.t("OC del cliente", "Customer PO"), i.t("Falta el número de OC del cliente en la Necesidad.", "The customer PO number is missing on the Necessity.")],
     PORTAL: [i.t("Portal de proveedores", "Supplier portal"), i.t("La inscripción en el portal del cliente no está vigente.", "The registration on the customer's portal has expired.")],
     POD: [i.t("Prueba de entrega", "Proof of delivery"), i.t("Falta la remisión firmada (prueba de entrega).", "The signed delivery note (POD) is missing.")],
     TAX: [i.t("Datos tributarios", "Tax data"), i.t("Faltan datos tributarios del cliente para facturar.", "Customer tax data is incomplete.")],

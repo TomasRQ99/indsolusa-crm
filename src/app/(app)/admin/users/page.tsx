@@ -20,8 +20,8 @@ export default async function UsersPage() {
   const mail = mailConfig();
   const roleOptions = <>{ROLES.map((r) => <option key={r} value={r}>{t(ROLE_LABEL[r].es, ROLE_LABEL[r].en)}</option>)}</>;
   const roleHelp: Record<string, [string, string]> = {
-    NEGOCIADOR_COMERCIAL: ["Edita los Journeys que lleva.", "Edits the Journeys they own."],
-    NEGOCIADOR_OPERATIVO: ["Lo suyo, más compras, envíos, remisiones y solicitudes a proveedores de cualquier Journey. No cambia la cotización al cliente.", "Their own, plus purchasing, shipments, delivery notes and supplier RFQs on any Journey. Doesn't change the customer quote."],
+    NEGOCIADOR_COMERCIAL: ["Edita las Necesidades que lleva.", "Edits the Necessities they own."],
+    NEGOCIADOR_OPERATIVO: ["Lo suyo, más compras, envíos, remisiones y solicitudes a proveedores de cualquier Necesidad. No cambia la cotización al cliente.", "Their own, plus purchasing, shipments, delivery notes and supplier RFQs on any Necessity. Doesn't change the customer quote."],
     FINANZAS: ["Facturas, cobros, caja, verificación bancaria, ejecución y conciliación de pagos, pago de comisiones. Aprueba pagos a proveedores hasta USD 25.000. Decide cupos, plazos y excepciones de crédito.", "Invoices, collections, cash, bank verification, payment execution and reconciliation, commission payouts. Approves supplier payments up to USD 25,000. Decides credit limits, terms and exceptions."],
     ADMINISTRACION: ["Lo mismo que Finanzas por ahora, y aprueba compras junto con Finanzas hasta el límite que fije Gerencia.", "The same as Finance for now, and approves purchases with Finance up to the limit Management sets."],
     JUNTA: ["Solo lectura: abre la Vista de Junta, la identidad, las funciones y su propio perfil. No ve personas, comisiones ni fichas de clientes, y no puede guardar nada.", "Read-only: opens the Board view, the identity, the functions and their own profile. Sees no people, commissions or customer records, and can save nothing."],
@@ -44,7 +44,7 @@ export default async function UsersPage() {
             </>
           ) : (
             <>
-              <p className="small" style={{ marginBottom: 10 }}>{t("Carga clientes, Journeys, remisiones, facturas, pagos y comisiones de ejemplo para ver cada pantalla funcionando. Todo queda marcado \"(ejemplo)\".", "Load sample customers, Journeys, delivery notes, invoices, payments and commissions to see every screen working. Everything is marked \"(ejemplo)\".")}</p>
+              <p className="small" style={{ marginBottom: 10 }}>{t("Carga clientes, Necesidades, remisiones, facturas, pagos y comisiones de ejemplo para ver cada pantalla funcionando. Todo queda marcado \"(ejemplo)\".", "Load sample customers, Necessities, delivery notes, invoices, payments and commissions to see every screen working. Everything is marked \"(ejemplo)\".")}</p>
               <form action={loadDemoData}><button type="submit">{t("Cargar datos de ejemplo", "Load sample data")}</button></form>
             </>
           )}

@@ -64,7 +64,7 @@ export default async function MercadoHome({ searchParams }: { searchParams: Prom
                 <dt>{t("Qué cambió", "What changed")}</dt><dd>{s.what}</dd>
                 {s.whyMatters && <><dt>{t("Por qué importa", "Why it matters")}</dt><dd><span className="sig attn">{t("Inferido", "Inferred")}</span> {s.whyMatters}</dd></>}
                 <dt>{t("Qué sabemos", "What we know")}</dt>
-                <dd>{s.history ? (s.history.deals ? t(`${s.history.deals} Journey(s) con nosotros, ${s.history.won} ganado(s)${s.history.lastDealAt ? `; el último ${i.day(s.history.lastDealAt)}` : ""}.`, `${s.history.deals} Journey(s) with us, ${s.history.won} won${s.history.lastDealAt ? `; latest ${i.day(s.history.lastDealAt)}` : ""}.`) : t("Aún no hemos trabajado juntos.", "We haven't worked together yet.")) : t("La señal no nombra una empresa.", "The signal doesn't name a company.")}
+                <dd>{s.history ? (s.history.deals ? t(`${s.history.deals} Necesidad(es) con nosotros, ${s.history.won} ganada(s)${s.history.lastDealAt ? `; la última ${i.day(s.history.lastDealAt)}` : ""}.`, `${s.history.deals} Necessity(ies) with us, ${s.history.won} won${s.history.lastDealAt ? `; latest ${i.day(s.history.lastDealAt)}` : ""}.`) : t("Aún no hemos trabajado juntos.", "We haven't worked together yet.")) : t("La señal no nombra una empresa.", "The signal doesn't name a company.")}
                   {s.history && s.history.contacts.length > 0 && <span className="src block">{t("Contactos", "Contacts")}: {s.history.contacts.slice(0, 3).map((c) => c.name).join(", ")}</span>}
                 </dd>
                 <dt>{t("Qué no sabemos", "What we don't know")}</dt>

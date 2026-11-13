@@ -47,7 +47,7 @@ export default async function AccountingPage() {
           <dt>{t("Confirmadas con su ID contable", "Confirmed with their accounting ID")}</dt><dd className="mono">{count("CONFIRMED")}</dd>
           <dt>{t("Inciertas", "Uncertain")}</dt><dd className={`mono ${count("UNCERTAIN") ? "risk-t" : ""}`}>{count("UNCERTAIN")}</dd>
         </dl>
-        <p className="src">{t("El estado se marca a mano en cada factura (pestaña de facturación del Journey): todavía no hay conexión automática con un sistema contable, bancos, nómina ni la DIAN.", "The state is set by hand on each invoice (the Journey's billing tab): there is no automatic connection yet to an accounting system, banks, payroll or DIAN.")} <Link href="/administracion/eventos">{t("Eventos para integrar", "Events to integrate")}</Link></p>
+        <p className="src">{t("El estado se marca a mano en cada factura (pestaña de facturación de la Necesidad): todavía no hay conexión automática con un sistema contable, bancos, nómina ni la DIAN.", "The state is set by hand on each invoice (the Necessity's billing tab): there is no automatic connection yet to an accounting system, banks, payroll or DIAN.")} <Link href="/administracion/eventos">{t("Eventos para integrar", "Events to integrate")}</Link></p>
       </section>
 
       <section className="card" id="registro"><b>{t("ARCHIVOS DESCARGADOS", "FILES DOWNLOADED")}</b>

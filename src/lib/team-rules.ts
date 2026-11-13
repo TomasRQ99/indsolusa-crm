@@ -366,8 +366,8 @@ export const ROLE_FUNCTION: Record<string, FunctionKey> = { GERENCIA: "GERENCIA"
 
 /** What SOLU's own rules can grant. A role agreement names the ones the role needs; the engines stay the ones that decide. */
 export const AUTHORITY: Record<string, Txt> = {
-  EDIT_ALL: tx("Cambiar cualquier Journey o registro", "Change any Journey or record"),
-  OPS: tx("Operar compras, envíos y remisiones en cualquier Journey", "Run purchasing, shipments and delivery notes on any Journey"),
+  EDIT_ALL: tx("Cambiar cualquier Necesidad o registro", "Change any Necessity or record"),
+  OPS: tx("Operar compras, envíos y remisiones en cualquier Necesidad", "Run purchasing, shipments and delivery notes on any Necessity"),
   MONEY: tx("Facturar, cobrar, conciliar y ejecutar pagos", "Invoice, collect, reconcile and execute payments"),
   PURCHASE_APPROVAL: tx("Aprobar compras y pagos a proveedores (primer nivel)", "Approve purchases and supplier payments (first level)"),
   PURCHASE_APPROVAL_TOP: tx("Aprobar compras y pagos por encima del primer nivel", "Approve purchases and payments above the first level"),

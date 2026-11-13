@@ -65,7 +65,7 @@ export default async function NewRfq({ searchParams }: { searchParams: Promise<{
         </div>
       </div>
       {sp.err && errs[sp.err] && <p className="note attn">{errs[sp.err]}</p>}
-      {deal && <div className="loc-ctx"><span>{t(`Para el Journey ${deal.code ?? ""} · ${deal.title}`, `For Journey ${deal.code ?? ""} · ${deal.title}`)}</span></div>}
+      {deal && <div className="loc-ctx"><span>{t(`Para la Necesidad ${deal.code ?? ""} · ${deal.title}`, `For Necessity ${deal.code ?? ""} · ${deal.title}`)}</span></div>}
       {parts.length === 0 ? (
         <div className="card"><p>{t("Primero busca la parte en ", "First find the part in ")}<Link href="/localizar">{t("Localizar repuestos", "Find parts")}</Link>{t(" y usa “Pedir precio a proveedor”.", " and use “Ask a supplier for a price”.")}</p></div>
       ) : (

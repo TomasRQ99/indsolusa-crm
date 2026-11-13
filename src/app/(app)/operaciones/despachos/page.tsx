@@ -44,7 +44,7 @@ export default async function DispatchListPage() {
         </section>
       )}
 
-      {items.length === 0 ? <section className="card"><p className="small muted">{t("No hay despachos abiertos. Se crean desde la página de despacho de un Journey con PO aceptada.", "No open dispatch orders. They are created from the dispatch page of a Journey with an accepted PO.")} <a href="/operaciones/sin-despachar">{t("Ver lo que está listo sin despachar", "See what is ready and not dispatched")} →</a> · <a href="/deals">{t("Abrir Journeys", "Open Journeys")}</a></p></section> : ORDER.map((key) => {
+      {items.length === 0 ? <section className="card"><p className="small muted">{t("No hay despachos abiertos. Se crean desde la página de despacho de una Necesidad con PO aceptada.", "No open dispatch orders. They are created from the dispatch page of a Necessity with an accepted PO.")} <a href="/operaciones/sin-despachar">{t("Ver lo que está listo sin despachar", "See what is ready and not dispatched")} →</a> · <a href="/deals">{t("Abrir Necesidades", "Open Necessities")}</a></p></section> : ORDER.map((key) => {
         const g = items.filter((x) => x.st.key === key);
         if (!g.length) return null;
         const S = STATES[key];
@@ -52,7 +52,7 @@ export default async function DispatchListPage() {
           <section className="card" key={key}>
             <b><span className={`sig ${S.tone}`}>{g.length}</span> {t(S.es, S.en).toUpperCase()}</b>
             <div className="tscroll"><table>
-              <thead><tr><th>{t("Despacho", "Order")}</th><th>{t("Cliente y Journey", "Customer and Journey")}</th><th>{t("Qué", "What")}</th><th>{t("Cómo", "How")}</th><th>{t("Promesa", "Promise")}</th><th>{t("Falta", "Missing")}</th></tr></thead>
+              <thead><tr><th>{t("Despacho", "Order")}</th><th>{t("Cliente y Necesidad", "Customer and Necessity")}</th><th>{t("Qué", "What")}</th><th>{t("Cómo", "How")}</th><th>{t("Promesa", "Promise")}</th><th>{t("Falta", "Missing")}</th></tr></thead>
               <tbody>{g.map(({ o, st, ag }) => (
                 <tr key={o.id}>
                   <td><Link href={`/operaciones/despachos/${o.id}`}><b className="mono">{o.code}</b></Link><span className="src block">{key === "DELIVERED" || key === "WAITING_CUSTOMER_ENTRY" || key === "INVOICE_READY" ? t(`${ag.deliveryToInvoice ?? 0} días desde la entrega`, `${ag.deliveryToInvoice ?? 0} days since delivery`) : t(`${ag.readyToDispatch} días abierto`, `${ag.readyToDispatch} days open`)}{ag.customerWait > 0 ? t(` · ${ag.customerWait} del cliente`, ` · ${ag.customerWait} on the customer`) : ""}</span></td>

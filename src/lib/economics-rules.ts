@@ -17,7 +17,7 @@ export const zeroCosts = (): Costs => ({ SUPPLIER: 0, FREIGHT: 0, DUTY: 0, DELIV
 // ---------- shared costs (§43.1) ----------
 
 export const SPLIT_METHODS: Record<string, Txt> = {
-  VALUE: { es: "Por valor de venta de cada Journey", en: "By sale value of each Journey" }, EQUAL: { es: "En partes iguales", en: "In equal parts" }, UNITS: { es: "Por unidades", en: "By units" }, MANUAL: { es: "A mano, con el motivo", en: "By hand, with the reason" },
+  VALUE: { es: "Por valor de venta de cada Necesidad", en: "By sale value of each Necessity" }, EQUAL: { es: "En partes iguales", en: "In equal parts" }, UNITS: { es: "Por unidades", en: "By units" }, MANUAL: { es: "A mano, con el motivo", en: "By hand, with the reason" },
 };
 export type Part = { id: string; sale: number; units: number; manual?: number | null };
 /** Split a shared cost. The parts always add up to the total to the cent. Returns null when the method can't apply. */

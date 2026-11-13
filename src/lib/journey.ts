@@ -209,8 +209,8 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
 
   // ---------- Attention signal (derived, with its cause) ----------
   let signal: { tone: Tone; label: string; why: string };
-  if (lost) signal = { tone: "wait", label: t("Perdido", "Lost"), why: t("Este Journey se cerró sin venta.", "This Journey closed without a sale.") };
-  else if (deal.closedAt) signal = { tone: "ok", label: t("Cerrado", "Closed"), why: deal.closureLearning ? t(`Aprendizaje: ${deal.closureLearning}`, `Learning: ${deal.closureLearning}`) : t("Journey cerrado.", "Journey closed.") };
+  if (lost) signal = { tone: "wait", label: t("Perdido", "Lost"), why: t("Esta Necesidad se cerró sin venta.", "This Necessity closed without a sale.") };
+  else if (deal.closedAt) signal = { tone: "ok", label: t("Cerrado", "Closed"), why: deal.closureLearning ? t(`Aprendizaje: ${deal.closureLearning}`, `Learning: ${deal.closureLearning}`) : t("Necesidad cerrada.", "Necessity closed.") };
   else if (deal.recoveries.length) signal = { tone: "risk", label: t("Recovery abierta", "Recovery open"), why: deal.recoveries[0].whatChanged };
   else if (deal.resultState === "NOT_ACHIEVED") signal = { tone: "risk", label: t("Resultado no logrado", "Result not achieved"), why: t("El producto llegó pero no resolvió.", "The product arrived but didn't solve it.") };
   else if (deal.resultAchievedAt && fullyCollected) signal = { tone: "ok", label: t("Resultado logrado", "Result achieved"), why: t("El cliente confirmó su resultado y todo está cobrado.", "The customer confirmed the result and everything is collected.") };

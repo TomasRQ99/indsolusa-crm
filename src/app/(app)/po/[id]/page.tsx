@@ -48,7 +48,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
     elegida: t("Opción elegida. Falta su confirmación para habilitar «Aceptar PO».", "Option chosen. It needs its confirmation to enable “Accept PO”."),
     confirmada: t("Resolución confirmada con evidencia.", "Resolution confirmed with evidence."),
     retirada: t("Opción retirada.", "Option withdrawn."),
-    aceptada: t("Command ejecutado: PO aceptada. La promesa quedó protegida en el Journey.", "Command executed: PO accepted. The promise is protected on the Journey."),
+    aceptada: t("Command ejecutado: PO aceptada. La promesa quedó protegida en la Necesidad.", "Command executed: PO accepted. The promise is protected on the Necessity."),
     "ya-aceptada": t("Esta PO ya había sido aceptada; no se repitió nada.", "This PO was already accepted; nothing was repeated."),
     duplicada: t("Esta PO ya estaba registrada: es la misma, no se creó otra.", "This PO was already recorded: it's the same one, no other was created."),
     terminos: t("Condiciones de la PO guardadas. SOLU volvió a comparar.", "PO terms saved. SOLU compared again."),
@@ -64,7 +64,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
     cerrada: t("Esta PO ya fue decidida.", "This PO was already decided."),
     opcion: t("Esa opción ya no aplica.", "That option no longer applies."),
     nota: t("Escribe por qué se acepta esa condición.", "Write why that condition is accepted."),
-    asignacion: t("Elige otro Journey del mismo cliente y un monto mayor que cero.", "Pick another Journey of the same customer and an amount above zero."),
+    asignacion: t("Elige otra Necesidad del mismo cliente y un monto mayor que cero.", "Pick another Necessity of the same customer and an amount above zero."),
     excede: t("Las asignaciones superarían el total de la PO.", "Allocations would exceed the PO total."),
   };
 
@@ -105,7 +105,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
 
       <header className="jh">
         <div className="jh-top">
-          <p className="crumb k"><Link href={`/deals/${d.id}`}>{d.code ?? "Journey"}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
+          <p className="crumb k"><Link href={`/deals/${d.id}`}>{d.code ?? t("Necesidad", "Necessity")}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
           <span className="jid">PO {po.number}</span>
           <span className="grow" />
           {q && <div className="jh-act"><Link className="qa-btn" href={`/cotizaciones/${q.id}`}>{t("Ver cotización", "View quote")} {quoteNo(q)}</Link></div>}
@@ -281,7 +281,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
                   <ul>
                     <li>{t("registra la aceptación (no se edita ni se repite)", "records the acceptance (not edited, not repeated)")}</li>
                     <li>{t(`acepta la cotización ${q ? quoteNo(q) : ""}`, `accepts quote ${q ? quoteNo(q) : ""}`)}</li>
-                    <li>{t(`pone la OC ${po.number} en el Journey`, `puts PO ${po.number} on the Journey`)}</li>
+                    <li>{t(`pone la OC ${po.number} en la Necesidad`, `puts PO ${po.number} on the Necessity`)}</li>
                     <li>{B.canAccept && B.promiseDate ? t(`promete entrega el ${i.date(B.promiseDate)}`, `promises delivery on ${i.date(B.promiseDate)}`) : t("promete solo una fecha protegida", "promises only a protected date")}</li>
                     {B.chosen?.state === "CONFIRMED" && Number(B.chosen.costDelta) > 0 && <li>{t(`suma ${money(Number(B.chosen.costDelta))} al costo esperado`, `adds ${money(Number(B.chosen.costDelta))} to expected cost`)}</li>}
                     {B.chosen?.state === "CONFIRMED" && B.chosen.option === "EXPEDITE_CHARGE" && <li>{t(`suma ${money(Number(B.chosen.priceDelta))} a la venta`, `adds ${money(Number(B.chosen.priceDelta))} to the sale`)}</li>}
@@ -312,7 +312,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
           <div>
             <div className="jbh"><b>{t("JOURNEYS QUE CUBRE", "JOURNEYS IT COVERS")}</b></div>
             <ul className="plain small">
-              <li><b>{d.code ?? d.title}</b> · USD {i.n2(poTotal - allocated)} <span className="src">{t("(este Journey: lo no asignado)", "(this Journey: what isn't allocated)")}</span></li>
+              <li><b>{d.code ?? d.title}</b> · USD {i.n2(poTotal - allocated)} <span className="src">{t("(esta Necesidad: lo no asignado)", "(this Necessity: what isn't allocated)")}</span></li>
               {allocs.map((a) => (
                 <li key={a.id}><Link href={`/deals/${a.deal.id}`}>{a.deal.code ?? a.deal.title}</Link> · USD {i.n2(Number(a.amount))}{a.lineRef && <span className="src"> · {a.lineRef}</span>}{a.note && <span className="src"> · {a.note}</span>}
                   {editable && <form action={removeAllocation.bind(null, po.id, a.id)} style={{ display: "inline" }}> <button type="submit" className="link small">{t("Quitar", "Remove")}</button></form>}
@@ -320,9 +320,9 @@ export default async function PoPage({ params, searchParams }: { params: Promise
               ))}
             </ul>
             {editable && siblings.length > 0 && (
-              <QA label={t("Asignar parte a otro Journey", "Allocate part to another Journey")} wide>
+              <QA label={t("Asignar parte a otra Necesidad", "Allocate part to another Necessity")} wide>
                 <form action={addAllocation.bind(null, po.id)} className="qa-form">
-                  <label>Journey<select name="dealId" required defaultValue="">{[<option key="" value="" disabled>—</option>, ...siblings.map((s) => <option key={s.id} value={s.id}>{s.code ? `${s.code} · ` : ""}{s.title}</option>)]}</select></label>
+                  <label>{t("Necesidad", "Necessity")}<select name="dealId" required defaultValue="">{[<option key="" value="" disabled>—</option>, ...siblings.map((s) => <option key={s.id} value={s.id}>{s.code ? `${s.code} · ` : ""}{s.title}</option>)]}</select></label>
                   <div className="qa-row"><label>{t("Monto USD", "Amount USD")}<input name="amount" inputMode="decimal" required /></label><label>{t("Líneas", "Lines")}<input name="lineRef" maxLength={120} placeholder="DDA-30 × 1" /></label></div>
                   <label>{t("Por qué", "Why")}<input name="note" maxLength={300} /></label>
                   <button type="submit">{t("Asignar", "Allocate")}</button>

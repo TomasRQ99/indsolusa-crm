@@ -61,7 +61,7 @@ export function calendarEvent(tk: CalendarTask, t: T, base: string): CalendarEve
   if (po) lines.push({ label: t("Orden a proveedor", "Supplier order"), value: `${po.code} · ${po.supplier.name}`, href: `${base}/compras/${po.id}` });
   if (refInTitle?.startsWith("RFQ-")) lines.push({ label: t("Solicitud a proveedores", "Supplier request"), value: refInTitle });
   if (customer) lines.push({ label: t("Cliente", "Customer"), value: customer.name, href: `${base}/accounts/${customer.id}` });
-  if (d) lines.push({ label: "Journey", value: `${d.code ?? ""} · ${d.title}`.trim(), href: `${base}/deals/${d.id}` });
+  if (d) lines.push({ label: "Necesidad", value: `${d.code ?? ""} · ${d.title}`.trim(), href: `${base}/deals/${d.id}` });
   if (d?.nextMove) lines.push({ label: t("Próximo paso", "Next step"), value: `${d.nextMove}${d.nextMoveDate ? ` (${day(d.nextMoveDate, t)})` : ""}` });
   lines.push({ label: t("Responsable", "Owner"), value: tk.assignee.name });
 

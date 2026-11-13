@@ -91,7 +91,7 @@ export default async function PrioritiesPage({ searchParams }: { searchParams: P
     <>
       <div className="ph"><div>
         <h1>{t("Prioridades estratégicas", "Strategic priorities")}</h1>
-        <p>{t("La dirección elegida: por qué, qué resultado buscamos, qué señales lo anuncian y qué clientes, Journeys y decisiones la llevan. No es una lista de tareas.", "The chosen direction: why, what result we want, which signs announce it and which customers, Journeys and decisions carry it. It is not a task list.")}</p>
+        <p>{t("La dirección elegida: por qué, qué resultado buscamos, qué señales lo anuncian y qué clientes, Necesidades y decisiones la llevan. No es una lista de tareas.", "The chosen direction: why, what result we want, which signs announce it and which customers, Necessities and decisions carry it. It is not a task list.")}</p>
       </div></div>
       <Notes sp={sp} ok={ok} err={err} />
       {rows.length === 0 && <div className="card"><p className="small muted">{ger ? t("Aún no hay prioridades. Crea la primera abajo.", "No priorities yet. Create the first one below.") : t("Gerencia aún no ha definido prioridades.", "Management hasn't set priorities yet.")}</p></div>}
@@ -123,13 +123,13 @@ export default async function PrioritiesPage({ searchParams }: { searchParams: P
                   </form>
                 </details>
                 {ger && pick && <>
-                  <details><summary className="small">{t("Vincular un cliente, Journey, exploración, decisión o escenario", "Link a customer, Journey, exploration, decision or scenario")}</summary>
+                  <details><summary className="small">{t("Vincular un cliente, Necesidad, exploración, decisión o escenario", "Link a customer, Necessity, exploration, decision or scenario")}</summary>
                     <form action={linkPriority.bind(null, p.id)} className="qa-row" style={{ alignItems: "flex-end" }}>
                       <label style={{ flex: "2 1 300px" }}>{t("Registro", "Record")}<select name="ref" required defaultValue=""><option value="" disabled>{t("Elegir", "Choose")}</option>
                         <optgroup label={t("Decisiones", "Decisions")}>{pick[3].map((d) => <option key={d.id} value={`DECISION:${d.id}`}>{d.code} · {d.question.slice(0, 70)}</option>)}</optgroup>
                         <optgroup label={t("Escenarios", "Scenarios")}>{pick[4].map((s) => <option key={s.id} value={`SCENARIO:${s.id}`}>{s.title}</option>)}</optgroup>
                         <optgroup label={t("Exploraciones de mercado", "Market explorations")}>{pick[2].map((e) => <option key={e.id} value={`EXPLORATION:${e.id}`}>{e.name}</option>)}</optgroup>
-                        <optgroup label="Journeys">{pick[1].map((d) => <option key={d.id} value={`JOURNEY:${d.id}`}>{d.code} · {d.account.name} · {d.title.slice(0, 50)}</option>)}</optgroup>
+                        <optgroup label={t("Necesidades", "Necessities")}>{pick[1].map((d) => <option key={d.id} value={`JOURNEY:${d.id}`}>{d.code} · {d.account.name} · {d.title.slice(0, 50)}</option>)}</optgroup>
                         <optgroup label={t("Clientes", "Customers")}>{pick[0].map((a) => <option key={a.id} value={`ACCOUNT:${a.id}`}>{a.name}</option>)}</optgroup>
                       </select></label>
                       <label style={{ flex: "1 1 200px" }}>{t("Qué papel juega (opcional)", "What part it plays (optional)")}<input name="note" maxLength={300} /></label>

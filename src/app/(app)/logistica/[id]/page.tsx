@@ -73,7 +73,7 @@ export default async function ShipmentPage({ params, searchParams }: { params: P
     entregado: t("Entrega del transportista registrada. Falta que el cliente confirme.", "Carrier delivery recorded. Customer confirmation pending."),
     recibido: t("Recibo confirmado. Se creó la remisión para facturar.", "Receipt confirmed. The delivery note was created for invoicing."),
     disputa: t("Discrepancia registrada. No se factura hasta resolverla.", "Discrepancy recorded. No invoicing until it's resolved."),
-    opcion: t("Opción elegida. Quedó como siguiente movimiento del Journey.", "Option chosen. It's now the Journey's next movement."),
+    opcion: t("Opción elegida. Quedó como siguiente movimiento de la Necesidad.", "Option chosen. It's now the Necessity's next movement."),
     fac: t("Factura registrada y comparada.", "Invoice recorded and compared."),
     reclamo: t("Reclamo actualizado.", "Claim updated."),
     aduana: t("Caso de aduana guardado.", "Customs case saved."),
@@ -89,7 +89,7 @@ export default async function ShipmentPage({ params, searchParams }: { params: P
     "reclamo-datos": t("Indica el valor en disputa (no mayor que la factura), el cálculo esperado y la evidencia.", "Give the disputed amount (not above the invoice), the expected calculation and the evidence."),
     "reclamo-credito": t("Para marcarlo recuperado se necesita el número de la nota crédito y el valor realmente recibido (no mayor que lo reclamado).", "To mark it recovered, the credit note number and the amount really received are needed (not above what was claimed)."),
     "reclamo-respuesta": t("Escribe qué respondió el transportador.", "Write what the carrier answered."),
-    permiso: t("Registrar la respuesta de un reclamo corresponde al dueño del Journey, Finanzas, Administración o Gerencia.", "Recording a claim's answer is for the Journey owner, Finance, Administration or Management."),
+    permiso: t("Registrar la respuesta de un reclamo corresponde al dueño de la Necesidad, Finanzas, Administración o Gerencia.", "Recording a claim's answer is for the Necessity owner, Finance, Administration or Management."),
     clasificacion: t("Para marcar la clasificación como validada hoy, escribe quién la validó.", "To mark the classification as validated today, write who validated it."),
   };
   const chosen = new Map(s.decisions.map((x) => [x.option, x]));

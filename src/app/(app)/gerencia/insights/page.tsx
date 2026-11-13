@@ -63,16 +63,16 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
     let lead = "";
     if (sp.ask === "resultados") {
       const bad = deals.filter((d) => d.resultState === "NOT_ACHIEVED" || d.resultState === "PARTIAL");
-      lead = bad.length ? t(`${bad.length} Journey(s) no lograron todo el resultado. Causas:`, `${bad.length} Journey(s) fell short. Causes:`) : t("Ningún Journey está en Parcial o No logrado.", "No Journey is Partial or Not achieved.");
+      lead = bad.length ? t(`${bad.length} Necesidad(es) no lograron todo el resultado. Causas:`, `${bad.length} Necessity(ies) fell short. Causes:`) : t("Ninguna Necesidad está en Parcial o No logrado.", "No Necessity is Partial or Not achieved.");
       for (const d of bad) { const r = d.recoveries[0]; lines.push({ href: `/deals/${d.id}/resultado`, text: `${jName(d)} — ${stateLabel(i, d.resultState).text}: ${cName(r ? causeOf(r.cause, r.whatChanged) : "UNKNOWN")}${r ? ` · ${r.whatChanged}` : ""}${r && !r.resolvedAt ? t(r.selectedKey ? " · Recovery en curso" : " · Recovery sin opción elegida", r.selectedKey ? " · Recovery in progress" : " · Recovery with no option chosen") : ""}` }); }
     } else if (sp.ask === "dependencias") {
       const dep = dependencies(deals, now);
       const total = dep.reduce((s, x) => s + x.committed, 0);
       lead = dep.length ? t(`Lo comprometido con compra abierta (${i.money(total)}) depende de ${dep.length} proveedor(es):`, `Committed value with open purchases (${i.money(total)}) depends on ${dep.length} supplier(s):`) : t("Nada comprometido depende hoy de una compra abierta.", "Nothing committed depends on an open purchase today.");
-      for (const s of dep) lines.push({ href: `/suppliers/${s.id}`, text: `${bareName(s.name)} — ${i.money(s.committed)} (${Math.round((s.committed / total) * 100)} %) · ${s.journeys.size} Journey(s) · ${s.measured ? t(`${s.onTime} de ${s.measured} despachos a tiempo en 12 meses`, `${s.onTime} of ${s.measured} shipments on time in 12 months`) : t("sin despachos medidos", "no measured shipments")}` });
+      for (const s of dep) lines.push({ href: `/suppliers/${s.id}`, text: `${bareName(s.name)} — ${i.money(s.committed)} (${Math.round((s.committed / total) * 100)} %) · ${s.journeys.size} ${t("Necesidad(es)", "Necessity(ies)")} · ${s.measured ? t(`${s.onTime} de ${s.measured} despachos a tiempo en 12 meses`, `${s.onTime} of ${s.measured} shipments on time in 12 months`) : t("sin despachos medidos", "no measured shipments")}` });
     } else if (sp.ask === "esagra") {
       const er = deals.map((d) => ({ d, e: economicsOf(d) })).filter((x) => x.e.erosion).sort((a, b) => b.e.erosion!.amount - a.e.erosion!.amount);
-      lead = er.length ? t(`Se perdieron ${i.money(er.reduce((s, x) => s + x.e.erosion!.amount, 0))} de eságara protegida en ${er.length} Journey(s):`, `${i.money(er.reduce((s, x) => s + x.e.erosion!.amount, 0))} of protected eságara lost in ${er.length} Journey(s):`) : t("Ningún Journey perdió eságara frente a lo protegido.", "No Journey lost eságara against what was protected.");
+      lead = er.length ? t(`Se perdieron ${i.money(er.reduce((s, x) => s + x.e.erosion!.amount, 0))} de eságara protegida en ${er.length} Necesidad(es):`, `${i.money(er.reduce((s, x) => s + x.e.erosion!.amount, 0))} of protected eságara lost in ${er.length} Necessity(ies):`) : t("Ninguna Necesidad perdió eságara frente a lo protegido.", "No Necessity lost eságara against what was protected.");
       for (const { d, e } of er) { const p = e.erosion!.parts; const part = [p.price < -1 ? t(`precio −${i.money(-p.price)}`, `price −${i.money(-p.price)}`) : "", p.supplier < -1 ? t(`costo proveedor +${i.money(-p.supplier)}`, `supplier cost +${i.money(-p.supplier)}`) : "", p.freight < -1 ? t(`flete/otros +${i.money(-p.freight)}`, `freight/other +${i.money(-p.freight)}`) : ""].filter(Boolean).join(" · "); lines.push({ href: `/deals/${d.id}`, text: `${jName(d)} — −${i.money(e.erosion!.amount)}: ${part} (${t("protegida en", "protected in")} ${e.prot!.ref})` }); }
     } else if (sp.ask === "promesas") {
       const ps = deals.map((d) => ({ d, p: promiseOf(d) })).filter((x) => x.p && (x.p.silent || (x.p.revised && !x.p.revisedInTime)));
@@ -119,7 +119,7 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
           <div className="iv-answer-h"><b>{askAnswer.q}</b><Link href={link({ ask: undefined })} className="small">{t("Cerrar", "Close")}</Link></div>
           <p>{askAnswer.lead}</p>
           {askAnswer.lines.length > 0 && <ul>{askAnswer.lines.map((l, n) => <li key={n}><Link href={l.href}>{l.text}</Link></li>)}</ul>}
-          <span className="src">{t("Respuesta calculada con los registros de SOLU (no es IA). Cada línea lleva a su Journey o ficha.", "Answer computed from SOLU's records (not AI). Each line opens its Journey or record.")}</span>
+          <span className="src">{t("Respuesta calculada con los registros de SOLU (no es IA). Cada línea lleva a su Necesidad o ficha.", "Answer computed from SOLU's records (not AI). Each line opens its Necessity or record.")}</span>
         </section>
       )}
     </>
@@ -168,7 +168,7 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
               return (
                 <section key={c} className={`iv-c c-${c.toLowerCase()}`}>
                   <div className="iv-c-h"><b>{certName(c)}</b><Link href={link({ cert: cert === c ? undefined : c })} className="small">{cert === c ? t("ver los cuatro", "see all four") : t("solo este", "only this")}</Link></div>
-                  <div className="iv-c-v">{money ? i.money(total) : `${items.length}`}<span className="src"> · {money ? t(`${items.length} Journey(s)`, `${items.length} Journey(s)`) : t("señales / leads", "signals / leads")}</span></div>
+                  <div className="iv-c-v">{money ? i.money(total) : `${items.length}`}<span className="src"> · {money ? t(`${items.length} Necesidad(es)`, `${items.length} Necessity(ies)`) : t("señales / leads", "signals / leads")}</span></div>
                   <span className="src block">{desc[c]}</span>
                   {items.length > 0 ? (
                     <Horizon label={certName(c)} money={money} cols={h.keys.map((k, n) => ({ label: hLabels[n], n: h.b[k].n, amount: h.b[k].amount, cls: k === "late" ? "ich-late" : undefined, tip: `${hLabels[n]}: ${h.b[k].n}${money ? ` · ${i.money(h.b[k].amount)}` : ""}` }))} />
@@ -187,20 +187,20 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
           <Q q={t("¿Qué promesas de los próximos 30 días están en riesgo, y por qué?", "Which promises in the next 30 days are at risk, and why?")} a={atRisk.length ? t(`${atRisk.length} de ${ahead.length} promesas tienen una causa de riesgo identificada.`, `${atRisk.length} of ${ahead.length} promises have an identified risk cause.`) : t(`${ahead.length} promesas en 30 días, ninguna con causa de riesgo.`, `${ahead.length} promises in 30 days, none with a risk cause.`)}>
             {ahead.length === 0 ? <p className="quiet-p">{t("No hay promesas en los próximos 30 días.", "No promises in the next 30 days.")}</p> : (
               <table className="x3-t">
-                <thead><tr><th>Journey</th><th>{t("Promesa", "Promise")}</th><th>{t("Causa del riesgo", "Risk cause")}</th></tr></thead>
+                <thead><tr><th>{t("Necesidad", "Necessity")}</th><th>{t("Promesa", "Promise")}</th><th>{t("Causa del riesgo", "Risk cause")}</th></tr></thead>
                 <tbody>{ahead.map(({ d, why: w }) => (
                   <tr key={d.id}><td><Link href={`/deals/${d.id}`}>{jName(d)}</Link><span className="src block">{d.title}</span></td><td className="mono">{i.day(d.promisedDate)}{d.promiseRevisions > 0 && <span className="src block">{t(`revisada ${d.promiseRevisions}×`, `revised ${d.promiseRevisions}×`)}</span>}</td><td>{w.length ? w.map((x) => <span key={x} className="sig risk block-sig">{why(x)}</span>) : <span className="sig ok">{t("sin riesgo identificado", "no risk identified")}</span>}</td></tr>
                 ))}</tbody>
               </table>
             )}
           </Q>
-          <Q q={t("¿La eságara protegida se mantiene en lo que está en curso?", "Is the protected eságara holding in what's in progress?")} a={live.length ? t(`${live.filter((x) => x.e.cur.value < x.e.prot!.value - 1).length} de ${live.length} Journeys en curso están por debajo de lo protegido (${i.money(live.reduce((s, x) => s + Math.max(0, x.e.prot!.value - x.e.cur.value), 0))}).`, `${live.filter((x) => x.e.cur.value < x.e.prot!.value - 1).length} of ${live.length} Journeys in progress are below what was protected (${i.money(live.reduce((s, x) => s + Math.max(0, x.e.prot!.value - x.e.cur.value), 0))}).`) : t("Ningún Journey en curso tiene economía protegida (cotización presentada).", "No Journey in progress has protected economics (presented quote).")}
+          <Q q={t("¿La eságara protegida se mantiene en lo que está en curso?", "Is the protected eságara holding in what's in progress?")} a={live.length ? t(`${live.filter((x) => x.e.cur.value < x.e.prot!.value - 1).length} de ${live.length} Necesidades en curso están por debajo de lo protegido (${i.money(live.reduce((s, x) => s + Math.max(0, x.e.prot!.value - x.e.cur.value), 0))}).`, `${live.filter((x) => x.e.cur.value < x.e.prot!.value - 1).length} of ${live.length} Necessities in progress are below what was protected (${i.money(live.reduce((s, x) => s + Math.max(0, x.e.prot!.value - x.e.cur.value), 0))}).`) : t("Ninguna Necesidad en curso tiene economía protegida (cotización presentada).", "No Necessity in progress has protected economics (presented quote).")}
             side={<Legend items={[{ cls: "ich-prot", label: t("protegida", "protected"), shape: "ring" }, { cls: "ich-cur", label: t("actual", "current"), shape: "dot" }]} />}>
             {live.length > 0 && <Dumbbell label="eságara" rows={live.map(({ d, e }) => ({ label: jName(d), href: `/deals/${d.id}`, prot: (e.prot!.value / e.prot!.sale) * 100, cur: e.cur.pct, fin: null, down: e.cur.value < e.prot!.value - 1, tip: `${jName(d)} · ${t("protegida", "protected")} ${i.money(e.prot!.value)} (${i.pct((e.prot!.value / e.prot!.sale) * 100)}) → ${t("actual", "current")} ${i.money(e.cur.value)} (${i.pct(e.cur.pct)})` }))} />}
           </Q>
         </div>
         <Q q={t("¿De qué proveedores depende lo comprometido?", "Which suppliers does the committed future depend on?")} a={dep.length ? t(`${bareName(dep[0].name)} sostiene el ${Math.round((dep[0].committed / depTotal) * 100)} % de lo comprometido con compra abierta.`, `${bareName(dep[0].name)} carries ${Math.round((dep[0].committed / depTotal) * 100)} % of committed value with open purchases.`) : t("Nada comprometido depende hoy de una compra abierta.", "Nothing committed depends on an open purchase today.")}>
-          {dep.length > 0 && <HBars label="dep" unit="USD " rows={dep.map((s) => ({ label: `${bareName(s.name)} · ${s.measured ? t(`${s.onTime}/${s.measured} a tiempo`, `${s.onTime}/${s.measured} on time`) : t("sin historial", "no history")}`, value: Math.round(s.committed), href: `/suppliers/${s.id}`, cls: s.measured >= 3 && s.onTime / s.measured < 0.75 ? "risk" : "", tip: t(`${s.journeys.size} Journey(s) comprometido(s)`, `${s.journeys.size} committed Journey(s)`) }))} />}
+          {dep.length > 0 && <HBars label="dep" unit="USD " rows={dep.map((s) => ({ label: `${bareName(s.name)} · ${s.measured ? t(`${s.onTime}/${s.measured} a tiempo`, `${s.onTime}/${s.measured} on time`) : t("sin historial", "no history")}`, value: Math.round(s.committed), href: `/suppliers/${s.id}`, cls: s.measured >= 3 && s.onTime / s.measured < 0.75 ? "risk" : "", tip: t(`${s.journeys.size} Necesidad(es) comprometida(s)`, `${s.journeys.size} committed Necessity(ies)`) }))} />}
         </Q>
       </>
     );
@@ -228,7 +228,7 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
       <>
         {header}
         {filterNote}
-        <Q q={t("¿Qué causas producen qué efectos?", "Which causes produce which effects?")} a={top ? t(`${cName(top.c)} es la causa más repetida: ${top.n} Journey(s). ${unknown ? `${unknown} Journey(s) sin causa registrada.` : ""}`, `${cName(top.c)} is the most repeated cause: ${top.n} Journey(s). ${unknown ? `${unknown} Journey(s) with no cause recorded.` : ""}`) : t("No hay efectos negativos registrados.", "No negative effects recorded.")}>
+        <Q q={t("¿Qué causas producen qué efectos?", "Which causes produce which effects?")} a={top ? t(`${cName(top.c)} es la causa más repetida: ${top.n} Necesidad(es). ${unknown ? `${unknown} Necesidad(es) sin causa registrada.` : ""}`, `${cName(top.c)} is the most repeated cause: ${top.n} Necessity(ies). ${unknown ? `${unknown} Necessity(ies) with no cause recorded.` : ""}`) : t("No hay efectos negativos registrados.", "No negative effects recorded.")}>
           {usedCauses.length === 0 ? <p className="quiet-p">{t("Sin Recoveries, promesas cambiadas, eságara perdida ni resultados parciales.", "No Recoveries, changed promises, lost eságara or partial results.")}</p> : (
             <div className="iv-scroll">
               <table className="x3-t iv-matrix">
@@ -242,11 +242,11 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
               </table>
             </div>
           )}
-          <p className="src">{t("Cada celda abre los Journeys que la forman. Las causas vienen de lo que la persona registró (Recovery, cambio de promesa); si no hay registro, SOLU la deduce del texto y lo dice.", "Each cell opens the Journeys behind it. Causes come from what the person recorded (Recovery, promise change); when there's no record SOLU infers it from the text and says so.")}</p>
+          <p className="src">{t("Cada celda abre las Necesidades que la forman. Las causas vienen de lo que la persona registró (Recovery, cambio de promesa); si no hay registro, SOLU la deduce del texto y lo dice.", "Each cell opens the Necessities behind it. Causes come from what the person recorded (Recovery, promise change); when there's no record SOLU infers it from the text and says so.")}</p>
         </Q>
-        <Q id="drill" q={selCause || selEffect ? t(`¿Qué Journeys están detrás de ${[selCause ? cName(selCause) : "", selEffect ? EFFECTS.find((e) => e.k === selEffect)!.l : ""].filter(Boolean).join(" → ")}?`, `Which Journeys are behind ${[selCause ? cName(selCause) : "", selEffect ? EFFECTS.find((e) => e.k === selEffect)!.l : ""].filter(Boolean).join(" → ")}?`) : t("¿Qué Journeys están detrás de cada causa?", "Which Journeys are behind each cause?")} a={t(`${drill.length} efecto(s) en ${new Set(drill.map((r) => r.deal.id)).size} Journey(s).`, `${drill.length} effect(s) in ${new Set(drill.map((r) => r.deal.id)).size} Journey(s).`)} side={(selCause || selEffect) && <Link href={link({ cause: undefined, effect: undefined })} className="small">{t("ver todas", "see all")}</Link>}>
+        <Q id="drill" q={selCause || selEffect ? t(`¿Qué Necesidades están detrás de ${[selCause ? cName(selCause) : "", selEffect ? EFFECTS.find((e) => e.k === selEffect)!.l : ""].filter(Boolean).join(" → ")}?`, `Which Necessities are behind ${[selCause ? cName(selCause) : "", selEffect ? EFFECTS.find((e) => e.k === selEffect)!.l : ""].filter(Boolean).join(" → ")}?`) : t("¿Qué Necesidades están detrás de cada causa?", "Which Necessities are behind each cause?")} a={t(`${drill.length} efecto(s) en ${new Set(drill.map((r) => r.deal.id)).size} Necesidad(es).`, `${drill.length} effect(s) in ${new Set(drill.map((r) => r.deal.id)).size} Necessity(ies).`)} side={(selCause || selEffect) && <Link href={link({ cause: undefined, effect: undefined })} className="small">{t("ver todas", "see all")}</Link>}>
           <table className="x3-t">
-            <thead><tr><th>Journey</th><th>{t("Causa", "Cause")}</th><th>{t("Efecto", "Effect")}</th><th>{t("Detalle", "Detail")}</th></tr></thead>
+            <thead><tr><th>{t("Necesidad", "Necessity")}</th><th>{t("Causa", "Cause")}</th><th>{t("Efecto", "Effect")}</th><th>{t("Detalle", "Detail")}</th></tr></thead>
             <tbody>{drill.map((r, n) => (
               <tr key={n}><td><Link href={r.effect === "RESULT" || r.effect === "RECOVERY" ? `/deals/${r.deal.id}/resultado` : `/deals/${r.deal.id}`}>{jName(r.deal)}</Link><span className="src block">{r.deal.title}</span></td><td>{cName(r.cause)}</td><td>{EFFECTS.find((e) => e.k === r.effect)!.l}</td><td className="small">{effText(r)}</td></tr>
             ))}</tbody>
@@ -376,7 +376,7 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
           {monthRes.length > 0 && (
             <ul className="plain small iv-res">{monthRes.map((d) => { const S = stateLabel(i, d.resultState, d.recoveries.some((r) => r.outcome === "RECOVERED")); return <li key={d.id}><span className={`sig ${S.cls}`}>{S.text}</span> <Link href={`/deals/${d.id}/resultado`}>{jName(d)}</Link><span className="src block">{d.desiredResult ?? d.title} → {d.actualResult ?? "—"}</span></li>; })}</ul>
           )}
-          {deliveredNoResult.length > 0 && <p className="src">{t(`${deliveredNoResult.length} Journey(s) entregados sin resultado confirmado todavía:`, `${deliveredNoResult.length} delivered Journey(s) with no confirmed result yet:`)} {deliveredNoResult.slice(0, 5).map((d, n) => <span key={d.id}>{n ? ", " : ""}<Link href={`/deals/${d.id}/resultado`}>{d.code}</Link></span>)}</p>}
+          {deliveredNoResult.length > 0 && <p className="src">{t(`${deliveredNoResult.length} Necesidad(es) entregada(s) sin resultado confirmado todavía:`, `${deliveredNoResult.length} delivered Necessity(ies) with no confirmed result yet:`)} {deliveredNoResult.slice(0, 5).map((d, n) => <span key={d.id}>{n ? ", " : ""}<Link href={`/deals/${d.id}/resultado`}>{d.code}</Link></span>)}</p>}
         </Q>
 
         <Q q={t("¿Cumplimos lo que prometimos, y cuándo lo cambiamos?", "Did we keep what we promised, and when did we change it?")}
@@ -387,19 +387,19 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
         </Q>
 
         <Q q={t("¿Cuánta eságara protegimos, cuánta tenemos y cuánta quedó?", "How much eságara did we protect, how much do we have, and how much was left?")}
-          a={econP.length ? t(`En ${econP.length} Journey(s) facturados: protegida ${i.money(tot.prot)} → actual ${i.money(tot.cur)} → final ${i.money(tot.fin)} (${i.pct(tot.sale ? (tot.fin / tot.sale) * 100 : null)} de la venta).`, `In ${econP.length} invoiced Journey(s): protected ${i.money(tot.prot)} → current ${i.money(tot.cur)} → final ${i.money(tot.fin)} (${i.pct(tot.sale ? (tot.fin / tot.sale) * 100 : null)} of sales).`) : t("Ningún Journey con cotización presentada terminó de facturarse este mes.", "No Journey with a presented quote finished invoicing this month.")}
+          a={econP.length ? t(`En ${econP.length} Necesidad(es) facturada(s): protegida ${i.money(tot.prot)} → actual ${i.money(tot.cur)} → final ${i.money(tot.fin)} (${i.pct(tot.sale ? (tot.fin / tot.sale) * 100 : null)} de la venta).`, `In ${econP.length} invoiced Necessity(ies): protected ${i.money(tot.prot)} → current ${i.money(tot.cur)} → final ${i.money(tot.fin)} (${i.pct(tot.sale ? (tot.fin / tot.sale) * 100 : null)} of sales).`) : t("Ninguna Necesidad con cotización presentada terminó de facturarse este mes.", "No Necessity with a presented quote finished invoicing this month.")}
           side={<Legend items={[{ cls: "ich-prot", label: t("protegida", "protected"), shape: "ring" }, { cls: "ich-fin", label: t("final", "final"), shape: "dot" }, { cls: "ich-fin down", label: t("final bajo lo protegido", "final below protected"), shape: "dot" }]} />}>
           {econP.length > 0 && (
             <>
               <div className="iv-econ">
                 <div><span className="k">{t("Protegida", "Protected")}</span><b>{i.money(tot.prot)}</b><span className="src">{t("al presentar la cotización", "when the quote was presented")}</span></div>
-                <div><span className="k">{t("Actual", "Current")}</span><b>{i.money(tot.cur)}</b><span className="src">{t("costos reales del Journey", "the Journey's real costs")}</span></div>
+                <div><span className="k">{t("Actual", "Current")}</span><b>{i.money(tot.cur)}</b><span className="src">{t("costos reales de la Necesidad", "the Necessity's real costs")}</span></div>
                 <div><span className="k">{t("Final", "Final")}</span><b>{i.money(tot.fin)}</b><span className="src">{t("facturada", "invoiced")}{tot.fin < tot.prot - 1 && <b className="risk-t"> · −{i.money(tot.prot - tot.fin)}</b>}</span></div>
               </div>
               <Dumbbell label="eságara" rows={econP.map(({ d, e }) => ({ label: jName(d), href: `/deals/${d.id}`, prot: (e.prot!.value / e.prot!.sale) * 100, cur: e.cur.pct, fin: e.final!.sale ? (e.final!.value / e.final!.sale) * 100 : null, down: e.final!.value < e.prot!.value - 1, tip: `${jName(d)} · ${t("protegida", "protected")} ${i.money(e.prot!.value)} (${e.prot!.ref}) → ${t("final", "final")} ${i.money(e.final!.value)}${e.erosion ? ` · ${cName(e.erosion.cause)}` : ""}` }))} />
             </>
           )}
-          {econ.length > econP.length && <p className="src">{t(`${econ.length - econP.length} Journey(s) facturados sin cotización presentada: sin economía protegida para comparar.`, `${econ.length - econP.length} invoiced Journey(s) with no presented quote: no protected economics to compare.`)}</p>}
+          {econ.length > econP.length && <p className="src">{t(`${econ.length - econP.length} Necesidad(es) facturada(s) sin cotización presentada: sin economía protegida para comparar.`, `${econ.length - econP.length} invoiced Necessity(ies) with no presented quote: no protected economics to compare.`)}</p>}
         </Q>
 
         <Q q={t("¿Qué se rompió este mes y por qué?", "What broke this month, and why?")}

@@ -86,7 +86,7 @@ export default async function AdminReportPage() {
         <dl className="qv-dl">
           <dt>{t("Eságara protegida, negocios abiertos", "Protected Eságara, open business")}</dt><dd className="mono">{usd(s.protectedOpen)}</dd>
           <dt>{t("Eságara esperada hoy", "Expected Eságara today")}<span className="block"><HowCalc id="MARGIN_VARIANCE" es={i.es} /></span></dt><dd className="mono">{usd(s.expectedOpen)} <span className={s.gapOpen < 0 ? "risk-t" : "muted"}>({s.gapOpen > 0 ? "+" : s.gapOpen < 0 ? "−" : ""}{i.n2(Math.abs(s.gapOpen))})</span></dd>
-          <dt>{t("Journeys listos para cerrar", "Journeys ready to close")}</dt><dd className="mono"><Link href="/administracion/cierre">{s.readyToClose.length}</Link> <span className="muted">· {t(`${s.missing.length} con algo pendiente`, `${s.missing.length} with something pending`)}</span></dd>
+          <dt>{t("Necesidades listas para cerrar", "Necessities ready to close")}</dt><dd className="mono"><Link href="/administracion/cierre">{s.readyToClose.length}</Link> <span className="muted">· {t(`${s.missing.length} con algo pendiente`, `${s.missing.length} with something pending`)}</span></dd>
           <dt>{t("Comisiones por aprobar", "Commissions to approve")}</dt><dd className="mono"><Link href="/gerencia/liquidacion">{usd(s.commission.saleReady.usd + s.commission.collectionReady.usd)}</Link></dd>
           <dt>{t("Comisiones aprobadas sin pagar", "Commissions approved, not paid")}</dt><dd className="mono">{usd(s.commission.approved.usd)}</dd>
         </dl>

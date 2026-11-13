@@ -33,7 +33,7 @@ export default async function Product360({ params, searchParams }: { params: Pro
   // Identity: the most used description, and every other name it appears under (with where).
   const names = new Map<string, { n: number; where: Set<string> }>();
   const seen = (d: string, w: string) => { const k = d.trim(); const x = names.get(k) ?? { n: 0, where: new Set<string>() }; x.n++; x.where.add(w); names.set(k, x); };
-  items.forEach((x) => seen(x.description, t("Journey", "Journey")));
+  items.forEach((x) => seen(x.description, t("Necesidad", "Necessity")));
   buys.forEach((x) => seen(x.description, t("PO a proveedor", "Supplier PO")));
   qlines.forEach((x) => seen(x.description, t("cotización", "quote")));
   const ranked = [...names.entries()].sort((a, b) => b[1].n - a[1].n);
@@ -86,7 +86,7 @@ export default async function Product360({ params, searchParams }: { params: Pro
 
   // Open needs: open Journeys and undecided quotes that include it.
   const openNeeds = [
-    ...items.filter((x) => x.deal.stage !== "WON" && x.deal.stage !== "LOST").map((x) => ({ key: x.id, href: `/deals/${x.deal.id}`, label: `${x.deal.code ?? ""} · ${x.deal.account.name}`, detail: `${x.qty} u · ${t("Journey abierto", "open Journey")}` })),
+    ...items.filter((x) => x.deal.stage !== "WON" && x.deal.stage !== "LOST").map((x) => ({ key: x.id, href: `/deals/${x.deal.id}`, label: `${x.deal.code ?? ""} · ${x.deal.account.name}`, detail: `${x.qty} u · ${t("Necessity abierto", "open Necessity")}` })),
     ...qlines.filter((q) => q.quote.status === "DRAFT" || q.quote.status === "PRESENTED").map((q) => ({ key: q.id, href: `/cotizaciones/${q.quote.id}`, label: `${q.quote.number}${q.quote.rev ? ` R${q.quote.rev}` : ""} · ${q.quote.deal.account.name}`, detail: `${q.qty} u · ${q.quote.status === "DRAFT" ? t("cotización en borrador", "draft quote") : t("cotización presentada", "presented quote")}` })),
   ];
   const priceF = freshness(i, lastBuy?.at ?? null, 180, now);
@@ -140,7 +140,7 @@ export default async function Product360({ params, searchParams }: { params: Pro
             {trendPts.length >= 3 && <PriceLine title={t("Costo unitario por compra", "Unit cost per purchase")} pts={trendPts.map((x) => ({ label: i.dateShort(x.at).replace(/^\w+,\s*/, ""), value: x.cost, tip: `${x.b.supplierPo.code} · ${x.b.supplierPo.supplier.name} · ${x.cur} ${i.n2(x.cost)}` }))} />}
             {purchases.length === 0 ? <p className="quiet-p">{t("Nunca se ha comprado. Cualquier precio viene de una cotización.", "Never purchased. Any price comes from a quote.")}</p> : (
               <table className="x3-t">
-                <thead><tr><th>{t("Fecha", "Date")}</th><th>{t("Proveedor", "Supplier")}</th><th>PO · Journey</th><th className="n">{t("Cant.", "Qty")}</th><th className="n">{t("Costo u.", "Unit cost")}</th></tr></thead>
+                <thead><tr><th>{t("Fecha", "Date")}</th><th>{t("Proveedor", "Supplier")}</th><th>PO · {t("Necesidad", "Necessity")}</th><th className="n">{t("Cant.", "Qty")}</th><th className="n">{t("Costo u.", "Unit cost")}</th></tr></thead>
                 <tbody>{purchases.slice().reverse().map((x) => (
                   <tr key={x.b.id}>
                     <td className="mono">{i.day(x.at)}</td>

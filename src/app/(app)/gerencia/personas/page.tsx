@@ -62,9 +62,9 @@ export default async function PeoplePage() {
       </section>
 
       <section className="card" id="carga"><b>{t("SEÑALES DE CARGA", "LOAD SIGNALS")}</b> <span className="small muted">{t("en orden alfabético; no es una clasificación", "in alphabetical order; not a ranking")}</span>
-        {p.load.length === 0 ? <p className="small muted">{t("Nadie tiene Journeys abiertos.", "Nobody has open Journeys.")}</p> : (
+        {p.load.length === 0 ? <p className="small muted">{t("Nadie tiene Necesidades abiertas.", "Nobody has open Necessities.")}</p> : (
           <div className="tscroll"><table>
-            <thead><tr><th>{t("Persona", "Person")}</th><th>{t("Rol", "Role")}</th><th className="n">{t("Journeys abiertos", "Open Journeys")}</th><th className="n">{t("Con próximo paso vencido", "With next step overdue")}</th><th className="n">{t("Cubre a", "Covering")}</th></tr></thead>
+            <thead><tr><th>{t("Persona", "Person")}</th><th>{t("Rol", "Role")}</th><th className="n">{t("Necesidades abiertas", "Open Necessities")}</th><th className="n">{t("Con próximo paso vencido", "With next step overdue")}</th><th className="n">{t("Cubre a", "Covering")}</th></tr></thead>
             <tbody>{p.load.map((x) => <tr key={x.id}><td>{x.name}{x.away ? <span className="sig wait" style={{ marginLeft: 6 }}>{t("ausente hoy", "away today")}</span> : null}</td><td className="small">{role(x.role)}</td><td className="n mono">{x.open}</td><td className="n mono">{x.overdue || "—"}</td><td className="n mono">{x.covering || "—"}</td></tr>)}</tbody>
           </table></div>
         )}

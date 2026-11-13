@@ -74,9 +74,9 @@ export default async function GerenciaHomePage() {
         </table></div>
       </section>
       {entities.length > 1 && (
-        <section className="card" data-zone="plan" id="empresas"><b>{t("POR EMPRESA VENDEDORA", "BY SELLING COMPANY")}</b> <span className="small muted">{t("un Journey pertenece a la empresa que lo vende", "a Journey belongs to the company that sells it")}</span>
+        <section className="card" data-zone="plan" id="empresas"><b>{t("POR EMPRESA VENDEDORA", "BY SELLING COMPANY")}</b> <span className="small muted">{t("una Necesidad pertenece a la empresa que la vende", "a Necessity belongs to the company that sells it")}</span>
           <div className="tscroll"><table>
-            <thead><tr><th>{t("Empresa", "Company")}</th><th className="n">{t("Venta del mes", "Sales this month")}</th><th className="n">Eságara</th><th className="n">{t("Contratado por facturar", "Contracted, to invoice")}</th><th className="n">{t("Por cobrar", "Outstanding")}</th><th className="n">{t("Journeys abiertos", "Open Journeys")}</th></tr></thead>
+            <thead><tr><th>{t("Empresa", "Company")}</th><th className="n">{t("Venta del mes", "Sales this month")}</th><th className="n">Eságara</th><th className="n">{t("Contratado por facturar", "Contracted, to invoice")}</th><th className="n">{t("Por cobrar", "Outstanding")}</th><th className="n">{t("Necesidades abiertas", "Open Necessities")}</th></tr></thead>
             <tbody>{entities.map((e) => <tr key={e.key}><td><Link href={`/gerencia/futuro?empresa=${e.key}`}>{e.name}</Link>{!e.active ? <span className="sig wait" style={{ marginLeft: 6 }}>{t("desactivada", "switched off")}</span> : null}</td><td className="n mono">{i.money(e.sale)}</td><td className="n mono">{i.money(e.esagara)}{e.pct != null ? ` · ${i.pct(e.pct)}` : ""}</td><td className="n mono">{i.money(e.toInvoice)}</td><td className="n mono">{i.money(e.outstanding)}</td><td className="n mono">{e.open}</td></tr>)}</tbody>
           </table></div>
         </section>

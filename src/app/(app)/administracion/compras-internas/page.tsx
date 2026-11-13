@@ -80,7 +80,7 @@ export default async function InternalPurchasesPage({ searchParams }: { searchPa
           </details>
           <div><button type="submit">{t("Pedir", "Request")}</button></div>
         </form>
-        <p className="src">{t("Las compras de inventario se piden en Operaciones → Requerimientos; las de un cliente, en su Journey.", "Stock purchases are requested in Operations → Requirements; a customer's purchases, in its Journey.")} <Link href="/compras/requerimientos">{t("Requerimientos", "Requirements")}</Link></p>
+        <p className="src">{t("Las compras de inventario se piden en Operaciones → Requerimientos; las de un cliente, en su Necesidad.", "Stock purchases are requested in Operations → Requirements; a customer's purchases, in its Necessity.")} <Link href="/compras/requerimientos">{t("Requerimientos", "Requirements")}</Link></p>
       </section>
     </>
   );

@@ -31,7 +31,7 @@ export default async function NewDeliveryPage({ searchParams }: { searchParams: 
         <div className="card">
           <h2>{t("Qué se entrega", "What is delivered")}</h2>
           {deal.items.length === 0 ? (
-            <p className="small muted">{t("Este Journey no tiene productos detallados: la remisión cubre la entrega completa.", "This Journey has no product lines: the note covers the full delivery.")}</p>
+            <p className="small muted">{t("Esta Necesidad no tiene productos detallados: la remisión cubre la entrega completa.", "This Necessity has no product lines: the note covers the full delivery.")}</p>
           ) : (
             <table>
               <thead><tr><th>{t("Producto", "Product")}</th><th className="n">{t("Pendiente", "Pending")}</th><th>{t("Entrega ahora", "Deliver now")}</th><th>{t("Seriales", "Serials")}</th></tr></thead>

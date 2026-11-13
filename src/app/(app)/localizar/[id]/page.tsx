@@ -105,7 +105,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
     enotro: t("Ese número ya está registrado en otra parte. Si son la misma, fusiónalas.", "That number is already on another part. If they're the same, merge them."),
     alias: t("Escribe el número o nombre.", "Type the number or name."),
     dup: t("No encontré ese duplicado (o ya estaba fusionado).", "I couldn't find that duplicate (or it was already merged)."),
-    permiso: t("No tienes permiso para eso (solo el dueño del Journey o gerencia).", "You don't have permission for that (only the Journey owner or management)."),
+    permiso: t("No tienes permiso para eso (solo el dueño de la Necesidad o gerencia).", "You don't have permission for that (only the Necessity owner or management)."),
     cliente: t("Elige el cliente.", "Pick the customer."),
     oferta: t("Para guardar la oferta necesito el proveedor y el precio.", "To save the offer I need the supplier and the price."),
     cotizacion: t("Esa cotización ya no está en borrador.", "That quote is no longer a draft."),
@@ -160,7 +160,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
         <div className="x3-f">
           <span className="k">{t("CLIENTES QUE LA USAN", "CUSTOMERS USING IT")}</span>
           <b>{customers.length || "—"}</b>
-          <span className="src">{customers.slice(0, 4).map((c, n) => <span key={c.id}>{n ? ", " : ""}<Link href={`/accounts/${c.id}`}>{c.name}</Link></span>)}{customers.length > 4 ? ` +${customers.length - 4}` : ""}{!customers.length && t("aún sin Journeys", "no Journeys yet")}</span>
+          <span className="src">{customers.slice(0, 4).map((c, n) => <span key={c.id}>{n ? ", " : ""}<Link href={`/accounts/${c.id}`}>{c.name}</Link></span>)}{customers.length > 4 ? ` +${customers.length - 4}` : ""}{!customers.length && t("aún sin Necesidades", "no Necessities yet")}</span>
         </div>
         <div className="x3-f">
           <span className="k">{t("FUENTES QUE LA CONFIRMAN", "SOURCES CONFIRMING IT")}</span>
@@ -176,22 +176,22 @@ export default async function PartPage({ params, searchParams }: { params: Promi
 
       {ctxDeal && (
         <div className="loc-ctx">
-          <span>{t(`Buscando para el Journey ${ctxDeal.code ?? ""} · ${ctxDeal.title} (${ctxDeal.account.name})`, `Sourcing for Journey ${ctxDeal.code ?? ""} · ${ctxDeal.title} (${ctxDeal.account.name})`)}</span>
+          <span>{t(`Buscando para la Necesidad ${ctxDeal.code ?? ""} · ${ctxDeal.title} (${ctxDeal.account.name})`, `Sourcing for Necessity ${ctxDeal.code ?? ""} · ${ctxDeal.title} (${ctxDeal.account.name})`)}</span>
           <span className="grow" />
           {canEditCtx && (
             <form action={useInJourney.bind(null, p.id)}>
               <input type="hidden" name="dealId" value={ctxDeal.id} />
               <input type="hidden" name="qty" value="1" />
               <input type="hidden" name="unitPrice" value={suggested ?? 0} />
-              <button type="submit">{t(`Agregar a ${ctxDeal.code ?? "este Journey"}`, `Add to ${ctxDeal.code ?? "this Journey"}`)}</button>
+              <button type="submit">{t(`Agregar a ${ctxDeal.code ?? "esta Necesidad"}`, `Add to ${ctxDeal.code ?? "this Necessity"}`)}</button>
             </form>
           )}
-          <Link className="link small" href={`/deals/${ctxDeal.id}?tab=source`}>{t("Volver al Journey", "Back to Journey")}</Link>
+          <Link className="link small" href={`/deals/${ctxDeal.id}?tab=source`}>{t("Volver a la Necesidad", "Back to Necessity")}</Link>
         </div>
       )}
 
       <section className="loc-actions" aria-label={t("Qué hacer con esta parte", "What to do with this part")}>
-        <details className="qa"><summary className="qa-btn primary">{t("Nueva necesidad (Journey)", "New need (Journey)")}</summary><div className="qa-pop wide">
+        <details className="qa"><summary className="qa-btn primary">{t("Nueva Necesidad", "New Necessity")}</summary><div className="qa-pop wide">
           <form action={useInJourney.bind(null, p.id)} className="qa-form">
             <label>{t("Cliente", "Customer")}<select name="accountId" required defaultValue={ctxDeal?.account.id ?? ""}><option value="" disabled>{t("— elige —", "— choose —")}</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
             <div className="qa-row">
@@ -199,14 +199,14 @@ export default async function PartPage({ params, searchParams }: { params: Promi
               <label>{t("Precio unit. (opcional)", "Unit price (optional)")}<input name="unitPrice" type="number" min="0" step="0.01" defaultValue={suggested ?? ""} /></label>
             </div>
             {suggested != null && <p className="src">{t(`Precio sugerido: el último que cotizamos (${i.n2(suggested)})`, `Suggested price: the last one we quoted (${i.n2(suggested)})`)}</p>}
-            <button type="submit">{t("Crear Journey y abrir", "Create Journey and open")}</button>
+            <button type="submit">{t("Crear Necesidad y abrir", "Create Necessity and open")}</button>
           </form>
         </div></details>
 
-        <details className="qa"><summary className="qa-btn">{t("Agregar a un Journey", "Add to a Journey")}</summary><div className="qa-pop wide">
-          {openDeals.length === 0 ? <p className="src">{t("No tienes Journeys abiertos.", "You have no open Journeys.")}</p> : (
+        <details className="qa"><summary className="qa-btn">{t("Agregar a una Necesidad", "Add to a Necessity")}</summary><div className="qa-pop wide">
+          {openDeals.length === 0 ? <p className="src">{t("No tienes Necesidades abiertas.", "You have no open Necessities.")}</p> : (
             <form action={useInJourney.bind(null, p.id)} className="qa-form">
-              <label>Journey<select name="dealId" required defaultValue={ctxDeal?.id ?? ""}><option value="" disabled>{t("— elige —", "— choose —")}</option>{openDeals.map((d) => <option key={d.id} value={d.id}>{d.code ?? ""} · {d.account.name} · {d.title.slice(0, 50)}</option>)}</select></label>
+              <label>{t("Necesidad", "Necessity")}<select name="dealId" required defaultValue={ctxDeal?.id ?? ""}><option value="" disabled>{t("— elige —", "— choose —")}</option>{openDeals.map((d) => <option key={d.id} value={d.id}>{d.code ?? ""} · {d.account.name} · {d.title.slice(0, 50)}</option>)}</select></label>
               <div className="qa-row">
                 <label>{t("Cantidad", "Qty")}<input name="qty" type="number" min="1" defaultValue={1} /></label>
                 <label>{t("Precio unit.", "Unit price")}<input name="unitPrice" type="number" min="0" step="0.01" defaultValue={suggested ?? ""} /></label>
@@ -217,7 +217,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
         </div></details>
 
         <details className="qa"><summary className="qa-btn">{t("Agregar a una cotización", "Add to a quote")}</summary><div className="qa-pop wide">
-          {draftQuotes.length === 0 ? <p className="src">{t("No hay cotizaciones en borrador que puedas editar. Créala desde su Journey (pestaña Cotización).", "There are no draft quotes you can edit. Create one from its Journey (Quote tab).")}</p> : (
+          {draftQuotes.length === 0 ? <p className="src">{t("No hay cotizaciones en borrador que puedas editar. Créala desde su Necesidad (pestaña Cotización).", "There are no draft quotes you can edit. Create one from its Necessity (Quote tab).")}</p> : (
             <form action={addToQuote.bind(null, p.id)} className="qa-form">
               <label>{t("Cotización en borrador", "Draft quote")}<select name="quoteId" required>{draftQuotes.map((q) => <option key={q.id} value={q.id}>{q.number}{q.rev ? ` R${q.rev}` : ""} · {q.deal.account.name} · {q.deal.code ?? ""}</option>)}</select></label>
               <div className="qa-row">
@@ -481,7 +481,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
 
           <section className="jblock">
             <div className="jbh"><b>{t("COTIZACIONES Y JOURNEYS", "QUOTES & JOURNEYS")}</b></div>
-            {h.quotes.length + h.items.length === 0 ? <p className="quiet-p">{t("No aparece en cotizaciones ni Journeys.", "It doesn't appear in quotes or Journeys.")}</p> : (
+            {h.quotes.length + h.items.length === 0 ? <p className="quiet-p">{t("No aparece en cotizaciones ni Necesidades.", "It doesn't appear in quotes or Necessities.")}</p> : (
               <table>
                 <thead><tr><th>{t("Dónde", "Where")}</th><th>{t("Cliente", "Customer")}</th><th className="n">{t("Cant.", "Qty")}</th><th className="n">{t("Precio unit.", "Unit price")}</th></tr></thead>
                 <tbody>
@@ -495,7 +495,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
                   ))}
                   {h.items.map((x) => (
                     <tr key={x.id}>
-                      <td><Link className="val" href={`/deals/${x.deal!.id}`}>{x.deal!.code ?? x.deal!.title}</Link><span className="src block">Journey · {x.deal!.title}</span></td>
+                      <td><Link className="val" href={`/deals/${x.deal!.id}`}>{x.deal!.code ?? x.deal!.title}</Link><span className="src block">{t("Necesidad", "Necessity")} · {x.deal!.title}</span></td>
                       <td><Link href={`/accounts/${x.deal!.account.id}`}>{x.deal!.account.name}</Link></td>
                       <td className="n mono">{x.qty}</td>
                       <td className="n mono">{i.n2(x.unitPrice)}</td>

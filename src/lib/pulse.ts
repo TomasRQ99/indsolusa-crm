@@ -103,7 +103,7 @@ export function pulseGroups(d: PulseData): { groups: PulseGroup[]; prevOf: (key:
       p("withheld", "Retenido por clientes", "Withheld by customers", c.withheld, "usd", { href: "/administracion/pagos-recibidos" }),
       p("supplierPaid", "Pagado a proveedores", "Paid to suppliers", c.supplierPaid, "usd", { href: "/administracion/pagos-proveedores" }),
       p("commissionsApproved", "Comisiones aprobadas", "Commissions approved", c.commissionsApproved, "usd", { href: "/gerencia/liquidacion", metric: "COMMISSION" }),
-      p("finals", "Journeys con economía cerrada como final", "Journeys with economics closed as final", c.finals, "n", { href: "/administracion/economia?ver=todo" }),
+      p("finals", "Necesidades con economía cerrada como final", "Necessities with economics closed as final", c.finals, "n", { href: "/administracion/economia?ver=todo" }),
       st("outstanding", "Por cobrar hoy", "Outstanding today", s.outstanding, "usd", { href: "/administracion/cobrar", metric: "OUTSTANDING" }),
       st("overdue", "Vencido hoy", "Overdue today", s.overdue, "usd", { href: "/administracion/cobrar", metric: "OVERDUE" }),
     ] },

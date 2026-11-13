@@ -230,7 +230,7 @@ export default async function PlantExplorationPage({ params, searchParams }: { p
             <h2 style={{ marginTop: 16 }}>{t("Señales", "Signals")}</h2>
             <div className="card"><ul className="mk-ul">{p.signals.map((s) => <li key={s.id}><span className="sig info">{L(SIGNAL_KINDS[s.kind])}</span> {s.what}<Prov t={t} day={i.day} x={s} /></li>)}</ul></div>
           </>}
-          <h2 style={{ marginTop: 16 }}>{t("Journeys de la empresa", "Company Journeys")}</h2>
+          <h2 style={{ marginTop: 16 }}>{t("Necesidades de la empresa", "Company Necessities")}</h2>
           <div className="card">
             {data.deals.length === 0 ? <p className="small muted">{t("Aún no hemos trabajado juntos.", "We haven't worked together yet.")}</p> : <ul className="mk-ul">{data.deals.map((d) => <li key={d.id}><Link href={`/deals/${d.id}`}>{d.title}</Link> <span className="src">{d.code} · {i.day(d.createdAt)}</span></li>)}</ul>}
           </div>

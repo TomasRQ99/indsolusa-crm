@@ -213,7 +213,7 @@ export const rangesOverlap = (a: ScenarioOption, b: ScenarioOption) => a.low != 
 // ---------- Strategic priorities (§3, AC9) ----------
 
 export const LINK_KINDS: Record<string, Txt> = {
-  ACCOUNT: tx("Cliente", "Customer"), JOURNEY: tx("Journey", "Journey"), EXPLORATION: tx("Exploración de mercado", "Market exploration"),
+  ACCOUNT: tx("Cliente", "Customer"), JOURNEY: tx("Necesidad", "Necessity"), EXPLORATION: tx("Exploración de mercado", "Market exploration"),
   DECISION: tx("Decisión de Gerencia", "Management decision"), SCENARIO: tx("Escenario", "Scenario"),
 };
 export const PRIORITY_STATUS: Record<string, Txt & { tone: string }> = {

@@ -18,7 +18,7 @@ export default async function MiPlanPage({ searchParams }: { searchParams: Promi
       <div className="t">{it.title}</div>
       <div className="a"><span className="val small">{hm(it.minutes)}</span></div>
       <div className="d small">
-        {it.dealId ? <Link href={`/deals/${it.dealId}`}>{it.dealCode ?? "Journey"}</Link> : null}
+        {it.dealId ? <Link href={`/deals/${it.dealId}`}>{it.dealCode ?? t("Necesidad", "Necessity")}</Link> : null}
         {it.account ? <> · {it.account}</> : null}
         {it.due ? <> · {t("para el", "due")} {i.dateShort(it.due)}</> : <> · {t("sin fecha", "no date")}</>}
       </div>
@@ -31,7 +31,7 @@ export default async function MiPlanPage({ searchParams }: { searchParams: Promi
         <div>
           <div className="crumb">{t("Mi día", "My day")} · {t("Mi Plan", "My Plan")}</div>
           <h1>{t("Mi semana", "My week")}</h1>
-          <p>{t("SOLU arma los bloques con lo que ya sabe: tus pendientes y los siguientes movimientos de tus Journeys. Deja libre una parte de cada día para urgencias.", "SOLU builds the blocks from what it already knows: your to-dos and your Journeys' next movements. Part of each day stays free for urgencies.")}</p>
+          <p>{t("SOLU arma los bloques con lo que ya sabe: tus pendientes y los siguientes movimientos de tus Necesidades. Deja libre una parte de cada día para urgencias.", "SOLU builds the blocks from what it already knows: your to-dos and your Necessities' next movements. Part of each day stays free for urgencies.")}</p>
         </div>
         <div className="grow" />
         {plan.worth.length > 0 && (

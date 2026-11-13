@@ -123,7 +123,7 @@ export async function applyToJourney(threadId: string, fd: FormData) {
   let dealId: string;
   if (target && target !== "new") {
     const deal = await db.deal.findUniqueOrThrow({ where: { id: target } });
-    if (deal.accountId !== th.accountId) throw new Error("Journey de otro cliente / Journey of another customer");
+    if (deal.accountId !== th.accountId) throw new Error("Necesidad de otro cliente / Necessity of another customer");
     await db.deal.update({
       where: { id: deal.id },
       data: {

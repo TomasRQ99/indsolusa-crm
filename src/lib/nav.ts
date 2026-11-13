@@ -57,7 +57,7 @@ export const MODULES: NavModule[] = [
   {
     key: "comercial", es: "COMERCIAL", en: "COMMERCIAL", match: ["/deals", "/cotizaciones", "/comercial", "/visitas"],
     tabs: [
-      { href: "/deals", es: "Journeys", en: "Journeys", group: "negocios" },
+      { href: "/deals", es: "Necesidades", en: "Necessities", group: "negocios" },
       { href: "/cotizaciones", es: "Futuro comercial", en: "Commercial future", group: "negocios" },
       { href: "/comercial/foco", es: "Foco de alto valor", en: "High-value focus", group: "negocios" },
       { href: "/visitas", es: "Visitas", en: "Visits", group: "negocios" },

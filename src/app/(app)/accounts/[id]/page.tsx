@@ -117,7 +117,7 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
       <div className="jbody">
         <div className="jmain">
           <section className="jblock">
-            <div className="jbh"><b>{t("JOURNEYS ACTIVOS", "ACTIVE JOURNEYS")}</b><span className="grow" /><span className="src">{t("entra al Journey para actuar", "enter the Journey to act")}</span></div>
+            <div className="jbh"><b>{t("JOURNEYS ACTIVOS", "ACTIVE JOURNEYS")}</b><span className="grow" /><span className="src">{t("entra a la Necesidad para actuar", "enter the Necessity to act")}</span></div>
             {active.length === 0 ? <p className="quiet-p">{t("Nada en curso.", "Nothing in progress.")}</p> : (
               <ul className="x3-j">{active.map((d) => {
                 const rec = d.recoveries.find((r) => !r.resolvedAt);
@@ -336,7 +336,7 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
                 <details style={{ marginTop: 10 }}>
                   <summary className="small">{t("Eliminar cliente", "Delete customer")}</summary>
                   <form action={deleteAccount.bind(null, a.id)}>
-                    <p className="src" style={{ marginBottom: 6 }}>{t("Borra también sus Journeys, facturas y pagos.", "Also deletes its Journeys, invoices and payments.")}</p>
+                    <p className="src" style={{ marginBottom: 6 }}>{t("Borra también sus Necesidades, facturas y pagos.", "Also deletes its Necessities, invoices and payments.")}</p>
                     <button className="danger sm" type="submit">{t("Eliminar definitivamente", "Delete permanently")}</button>
                   </form>
                 </details>

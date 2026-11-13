@@ -102,7 +102,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
       <div className="two">
         <div className="card flush">
           <table>
-            <thead><tr><th>{t("Journey · cliente", "Journey · customer")}</th><th className="n">{t("Venta", "Sale")}</th><th className="n">{t("Eságara facturar → final", "Eságara invoice → final")}</th><th>{t("Ent → Con", "Del → Rec")}</th><th style={{ borderLeft: "1px solid var(--line)" }}>{salePct} % {t("a la venta", "at sale")}</th><th style={{ borderLeft: "1px solid var(--line)" }}>{100 - salePct} % {t("al recaudo", "at collection")}</th></tr></thead>
+            <thead><tr><th>{t("Necesidad · cliente", "Necessity · customer")}</th><th className="n">{t("Venta", "Sale")}</th><th className="n">{t("Eságara facturar → final", "Eságara invoice → final")}</th><th>{t("Ent → Con", "Del → Rec")}</th><th style={{ borderLeft: "1px solid var(--line)" }}>{salePct} % {t("a la venta", "at sale")}</th><th style={{ borderLeft: "1px solid var(--line)" }}>{100 - salePct} % {t("al recaudo", "at collection")}</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.key} className={sel?.key === r.key ? "sel" : undefined}>
@@ -114,7 +114,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
                   <HalfCell h={r.collectionHalf} />
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={6} className="empty"><b>{t("Aún no hay comisiones", "No commissions yet")}</b>{t("Aparecen cuando un Journey tiene OC aceptada.", "They appear once a Journey has an accepted PO.")}</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={6} className="empty"><b>{t("Aún no hay comisiones", "No commissions yet")}</b>{t("Aparecen cuando una Necesidad tiene OC aceptada.", "They appear once a Necessity has an accepted PO.")}</td></tr>}
             </tbody>
           </table>
           <p className="src" style={{ padding: "8px 12px" }}>USD. {t("Estados derivados por mitad: Estimada → Ganada (factura emitida o recaudo conciliado) → Aprobada (Gerencia) → Pagada (nómina). Nadie los cambia a mano.", "Derived states per half: Estimated → Earned (invoice issued or collection reconciled) → Approved (management) → Paid (payroll). Nobody changes them by hand.")}</p>
@@ -136,7 +136,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
             <details style={{ marginTop: 10 }}>
               <summary>{t("Pedir revisión de un cálculo", "Ask for a calculation review")}</summary>
               <form action={requestCommissionReview} className="stack">
-                <textarea name="note" required placeholder={t("Qué Journey y qué te parece distinto", "Which Journey and what looks different")} />
+                <textarea name="note" required placeholder={t("Qué Necesidad y qué te parece distinto", "Which Necessity and what looks different")} />
                 <button className="secondary" type="submit">{t("Enviar a Gerencia", "Send to management")}</button>
               </form>
             </details>
@@ -190,7 +190,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
             <label>{t("Aprobada por", "Approved by")}<input name="approvedBy" required /></label>
             <label>{t("Notas", "Notes")}<input name="notes" /></label>
             <button type="submit">{t("Crear versión", "Create version")}</button>
-            <span className="src">{t("Las versiones anteriores no cambian: cada Journey usa la versión vigente en la fecha de su OC.", "Earlier versions don't change: each Journey uses the version in force on its PO date.")}</span>
+            <span className="src">{t("Las versiones anteriores no cambian: cada Necesidad usa la versión vigente en la fecha de su OC.", "Earlier versions don't change: each Necessity uses the version in force on its PO date.")}</span>
           </form>
         </details>
       )}

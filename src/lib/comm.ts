@@ -189,8 +189,8 @@ export function understand(input: UnderstandInput): Understood[] {
     const match = input.openDeals.find((d) => `${d.title} ${d.items.join(" ")}`.toLowerCase().includes(word));
     out.push(
       match
-        ? { field: "journey", value: `${match.code ?? ""} ${match.title}`.trim(), basis: "INFERENCE", evidence: `Journey abierto con ${word}`, reasoning: "Habla del mismo tipo de producto que un Journey abierto; puede ser parte de él." }
-        : { field: "journey", value: "Nuevo Journey", basis: "INFERENCE", evidence: "Sin Journey abierto con este producto", reasoning: "No hay un Journey abierto de este cliente con este producto." },
+        ? { field: "journey", value: `${match.code ?? ""} ${match.title}`.trim(), basis: "INFERENCE", evidence: `Necesidad abierta con ${word}`, reasoning: "Habla del mismo tipo de producto que una Necesidad abierta; puede ser parte de ella." }
+        : { field: "journey", value: "Nueva Necesidad", basis: "INFERENCE", evidence: "Sin Necesidad abierta con este producto", reasoning: "No hay una Necesidad abierta de este cliente con este producto." },
     );
   }
   return out;

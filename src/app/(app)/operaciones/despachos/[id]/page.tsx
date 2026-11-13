@@ -44,7 +44,7 @@ export default async function DispatchOrderPage({ params, searchParams }: { para
 
   const okMsg: Record<string, string> = {
     creado: t("Despacho creado.", "Dispatch order created."), requisito: t("Requisito actualizado.", "Requirement updated."), programado: t("Programación guardada.", "Schedule saved."), espera: t("Espera del cliente actualizada.", "Customer wait updated."),
-    despachado: t("Salió hacia el cliente. Lo comprometido de este Journey salió del inventario.", "On its way to the customer. This Journey's committed stock left the warehouse."), fallido: t("Intento fallido registrado. El despacho vuelve a programarse y la mercancía vuelve al inventario.", "Failed attempt recorded. The order goes back to scheduling and the goods return to stock."),
+    despachado: t("Salió hacia el cliente. Lo comprometido de esta Necesidad salió del inventario.", "On its way to the customer. This Necessity's committed stock left the warehouse."), fallido: t("Intento fallido registrado. El despacho vuelve a programarse y la mercancía vuelve al inventario.", "Failed attempt recorded. The order goes back to scheduling and the goods return to stock."),
     entregado: t("Entregado. Se creó la remisión.", "Delivered. The delivery note was created."), entrada: t("Entrada del cliente registrada.", "Customer entry recorded."), costo: t("Costo guardado.", "Cost saved."), evidencia: t("Evidencia guardada.", "Evidence saved."), cancelado: t("Despacho cancelado.", "Dispatch order cancelled."), perfil: t("Perfil de entrega del cliente actualizado.", "Customer delivery profile updated."),
   };
   const errMsg: Record<string, string> = {
@@ -82,7 +82,7 @@ export default async function DispatchOrderPage({ params, searchParams }: { para
         </dl>
         {o.customerHoldSince && <p className="note attn">{t("Espera del cliente desde", "Customer wait since")} {i.day(o.customerHoldSince)}: {o.customerHoldReason}</p>}
         {o.cancelledAt && <p className="note">{t("Cancelado", "Cancelled")} {i.day(o.cancelledAt)}: {o.cancelReason}</p>}
-        {st.key === "INSTRUCTION_PENDING" && <p className="note attn">{t("Comercial aún no ha emitido la instrucción de despacho de este Journey. Sin ella no sale.", "Sales hasn't issued this Journey's dispatch instruction yet. Without it, nothing leaves.")}</p>}
+        {st.key === "INSTRUCTION_PENDING" && <p className="note attn">{t("Comercial aún no ha emitido la instrucción de despacho de esta Necesidad. Sin ella no sale.", "Sales hasn't issued this Necessity's dispatch instruction yet. Without it, nothing leaves.")}</p>}
         {st.key === "WAITING_CUSTOMER_ENTRY" && <p className="note attn">{t("Entregado, pero falta la entrada de mercancía del cliente. Quien lleva la relación la pide; mientras tanto no se factura.", "Delivered, but the customer's goods entry is missing. The relationship owner asks for it; meanwhile there is no invoice.")}</p>}
       </section>
 
@@ -191,7 +191,7 @@ export default async function DispatchOrderPage({ params, searchParams }: { para
               <button type="submit" className="secondary" style={{ flex: "0 0 auto" }}>{t("Guardar entrada", "Save entry")}</button>
             </form>
           )}
-          {st.key === "INVOICE_READY" && <p className="small" style={{ marginTop: 8 }}><span className="sig ok">✓</span> {t("Listo para facturar:", "Invoice ready:")} <Link href={`/deals/${d.id}/facturacion`}>{t("abrir facturación del Journey", "open the Journey's billing")}</Link></p>}
+          {st.key === "INVOICE_READY" && <p className="small" style={{ marginTop: 8 }}><span className="sig ok">✓</span> {t("Listo para facturar:", "Invoice ready:")} <Link href={`/deals/${d.id}/facturacion`}>{t("abrir facturación de la Necesidad", "open the Necessity's billing")}</Link></p>}
           <form action={saveCost.bind(null, o.id)} className="qa-row" style={{ flexWrap: "wrap", alignItems: "flex-end", marginTop: 10 }}>
             <label style={{ flex: "0 0 150px" }}>{t("Costo de la entrega", "Delivery cost")}<input name="cost" inputMode="decimal" defaultValue={o.cost != null ? String(o.cost) : ""} /></label>
             <label style={{ flex: "0 0 90px" }}>{t("Moneda", "Currency")}<input name="currency" maxLength={3} defaultValue={o.costCurrency} /></label>

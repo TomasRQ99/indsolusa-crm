@@ -132,7 +132,7 @@ export default async function MoneyDesk({ searchParams }: { searchParams: Promis
         <div><span className="k">{t("Aceptado sin facturar", "Accepted, not invoiced")}</span><span className="v">{i.money(j.capital.committed)}</span><span className="s">{t(`incluye ${i.money(j.capital.readyGoods)} en mercancía lista`, `includes ${i.money(j.capital.readyGoods)} in ready goods`)}</span></div>
         {j.commission && (team ? canManageAll(user) : true) && <div><span className="k">{t("Comisión esperando recaudo", "Commission waiting for collection")}</span><span className="v">{i.money(j.commission.total)}</span><span className="s">{t("se libera con el dinero conciliado", "released with reconciled cash")}</span></div>}
       </section>
-      <p className="src">{t("Capital comprometido = facturas abiertas + Journeys ganados sin facturar. La mercancía lista ya está dentro de lo no facturado; no se suma dos veces.", "Committed capital = open invoices + won Journeys not yet invoiced. Ready goods are already inside the uninvoiced part; not counted twice.")}{" "}<Link href="/comercial/fugas">{t("Ver fugas de caja y tiempos", "See cash leakage and delays")}</Link></p>
+      <p className="src">{t("Capital comprometido = facturas abiertas + Necesidades ganadas sin facturar. La mercancía lista ya está dentro de lo no facturado; no se suma dos veces.", "Committed capital = open invoices + won Necessities not yet invoiced. Ready goods are already inside the uninvoiced part; not counted twice.")}{" "}<Link href="/comercial/fugas">{t("Ver fugas de caja y tiempos", "See cash leakage and delays")}</Link></p>
 
       {/* 1 · ENTREGAR */}
       <section className="mk-sec" id="entregar">
@@ -285,7 +285,7 @@ function CreditForm({ i, accountId, deals, back, limit }: { i: I18n; accountId: 
           <label className="small">{t("Cupo propuesto (USD)", "Proposed limit (USD)")}<input name="requestedLimit" inputMode="decimal" placeholder={i.n(limit)} /></label>
           <label className="small">{t("Plazo propuesto (días)", "Proposed terms (days)")}<input name="requestedTerms" inputMode="numeric" /></label>
           <label className="small">{t("Hasta (excepción temporal)", "Until (temporary exception)")}<input type="date" name="until" /></label>
-          <label className="small">{t("Journey relacionado", "Related Journey")}<select name="dealId" defaultValue={deals[0]?.id ?? ""}><option value="">—</option>{deals.map((d) => <option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
+          <label className="small">{t("Necesidad relacionada", "Related Necessity")}<select name="dealId" defaultValue={deals[0]?.id ?? ""}><option value="">—</option>{deals.map((d) => <option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
         </div>
         <label className="small">{t("Por qué", "Why")}<textarea name="reason" rows={2} required /></label>
         <label className="small">{t("Información relevante (opcional)", "Relevant information (optional)")}<textarea name="info" rows={2} /></label>

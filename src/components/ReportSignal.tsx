@@ -31,7 +31,7 @@ export function ReportSignal({ es, screen }: { es: boolean; screen?: string }) {
             <option value="ATTENTION_MISSED">{t("SOLU no me avisó algo que debía", "SOLU didn't warn me about something it should have")}</option>
           </select>
         </label>
-        <label>{t("Dónde", "Where")}<input name="screen" defaultValue={screen ?? ""} maxLength={120} placeholder={t("Ej.: Journey · Facturación", "E.g.: Journey · Billing")} /></label>
+        <label>{t("Dónde", "Where")}<input name="screen" defaultValue={screen ?? ""} maxLength={120} placeholder={t("Ej.: Necesidad · Facturación", "E.g.: Necessity · Billing")} /></label>
         <label>{t("Detalle", "Detail")}<input name="note" required maxLength={300} placeholder={t("Ej.: volví a escribir el NIT que ya estaba en el cliente", "E.g.: I retyped the tax ID that was already on the customer")} /></label>
         <button type="submit" disabled={busy}>{busy ? "…" : t("Enviar", "Send")}</button>
       </form>

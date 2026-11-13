@@ -61,7 +61,7 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
                 }),
               ];
             })}
-            {rows.length === 0 && <tr><td colSpan={7} className="empty"><b>{t("No hay envíos", "No shipments")}</b>{t("Se registran desde la pestaña Ejecución del Journey.", "They're recorded from the Journey's Execute tab.")}</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={7} className="empty"><b>{t("No hay envíos", "No shipments")}</b>{t("Se registran desde la pestaña Ejecución de la Necesidad.", "They're recorded from the Necessity's Execute tab.")}</td></tr>}
           </tbody>
         </table>
       </div>

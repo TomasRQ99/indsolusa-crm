@@ -179,7 +179,7 @@ export default async function CreditLimitsPage({ searchParams }: { searchParams:
                       {r.kind === "TERMS_REVIEW" && <label className="small">{t("Plazo aprobado (días)", "Approved terms (days)")}<input name="approvedTerms" inputMode="numeric" defaultValue={r.requestedTerms ?? ""} /></label>}
                       <label className="small" style={{ gridColumn: "1 / -1" }}>{t("Razón de la decisión", "Reason for the decision")}<input name="decisionNote" required /></label>
                       <div className="row" style={{ gap: 8 }}><button type="submit" name="decision" value="APPROVE" className="sm">{t("Aprobar", "Approve")}</button><button type="submit" name="decision" value="REJECT" className="secondary sm">{t("Rechazar", "Reject")}</button></div>
-                      {r.kind === "TEMPORARY_EXCEPTION" && !r.deal && <span className="src" style={{ gridColumn: "1 / -1" }}>{t("Sin Journey asociado: aprobarla queda registrado, pero no marca ninguna orden.", "No Journey attached: approving is recorded but marks no order.")}</span>}
+                      {r.kind === "TEMPORARY_EXCEPTION" && !r.deal && <span className="src" style={{ gridColumn: "1 / -1" }}>{t("Sin Necesidad asociada: aprobarla queda registrado, pero no marca ninguna orden.", "No Necessity attached: approving is recorded but marks no order.")}</span>}
                     </form>
                   ) : <p className="src">{r.requestedById === user.id ? t("Es tu solicitud: la decide otra persona.", "It is your request: someone else decides.") : t("La deciden Finanzas o Gerencia.", "Finance or Management decide.")}</p>}
                 </article>

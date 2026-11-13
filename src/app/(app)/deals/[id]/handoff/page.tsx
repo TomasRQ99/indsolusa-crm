@@ -34,7 +34,7 @@ export default async function HandoffPage({ params }: { params: Promise<{ id: st
         <div className="jh-title"><h1>{t("Entrega a Operaciones", "Handoff to Operations")}</h1></div>
         <p className="jh-sub">{d.title} · {t("lleva la relación", "relationship owner")}: {d.owner.name}</p>
       </header>
-      {!po && <section className="jblock"><p className="quiet-p">{t("Este Journey aún no tiene una PO aceptada: Operaciones empieza cuando Comercial acepta el compromiso.", "This Journey has no accepted PO yet: Operations starts once Commercial accepts the commitment.")}</p></section>}
+      {!po && <section className="jblock"><p className="quiet-p">{t("Esta Necesidad aún no tiene una PO aceptada: Operaciones empieza cuando Comercial acepta el compromiso.", "This Necessity has no accepted PO yet: Operations starts once Commercial accepts the commitment.")}</p></section>}
 
       <section className="jblock">
         <div className="jbh"><b>{t("QUÉ PROMETIMOS", "WHAT WE PROMISED")}</b></div>

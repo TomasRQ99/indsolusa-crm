@@ -31,7 +31,7 @@ export default async function ValuePage({ searchParams }: { searchParams: Promis
         <div>
           <div className="crumb"><Link href="/deals">{t("Comercial", "Commercial")}</Link></div>
           <h1>{t("Atributos de valor", "Value attributes")}</h1>
-          <p>{t("Lo que Industry Solutions puede aportar. No se muestran por defecto: cada Journey elige los que puede probar con evidencia de ese caso. Los ocho vienen en borrador para que la dirección los revise.", "What Industry Solutions can bring. They're not shown by default: each Journey picks the ones it can prove with evidence from that case. All eight start as drafts for management to review.")}</p>
+          <p>{t("Lo que Industry Solutions puede aportar. No se muestran por defecto: cada Necesidad elige los que puede probar con evidencia de ese caso. Los ocho vienen en borrador para que la dirección los revise.", "What Industry Solutions can bring. They're not shown by default: each Necessity picks the ones it can prove with evidence from that case. All eight start as drafts for management to review.")}</p>
         </div>
       </div>
       {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}

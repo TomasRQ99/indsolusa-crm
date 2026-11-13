@@ -149,7 +149,7 @@ export function VisitOutcomeForm({ visitId, lang, aiState, objectives, kinds, de
       <details open={needOpen} onToggle={(e) => setNeedOpen((e.target as HTMLDetailsElement).open)}><summary className="small">{t("¿Apareció una necesidad nueva?", "Did a new need come up?")}</summary>
         <label>{t("Nombre corto", "Short name")}<input name="needTitle" maxLength={200} placeholder={t("Ej.: Variadores para la línea 3", "E.g.: Drives for line 3")} /></label>
         <label>{t("Resultado que busca el cliente", "Result the customer is after")}<input name="needResult" maxLength={600} /></label>
-        <span className="src block">{t("Se crea como Journey a tu nombre solo si lo dejas escrito aquí.", "It's created as a Journey in your name only if you leave it written here.")}</span>
+        <span className="src block">{t("Se crea como Necesidad a tu nombre solo si lo dejas escrito aquí.", "It's created as a Necessity in your name only if you leave it written here.")}</span>
       </details>
       <div className="qa-row">
         <label>{t("Próximo paso", "Next step")}<input name="nextMove" maxLength={300} /></label>

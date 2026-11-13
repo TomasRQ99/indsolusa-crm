@@ -216,7 +216,7 @@ export async function savePromise(id: string, fd: FormData) {
     },
   });
   if (was !== now || (before.promiseText ?? "") !== (promiseText ?? "")) {
-    await logFact(user.id, id, before.accountId, "promise", `Promesa al cliente: ${was} → ${now}${promiseText ? ` · ${promiseText}` : ""}`, txt(fd, "source", 200) ?? "Cambio registrado en el Journey");
+    await logFact(user.id, id, before.accountId, "promise", `Promesa al cliente: ${was} → ${now}${promiseText ? ` · ${promiseText}` : ""}`, txt(fd, "source", 200) ?? "Cambio registrado en la Necesidad");
   }
   jback(id, fd, "promise");
 }
@@ -290,7 +290,7 @@ export async function setCarrierEta(poId: string, fd: FormData) {
 export async function confirmFact(activityId: string, fd: FormData) {
   const user = await requireUser();
   const a = await db.activity.findUniqueOrThrow({ where: { id: activityId }, include: { deal: { select: { id: true, ownerId: true } } } });
-  if (!a.deal) throw new Error("Not a Journey fact");
+  if (!a.deal) throw new Error("Not a Necessity fact");
   assertCanEdit(user, a.deal.ownerId);
   await db.activity.update({ where: { id: activityId }, data: { uncertain: false, source: txt(fd, "source", 200) ?? a.source } });
   jback(a.deal.id, fd, "confirmed");

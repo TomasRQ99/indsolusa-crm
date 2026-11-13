@@ -10,7 +10,7 @@ export const POLICY_REGISTER: PolicyEntry[] = [
   { key: "payRules", es: "Crédito: cómo se lee el comportamiento de pago", en: "Credit: how payment behaviour is read", whoEs: "Finanzas o Gerencia", whoEn: "Finance or Management", href: "/administracion/cupos" },
   { key: "cashPolicy", es: "Alertas de dinero detenido y edades de cartera", en: "Stopped-money alerts and receivable ageing", whoEs: "Finanzas o Gerencia", whoEn: "Finance or Management", href: "/comercial/fugas#politica" },
   { key: "comPolicy", es: "Umbral de Eságara baja y quién aprueba la excepción", en: "Low-Eságara threshold and who approves the exception", whoEs: "Gerencia", whoEn: "Management", href: "/comercial/esagara" },
-  { key: "esagaraPolicy", es: "Cierre económico de un Journey", en: "Economic close of a Journey", whoEs: "Gerencia", whoEn: "Management", href: "/administracion/economia" },
+  { key: "esagaraPolicy", es: "Cierre económico de una Necesidad", en: "Economic close of a Necessity", whoEs: "Gerencia", whoEn: "Management", href: "/administracion/economia" },
   { key: "financeRate", es: "Costo del dinero", en: "Cost of money", whoEs: "Propuesta + Gerencia", whoEn: "Proposal + Management", href: "/profile/rentabilidad" },
   { key: "opsPolicy", es: "Operaciones: tolerancias de flete, courier o carga, inventario", en: "Operations: freight tolerances, courier or cargo, stock", whoEs: "Gerencia", whoEn: "Management", href: "/operaciones/configuracion" },
   { key: "authPolicy", es: "Rangos de autorización por nivel", en: "Authorisation ranges by level", whoEs: "Gerencia", whoEn: "Management", href: "/profile/autorizaciones" },

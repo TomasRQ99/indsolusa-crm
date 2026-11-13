@@ -75,7 +75,7 @@ export default async function PaymentsReceivedPage({ searchParams }: { searchPar
                     <td className="n">
                       {!p.reconciledAt && unapplied > 0.005 && <Link className="btn secondary sm" href={`/administracion/pagos-recibidos?account=${p.account.id}#apply-${p.id}`}>{t("Aplicar", "Apply")}</Link>}
                       {!p.reconciledAt && manager && applied > 0 && unapplied > 0.005 && !p.residualNote && (
-                        <span className="src block">{t("Para conciliar: aplica el resto o explica el sobrante en la pestaña Facturación del Journey.", "To reconcile: apply the rest or explain the leftover in the Journey's Billing tab.")}</span>
+                        <span className="src block">{t("Para conciliar: aplica el resto o explica el sobrante en la pestaña Facturación de la Necesidad.", "To reconcile: apply the rest or explain the leftover in the Necessity's Billing tab.")}</span>
                       )}
                       {!p.reconciledAt && manager && applied > 0 && (unapplied <= 0.005 || !!p.residualNote) && (
                         <form action={reconcilePayment.bind(null, p.id)}><button className="sm" type="submit">{t("Conciliar", "Reconcile")}</button></form>

@@ -6,13 +6,13 @@ import { confirmNeed, dismissNeed } from "./need-actions";
 type T = (es: string, en: string) => string;
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
 
-/** M6 (§12.2): "This looks like a concrete need. Do you want to create a Need?" — a person confirms. */
+/** M6 (§12.2): "This looks like a concrete need. Do you want to create a Necessity?" — a person confirms. */
 export default async function NeedSuggestions({ scope, back, t, day, user, sp }: { scope: { accountIds?: string[]; contactId?: string }; back: string; t: T; day: (d: Date) => string; user: { id: string; role: string }; sp?: { ok?: string; err?: string } }) {
   const list = (await needSuggestions(scope)).slice(0, 3);
   const notice = sp?.ok === "descartada" ? t("Entendido. SOLU no lo volverá a sugerir; la evidencia queda donde se anotó.", "Understood. SOLU won't suggest it again; the evidence stays where it was recorded.")
     : sp?.err === "need" ? t("Para crear la necesidad hace falta un título.", "A title is needed to create the need.")
     : sp?.err === "owner" ? t("Elige quién la trabajará comercialmente.", "Choose who will work it commercially.")
-    : sp?.err === "ya" ? t("Esta necesidad ya tiene un Journey.", "This need already has a Journey.") : null;
+    : sp?.err === "ya" ? t("Esta Necesidad ya fue creada.", "This Necessity was already created.") : null;
   if (!list.length) return notice ? <p className="note okn" id="necesidad">{notice}</p> : null;
   const owners = await db.user.findMany({ where: { active: true, role: { not: "MARKETING" } }, select: { id: true, name: true }, orderBy: { name: "asc" } });
   const defOwner = user.role === "MARKETING" ? (owners[0]?.id ?? "") : user.id;
@@ -27,10 +27,10 @@ export default async function NeedSuggestions({ scope, back, t, day, user, sp }:
         const conf = CONFIDENCE[s.confidence];
         return (
           <div key={s.ref} className="card">
-            <b>{t("Esto parece una necesidad concreta. ¿Quieres crear una Need?", "This looks like a concrete need. Do you want to create a Need?")}</b>
+            <b>{t("Esto parece una necesidad concreta. ¿Quieres crear una Necesidad?", "This looks like a concrete need. Do you want to create a Necessity?")}</b>
             <p className="small">{t(s.why.es, s.why.en)}</p>
             <p className="small">«{s.evidence}»<span className="src block"><span className={`sig ${conf?.cls ?? "info"}`}>{conf ? t(conf.es, conf.en) : s.confidence}</span> {s.accountName}{s.contactName ? ` · ${s.contactName}` : ""}{s.plantName ? ` · ${s.plantName}` : ""}{s.sourceRef ? ` · ${s.sourceRef}` : ""} · {day(s.observedAt)}</span></p>
-            <p className="small">{t("Al confirmar, el Journey nace con:", "When confirmed, the Journey is born with:")} {groups.map((g) => t(CTX_GROUPS[g].es, CTX_GROUPS[g].en)).join(" · ") || t("solo la evidencia (aún sabemos poco)", "the evidence only (we still know little)")}. {t("Nada se vuelve a escribir.", "Nothing is retyped.")}</p>
+            <p className="small">{t("Al confirmar, la Necesidad nace con:", "When confirmed, the Necessity is born with:")} {groups.map((g) => t(CTX_GROUPS[g].es, CTX_GROUPS[g].en)).join(" · ") || t("solo la evidencia (aún sabemos poco)", "the evidence only (we still know little)")}. {t("Nada se vuelve a escribir.", "Nothing is retyped.")}</p>
             <details>
               <summary className="small">{t("Revisar y confirmar", "Review and confirm")}</summary>
               <form action={confirmNeed} className="stack">
@@ -49,7 +49,7 @@ export default async function NeedSuggestions({ scope, back, t, day, user, sp }:
                 <details><summary className="small">{t(`Ver los ${ctx.items.length} datos que se heredan, con su fuente`, `See the ${ctx.items.length} inherited facts, with their source`)}</summary>
                   <ul className="mk-ul">{ctx.items.map((x, j) => <li key={j} className="small"><span className="mk-chip">{t(CTX_GROUPS[x.group].es, CTX_GROUPS[x.group].en)}</span> {x.text}</li>)}</ul>
                 </details>
-                <div><button type="submit">{t("Confirmar y crear el Journey", "Confirm and create the Journey")}</button></div>
+                <div><button type="submit">{t("Confirmar y crear la Necesidad", "Confirm and create the Necessity")}</button></div>
               </form>
             </details>
             <form action={dismissNeed} className="row" style={{ gap: 6 }}>

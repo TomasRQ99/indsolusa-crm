@@ -32,7 +32,7 @@ export async function closeReport(ownerId: string | null, start: Date, end: Date
   if (decided.length && acc.length === 0) improve.push({ es: "Todas las decisiones del periodo fueron «no»: revisa las objeciones.", en: "Every decision this period was «no»: review the objections." });
   if (usefulContacts > 0 && needs.length === 0) improve.push({ es: "Hubo contactos útiles pero ninguna necesidad nueva escrita.", en: "There were useful contacts but no new need written down." });
   const overdue = nextMoves.filter((d) => d.nextMoveDate && d.nextMoveDate < start).length;
-  if (overdue > 0) improve.push({ es: `${overdue} Journeys tienen el próximo paso vencido desde antes del periodo.`, en: `${overdue} Journeys have a next step overdue from before the period.` });
+  if (overdue > 0) improve.push({ es: `${overdue} Necesidades tienen el próximo paso vencido desde antes del periodo.`, en: `${overdue} Necessities have a next step overdue from before the period.` });
   return {
     happened: { presented, decided, accepted: acc.length, declined: decided.length - acc.length, sale, esagara, pct: sale > 0 ? sharePct(esagara, sale) : null, pos, needs, visits: visits.length, usefulContacts, invoiced: sumMoney(invoices.map((i) => i.amount)), collected: sumMoney(payments.map((p) => p.amount)) },
     learned: { visits: visits.filter((v) => v.learned), presentations: presentations.filter((p) => p.valued || p.objections) },

@@ -32,7 +32,7 @@ export default async function SellersPage({ searchParams }: { searchParams: Prom
         <div>
           <div className="crumb"><Link href="/deals">{t("Comercial", "Commercial")}</Link></div>
           <h1>{t("Empresas que venden", "Selling companies")}</h1>
-          <p>{t("Nuestras empresas que pueden vender. Cada Journey dice cuál vende; de eso dependen el encabezado de la cotización, el IVA, la moneda y cómo se factura. Aquí no van datos bancarios.", "Our companies that can sell. Each Journey states which one sells; the quote header, IVA, currency and invoicing depend on it. No bank details go here.")}</p>
+          <p>{t("Nuestras empresas que pueden vender. Cada Necesidad dice cuál vende; de eso dependen el encabezado de la cotización, el IVA, la moneda y cómo se factura. Aquí no van datos bancarios.", "Our companies that can sell. Each Necessity states which one sells; the quote header, IVA, currency and invoicing depend on it. No bank details go here.")}</p>
         </div>
       </div>
       {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}
@@ -45,7 +45,7 @@ export default async function SellersPage({ searchParams }: { searchParams: Prom
             <section key={s.key} className="card" id={`e-${s.key}`}>
               <div className="jbh"><b>{t(L.es, L.en)}</b><span className="grow" />{s.active ? <span className="sig ok">{t("Activa", "Active")}</span> : <span className="sig wait">{t("Inactiva", "Inactive")}</span>}</div>
               {miss.length > 0 && <p className="note attn">{t(`Para poder vender con esta empresa falta: ${miss.map((m) => missTxt[m]).join(", ")}.`, `Before this company can sell, fill in: ${miss.map((m) => missTxt[m]).join(", ")}.`)}</p>}
-              <p className="src">{t(`${open(s.key)} Journeys abiertos · v${s.version}${s.updatedByName ? ` · ${s.updatedByName} · ${i.day(s.updatedAt)}` : ""}`, `${open(s.key)} open Journeys · v${s.version}${s.updatedByName ? ` · ${s.updatedByName} · ${i.day(s.updatedAt)}` : ""}`)}</p>
+              <p className="src">{t(`${open(s.key)} Necessities abiertos · v${s.version}${s.updatedByName ? ` · ${s.updatedByName} · ${i.day(s.updatedAt)}` : ""}`, `${open(s.key)} open Necessities · v${s.version}${s.updatedByName ? ` · ${s.updatedByName} · ${i.day(s.updatedAt)}` : ""}`)}</p>
               {edit ? (
                 <form action={saveSeller.bind(null, s.key)} className="qa-form">
                   <label>{t("Razón social", "Legal name")}<input name="legalName" maxLength={160} defaultValue={s.legalName} /></label>
@@ -57,7 +57,7 @@ export default async function SellersPage({ searchParams }: { searchParams: Prom
                   <label>{t("Teléfono", "Phone")}<input name="phone" maxLength={40} defaultValue={s.phone ?? ""} /></label>
                   <label>{t("IVA que se suma a sus cotizaciones (%)", "IVA added to its quotes (%)")}<input name="ivaPct" type="number" min={0} max={40} step="0.01" defaultValue={Number(s.ivaPct)} /></label>
                   <label className="chk"><input type="checkbox" name="allowsCop" value="1" defaultChecked={s.allowsCop} /> {t("Puede cotizar en pesos (COP) además de dólares", "May quote in pesos (COP) as well as dollars")}</label>
-                  {s.key !== "USA" && <label className="chk"><input type="checkbox" name="active" value="1" defaultChecked={s.active} /> {t("Activa: se puede elegir en los Journeys", "Active: can be chosen on Journeys")}</label>}
+                  {s.key !== "USA" && <label className="chk"><input type="checkbox" name="active" value="1" defaultChecked={s.active} /> {t("Activa: se puede elegir en las Necesidades", "Active: can be chosen on Necessities")}</label>}
                   <button type="submit">{t("Guardar", "Save")}</button>
                 </form>
               ) : (

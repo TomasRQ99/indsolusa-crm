@@ -260,7 +260,7 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
                 </div>
               ))}
               <div className="ss-foot">
-                <span>{t("Enter busca registros: clientes, Journeys, facturas, repuestos.", "Enter searches records: customers, Journeys, invoices, parts.")}</span>
+                <span>{t("Enter busca registros: clientes, Necesidades, facturas, repuestos.", "Enter searches records: customers, Necessities, invoices, parts.")}</span>
                 <Link href="/profile#guia">{t("Apagar la guía de entrenamiento", "Turn off the training guide")}</Link>
               </div>
             </div>

@@ -55,7 +55,7 @@ export default async function FuturePulsePage() {
 
       <section className="card" id="contratado">
         <b>{t("FUTURO CONTRATADO", "CONTRACTED FUTURE")}</b> <span className="small muted">{t("negocios aceptados que aún no se han facturado del todo", "accepted business not yet fully invoiced")}</span>
-        <p className="small"><b className="mono">{usd(f.contracted.usd)}</b> {t(`por facturar en ${f.contracted.n} Journeys`, `to invoice across ${f.contracted.n} Journeys`)} · <Link href="/operaciones/compromisos">{t("ver alto valor", "see high value")}</Link></p>
+        <p className="small"><b className="mono">{usd(f.contracted.usd)}</b> {t(`por facturar en ${f.contracted.n} Necesidades`, `to invoice across ${f.contracted.n} Necessities`)} · <Link href="/operaciones/compromisos">{t("ver alto valor", "see high value")}</Link></p>
         <div className="tscroll"><table><Head /><tbody><Row label={t("Por facturar, según la fecha prometida al cliente", "To invoice, by the date promised to the customer")} b={f.contracted.toInvoice} /></tbody></table></div>
       </section>
 

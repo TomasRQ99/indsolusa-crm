@@ -55,7 +55,7 @@ export default async function FutureBridgePage({ searchParams }: { searchParams:
           {entities.map((e) => <Link key={e.key} href={`/gerencia/futuro?empresa=${e.key}`} className={seller === e.key ? "on" : ""}>{e.name}</Link>)}
         </nav>
       )}
-      {seller && <p className="src">{t("Se muestran los Journeys, facturas y compras de esta empresa. Las oportunidades futuras no pertenecen a una empresa: su conteo es de toda la compañía.", "Journeys, invoices and purchases of this company are shown. Future opportunities belong to no company: their count is company-wide.")}</p>}
+      {seller && <p className="src">{t("Se muestran las Necesidades, facturas y compras de esta empresa. Las oportunidades futuras no pertenecen a una empresa: su conteo es de toda la compañía.", "Necessities, invoices and purchases of this company are shown. Future opportunities belong to no company: their count is company-wide.")}</p>}
       <div className="gm-bridge" id="puente">
         {BRIDGE_STAGES.map((def, k) => { const s = b.stages.find((x) => x.key === def.key)!; return (
           <section key={def.key} className={`gm-stage${s.usd != null ? " money" : ""}`} id={`st-${def.key}`}>
@@ -81,7 +81,7 @@ export default async function FutureBridgePage({ searchParams }: { searchParams:
       <h2 className="gm-h2" id="foco">{t("Foco de alto valor", "High-value focus")} <span className="src">{t(`material desde Eságara ${i.money(b.focus.materialEsagaraUsd)} (política de Foco)`, `material from Eságara ${i.money(b.focus.materialEsagaraUsd)} (Focus policy)`)}</span></h2>
       <div className="gm-cols">
         <section className="card" id="top5"><b>{t("LAS CINCO MAYORES POR ESÁGARA", "TOP FIVE BY ESÁGARA")}</b>
-          {v.top5.length === 0 ? <p className="quiet-p">{t("Ningún Journey abierto tiene precio todavía.", "No open Journey has a price yet.")}</p> : <ul className="rp-list">{v.top5.map((x, k) => item(x, t(`${k + 1}.ª Eságara más alta entre los Journeys abiertos`, `#${k + 1} highest Eságara among open Journeys`)))}</ul>}
+          {v.top5.length === 0 ? <p className="quiet-p">{t("Ninguna Necesidad abierta tiene precio todavía.", "No open Necessity has a price yet.")}</p> : <ul className="rp-list">{v.top5.map((x, k) => item(x, t(`${k + 1}.ª Eságara más alta entre las Necesidades abiertas`, `#${k + 1} highest Eságara among open Necessities`)))}</ul>}
         </section>
         <section className="card" id="mes"><b>{t("SE MUEVEN ESTE MES", "MOVING THIS MONTH")}</b>
           {v.monthMovers.length === 0 ? <p className="quiet-p">{t("Ninguna decisión de cliente cae este mes.", "No customer decision falls this month.")}</p> : <ul className="rp-list">{v.monthMovers.map((x) => item(x, t(`El cliente decide antes de fin de mes (${i.date(x.nextDecision)})`, `The customer decides before month end (${i.date(x.nextDecision)})`)))}</ul>}

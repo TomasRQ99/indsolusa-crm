@@ -192,7 +192,7 @@ export async function reconcilePayment(paymentId: string) {
   const p = await db.customerPayment.findUniqueOrThrow({ where: { id: paymentId }, include: { applications: true } });
   if (!p.applications.length) throw new Error("Primero aplica el pago a sus facturas / Apply the payment to its invoices first.");
   // Same rule as the Journey's billing tab: money left unapplied needs a written explanation first.
-  if (subMoney(p.amount, sumMoney(p.applications.map((a) => a.amount))) > 0 && !p.residualNote) throw new Error("Queda dinero sin aplicar: explícalo en la pestaña Facturación del Journey antes de conciliar / Unapplied money left: explain it in the Journey's Billing tab before reconciling.");
+  if (subMoney(p.amount, sumMoney(p.applications.map((a) => a.amount))) > 0 && !p.residualNote) throw new Error("Queda dinero sin aplicar: explícalo en la pestaña Facturación de la Necesidad antes de conciliar / Unapplied money left: explain it in the Necessity's Billing tab before reconciling.");
   await db.customerPayment.updateMany({
     where: { id: paymentId, reconciledAt: null },
     data: { reconciledAt: new Date(), reconciledById: user.id },

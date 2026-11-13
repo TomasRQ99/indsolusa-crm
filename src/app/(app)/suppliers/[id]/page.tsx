@@ -132,7 +132,7 @@ export default async function Supplier360({ params }: { params: Promise<{ id: st
             )}
             {rts.length === 0 ? <p className="quiet-p">{t("Sin Supplier PO todavía.", "No supplier POs yet.")}</p> : (
               <table className="x3-t">
-                <thead><tr><th>PO</th><th>Journey</th><th>{t("Prometido", "Promised")}</th><th>{t("Real", "Actual")}</th><th className="n">{t("Desvío", "Deviation")}</th></tr></thead>
+                <thead><tr><th>PO</th><th>{t("Necesidad", "Necessity")}</th><th>{t("Prometido", "Promised")}</th><th>{t("Real", "Actual")}</th><th className="n">{t("Desvío", "Deviation")}</th></tr></thead>
                 <tbody>{rts.slice().reverse().map((r) => (
                   <tr key={r.p.id}>
                     <td><Link className="val" href={`/compras/${r.p.id}`}>{r.p.code}</Link></td>
@@ -229,7 +229,7 @@ export default async function Supplier360({ params }: { params: Promise<{ id: st
             <div className="jbh"><b>{t("COMPROMISOS ACTIVOS", "ACTIVE COMMITMENTS")}</b></div>
             {openPos.length === 0 && unpaid.length === 0 ? <p className="quiet-p small">{t("Nada abierto con este proveedor.", "Nothing open with this supplier.")}</p> : (
               <ul className="plain small">
-                {openPos.map((p) => <li key={p.id}><Link href={`/compras/${p.id}`} className="val">{p.code}</Link> · {p.deal.account.name}<span className="src block">{p.shippedAt ? t(`despachada ${i.day(p.shippedAt)}`, `shipped ${i.day(p.shippedAt)}`) : t(`despacho prometido ${i.day(p.shipBy)}`, `ship-by ${i.day(p.shipBy)}`)} · <Link href={`/deals/${p.deal.id}`}>{t("entrar al Journey", "open Journey")}</Link></span></li>)}
+                {openPos.map((p) => <li key={p.id}><Link href={`/compras/${p.id}`} className="val">{p.code}</Link> · {p.deal.account.name}<span className="src block">{p.shippedAt ? t(`despachada ${i.day(p.shippedAt)}`, `shipped ${i.day(p.shippedAt)}`) : t(`despacho prometido ${i.day(p.shipBy)}`, `ship-by ${i.day(p.shipBy)}`)} · <Link href={`/deals/${p.deal.id}`}>{t("entrar a la Necesidad", "open Necessity")}</Link></span></li>)}
                 {unpaid.map(({ p, r }) => <li key={r.id}>{r.label}<span className="src block">{p.code} · {p.currency} {i.n2(r.amount)}{r.dueBy ? ` · ${i.day(r.dueBy)}` : ""}</span></li>)}
               </ul>
             )}

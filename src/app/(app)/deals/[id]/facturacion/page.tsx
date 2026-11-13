@@ -196,7 +196,7 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
                       <span className="src">{t(`Vence a ${a.paymentTermsDays} días. Se crea en SOLU; el envío a contabilidad es un paso aparte y confirmado.`, `Due in ${a.paymentTermsDays} days. Created in SOLU; sending it to accounting is a separate, confirmed step.`)}</span>
                     </form>
                     )
-                  ) : <span className="src">{t("Listo. Lo emite el responsable del Journey.", "Ready. The Journey owner issues it.")}</span>
+                  ) : <span className="src">{t("Listo. Lo emite el responsable de la Necesidad.", "Ready. The Necessity owner issues it.")}</span>
                 ) : (
                   <span className="src">{t(`La factura se habilita cuando estén los ${missing.length} requisitos que faltan: ${missing.map((m) => m.label).join(", ")}.`, `The invoice unlocks once the ${missing.length} missing requirements are on file: ${missing.map((m) => m.label).join(", ")}.`)}</span>
                 )}
@@ -223,7 +223,7 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
                     <thead><tr><th>{t("Factura", "Invoice")}</th><th className="n">{t("Abierto", "Open")}</th><th className="n">{t("Asignar", "Allocate")}</th></tr></thead>
                     <tbody>{openInv.map((x) => (
                       <tr key={x.inv.id}>
-                        <td><span className="mono">{x.inv.number}</span> <span className="src">{x.inv.deal.code}{x.inv.dealId === deal.id ? ` · ${t("este Journey", "this Journey")}` : ""} · {t("vence", "due")} {i.dateShort(x.inv.dueAt)}</span></td>
+                        <td><span className="mono">{x.inv.number}</span> <span className="src">{x.inv.deal.code}{x.inv.dealId === deal.id ? ` · ${t("esta Necesidad", "this Necessity")}` : ""} · {t("vence", "due")} {i.dateShort(x.inv.dueAt)}</span></td>
                         <td className="n mono">{i.n2(x.room)}</td>
                         <td className="n"><input name={`apply_${x.inv.id}`} type="number" step="0.01" min="0" max={Math.min(x.room, rest).toFixed(2)} aria-label={`${t("Asignar a", "Allocate to")} ${x.inv.number}`} /></td>
                       </tr>
@@ -245,7 +245,7 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
           {/* 2. Invoices: four separate dates */}
           <section className="jblock">
             <div className="jbh"><b>{t("FACTURAS · CUATRO VERDADES DEL COBRO", "INVOICES · FOUR CASH TRUTHS")}</b><span className="grow" /><span className="src">{t("vencimiento ≠ esperado ≠ prometido ≠ cobrado", "due ≠ expected ≠ promised ≠ collected")}</span></div>
-            {views.length === 0 ? <p className="quiet-p">{t("Aún no hay facturas en este Journey.", "No invoices on this Journey yet.")}</p> : (
+            {views.length === 0 ? <p className="quiet-p">{t("Aún no hay facturas en esta Necesidad.", "No invoices on this Necessity yet.")}</p> : (
               <div className="bil-invs">
                 {views.map((v) => {
                   const S = syncLabel(i, v.inv.syncState);

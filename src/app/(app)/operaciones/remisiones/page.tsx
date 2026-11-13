@@ -39,8 +39,8 @@ export default async function DeliveriesPage() {
         <div className="grow" />
         {pendingDeals.length > 0 && (
           <form action="/operaciones/remisiones/nueva" className="inline">
-            <select name="deal" required defaultValue="" aria-label="Journey">
-              <option value="" disabled>{t("Journey con entregas pendientes…", "Journey with pending deliveries…")}</option>
+            <select name="deal" required defaultValue="" aria-label={t("Necesidad", "Necessity")}>
+              <option value="" disabled>{t("Necesidad con entregas pendientes…", "Necessity with pending deliveries…")}</option>
               {pendingDeals.map((d) => <option key={d.id} value={d.id}>{d.code} · {d.account.name} · {d.title}</option>)}
             </select>
             <button type="submit">{t("Nueva remisión", "New delivery note")}</button>
@@ -49,7 +49,7 @@ export default async function DeliveriesPage() {
       </div>
       <div className="card flush">
         <table>
-          <thead><tr><th>{t("Remisión", "Delivery note")}</th><th>{t("Cliente · Journey", "Customer · Journey")}</th><th>{t("Fecha", "Date")}</th><th>{t("Unidades", "Units")}</th><th>{t("Prueba de entrega", "Proof of delivery")}</th><th>{t("Factura", "Invoice")}</th></tr></thead>
+          <thead><tr><th>{t("Remisión", "Delivery note")}</th><th>{t("Cliente · Necesidad", "Customer · Necessity")}</th><th>{t("Fecha", "Date")}</th><th>{t("Unidades", "Units")}</th><th>{t("Prueba de entrega", "Proof of delivery")}</th><th>{t("Factura", "Invoice")}</th></tr></thead>
           <tbody>
             {deliveries.map((d) => {
               const blockers = invoiceBlockers(d, d.deal, d.deal.account);
@@ -64,7 +64,7 @@ export default async function DeliveriesPage() {
                 </tr>
               );
             })}
-            {deliveries.length === 0 && <tr><td colSpan={6} className="empty"><b>{t("Aún no hay remisiones", "No delivery notes yet")}</b>{t("Se crean desde un Journey con OC aceptada.", "They are created from a Journey with an accepted PO.")}</td></tr>}
+            {deliveries.length === 0 && <tr><td colSpan={6} className="empty"><b>{t("Aún no hay remisiones", "No delivery notes yet")}</b>{t("Se crean desde una Necesidad con OC aceptada.", "They are created from a Necessity with an accepted PO.")}</td></tr>}
           </tbody>
         </table>
       </div>

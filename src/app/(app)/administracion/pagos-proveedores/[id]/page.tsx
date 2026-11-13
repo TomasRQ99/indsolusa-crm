@@ -53,7 +53,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
 
   const okMsg: Record<string, string> = {
     hecho: t("Hecho registrado.", "Fact recorded."),
-    solicitado: t("Solicitud creada con los datos del hito, del Journey y del perfil verificado.", "Request created from the milestone, the Journey and the verified profile."),
+    solicitado: t("Solicitud creada con los datos del hito, de la Necesidad y del perfil verificado.", "Request created from the milestone, the Necessity and the verified profile."),
     verificado: t("Verificación independiente registrada.", "Independent verification recorded."),
     aprobado: t("Aprobado. Todavía no está pagado: falta enviarlo desde el banco.", "Approved. It's not paid yet: it still has to be sent from the bank."),
     enviado: t("Envío registrado. No cuenta como pagado hasta que el banco o el proveedor lo confirme.", "Sending recorded. It doesn't count as paid until the bank or supplier confirms it."),
@@ -127,7 +127,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
 
       <section className="spo-why">
         <div><span className="k">{t("Por qué se mueve este dinero", "Why this money must move")}</span><b>{p.reason}</b></div>
-        <div><span className="k">Journey · Supplier PO</span><b><Link href={`/deals/${deal.id}`}>{deal.code}</Link> · <Link href={`/compras/${spo.id}`}>{spo.code} v{spoFull.version}</Link></b><span className="src">{deal.account.name} · {spoFull.releasedAt ? t(`liberada ${i.day(spoFull.releasedAt)}`, `released ${i.day(spoFull.releasedAt)}`) : t("sin liberar", "not released")} · {m(spoFull.amount)}</span></div>
+        <div><span className="k">{t("Necesidad", "Necessity")} · Supplier PO</span><b><Link href={`/deals/${deal.id}`}>{deal.code}</Link> · <Link href={`/compras/${spo.id}`}>{spo.code} v{spoFull.version}</Link></b><span className="src">{deal.account.name} · {spoFull.releasedAt ? t(`liberada ${i.day(spoFull.releasedAt)}`, `released ${i.day(spoFull.releasedAt)}`) : t("sin liberar", "not released")} · {m(spoFull.amount)}</span></div>
         <div className="prom"><span className="k">{t("Promesa al cliente", "Customer promise")}</span><b>{deal.promiseText ?? "—"}</b><span className="mono">{i.dateShort(deal.promisedDate)}</span></div>
       </section>
 

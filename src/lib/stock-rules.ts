@@ -9,7 +9,7 @@ export const EXC_TEXT: Record<string, Txt> = {
   COMPLETENESS: { es: "Incompleto (faltan componentes)", en: "Incomplete (components missing)" }, DOCUMENTATION: { es: "Faltan documentos", en: "Documents missing" },
 };
 export const LOT_STATES: Record<string, Txt & { tone: string; blocked: boolean }> = {
-  COMMITTED: { es: "Comprometido a un Journey", en: "Committed to a Journey", tone: "info", blocked: false },
+  COMMITTED: { es: "Comprometido a una Necesidad", en: "Committed to a Necessity", tone: "info", blocked: false },
   AVAILABLE: { es: "Disponible", en: "Available", tone: "ok", blocked: false },
   RESERVED: { es: "Reservado", en: "Reserved", tone: "info", blocked: false },
   QUARANTINE: { es: "En cuarentena", en: "Quarantine", tone: "risk", blocked: true },

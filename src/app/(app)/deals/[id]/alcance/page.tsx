@@ -36,13 +36,13 @@ export default async function ScopePage({ params, searchParams }: { params: Prom
     quitada: t("Componente quitado del alcance.", "Component removed from scope."),
     importadas: t(`${sp.n ?? 0} línea(s) de la cotización agregadas como «pidió + incluido». Revisa qué más necesita para operar.`, `${sp.n ?? 0} quote line(s) added as “asked + included”. Check what else it needs to operate.`),
     dato: t("Dato técnico guardado. Si había uno anterior para el mismo campo, queda en el historial.", "Technical fact saved. If there was an earlier one for the same field, it stays in history."),
-    confirmado: t("Respuesta del cliente registrada. Quedó en el Journey.", "Customer's answer recorded. It's on the Journey."),
+    confirmado: t("Respuesta del cliente registrada. Quedó en la Necesidad.", "Customer's answer recorded. It's on the Necessity."),
     relacion: t("Relación guardada con su evidencia.", "Relationship saved with its evidence."),
   };
   const errMsg: Record<string, string> = {
-    permiso: t("Solo quien lleva el Journey, un Negociador Operativo o la dirección pueden cambiar el alcance.", "Only the Journey owner, an Operations Negotiator or management can change the scope."),
+    permiso: t("Solo quien lleva la Necesidad, un Negociador Operativo o la dirección pueden cambiar el alcance.", "Only the Necessity owner, an Operations Negotiator or management can change the scope."),
     componente: t("Escribe el nombre del componente.", "Write the component's name."),
-    "sin-cotizacion": t("Este Journey aún no tiene cotización.", "This Journey has no quote yet."),
+    "sin-cotizacion": t("Esta Necesidad aún no tiene cotización.", "This Necessity has no quote yet."),
     dato: t("Campo, valor y fuente son obligatorios.", "Field, value and source are required."),
     confirmacion: t("Escribe qué dijo el cliente y quién lo dijo.", "Write what the customer said and who said it."),
     fecha: t("La fecha no puede ser futura.", "The date can't be in the future."),
@@ -106,7 +106,7 @@ export default async function ScopePage({ params, searchParams }: { params: Prom
         )}
         {W.ambiguities.length > 0 && (
           <div className="scp-amb">
-            <p className="src">{t("Palabras que pueden significar más de una cosa (en las palabras del propio Journey):", "Words that can mean more than one thing (in the Journey's own words):")}</p>
+            <p className="src">{t("Palabras que pueden significar más de una cosa (en las palabras de la propia Necesidad):", "Words that can mean more than one thing (in the Necessity's own words):")}</p>
             <ul>{W.ambiguities.map((a) => <li key={a.term} className={W.resolvedTerms.includes(a.term) ? "done" : ""}><b>«{a.fragment}»</b> <span className="src">· {a.where}</span>{W.resolvedTerms.includes(a.term) ? <span className="sig ok">{t("Aclarado con el cliente", "Clarified with customer")}</span> : <span className="block small">{L(a.question)}</span>}</li>)}</ul>
           </div>
         )}

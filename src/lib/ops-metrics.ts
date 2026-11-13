@@ -44,8 +44,8 @@ export async function opsMetrics(windowDays = 365): Promise<{ since: Date; group
 
   return { since, groups: [
     { key: "cumplimiento", title: { es: "Cumplimiento", en: "Fulfilment" }, metrics: [
-      r("promise", "Promesa al cliente cumplida", "Customer promise achieved", onTime.length, withPromise.length, { es: "Journeys entregados completos, con fecha prometida", en: "Journeys delivered in full, with a promised date" }),
-      r("complete", "Entrega completa", "Complete delivery", complete.length, deals.length, { es: "Journeys con alguna entrega en el periodo", en: "Journeys with any delivery in the period" }),
+      r("promise", "Promesa al cliente cumplida", "Customer promise achieved", onTime.length, withPromise.length, { es: "Necesidades entregadas completas, con fecha prometida", en: "Necessities delivered in full, with a promised date" }),
+      r("complete", "Entrega completa", "Complete delivery", complete.length, deals.length, { es: "Necesidades con alguna entrega en el periodo", en: "Necessities with any delivery in the period" }),
       r("first", "Entregado al primer intento", "Delivered at the first attempt", firstTime.length, orders.length, { es: "Despachos entregados", en: "Dispatch orders delivered" }),
       r("result", "Resultado del cliente confirmado", "Customer result confirmed", complete.filter((d) => d.resultAchievedAt).length, complete.length),
       r("claims", "Casos de clientes ya cerrados", "Customer cases already closed", wClaims.filter((c) => c.status !== "OPEN").length, wClaims.length),
@@ -73,7 +73,7 @@ export async function opsMetrics(windowDays = 365): Promise<{ since: Date; group
       { key: "unmatched", label: { es: "Movimientos por explicar", en: "Movements to explain" }, kind: "COUNT", value: txs.length - explained.length, n: txs.length },
     ] },
     { key: "rentabilidad", title: { es: "Rentabilidad", en: "Profitability" }, metrics: [
-      { key: "final", label: { es: "Eságara final frente a la protegida (Journeys cerrados como final)", en: "Final Eságara vs protected (Journeys closed as final)" }, kind: "MONEY", value: fin.length ? sumMoney(fin.map((x) => x.final.esagara - x.prot.esagara)) : null, n: fin.length, note: { es: "Suma de las diferencias: positivo es mejor que lo protegido", en: "Sum of the differences: positive is better than protected" } },
+      { key: "final", label: { es: "Eságara final frente a la protegida (Necesidades cerradas como final)", en: "Final Eságara vs protected (Necessities closed as final)" }, kind: "MONEY", value: fin.length ? sumMoney(fin.map((x) => x.final.esagara - x.prot.esagara)) : null, n: fin.length, note: { es: "Suma de las diferencias: positivo es mejor que lo protegido", en: "Sum of the differences: positive is better than protected" } },
     ] },
     { key: "conocimiento", title: { es: "Conocimiento", en: "Knowledge" }, metrics: [
       { key: "measured", label: { es: "Pesos y medidas reales tomados en bodega", en: "Real weights and sizes taken at the warehouse" }, kind: "COUNT", value: measured, n: measured },

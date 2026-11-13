@@ -43,7 +43,7 @@ export default async function DeliveryPage({ params }: { params: Promise<{ id: s
           <div className="card">
             <h2>{t("Productos entregados", "Products delivered")}</h2>
             {d.lines.length === 0 ? (
-              <p className="small muted">{t("Entrega completa del Journey (sin líneas de producto).", "Full Journey delivery (no product lines).")}</p>
+              <p className="small muted">{t("Entrega completa de la Necesidad (sin líneas de producto).", "Full Necessity delivery (no product lines).")}</p>
             ) : (
               <table>
                 <thead><tr><th>{t("Cant.", "Qty")}</th><th>{t("Producto", "Product")}</th><th>{t("Seriales", "Serials")}</th><th className="n">{t("Valor", "Amount")}</th></tr></thead>
@@ -85,7 +85,7 @@ export default async function DeliveryPage({ params }: { params: Promise<{ id: s
               </details>
             )}
           </div>
-          <p className="note">{t("Entregar no es resolver: el Journey se cierra cuando el cliente confirma su resultado.", "Delivering is not solving: the Journey closes when the customer confirms the result.")}</p>
+          <p className="note">{t("Entregar no es resolver: la Necesidad se cierra cuando el cliente confirma su resultado.", "Delivering is not solving: the Necessity closes when the customer confirms the result.")}</p>
         </div>
 
         <aside className="rail">
@@ -117,10 +117,10 @@ export default async function DeliveryPage({ params }: { params: Promise<{ id: s
                     );
                   })}
                 </div>
-                <p className="src">{t("Los datos del cliente (portal, tributarios, código) se completan en su ficha; la OC en el Journey.", "Customer data (portal, tax, code) is completed on the customer record; the PO on the Journey.")}</p>
+                <p className="src">{t("Los datos del cliente (portal, tributarios, código) se completan en su ficha; la OC en la Necesidad.", "Customer data (portal, tax, code) is completed on the customer record; the PO on the Necessity.")}</p>
                 <div className="row" style={{ marginTop: 8 }}>
                   <Link className="btn secondary sm" href={`/accounts/${d.deal.accountId}`}>{t("Ficha del cliente", "Customer record")}</Link>
-                  <Link className="btn secondary sm" href={`/deals/${d.deal.id}`}>Journey</Link>
+                  <Link className="btn secondary sm" href={`/deals/${d.deal.id}`}>{t("Necesidad", "Necessity")}</Link>
                 </div>
               </>
             )}

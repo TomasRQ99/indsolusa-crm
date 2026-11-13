@@ -36,7 +36,7 @@ export default async function VisitPage({ params, searchParams }: { params: Prom
     planeada: t("Visita planeada. Abajo está el contexto que SOLU ya tiene del cliente.", "Visit planned. Below is the context SOLU already has on the customer."),
     "sin-plan": t("Visita registrada. Cuenta lo que pasó en «Cómo fue».", "Visit recorded. Tell what happened in «How it went»."),
     hecha: t("Visita cerrada. Quedó en el historial del cliente.", "Visit closed. It's in the customer's history."),
-    "hecha-need": t("Visita cerrada y la necesidad nueva quedó como Journey.", "Visit closed and the new need is now a Journey."),
+    "hecha-need": t("Visita cerrada y la Necesidad nueva quedó creada.", "Visit closed and the new need is now a Necessity."),
     cancelada: t("Visita cancelada.", "Visit cancelled."), archivo: t("Archivo quitado.", "File removed."), compromiso: t("Compromiso actualizado.", "Commitment updated."),
   };
   const errMsg: Record<string, string> = {

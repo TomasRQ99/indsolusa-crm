@@ -58,7 +58,7 @@ export function readQuotes(quotes: QuoteIn[], ctx: { readyDate: Date | null; pro
   return quotes.map((q) => {
     const start = q.pickupDate ?? ctx.readyDate;
     const arrives = start && q.transitDays != null ? new Date(start.getTime() + (q.transitDays + ctx.afterArrivalDays) * 864e5) : null;
-    const h = ctx.promise ? promiseHealth(ctx.promise, arrives, ctx.today, ctx.policy) : { health: "UNKNOWN" as const, reason: { es: "Este Journey no tiene promesa con fecha", en: "This Journey has no dated promise" } };
+    const h = ctx.promise ? promiseHealth(ctx.promise, arrives, ctx.today, ctx.policy) : { health: "UNKNOWN" as const, reason: { es: "Esta Necesidad no tiene promesa con fecha", en: "This Necessity has no dated promise" } };
     return { id: q.id, arrives, health: h.health, reason: h.reason, cheapest: min != null && q.cost === min, extraVsCheapest: min != null ? Math.round((q.cost - min) * 100) / 100 : 0 };
   });
 }

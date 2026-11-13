@@ -194,6 +194,6 @@ export function resultTimeline(deal: ResultDeal, i: I): TimelineItem[] {
     if (r.resolvedAt) out.push({ at: r.resolvedAt, kind: "recovery", title: r.outcome === "RECOVERED" ? t("Recovery exitosa", "Recovery successful") : r.outcome === "NO_LONGER_RELEVANT" ? t("Recovery cerrada: ya no aplica", "Recovery closed: no longer relevant") : t("Recovery cerrada sin recuperar", "Recovery closed without recovering"), detail: r.outcomeNote ?? undefined, tone: r.outcome === "RECOVERED" ? "ok" : "dash" });
   }
   for (const c of deal.continuity) out.push({ at: c.createdAt, kind: "signal", title: `${c.kind === "TRIGGER" ? t("Disparador", "Trigger") : t("Señal", "Signal")}: ${c.what}`, detail: c.basis, tone: "info" });
-  if (deal.closedAt) out.push({ at: deal.closedAt, kind: "closed", title: t("Journey cerrado", "Journey closed"), detail: deal.closedByName ?? undefined, tone: "ok" });
+  if (deal.closedAt) out.push({ at: deal.closedAt, kind: "closed", title: t("Necesidad cerrada", "Necessity closed"), detail: deal.closedByName ?? undefined, tone: "ok" });
   return out.sort((a, b) => +a.at - +b.at);
 }

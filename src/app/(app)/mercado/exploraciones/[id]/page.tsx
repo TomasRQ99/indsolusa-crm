@@ -175,7 +175,7 @@ export default async function ExplorationPage({ params, searchParams }: { params
               <div key={c.id} className="card">
                 <div className="mk-head"><Link href={`/mercado/empresas/${c.id}`}><b>{c.name}</b></Link>{c.alsoSupplier && <Link href={`/suppliers/${c.alsoSupplier.id}`} className="sig info">{t("También proveedor", "Also a supplier")}</Link>}</div>
                 {link?.why && <span className="src block">{link.why}</span>}
-                <p className="small"><span className="sig ok">{t("Hecho", "Fact")}</span> {c.history.deals ? t(`${c.history.deals} Journey(s) con nosotros, ${c.history.won} ganado(s).`, `${c.history.deals} Journey(s) with us, ${c.history.won} won.`) : t("Aún no hemos trabajado juntos.", "We haven't worked together yet.")}
+                <p className="small"><span className="sig ok">{t("Hecho", "Fact")}</span> {c.history.deals ? t(`${c.history.deals} Necesidad(es) con nosotros, ${c.history.won} ganada(s).`, `${c.history.deals} Necessity(ies) with us, ${c.history.won} won.`) : t("Aún no hemos trabajado juntos.", "We haven't worked together yet.")}
                   {c.history.contacts.length > 0 && ` ${t("Conocemos a", "We know")}: ${c.history.contacts.slice(0, 4).map((x) => `${x.name}${x.title ? ` (${x.title})` : ""}`).join(", ")}.`}</p>
                 <b className="small">{t("Plantas", "Plants")}</b>
                 {c.plants.length === 0 ? <p className="muted small">{t("No conocemos sus plantas todavía.", "We don't know their plants yet.")}</p> : (

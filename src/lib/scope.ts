@@ -9,7 +9,7 @@ async function currentQuote(dealId: string) {
 }
 
 const sourcesOf = (d: { title: string; desiredResult: string | null; needSpecs: string | null }, q: { solution: string | null; lines: { description: string }[] } | null, lines: { component: string; note: string | null; source: string | null }[]): Source[] => [
-  { where: "Journey", text: d.title },
+  { where: "Necesidad", text: d.title },
   { where: "Resultado deseado", text: d.desiredResult },
   { where: "Especificaciones", text: d.needSpecs },
   ...(q ? [{ where: "Solución de la cotización", text: q.solution }, ...q.lines.map((l) => ({ where: "Línea de la cotización", text: l.description }))] : []),

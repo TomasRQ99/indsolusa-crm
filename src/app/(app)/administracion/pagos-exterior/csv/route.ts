@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
-  const header = ["Fecha solicitud", "Fecha pago", "Proveedor", "País", "Supplier PO", "Journey", "Cliente", "Moneda", "Monto", "USD aprox", "Motivo", "Verificó", "Aprobó", "Referencia banco"];
+  const header = ["Fecha solicitud", "Fecha pago", "Proveedor", "País", "Supplier PO", "Necesidad", "Cliente", "Moneda", "Monto", "USD aprox", "Motivo", "Verificó", "Aprobó", "Referencia banco"];
   const lines = rows.map((p) =>
     [
       day(p.createdAt),

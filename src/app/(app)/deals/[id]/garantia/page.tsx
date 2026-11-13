@@ -33,8 +33,8 @@ export default async function WarrantyPage({ params, searchParams }: { params: P
   // Delivered lines that have no warranty recorded yet: offered as a starting point, nothing is assumed.
   const delivered = d.deliveries.flatMap((x) => x.lines.map((l) => ({ item: `${l.qty} × ${l.dealItem.code ? `${l.dealItem.code} · ` : ""}${l.dealItem.description}`.slice(0, 200), serial: l.serials, at: x.deliveredAt, rem: x.code })));
   const pre = delivered.find((x) => !d.warranties.some((w) => w.item === x.item)) ?? null;
-  const okMsg: Record<string, string> = { garantia: t("Garantía registrada.", "Warranty recorded."), quitada: t("Garantía quitada.", "Warranty removed."), caso: t("Caso abierto. También aparece en la atención de Operaciones.", "Case opened. It also shows in the Operations attention list."), nota: t("Nota agregada.", "Note added."), cerrado: t("Caso cerrado.", "Case closed."), "cerrado-final": t("Caso cerrado. La economía de este Journey ya estaba cerrada como final: el costo quedó en el caso y no cambió esa cifra.", "Case closed. This Journey's economics were already final: the cost stays on the case and didn't change that figure.") };
-  const errMsg: Record<string, string> = { permiso: t("No tienes permiso sobre este Journey.", "You don't have permission on this Journey."), garantia: t("Indica el producto, desde cuándo y cuántos meses.", "Give the product, the start date and how many months."), "con-casos": t("Esa garantía tiene casos: no se quita.", "That warranty has cases: it can't be removed."), caso: t("Elige el tipo y escribe qué pasó.", "Choose the kind and write what happened."), nota: t("Escribe la nota.", "Write the note."), cerrado: t("Ese caso ya está cerrado.", "That case is already closed."), resolucion: t("Escribe qué se hizo.", "Write what was done."), responsable: t("Para resolverlo, indica quién fue responsable.", "To resolve it, say who was responsible.") };
+  const okMsg: Record<string, string> = { garantia: t("Garantía registrada.", "Warranty recorded."), quitada: t("Garantía quitada.", "Warranty removed."), caso: t("Caso abierto. También aparece en la atención de Operaciones.", "Case opened. It also shows in the Operations attention list."), nota: t("Nota agregada.", "Note added."), cerrado: t("Caso cerrado.", "Case closed."), "cerrado-final": t("Caso cerrado. La economía de esta Necesidad ya estaba cerrada como final: el costo quedó en el caso y no cambió esa cifra.", "Case closed. This Necessity's economics were already final: the cost stays on the case and didn't change that figure.") };
+  const errMsg: Record<string, string> = { permiso: t("No tienes permiso sobre esta Necesidad.", "You don't have permission on this Necessity."), garantia: t("Indica el producto, desde cuándo y cuántos meses.", "Give the product, the start date and how many months."), "con-casos": t("Esa garantía tiene casos: no se quita.", "That warranty has cases: it can't be removed."), caso: t("Elige el tipo y escribe qué pasó.", "Choose the kind and write what happened."), nota: t("Escribe la nota.", "Write the note."), cerrado: t("Ese caso ya está cerrado.", "That case is already closed."), resolucion: t("Escribe qué se hizo.", "Write what was done."), responsable: t("Para resolverlo, indica quién fue responsable.", "To resolve it, say who was responsible.") };
 
   return (
     <div className="jw scp">
@@ -51,7 +51,7 @@ export default async function WarrantyPage({ params, searchParams }: { params: P
 
       <section className="jblock" id="garantias">
         <div className="jbh"><b>{t("GARANTÍAS", "WARRANTIES")}</b></div>
-        {d.warranties.length === 0 ? <p className="quiet-p">{t("Aún no hay garantías registradas en este Journey.", "No warranties recorded on this Journey yet.")}</p> : (
+        {d.warranties.length === 0 ? <p className="quiet-p">{t("Aún no hay garantías registradas en esta Necesidad.", "No warranties recorded on this Necessity yet.")}</p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Producto", "Product")}</th><th>{t("Serial", "Serial")}</th><th>{t("Cubre", "Covers")}</th><th>{t("Estado", "State")}</th><th>{t("Proveedor", "Supplier")}</th><th /></tr></thead>
             <tbody>{d.warranties.map((w) => { const s = warrantyState(w.startsOn, w.months, T); return (
@@ -111,7 +111,7 @@ export default async function WarrantyPage({ params, searchParams }: { params: P
                       <button type="submit" name="status" value="RESOLVED" style={{ flex: "0 0 auto" }}>{t("Resuelto", "Resolved")}</button>
                       <button type="submit" name="status" value="REJECTED" className="secondary" style={{ flex: "0 0 auto" }}>{t("No procede", "Not accepted")}</button>
                     </div>
-                    <span className="src">{t("El costo entra a los costos reales del Journey.", "The cost enters the Journey's real costs.")}</span>
+                    <span className="src">{t("El costo entra a los costos reales de la Necesidad.", "The cost enters the Necessity's real costs.")}</span>
                   </form>
                 </details>
               </>

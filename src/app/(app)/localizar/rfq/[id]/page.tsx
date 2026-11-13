@@ -40,7 +40,7 @@ export default async function RfqPage({ params, searchParams }: { params: Promis
           <p className="crumb k"><Link href="/localizar">{t("Localizar repuestos", "Find parts")}</Link></p>
           <span className="jid mono">{rfq.code}</span>
           <span className="grow" />
-          {rfq.deal && <Link className="link small" href={`/deals/${rfq.deal.id}?tab=source`}>{t("Ir al Journey", "Open Journey")} {rfq.deal.code}</Link>}
+          {rfq.deal && <Link className="link small" href={`/deals/${rfq.deal.id}?tab=source`}>{t("Ir a la Necesidad", "Open Necessity")} {rfq.deal.code}</Link>}
         </div>
         <div className="jh-title"><h1>{items.map((x) => `${x.qty} × ${x.mpn}`).join(" · ")}</h1></div>
         <p className="jh-sub">{t(`enviada por ${rfq.createdByName} el ${i.day(rfq.createdAt)}`, `sent by ${rfq.createdByName} on ${i.day(rfq.createdAt)}`)}{rfq.neededBy ? t(` · respuesta antes del ${i.day(rfq.neededBy)}`, ` · answer by ${i.day(rfq.neededBy)}`) : ""} · {t(`${answered} de ${rfq.recipients.length} respondieron`, `${answered} of ${rfq.recipients.length} answered`)}</p>

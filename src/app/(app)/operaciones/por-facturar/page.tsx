@@ -71,7 +71,7 @@ export default async function DeliveredNotInvoicedPage() {
       </section>
       <div className="card flush">
         <table>
-          <thead><tr><th>{t("Remisión", "Delivery note")}</th><th>{t("Cliente · Journey", "Customer · Journey")}</th><th className="n">{t("Valor", "Amount")}</th><th>{t("Qué falta", "What's missing")}</th><th /></tr></thead>
+          <thead><tr><th>{t("Remisión", "Delivery note")}</th><th>{t("Cliente · Necesidad", "Customer · Necessity")}</th><th className="n">{t("Valor", "Amount")}</th><th>{t("Qué falta", "What's missing")}</th><th /></tr></thead>
           <tbody>
             {ready.length > 0 && <tr className="grpr"><td colSpan={5}>{t("Listo para facturar", "Ready to invoice")} <span>· {t("nada lo bloquea", "nothing blocks it")}</span></td></tr>}
             {ready.map((r) => <Row key={r.d.id} r={r} />)}

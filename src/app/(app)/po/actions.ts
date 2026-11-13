@@ -199,7 +199,7 @@ export async function acceptPo(id: string) {
   const deal = po.deal;
   const effects = [
     `Cotización ${quoteNo(po.quote!)} aceptada`,
-    `OC del cliente ${po.number} registrada en el Journey`,
+    `OC del cliente ${po.number} registrada en la Necesidad`,
     `Promesa al cliente: entrega el ${i.date(B.promiseDate)}`,
     ...(costDelta ? [`Costo esperado +USD ${costDelta.toFixed(2)} (${r!.scenarioLabel ?? "envío acelerado"})`] : []),
     ...(priceDelta ? [`Venta +USD ${priceDelta.toFixed(2)} aprobada por el cliente`] : []),

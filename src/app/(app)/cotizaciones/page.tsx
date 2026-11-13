@@ -42,7 +42,7 @@ export default async function CommercialFuturePage() {
         <h1>{t("Futuro comercial", "Commercial future")}</h1>
         <p className="src">{t("Cotizaciones abiertas según lo que necesitan de ti. Sin probabilidades de cierre inventadas.", "Open quotes by what they need from you. No invented close probabilities.")}</p>
       </div>
-      {rows.length === 0 && <p className="quiet-p">{t("No hay cotizaciones abiertas. Se crean desde la pestaña Cotización de cada Journey.", "No open quotes. Create them from each Journey's Quote tab.")}</p>}
+      {rows.length === 0 && <p className="quiet-p">{t("No hay cotizaciones abiertas. Se crean desde la pestaña Cotización de cada Necesidad.", "No open quotes. Create them from each Necessity's Quote tab.")}</p>}
       {zones.map((z) => {
         const list = rows.filter((r) => r.zone === z.key);
         if (list.length === 0) return null;

@@ -332,7 +332,7 @@ export async function loadDemo(adminId: string) {
       await hist({ accountId: ingenio.id, supplierId: rodamientos.id, title: "Rodamientos molino 3", code: "RB-22320", desc: "Rodamiento de rodillos 22320", qty: 4, price: 820, cost: 590, start: -85, shipDelta: 1, payDelay: 6, desired: "Molino 3 sin calentamiento en chumaceras", evidence: "Las chumaceras del molino 3 trabajan a 55 °C, normal", who: "Técnico de montaje (Ingenio)" });
       await hist({ accountId: minera.id, supplierId: general.id, title: "Válvulas de cuchilla espesador 1", code: "VK-8", desc: "Válvula de cuchilla 8\"", qty: 4, price: 1350, cost: 980, start: -80, shipDelta: 2, payDelay: 5, result: "PARTIAL", rec: { cause: "SUPPLIER", what: "Llegaron 3 de 4 válvulas; la cuarta quedó en backorder del fabricante", impact: "Una línea del espesador sigue con la válvula vieja" }, desired: "Espesador 1 con las 4 válvulas nuevas", evidence: "Tres válvulas funcionan bien; la cuarta línea sigue con la vieja", who: "Laura Ríos (Compras)" });
       await tx.productSignal.createMany({ data: [
-        { kind: "REENTRY", screen: "Journey · Facturación", note: "Volví a escribir el código de recepción de Siderúrgica que ya estaba en la remisión", reportedByName: paola.name, createdAt: d(-12) },
+        { kind: "REENTRY", screen: "Necesidad · Facturación", note: "Volví a escribir el código de recepción de Siderúrgica que ya estaba en la remisión", reportedByName: paola.name, createdAt: d(-12) },
         { kind: "REENTRY", screen: "Operaciones · Compras", note: "Copié a mano las líneas de la cotización en la OC al proveedor", reportedByName: paola.name, createdAt: d(-30) },
         { kind: "ATTENTION_NOISE", screen: "Mi Día", note: "Marcó la ETA de Siemens como riesgo y seguía dentro de la promesa", reportedByName: diana.name, createdAt: d(-8) },
       ] });
@@ -733,13 +733,13 @@ async function seedMarketM2(tx: Prisma.TransactionClient, d: (n: number) => Date
     { accountId: lacteos.id, block: "BUY", topic: "QUOTES", statement: "Piden 2 cotizaciones, salvo urgencias de parada", observedAt: d(-30), ...prov },
     { accountId: lacteos.id, block: "BUY", topic: "PAYMENT", statement: "Pagan a 30 días por transferencia", observedAt: d(-200), sourceType: "INTERNAL", sourceRef: "Historia de pagos con nosotros", confidence: "VERIFIED", capturedByName: by },
     { accountId: lacteos.id, block: "VALUE", topic: "CONTINUITY", area: "Mantenimiento", statement: "Prefieren pagar más si el repuesto llega antes de la parada", evidence: "Jorge: «prefiero pagar el flete aéreo a parar la UHT un día»", observedAt: d(-28), ...prov },
-    { accountId: lacteos.id, block: "VALUE", topic: "COMPATIBILITY", statement: "Les importa que el repuesto resista la limpieza CIP", evidence: "Recovery de sellos EPDM → FKM en octubre", observedAt: d(-20), sourceType: "INTERNAL", sourceRef: "Journey sellos bomba CIP", confidence: "VERIFIED", capturedByName: by },
+    { accountId: lacteos.id, block: "VALUE", topic: "COMPATIBILITY", statement: "Les importa que el repuesto resista la limpieza CIP", evidence: "Recovery de sellos EPDM → FKM en octubre", observedAt: d(-20), sourceType: "INTERNAL", sourceRef: "Necesidad sellos bomba CIP", confidence: "VERIFIED", capturedByName: by },
     { accountId: lacteos.id, plantId: tuluaId, block: "OPERATE", statement: "Tres turnos, seis días por semana; la parada mayor es en enero", observedAt: d(-40), ...prov },
     { accountId: lacteos.id, plantId: tuluaId, block: "HURT", statement: "Una parada de la UHT 1 obliga a desviar leche a otra planta", observedAt: d(-28), ...prov },
   ] });
   const pump = await tx.installedAsset.create({ data: { plantId: tuluaId, process: "Limpieza CIP", line: "CIP 1", name: "Bomba centrífuga sanitaria de CIP", manufacturer: "Alfa Laval", model: "LKH-20", operationalRole: "Impulsa la soda caliente en la limpieza de la UHT", redundancy: "NONE", critical: true, criticalWhy: "Sin CIP no se puede limpiar ni arrancar la UHT", knownComponents: "Sellos mecánicos FKM", observedAt: d(-25), sourceType: "VISIT", sourceRef: "Visita técnica", confidence: "VERIFIED", capturedByName: by } });
   await tx.installedAsset.createMany({ data: [
-    { plantId: tuluaId, process: "Pasteurización y UHT", line: "UHT 1", name: "Transmisores de presión del pasteurizador", manufacturer: "Siemens", model: "SITRANS P 7MF0340", redundancy: "PARTIAL", observedAt: d(-90), sourceType: "INTERNAL", sourceRef: "Journey transmisores pasteurizador", confidence: "VERIFIED", capturedByName: by },
+    { plantId: tuluaId, process: "Pasteurización y UHT", line: "UHT 1", name: "Transmisores de presión del pasteurizador", manufacturer: "Siemens", model: "SITRANS P 7MF0340", redundancy: "PARTIAL", observedAt: d(-90), sourceType: "INTERNAL", sourceRef: "Necesidad transmisores pasteurizador", confidence: "VERIFIED", capturedByName: by },
     { plantId: tuluaId, process: "Pasteurización y UHT", line: "UHT 1", name: "Homogeneizador", manufacturer: "SKF", model: "Rodamientos 6310 (por confirmar)", operationalRole: "Homogeniza la leche antes del tratamiento UHT", redundancy: "UNKNOWN", observedAt: d(-8), sourceType: "CONVERSATION", sourceRef: "Jorge Pérez", confidence: "INFERRED", capturedByName: by },
   ] });
   await tx.impactProfile.create({ data: { plantId: tuluaId, assetId: pump.id, scope: "Línea UHT 1", stopsLine: "YES", timeToImpact: "Unas 4 horas con el tanque pulmón", level: "REPORTED", currency: "COP", costPerHourMin: 35000000, costPerHourMax: 50000000, basis: "«Una hora con la UHT parada nos cuesta entre 35 y 50 millones»", observedAt: d(-28), ...prov } });
@@ -769,7 +769,7 @@ async function seedMarketM5(tx: Prisma.TransactionClient, d: (n: number) => Date
     { kind: "DECISION_ROLE", statement: "Define la referencia técnica exacta; Compras no cambia lo que él especifica", observedAt: d(-40), ...prov },
     { kind: "VALUES", statement: "Que el repuesto llegue antes de la parada, aunque cueste más", evidence: "«Prefiero pagar el flete aéreo a parar la UHT un día»", observedAt: d(-28), ...prov },
     { kind: "OBJECTIVE", statement: "Llegar a la parada de enero con todos los repuestos en planta", observedAt: d(-10), ...prov },
-    { kind: "PROBLEM", statement: "La soda cáustica del CIP daña los sellos EPDM", evidence: "Recovery de sellos de octubre", observedAt: d(-21), ...prov, sourceType: "INTERNAL", sourceRef: "Journey sellos bomba CIP", confidence: "VERIFIED" },
+    { kind: "PROBLEM", statement: "La soda cáustica del CIP daña los sellos EPDM", evidence: "Recovery de sellos de octubre", observedAt: d(-21), ...prov, sourceType: "INTERNAL", sourceRef: "Necesidad sellos bomba CIP", confidence: "VERIFIED" },
     { kind: "PREFERENCE", statement: "Prefiere WhatsApp para temas urgentes y correo para fichas técnicas", observedAt: d(-25), ...prov },
   ] });
   // Jorge was the person on the Lácteos Journeys, and the commitments below came from a call with him.
@@ -1147,8 +1147,8 @@ async function seedEquipoDemo(paola: { id: string; name: string }, adminId: stri
     roleKey: EQUIPO_ROLE_KEY, version: 1, title: "Negociador Comercial" + TAG, functionKey: "COMERCIAL", soluRole: "NEGOCIADOR_COMERCIAL", critical: true,
     purpose: "Ayudar a que la planta del cliente no se detenga, llevando cada necesidad desde que se entiende hasta que el cliente logra su resultado y el dinero entra.",
     outcomes: ["Necesidades escritas con el resultado que busca el cliente", "Soluciones presentadas, no solo enviadas", "Eságara dentro de la política", "Cartera de sus clientes al día"],
-    functions: ["Explorar la necesidad con quien la vive", "Presentar la solución y acompañar la decisión", "Mantener el próximo movimiento de cada Journey", "Acompañar el cobro"],
-    responsibilities: ["La promesa hecha al cliente, aunque Operaciones ejecute la entrega", "Que cada Journey tenga próximo movimiento o espera controlada", "El contexto registrado para que otra persona pueda continuar"],
+    functions: ["Explorar la necesidad con quien la vive", "Presentar la solución y acompañar la decisión", "Mantener el próximo movimiento de cada Necesidad", "Acompañar el cobro"],
+    responsibilities: ["La promesa hecha al cliente, aunque Operaciones ejecute la entrega", "Que cada Necesidad tenga próximo movimiento o espera controlada", "El contexto registrado para que otra persona pueda continuar"],
     decisionRights: [
       { kind: "AUTONOMOUS", text: "Qué solución presentar y cómo presentarla" },
       { kind: "CONDITIONED", text: "Prometer una fecha de entrega, cuando Operaciones la validó" },
@@ -1172,13 +1172,13 @@ async function seedEquipoDemo(paola: { id: string; name: string }, adminId: stri
     competencies: [{ kind: "COMMERCIAL", text: "Explorar la necesidad antes de proponer" }, { kind: "TECHNICAL", text: "Leer una placa y una ficha técnica" }, { kind: "RELATIONAL", text: "Conversaciones de cobro que cuidan la relación" }],
     risks: ["Prometer una fecha que Operaciones no puede cumplir", "Bajar el precio antes de entender el impacto de la parada"],
     rhythm: [{ kind: "DAILY", text: "Revisar Mi Día y mover lo que vence" }, { kind: "WEEKLY", text: "Cierre semanal y plan de visitas" }, { kind: "MONTHLY", text: "Revisión de metas y de cartera con su líder" }],
-    successSignals: ["Tus clientes te llaman antes de que la parada ocurra", "Tus Journeys no tienen próximos pasos vencidos"], attentionSignals: ["Cotizaciones enviadas sin presentar", "Clientes que solo se enteran de un atraso cuando preguntan"],
+    successSignals: ["Tus clientes te llaman antes de que la parada ocurra", "Tus Necesidades no tienen próximos pasos vencidos"], attentionSignals: ["Cotizaciones enviadas sin presentar", "Clientes que solo se enteran de un atraso cuando preguntan"],
     careerLevels: [
       { name: "Emprendedor", ser: "Cumple lo que dice", hacer: "Sigue el método con acompañamiento", tener: "Conoce las líneas principales" },
-      { name: "Junior", ser: "Avisa antes de incumplir", hacer: "Lleva sus Journeys sin supervisión diaria", tener: "Maneja sus cuentas y su cartera" },
+      { name: "Junior", ser: "Avisa antes de incumplir", hacer: "Lleva sus Necesidades sin supervisión diaria", tener: "Maneja sus cuentas y su cartera" },
       { name: "Senior", ser: "Enseña con el ejemplo", hacer: "Abre cuentas nuevas y acompaña a otros", tener: "Relaciones con quienes deciden en planta" },
     ],
-    careerExpectations: ["Tres meses seguidos con sus Journeys sin compromisos incumplidos", "Haber acompañado a un compañero nuevo en sus primeras presentaciones"],
+    careerExpectations: ["Tres meses seguidos con sus Necesidades sin compromisos incumplidos", "Haber acompañado a un compañero nuevo en sus primeras presentaciones"],
     companyCommitments: [{ kind: "TOOL", text: "SOLU con la información del cliente al día" }, { kind: "INFORMATION", text: "Tiempos y costos reales de Operaciones antes de prometer" }, { kind: "SUPPORT", text: "Una conversación de desarrollo al mes con su líder" }],
     identityVersion: identity?.version ?? null, charterVersion: charter?.version ?? null, effectiveFrom: d(-60), reason: "Acuerdo de rol de ejemplo, para ver cómo se lee uno completo.", publishedByName: by,
   } });

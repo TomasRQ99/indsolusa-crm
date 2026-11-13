@@ -95,7 +95,7 @@ export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null;
 
   // ---------- Ready to Present (blocks) and Ready If Customer Says Yes (doesn't block) ----------
   const ready: Check[] = [
-    { ok: !!d.desiredResult, text: t("El resultado deseado del cliente está escrito", "The customer's desired result is written"), fix: t("Escríbelo en la necesidad del Journey", "Write it in the Journey need"), tab: "solution" },
+    { ok: !!d.desiredResult, text: t("El resultado deseado del cliente está escrito", "The customer's desired result is written"), fix: t("Escríbelo en la pestaña Necesidad", "Write it in the Need tab"), tab: "solution" },
     { ok: !!q.solution, text: t("La solución está en una frase", "The solution is one sentence"), fix: t("Escribe qué logra el cliente", "Write what the customer achieves"), tab: "solution" },
     // C1 (AC02/AC03): a simple spare part with nothing ambiguous adds no check at all (AC18).
     ...(scope && scope.state !== "NOT_STARTED"

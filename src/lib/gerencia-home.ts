@@ -93,7 +93,7 @@ export async function gerenciaHome(u: { id: string; role: Role }) {
       { label: tx("Decisiones esperadas en 30 días", "Decisions expected within 30 days"), value: fut.commercial.decisions.D30.n + fut.commercial.decisions.OVERDUE.n, unit: "n", href: "/comercial/foco", state: true, note: fut.commercial.decisions.OVERDUE.n ? tx(`${fut.commercial.decisions.OVERDUE.n} ya pasaron su fecha`, `${fut.commercial.decisions.OVERDUE.n} already past their date`) : undefined, tone: fut.commercial.decisions.OVERDUE.n ? "attn" : undefined },
     ] },
     { key: "contracted", title: tx("Contratado", "Contracted"), question: tx("¿Qué ya es compromiso?", "What is already a commitment?"), href: "/gerencia/futuro", figures: [
-      { label: tx("Aceptado por facturar", "Accepted, to invoice"), value: fut.contracted.usd, unit: "usd", href: "/informes/futuro", state: true, note: tx(`${fut.contracted.n} Journey(s)`, `${fut.contracted.n} Journey(s)`) },
+      { label: tx("Aceptado por facturar", "Accepted, to invoice"), value: fut.contracted.usd, unit: "usd", href: "/informes/futuro", state: true, note: tx(`${fut.contracted.n} Necesidad(es)`, `${fut.contracted.n} Necessity(ies)`) },
     ] },
     { key: "cash", title: tx("Dinero esperado y compromisos", "Expected money and commitments"), question: tx("¿Qué entra y qué sale en 30 días?", "What comes in and goes out in 30 days?"), href: "/administracion/tesoreria#proyeccion", figures: [
       { label: tx("Por cobrar que vence en 30 días", "Receivables due within 30 days"), value: fut.cashIn.D30.usd, unit: "usd", href: "/informes/administracion", state: true },

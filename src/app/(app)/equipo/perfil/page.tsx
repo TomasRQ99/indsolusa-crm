@@ -151,7 +151,7 @@ export default async function Profile360Page({ searchParams }: { searchParams: P
               <label>{t("Qué hizo la persona (la conducta, no una opinión)", "What the person did (the conduct, not an opinion)")}<textarea name="behavior" rows={2} required maxLength={800} /></label>
               <label>{t("En qué situación", "In which situation")}<textarea name="context" rows={2} required maxLength={600} /></label>
               <div className="qa-row">
-                <label style={{ flex: 2 }}>{t("Dónde quedó (opcional: Journey, correo, reunión)", "Where it is (optional: Journey, email, meeting)")}<input name="sourceRef" maxLength={200} /></label>
+                <label style={{ flex: 2 }}>{t("Dónde quedó (opcional: Necesidad, correo, reunión)", "Where it is (optional: Necessity, email, meeting)")}<input name="sourceRef" maxLength={200} /></label>
                 <label>{t("Quién lo ve", "Who sees it")}<PrivacySelect i={i} value="SHARED" levels={self ? ["PRIVATE", "SHARED", "ORG"] : ["SHARED", "ORG"]} /></label>
               </div>
               <div><button type="submit" className="secondary">{t("Registrar", "Record")}</button></div>

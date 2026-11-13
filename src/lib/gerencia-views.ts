@@ -273,7 +273,7 @@ export async function systemPerformance(now = today()) {
   const pay = compareDays(c.payDays, b.payDays);
   const D = { gen: tx("Generación", "Generation"), conv: tx("Conversión", "Conversion"), val: tx("Valor", "Value"), ful: tx("Cumplimiento", "Fulfilment"), col: tx("Cobro", "Collection"), ppl: tx("Capacidad de personas", "People capacity") };
   const rows: PerfRow[] = [
-    count("needs", D.gen, tx("Necesidades escritas", "Needs written"), tx("Journeys creados con el resultado que busca el cliente.", "Journeys created with the result the customer wants."), c.needs, b.needs, "/deals"),
+    count("needs", D.gen, tx("Necesidades escritas", "Needs written"), tx("Necesidades creadas con el resultado que busca el cliente.", "Necessities created with the result the customer wants."), c.needs, b.needs, "/deals"),
     count("futures", D.gen, tx("Oportunidades futuras identificadas", "Future opportunities identified"), tx("Registradas en Mercado.", "Recorded in Market."), c.futures, b.futures, "/mercado"),
     rate("present", D.conv, tx("Cotizaciones presentadas, no solo enviadas", "Quotes presented, not only sent"), tx("Presentadas con presentación registrada ÷ presentadas.", "Presented with a recorded presentation ÷ presented."), c.presentedRec, c.presented, b.presentedRec, b.presented, "/cotizaciones"),
     rate("win", D.conv, tx("Decisiones que fueron «sí»", "Decisions that were \"yes\""), tx("Aceptadas ÷ decididas por el cliente.", "Accepted ÷ decided by the customer."), c.accepted, c.decided, b.accepted, b.decided, "/cotizaciones"),

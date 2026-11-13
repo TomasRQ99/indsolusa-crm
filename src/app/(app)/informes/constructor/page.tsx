@@ -80,7 +80,7 @@ export default async function BuilderPage({ searchParams }: { searchParams: Prom
             <tr><td><b>{t("Total", "Total")}</b></td><td className="n mono"><b>{total.n}</b></td><td className="n mono"><b>{i.n2(total.sale)}</b></td><td className="n mono"><b>{i.n2(total.esagara)}</b></td><td className="n mono"><b>{total.esagaraPct != null ? i.pct(total.esagaraPct) : "—"}</b></td></tr>
           </tbody>
         </table></div>
-        <p className="src">{t("Métricas", "Metrics")}: {mv}. {c.dim !== "MONTH" && t("En orden alfabético, no por tamaño: no es un ranking.", "In alphabetical order, not by size: this is not a ranking.")} {!scope.all && t("Ves tus Journeys y los de los equipos que lideras.", "You see your Journeys and those of the teams you lead.")}</p>
+        <p className="src">{t("Métricas", "Metrics")}: {mv}. {c.dim !== "MONTH" && t("En orden alfabético, no por tamaño: no es un ranking.", "In alphabetical order, not by size: this is not a ranking.")} {!scope.all && t("Ves tus Necesidades y las de los equipos que lideras.", "You see your Necessities and those of the teams you lead.")}</p>
 
         <form action={saveView} className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "flex-end", marginTop: 12 }}>
           <input type="hidden" name="from" value={c.from} /><input type="hidden" name="to" value={c.to} /><input type="hidden" name="dim" value={c.dim} />

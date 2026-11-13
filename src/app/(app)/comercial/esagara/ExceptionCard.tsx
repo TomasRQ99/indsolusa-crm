@@ -14,7 +14,7 @@ type Exc = {
 };
 
 export const EXC_ERR = (t: T): Record<string, string> => ({
-  "exc-permiso": t("Solo quien lleva este Journey (o un admin) puede hacer esto.", "Only the Journey owner (or an admin) can do this."),
+  "exc-permiso": t("Solo quien lleva esta Necesidad (o un admin) puede hacer esto.", "Only the Necessity owner (or an admin) can do this."),
   "exc-estado": t("La excepción se pide sobre un borrador, antes de presentarlo.", "The exception is requested on a draft, before presenting it."),
   "exc-no-aplica": t("La Eságara de este borrador ya está en o por encima del umbral: no necesita excepción.", "This draft's Eságara is already at or above the threshold: no exception needed."),
   "exc-pendiente": t("Ya hay una solicitud esperando decisión para esta versión.", "There's already a request waiting for a decision on this version."),

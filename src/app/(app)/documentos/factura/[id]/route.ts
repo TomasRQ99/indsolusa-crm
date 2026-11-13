@@ -23,7 +23,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!inv) return new Response("Not found", { status: 404 });
   // C-19: an invoice issued outside SOLU (DIAN) has no SOLU document; the legal one lives in the accounting system.
   if (inv.external) return new Response("Esta factura se emitió por DIAN en el sistema contable; SOLU no imprime una copia. / This invoice was issued through DIAN in the accounting system; SOLU prints no copy.", { status: 409, headers: { "Content-Type": "text/plain; charset=utf-8" } });
-  if (!inv.deal.customerPo) return new Response("This invoice has no customer P.O. on its Journey. / Esta factura no tiene OC del cliente en su Journey.", { status: 409, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  if (!inv.deal.customerPo) return new Response("This invoice has no customer P.O. on its Necessity. / Esta factura no tiene OC del cliente en su Necesidad.", { status: 409, headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
   const p = new URL(req.url).searchParams.get("lang");
   const lang: DocLang = p === "ES" || p === "EN" ? p : inv.docLang;

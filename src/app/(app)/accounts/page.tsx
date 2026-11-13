@@ -40,7 +40,7 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
       </details>
       <div className="card flush">
         <table>
-          <thead><tr><th>{t("Nombre", "Name")}</th><th>{t("Industria", "Industry")}</th><th>{t("Responsable", "Owner")}</th><th className="n">{t("Contactos", "Contacts")}</th><th className="n">Journeys</th></tr></thead>
+          <thead><tr><th>{t("Nombre", "Name")}</th><th>{t("Industria", "Industry")}</th><th>{t("Responsable", "Owner")}</th><th className="n">{t("Contactos", "Contacts")}</th><th className="n">{t("Necesidades", "Necessities")}</th></tr></thead>
           <tbody>
             {accounts.map((a) => (
               <tr key={a.id}>

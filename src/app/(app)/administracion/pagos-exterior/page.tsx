@@ -24,7 +24,7 @@ export default async function ForeignPaymentsPage({ searchParams }: { searchPara
         <div>
           <div className="crumb">{t("Administración", "Administration")}</div>
           <h1>{t("Informe de pagos al exterior", "Foreign payments report")}</h1>
-          <p>{t("Pagos a proveedores con su Supplier PO, Journey y estado. Filtra y exporta para contabilidad.", "Supplier payments with their supplier PO, Journey and state. Filter and export for accounting.")}</p>
+          <p>{t("Pagos a proveedores con su Supplier PO, Necesidad y estado. Filtra y exporta para contabilidad.", "Supplier payments with their supplier PO, Necessity and state. Filter and export for accounting.")}</p>
         </div>
         <div className="grow" />
         <a className="btn" href={`/administracion/pagos-exterior/csv${qs ? `?${qs}` : ""}`}>{t("Exportar · Excel o CSV", "Export · Excel or CSV")}</a>
@@ -50,7 +50,7 @@ export default async function ForeignPaymentsPage({ searchParams }: { searchPara
       </section>
       <div className="card flush">
         <table>
-          <thead><tr><th>{t("Fecha", "Date")}</th><th>{t("Proveedor", "Supplier")}</th><th>Supplier PO · Journey</th><th className="n">{t("Monto", "Amount")}</th><th className="n">≈ USD</th><th>{t("Estado", "State")}</th><th>{t("Referencia", "Reference")}</th></tr></thead>
+          <thead><tr><th>{t("Fecha", "Date")}</th><th>{t("Proveedor", "Supplier")}</th><th>Supplier PO · {t("Necesidad", "Necessity")}</th><th className="n">{t("Monto", "Amount")}</th><th className="n">≈ USD</th><th>{t("Estado", "State")}</th><th>{t("Referencia", "Reference")}</th></tr></thead>
           <tbody>
             {rows.map((p) => {
               const l = paymentStateLabel(i, p.state);

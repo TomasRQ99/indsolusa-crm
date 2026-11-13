@@ -22,7 +22,7 @@ export default async function ExperiencesPage({ searchParams }: { searchParams: 
     include: { deal: { select: { id: true, code: true, account: { select: { name: true } }, supplierPos: { select: { supplier: { select: { name: true } } } } } } },
   });
   const okMsg: Record<string, string> = { creada: t("Experiencia guardada.", "Experience saved."), guardada: t("Cambios guardados.", "Changes saved."), "guardada-revisar": t("Cambios guardados. Como cambió el texto público o su tipo, la revisión empieza de nuevo.", "Changes saved. Since the public text or its type changed, the review starts again."), revision: t("Revisión actualizada.", "Review updated.") };
-  const errMsg: Record<string, string> = { datos: t("Indica un título y qué se aprendió.", "Give a title and what was learned."), journey: t("Ese código de Journey no existe.", "That Journey code doesn't exist."), permiso: t("La revisión de confidencialidad la hacen Gerencia, Dirección Comercial o Mercadeo.", "The confidentiality review is done by Management, Sales Direction or Marketing."), revision: t("Una experiencia solo interna no se revisa para publicar.", "An internal-only experience isn't reviewed for publishing.") };
+  const errMsg: Record<string, string> = { datos: t("Indica un título y qué se aprendió.", "Give a title and what was learned."), journey: t("Ese código de Necesidad no existe.", "That Necessity code doesn't exist."), permiso: t("La revisión de confidencialidad la hacen Gerencia, Dirección Comercial o Mercadeo.", "The confidentiality review is done by Management, Sales Direction or Marketing."), revision: t("Una experiencia solo interna no se revisa para publicar.", "An internal-only experience isn't reviewed for publishing.") };
   const Fields = ({ e }: { e?: (typeof rows)[number] }) => (
     <>
       <div className="qa-row">
@@ -33,7 +33,7 @@ export default async function ExperiencesPage({ searchParams }: { searchParams: 
       <div className="qa-row">
         <label>{t("Aplicación", "Application")}<input name="application" maxLength={200} defaultValue={e?.application ?? ""} /></label>
         <label style={{ flex: "0 0 200px" }}>{t("Industria", "Industry")}<input name="industry" maxLength={120} defaultValue={e?.industry ?? ""} /></label>
-        <label style={{ flex: "0 0 160px" }}>{t("Journey (código)", "Journey (code)")}<input name="dealCode" maxLength={40} defaultValue={e?.deal?.code ?? ""} /></label>
+        <label style={{ flex: "0 0 160px" }}>{t("Necesidad (código)", "Necessity (code)")}<input name="dealCode" maxLength={40} defaultValue={e?.deal?.code ?? ""} /></label>
       </div>
       <label>{t("Qué aprendimos (interno: compatibilidad, problemas, empaque, importación)", "What we learned (internal: compatibility, issues, packaging, import)")}<textarea name="summary" rows={3} required maxLength={1200} defaultValue={e?.summary ?? ""} /></label>
       <div className="qa-row">

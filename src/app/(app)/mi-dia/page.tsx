@@ -207,12 +207,12 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
     reservado: t(`Listo: reservaste tiempo a las ${sp.t ?? ""}.`, `Done: time reserved at ${sp.t ?? ""}.`),
     movido: t(`Listo: el bloque quedó a las ${sp.t ?? ""}.`, `Done: the block is now at ${sp.t ?? ""}.`),
     quitado: t("Listo: lo quitaste del calendario.", "Done: removed from the calendar."),
-    "bloque-hecho": t("Bloque hecho. Si era el movimiento de un Journey, usa «✓ Hecho» en su tarjeta para decir qué sigue.", "Block done. If it was a Journey move, use \"✓ Done\" on its card to say what's next."),
+    "bloque-hecho": t("Bloque hecho. Si era el movimiento de una Necesidad, usa «✓ Hecho» en su tarjeta para decir qué sigue.", "Block done. If it was a Necessity move, use \"✓ Done\" on its card to say what's next."),
     hecho: t("Listo: quedó registrado como hecho.", "Done: logged as done."),
-    siguiente: t("Listo: el Journey ya tiene su siguiente movimiento.", "Done: the Journey has its next move."),
+    siguiente: t("Listo: la Necesidad ya tiene su siguiente movimiento.", "Done: the Necessity has its next move."),
     espera: t("Listo: quedó como espera con control; SOLU te avisa en la fecha.", "Done: it's a controlled wait; SOLU will remind you on the date."),
     pospuesto: t(`Listo: pospuesto para el ${sp.d ? i.dateShort(new Date(`${sp.d}T00:00:00Z`)) : ""}.`, `Done: postponed to ${sp.d ? i.dateShort(new Date(`${sp.d}T00:00:00Z`)) : ""}.`),
-    registrado: t("Listo: quedó registrado en el Journey.", "Done: logged on the Journey."),
+    registrado: t("Listo: quedó registrado en la Necesidad.", "Done: logged on the Necessity."),
     promesa: t("Listo: nueva promesa registrada; SOLU la vigila.", "Done: new promise recorded; SOLU watches it."),
     "sin-dato": t("Escribe el siguiente movimiento o lo que esperas.", "Write the next move or what you're waiting for."),
     "sin-fecha": t("Elige una fecha.", "Pick a date."),
@@ -233,7 +233,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
             ) : (
               <>{t("Hay ", m.needCount === 1 ? "There is " : "There are ")}<b>{m.needCount} {m.needCount === 1 ? t("situación", "situation") : t("situaciones", "situations")}</b>{t(" donde tu intervención puede cambiar un resultado hoy. ", m.needCount === 1 ? " where your move can change a result today. " : " where your move can change a result today. ")}</>
             )}
-            <b>{m.controlledCount} {m.controlledCount === 1 ? "Journey" : "Journeys"}</b>
+            <b>{m.controlledCount} {m.controlledCount === 1 ? t("Necesidad", "Necessity") : t("Necesidades", "Necessities")}</b>
             {m.controlledCount === 1 ? t(" está avanzando o esperando con control.", " is moving or waiting under control.") : t(" están avanzando o esperando con control.", " are moving or waiting under control.")}
           </p>
         </div>
@@ -314,7 +314,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
                 <div className="qa-pop wide">
                   <form action={reserveTime} className="qa-form">
                     <label>{t("Para qué", "What for")}<input name="title" required placeholder={t("Ej.: preparar oferta para Química Andina", "E.g.: prepare offer for Química Andina")} /></label>
-                    <label>{t("Journey (opcional)", "Journey (optional)")}
+                    <label>{t("Necesidad (opcional)", "Necessity (optional)")}
                       <select name="dealId" defaultValue="">
                         <option value="">{t("— Ninguno —", "— None —")}</option>
                         {m.openDeals.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
@@ -401,7 +401,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
             ) : (
               <p className="quiet-p">{t("Nada está esperando a un tercero.", "Nothing is waiting on a third party.")}</p>
             )}
-            {m.normal > 0 && <div className="quiet"><span className="hollow" aria-hidden />{m.normal === 1 ? t("1 Journey avanza normal y no requiere nada.", "1 Journey is moving normally and needs nothing.") : t(`${m.normal} Journeys avanzan normal y no requieren nada.`, `${m.normal} Journeys are moving normally and need nothing.`)}</div>}
+            {m.normal > 0 && <div className="quiet"><span className="hollow" aria-hidden />{m.normal === 1 ? t("1 Necesidad avanza normal y no requiere nada.", "1 Necessity is moving normally and needs nothing.") : t(`${m.normal} Necesidades avanzan normal y no requieren nada.`, `${m.normal} Necessities are moving normally and need nothing.`)}</div>}
           </section>
 
           {/* 10 % — SEÑALES */}

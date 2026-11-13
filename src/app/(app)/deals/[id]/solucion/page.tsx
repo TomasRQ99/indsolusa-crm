@@ -35,10 +35,10 @@ export default async function SolutionPage({ params, searchParams }: { params: P
     valor: t("Valor guardado con su evidencia: puede ir en la propuesta.", "Value saved with its evidence: it can go in the proposal."),
     hipotesis: t("Guardado como hipótesis interna: sin evidencia de este caso no sale en la propuesta.", "Saved as an internal hypothesis: without evidence for this case it stays out of the proposal."),
     "valor-editado": t("Valor actualizado.", "Value updated."),
-    presentacion: t("Presentación registrada. El próximo paso acordado quedó como siguiente movimiento del Journey.", "Presentation recorded. The agreed next step is now the Journey's next movement."),
+    presentacion: t("Presentación registrada. El próximo paso acordado quedó como siguiente movimiento de la Necesidad.", "Presentation recorded. The agreed next step is now the Necessity's next movement."),
   };
   const errMsg: Record<string, string> = {
-    permiso: t("Solo quien lleva el Journey o la dirección pueden cambiar el caso de solución.", "Only the Journey owner or management can change the Solution Case."),
+    permiso: t("Solo quien lleva la Necesidad o la dirección pueden cambiar el caso de solución.", "Only the Necessity owner or management can change the Solution Case."),
     ruta: t("Elige el tipo de ruta y descríbela.", "Pick the route type and describe it."),
     valor: t("Completa necesidad, ventaja en este caso y beneficio para el cliente.", "Fill in need, advantage in this case and customer benefit."),
     atributo: t("Ese atributo no está disponible.", "That attribute isn't available."),
@@ -83,7 +83,7 @@ export default async function SolutionPage({ params, searchParams }: { params: P
               <span className="src block">{t(`Para ${quoteNo(latest)}. Sin costos, proveedores ni Eságara; solo afirmaciones con evidencia (${usable.length}). Revísala antes de enviarla: SOLU no la envía.`, `For ${quoteNo(latest)}. No costs, suppliers or Eságara; only evidenced claims (${usable.length}). Review it before sending: SOLU doesn't send it.`)}</span>
             </> : <span className="src">{t("Con la cotización basta. Si igual quieres una propuesta, cambia el formato en el caso.", "The quote is enough. If you still want a proposal, change the format in the case.")} {editable && <a href="#caso">{t("Cambiar", "Change")}</a>}</span>}
           </p>
-        ) : <p className="quiet-p">{t("Todavía no hay cotización en este Journey.", "No quote on this Journey yet.")}</p>}
+        ) : <p className="quiet-p">{t("Todavía no hay cotización en esta Necesidad.", "No quote on this Necessity yet.")}</p>}
       </section>
 
       {/* 2 · Solution Case */}

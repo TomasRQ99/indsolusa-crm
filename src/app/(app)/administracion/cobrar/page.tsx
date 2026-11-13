@@ -40,7 +40,7 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
         <Link className="btn secondary" href="/administracion/pagos-recibidos">{t("Registrar pago recibido", "Record payment received")}</Link>
       </div>
 
-      {ok === "correo" && <p className="note okn">{t("Recordatorio enviado desde la cuenta de la empresa. Quedó registrado en el Journey.", "Reminder sent from the company account. It's logged on the Journey.")}</p>}
+      {ok === "correo" && <p className="note okn">{t("Recordatorio enviado desde la cuenta de la empresa. Quedó registrado en la Necesidad.", "Reminder sent from the company account. It's logged on the Necessity.")}</p>}
       <section className="sum">
         <div><span className="k">{t("Por cobrar", "Outstanding")}</span><span className="v">{i.n(total)}</span><span className="s">USD · {rows.length} {t("facturas", "invoices")}</span></div>
         <div data-tone={sumOf("BROKEN") > 0 ? "risk" : undefined}><span className="k">{t("Compromiso incumplido", "Commitment missed")}</span><span className="v">{i.n(sumOf("BROKEN"))}</span><span className="s">{rows.filter((r) => r.state === "BROKEN").length} {t("facturas", "invoices")}</span></div>
@@ -97,7 +97,7 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
               <dl className="facts" style={{ margin: "10px 0" }}>
                 <dt>{t("Saldo", "Balance")}</dt><dd className="mono">{i.money2(sel.cash.balance)}</dd>
                 <dt>{t("Factura", "Invoice")}</dt><dd>{i.money2(sel.cash.amount)} · {i.date(sel.issuedAt)}</dd>
-                <dt>Journey</dt><dd><Link href={`/deals/${sel.deal.id}`}>{sel.deal.code}</Link> · {t("OC", "PO")} {sel.deal.customerPo ?? "—"}</dd>
+                <dt>{t("Necesidad", "Necessity")}</dt><dd><Link href={`/deals/${sel.deal.id}`}>{sel.deal.code}</Link> · {t("OC", "PO")} {sel.deal.customerPo ?? "—"}</dd>
                 <dt>{t("Responsable", "Owner")}</dt><dd>{sel.account.owner.name}</dd>
               </dl>
               {(sel.state === "BROKEN" || sel.state === "NEEDS_ACTION") && (

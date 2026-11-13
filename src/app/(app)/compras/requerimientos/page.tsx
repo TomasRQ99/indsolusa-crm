@@ -46,7 +46,7 @@ export default async function PrListPage({ searchParams }: { searchParams: Promi
       <div className="ph">
         <div>
           <h1>{t("Requerimientos de compra", "Purchase requirements")}</h1>
-          <p>{t("Qué necesitamos comprar y para qué, antes de la orden al proveedor. Lo comprado para un cliente va asignado a su Journey; lo que sobra es inventario y pide su propia autorización.", "What we need to buy and what for, before the order to the supplier. What is bought for a customer is assigned to its Journey; anything beyond that is inventory and needs its own authorization.")}</p>
+          <p>{t("Qué necesitamos comprar y para qué, antes de la orden al proveedor. Lo comprado para un cliente va asignado a su Necesidad; lo que sobra es inventario y pide su propia autorización.", "What we need to buy and what for, before the order to the supplier. What is bought for a customer is assigned to its Necessity; anything beyond that is inventory and needs its own authorization.")}</p>
         </div>
       </div>
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
@@ -82,13 +82,13 @@ export default async function PrListPage({ searchParams }: { searchParams: Promi
                     <input name={`cost_${k}`} type="number" min={0} step="0.01" placeholder={t("Costo unit.", "Unit cost")} aria-label={t("Costo unitario", "Unit cost")} style={{ flex: "0 0 110px" }} />
                   </div>
                 ))}
-                <span className="src block">{t("Una compra para stock siempre pide autorización de Finanzas o Gerencia. Las compras para un cliente nacen solas al preparar la compra desde su Journey.", "A stock purchase always asks Finance or Management for authorization. Customer purchases are created automatically when the purchase is prepared from its Journey.")}</span>
+                <span className="src block">{t("Una compra para stock siempre pide autorización de Finanzas o Gerencia. Las compras para un cliente nacen solas al preparar la compra desde su Necesidad.", "A stock purchase always asks Finance or Management for authorization. Customer purchases are created automatically when the purchase is prepared from its Necessity.")}</span>
                 <button type="submit">{t("Crear requerimiento", "Create requirement")}</button>
               </form>
             </div>
           </details>
         </div>
-        {rows.length === 0 ? <p className="small muted">{t("Aún no hay requerimientos. Nacen al preparar una compra desde un Journey con PO aceptada.", "No requirements yet. They are created when a purchase is prepared from a Journey with an accepted PO.")} <Link href="/deals">{t("Abrir Journeys", "Open Journeys")} →</Link></p> : (
+        {rows.length === 0 ? <p className="small muted">{t("Aún no hay requerimientos. Nacen al preparar una compra desde una Necesidad con PO aceptada.", "No requirements yet. They are created when a purchase is prepared from a Necessity with an accepted PO.")} <Link href="/deals">{t("Abrir Necesidades", "Open Necessities")} →</Link></p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Requerimiento", "Requirement")}</th><th>{t("Para qué", "Purpose")}</th><th className="n">{t("Total previsto", "Expected total")}</th><th className="n">{t("Sin asignar", "Unassigned")}</th><th>{t("Lectura", "Reading")}</th><th>{t("Orden", "Order")}</th></tr></thead>
             <tbody>{rows.map(({ pr, r, tot, ex, spo }) => (
@@ -117,7 +117,7 @@ export default async function PrListPage({ searchParams }: { searchParams: Promi
             <div className="qa-row" style={{ flexWrap: "wrap" }}>{ROLES.map((r) => <label key={r} className="chk"><input type="checkbox" name={`l2_${r}`} value="1" defaultChecked={pol.value.level2Roles.includes(r)} /> {t(ROLE_LABEL[r].es, ROLE_LABEL[r].en)}</label>)}</div>
             <b className="small">{t("Qué hace que una compra pida autorización", "What makes a purchase need authorization")}</b>
             {REASONS.map((x) => <label key={x} className="chk"><input type="checkbox" name={`t_${x}`} value="1" defaultChecked={pol.value.triggers[x]} /> {t(REASON_TEXT[x].es, REASON_TEXT[x].en)}</label>)}
-            <label style={{ maxWidth: 320 }}>{t("Días para sumar compras relacionadas (mismo proveedor y mismo Journey o producto)", "Days to add up related purchases (same supplier and same Journey or product)")}<input name="relatedDays" type="number" min={0} max={365} required defaultValue={pol.value.relatedDays} /></label>
+            <label style={{ maxWidth: 320 }}>{t("Días para sumar compras relacionadas (mismo proveedor y misma Necesidad o producto)", "Days to add up related purchases (same supplier and same Necessity or product)")}<input name="relatedDays" type="number" min={0} max={365} required defaultValue={pol.value.relatedDays} /></label>
             <button type="submit">{t("Guardar como nueva versión", "Save as new version")}</button>
             <span className="src block">{t("Nadie autoriza una compra que pidió. El límite se compara con el compromiso relacionado, para que dividir una compra no baje el nivel.", "Nobody approves a purchase they requested. The limit is compared with the related commitment, so splitting a purchase doesn't lower the level.")}</span>
           </form>

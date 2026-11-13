@@ -75,7 +75,7 @@ export default async function AuthorityPage({ searchParams }: { searchParams: Pr
         </form>
         <p className="src">{t(`Máximo ${pol.value.delegationMaxDays} días por versión. Quien recibe actúa con el nivel del rol de quien presta, nunca sobre lo que pidió quien presta ni sobre lo que pidió él mismo. Cada decisión tomada así dice de quién era la autoridad. El campo «sobre qué» es una nota para las personas: SOLU aplica el dominio, el tope y las fechas.`, `At most ${pol.value.delegationMaxDays} days per version. The receiver acts with the level of the lender's role, never on what the lender requested nor on their own requests. Every decision made this way says whose authority it was. The "over what" field is a note for people: SOLU enforces the domain, the cap and the dates.`)}</p>
       </section>}
-      <p className="src">{t("Esto no cambia el rol de nadie en SOLU ni cubre los Journeys de un ausente: eso es Cobertura.", "This changes nobody's role in SOLU and doesn't cover an absent person's Journeys: that is Coverage.")}</p>
+      <p className="src">{t("Esto no cambia el rol de nadie en SOLU ni cubre las Necesidades de un ausente: eso es Cobertura.", "This changes nobody's role in SOLU and doesn't cover an absent person's Necessities: that is Coverage.")}</p>
     </>
   );
 }

@@ -51,13 +51,13 @@ export default async function CoveragePage({ searchParams }: { searchParams: Pro
           <div className="crumb"><Link href="/deals">{t("Comercial", "Commercial")}</Link></div>
           <h1>{t("Cobertura por ausencia", "Absence coverage")}</h1>
           <p className="small"><Link href="/equipo/continuidad">{t("Respaldos y sucesores por rol: Equipo → Continuidad y sucesión", "Backups and successors per role: Team → Continuity and succession")}</Link></p>
-          <p>{t("Cuando alguien no está, otra persona actúa sobre sus Journeys por un tiempo definido. El dueño sigue siendo responsable; el permiso vence solo. Las aprobaciones por rol (Eságara, crédito, pagos) nunca se delegan.", "When someone is away, another person acts on their Journeys for a set time. The owner stays accountable; the permission expires by itself. Role approvals (Eságara, credit, payments) are never delegated.")}</p>
+          <p>{t("Cuando alguien no está, otra persona actúa sobre sus Necesidades por un tiempo definido. El dueño sigue siendo responsable; el permiso vence solo. Las aprobaciones por rol (Eságara, crédito, pagos) nunca se delegan.", "When someone is away, another person acts on their Necessities for a set time. The owner stays accountable; the permission expires by itself. Role approvals (Eságara, credit, payments) are never delegated.")}</p>
         </div>
       </div>
       {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
       {uncovered.length > 0 && <div className="note attn">{t("Ausencias aprobadas sin nadie que cubra:", "Approved absences with nobody covering:")} {uncovered.map((a) => <span key={a.id} style={{ marginRight: 12 }}><b>{a.user.name}</b> {i.day(a.startsOn)} – {i.day(a.endsOn)}</span>)}</div>}
-      {user.covering.length > 0 && <div className="note attn">{t(`Hoy estás cubriendo a ${people.filter((p) => user.covering.includes(p.id)).map((p) => p.name).join(", ")}: puedes actuar en sus Journeys hasta que termine la cobertura.`, `Today you're covering ${people.filter((p) => user.covering.includes(p.id)).map((p) => p.name).join(", ")}: you can act on their Journeys until the coverage ends.`)}</div>}
+      {user.covering.length > 0 && <div className="note attn">{t(`Hoy estás cubriendo a ${people.filter((p) => user.covering.includes(p.id)).map((p) => p.name).join(", ")}: puedes actuar en sus Necesidades hasta que termine la cobertura.`, `Today you're covering ${people.filter((p) => user.covering.includes(p.id)).map((p) => p.name).join(", ")}: you can act on their Necessities until the coverage ends.`)}</div>}
 
       <section className="card" id="coberturas">
         <div className="jbh"><b>{t("Coberturas", "Coverages")}</b><span className="grow" />

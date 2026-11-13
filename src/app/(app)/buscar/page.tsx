@@ -18,7 +18,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   if (hits.length === 1 && guides.length === 0) redirect(hits[0].href);
 
   const groups: { kind: Hit["kind"]; title: string; mono?: boolean }[] = [
-    { kind: "journey", title: "Journeys" },
+    { kind: "journey", title: t("Necesidades", "Necessities") },
     { kind: "customer", title: t("Clientes", "Customers") },
     { kind: "invoice", title: t("Facturas", "Invoices"), mono: true },
     { kind: "spo", title: "Supplier PO", mono: true },

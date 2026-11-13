@@ -81,7 +81,7 @@ export default async function ClosesPage({ searchParams }: { searchParams: Promi
 
       <section className="card" id="futuro">
         <b>3 · {t("Futuro visible ahora", "Future visible now")}</b>
-        {r.future.needs.length + r.future.futures.length + r.future.decisionsNext.length === 0 ? <p className="small muted">{t("Sin necesidades nuevas, futuro capturado ni decisiones próximas.", "No new needs, captured future or upcoming decisions.")} <Link href="/deals">{t("Abrir Journeys", "Open Journeys")} →</Link></p> : (
+        {r.future.needs.length + r.future.futures.length + r.future.decisionsNext.length === 0 ? <p className="small muted">{t("Sin necesidades nuevas, futuro capturado ni decisiones próximas.", "No new needs, captured future or upcoming decisions.")} <Link href="/deals">{t("Abrir Necesidades", "Open Necessities")} →</Link></p> : (
           <ul className="mk-ul small">
             {r.future.needs.slice(0, 10).map((d) => <li key={d.id}>{t("Necesidad", "Need")}: <Link href={`/deals/${d.id}`}>{d.code ?? d.title}</Link> · {d.account.name} — {d.desiredResult}</li>)}
             {r.future.needs.length > 10 && <li className="muted">{t(`y ${r.future.needs.length - 10} necesidades más`, `and ${r.future.needs.length - 10} more needs`)}</li>}

@@ -35,7 +35,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
       <div className="ph">
         <div>
           <h1>{t("Inventario", "Stock")}</h1>
-          <p>{t("Lo que está físicamente en cada bodega, cuánto está comprometido a un Journey y cuánto está de verdad disponible. Lo que está en duda no cuenta como disponible.", "What is physically in each warehouse, how much is committed to a Journey and how much is truly available. Anything in doubt doesn't count as available.")}</p>
+          <p>{t("Lo que está físicamente en cada bodega, cuánto está comprometido a una Necesidad y cuánto está de verdad disponible. Lo que está en duda no cuenta como disponible.", "What is physically in each warehouse, how much is committed to a Necessity and how much is truly available. Anything in doubt doesn't count as available.")}</p>
         </div>
       </div>
       {sp.ok === "lote" && <div className="note okn">{t("Lote actualizado.", "Lot updated.")}</div>}

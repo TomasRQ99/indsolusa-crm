@@ -48,7 +48,7 @@ export default async function PrPage({ params, searchParams }: { params: Promise
     permiso: t("No tienes permiso sobre este requerimiento.", "You don't have permission on this requirement."),
     liberada: t("La orden al proveedor ya fue liberada: un cambio se hace con una nueva versión de la orden.", "The supplier order was already released: a change is made with a new version of the order."),
     cantidad: t("La cantidad debe ser mayor que cero.", "The quantity must be above zero."),
-    asignacion: t("Elige un Journey con PO del cliente aceptada y una cantidad.", "Choose a Journey with an accepted customer PO and a quantity."),
+    asignacion: t("Elige una Necesidad con PO del cliente aceptada y una cantidad.", "Choose a Necessity with an accepted customer PO and a quantity."),
     "sin-motivo": t("Esta compra es de rutina: no necesita autorización.", "This purchase is routine: it needs no authorization."),
     justificacion: t("Escribe por qué conviene este stock.", "Write why this stock makes sense."),
     autoridad: t("No puedes decidir esta autorización: no es de tu nivel, o la pediste tú.", "You can't decide this authorization: it isn't at your level, or you requested it."),
@@ -89,7 +89,7 @@ export default async function PrPage({ params, searchParams }: { params: Promise
               <header className="exc-head"><b>{l.code ?? l.description}</b>{l.code && <span className="small"> · {l.description}</span>}<span className="grow" /><span className="mono small">{money(l.expectedUnitCost)} {t("c/u", "each")}</span></header>
               <div className="goal-grid">
                 <div className="goal-card"><span className="small muted">{t("Se compra", "Bought")}</span><b className="tv">{l.qty}</b></div>
-                <div className="goal-card"><span className="small muted">{t("Asignado a Journeys", "Assigned to Journeys")}</span><b className="tv">{s.allocated}</b></div>
+                <div className="goal-card"><span className="small muted">{t("Asignado a Necesidades", "Assigned to Necessities")}</span><b className="tv">{s.allocated}</b></div>
                 <div className="goal-card"><span className="small muted">{s.over > 0 ? t("Asignado de más", "Over-assigned") : t("Sin asignar (inventario)", "Unassigned (inventory)")}</span><b className={`tv${s.over > 0 || s.unallocated > 0 ? " risk-t" : ""}`}>{s.over > 0 ? s.over : s.unallocated}</b></div>
               </div>
               {l.allocations.length > 0 && <ul className="mk-ul small">{l.allocations.map((a) => <li key={a.id}><b>{a.qty}</b> → <Link href={`/deals/${a.deal.id}`}>{a.deal.code ?? a.deal.title}</Link> · {a.deal.account.name}</li>)}</ul>}
@@ -100,7 +100,7 @@ export default async function PrPage({ params, searchParams }: { params: Promise
                     <button type="submit" className="secondary">{t("Cambiar", "Change")}</button>
                   </form>
                   <form action={setAllocation.bind(null, l.id)} className="qa-row" style={{ flex: "1 1 320px" }}>
-                    <label style={{ flex: "1 1 200px" }}>{t("Asignar a un Journey", "Assign to a Journey")}<select name="dealId" defaultValue=""><option value="" disabled>{t("Elige…", "Choose…")}</option>{deals.map((d) => <option key={d.id} value={d.id}>{d.code ?? d.title} · {d.account.name}</option>)}</select></label>
+                    <label style={{ flex: "1 1 200px" }}>{t("Asignar a una Necesidad", "Assign to a Necessity")}<select name="dealId" defaultValue=""><option value="" disabled>{t("Elige…", "Choose…")}</option>{deals.map((d) => <option key={d.id} value={d.id}>{d.code ?? d.title} · {d.account.name}</option>)}</select></label>
                     <label style={{ flex: "0 0 90px" }}>{t("Unidades", "Units")}<input name="qty" type="number" min={0} defaultValue={s.unallocated || ""} /></label>
                     <button type="submit" className="secondary">{t("Asignar", "Assign")}</button>
                   </form>
@@ -109,7 +109,7 @@ export default async function PrPage({ params, searchParams }: { params: Promise
             </article>
           );
         })}
-        {!locked && <p className="src">{t("Para quitar una asignación, asigna 0 unidades a ese Journey. Solo se asigna a Journeys con PO del cliente aceptada.", "To remove an assignment, assign 0 units to that Journey. Units are assigned only to Journeys with an accepted customer PO.")}</p>}
+        {!locked && <p className="src">{t("Para quitar una asignación, asigna 0 unidades a esa Necesidad. Solo se asigna a Necesidades con PO del cliente aceptada.", "To remove an assignment, assign 0 units to that Necessity. Units are assigned only to Necessities with an accepted customer PO.")}</p>}
       </section>
 
       {(F.auth.reasons.length > 0 || F.last) && (

@@ -111,7 +111,7 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
       <div className="loc-name">{user.lang === "EN" && h.nameEn ? h.nameEn : h.name}</div>
       <ul className="loc-why">{h.why.map((w, n) => <li key={n}>{whyText(w, t)}</li>)}</ul>
       <Evid id={h.id} />
-      {ctxDeal && <Link className="link small" href={`/localizar/${h.id}${dq}`}>{t(`Usar en ${ctxDeal.code ?? "el Journey"} →`, `Use on ${ctxDeal.code ?? "the Journey"} →`)}</Link>}
+      {ctxDeal && <Link className="link small" href={`/localizar/${h.id}${dq}`}>{t(`Usar en ${ctxDeal.code ?? "la Necesidad"} →`, `Use on ${ctxDeal.code ?? "the Necessity"} →`)}</Link>}
     </div>
   );
 
@@ -133,9 +133,9 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
 
       {ctxDeal && (
         <div className="loc-ctx">
-          <span>{t(`Buscando para el Journey ${ctxDeal.code ?? ""} · ${ctxDeal.title} (${ctxDeal.account.name})`, `Sourcing for Journey ${ctxDeal.code ?? ""} · ${ctxDeal.title} (${ctxDeal.account.name})`)}</span>
+          <span>{t(`Buscando para la Necesidad ${ctxDeal.code ?? ""} · ${ctxDeal.title} (${ctxDeal.account.name})`, `Sourcing for Necessity ${ctxDeal.code ?? ""} · ${ctxDeal.title} (${ctxDeal.account.name})`)}</span>
           <span className="grow" />
-          <Link className="link small" href={`/deals/${ctxDeal.id}?tab=source`}>{t("Volver al Journey", "Back to Journey")}</Link>
+          <Link className="link small" href={`/deals/${ctxDeal.id}?tab=source`}>{t("Volver a la Necesidad", "Back to Necessity")}</Link>
         </div>
       )}
       <form className="loc-search" role="search">
@@ -186,7 +186,7 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
           )}
           {ctxDeal && hits.length > 0 && (
             <details className="scp-add" open={sp.err === "motivo"}>
-              <summary className="qa-btn">{t(`Guardar esta búsqueda en ${ctxDeal.code ?? "el Journey"}`, `Save this search to ${ctxDeal.code ?? "the Journey"}`)}</summary>
+              <summary className="qa-btn">{t(`Guardar esta búsqueda en ${ctxDeal.code ?? "la Necesidad"}`, `Save this search to ${ctxDeal.code ?? "the Necessity"}`)}</summary>
               <form action={saveSearch.bind(null, ctxDeal.id)} className="qa-form">
                 <input type="hidden" name="q" value={q} />
                 <input type="hidden" name="hits" value={JSON.stringify(hits.slice(0, 15).map((h) => ({ partId: h.id, mpn: h.mpn, brand: h.brand, score: h.score })))} />

@@ -64,7 +64,7 @@ export default async function FocusPage({ searchParams }: { searchParams: Promis
           <Table rows={v.attention} empty="" />
         </section>
       )}
-      <section className="card" data-zone="plan" id="top5"><b>{t("Top 5 por Eságara", "Top 5 by Eságara")}</b><Table rows={v.top5} empty={t("Aún no hay Journeys con cotización.", "No Journeys with a quote yet.")} /></section>
+      <section className="card" data-zone="plan" id="top5"><b>{t("Top 5 por Eságara", "Top 5 by Eságara")}</b><Table rows={v.top5} empty={t("Aún no hay Necesidades con cotización.", "No Necessities with a quote yet.")} /></section>
       <section className="card" data-zone="flow" id="mes"><b>{t("Lo que se mueve este mes", "Month movers")}</b><p className="src">{t("Decisiones del cliente esperadas antes de que termine el mes.", "Customer decisions expected before the month ends.")}</p><Table rows={v.monthMovers} empty={t("Ninguna decisión esperada este mes.", "No decisions expected this month.")} /></section>
       <section className="card" data-zone="flow" id="decisiones"><b>{t(`Decisiones que vienen (${pol.value.decisionsDays} días)`, `Decisions coming (${pol.value.decisionsDays} days)`)}</b><Table rows={v.decisionsComing} empty={t("Nada en este horizonte.", "Nothing in this horizon.")} /></section>
       <section className="card" data-zone="risk" id="proteger"><b>{t("Negocios para proteger", "Deals to protect")}</b><p className="src">{t("Aceptados y en ejecución, con algún riesgo abierto.", "Accepted and in execution, with an open risk.")}</p><Table rows={v.toProtect} empty={t("Ningún negocio aceptado con riesgo abierto.", "No accepted deal with an open risk.")} /></section>

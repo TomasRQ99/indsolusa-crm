@@ -171,13 +171,13 @@ export async function closeJourney(dealId: string, fd: FormData) {
     where: { id: dealId },
     data: { closedAt: new Date(), closedByName: user.name, closureSummary: summary, closureLearning: learning, closureNoSignalReason: deal.continuity.length ? null : noSignal, nextMove: null, nextMoveDate: null, waitingFor: null, waitingUntil: null },
   });
-  await fact(user.id, deal, i.t("Journey cerrado", "Journey closed"), learning);
+  await fact(user.id, deal, i.t("Necesidad cerrada", "Necessity closed"), learning);
   back(dealId, "ok=cerrado");
 }
 
 export async function reopenJourney(dealId: string) {
   const { user, deal, i } = await loadDeal(dealId);
   await db.deal.update({ where: { id: dealId }, data: { closedAt: null, closedByName: null } });
-  await fact(user.id, deal, i.t("Journey reabierto", "Journey reopened"));
+  await fact(user.id, deal, i.t("Necesidad reabierta", "Necessity reopened"));
   back(dealId, "ok=reabierto");
 }

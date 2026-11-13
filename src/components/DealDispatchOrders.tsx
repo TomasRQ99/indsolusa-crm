@@ -29,7 +29,7 @@ export async function DealDispatchOrders({ dealId, lang, canOps, canOwner }: { d
   return (
     <section className="jblock" id="operaciones">
       <div className="jbh"><b>{t("ENTREGA FÍSICA (OPERACIONES)", "PHYSICAL DELIVERY (OPERATIONS)")}</b><span className="grow" /><span className="src">{t("Una entrega parcial es un despacho con menos unidades", "A partial delivery is a dispatch order with fewer units")}</span></div>
-      {d.items.length === 0 ? <p className="small muted">{t("Este Journey aún no tiene productos definidos.", "This Journey has no products defined yet.")}</p> : (
+      {d.items.length === 0 ? <p className="small muted">{t("Esta Necesidad aún no tiene productos definidos.", "This Necessity has no products defined yet.")}</p> : (
         <div className="tscroll"><table>
           <thead><tr><th>{t("Producto", "Product")}</th><th className="n">{t("Pedido", "Ordered")}</th><th className="n">{t("Entregado", "Delivered")}</th><th className="n">{t("En despacho", "In dispatch")}</th><th className="n">{t("Falta", "Remaining")}</th></tr></thead>
           <tbody>{d.items.map((it) => { const r = rem.find((x) => x.id === it.id)!; return <tr key={it.id}><td>{it.code ? <b className="mono">{it.code}</b> : null} <span className="small">{it.description}</span></td><td className="n mono">{r.ordered}</td><td className="n mono">{r.delivered}</td><td className="n mono">{r.inOrders}</td><td className="n mono"><b>{r.remaining}</b></td></tr>; })}</tbody>
@@ -62,7 +62,7 @@ export async function DealDispatchOrders({ dealId, lang, canOps, canOwner }: { d
       )}
 
       <form action={setBillingBasis.bind(null, dealId)} className="qa-row" style={{ alignItems: "flex-end", marginTop: 12, flexWrap: "wrap" }}>
-        <label style={{ flex: "0 0 260px" }}>{t("Este Journey se factura", "This Journey is invoiced")}<select name="billingBasis" defaultValue={d.billingBasis} disabled={!canOwner}>{Object.entries(BILLING_BASIS).map(([k, v]) => <option key={k} value={k}>{t(v.es, v.en)}</option>)}</select></label>
+        <label style={{ flex: "0 0 260px" }}>{t("Esta Necesidad se factura", "This Necessity is invoiced")}<select name="billingBasis" defaultValue={d.billingBasis} disabled={!canOwner}>{Object.entries(BILLING_BASIS).map(([k, v]) => <option key={k} value={k}>{t(v.es, v.en)}</option>)}</select></label>
         {canOwner && <button type="submit" className="secondary" style={{ flex: "0 0 auto" }}>{t("Guardar", "Save")}</button>}
         <span className="src" style={{ flex: "1 1 240px" }}>{t("Hoy es informativo: lo ven Operaciones y Administración. La factura sigue pasando por «¿Listo para facturar?».", "Informative for now: Operations and Administration see it. The invoice still goes through \"Ready to invoice?\".")}</span>
       </form>
