@@ -12,7 +12,7 @@ import { briefDue } from "./gerencia-rules";
 // Every call is recorded in WorkerRun. Nothing here sends money. The only email it sends on its own is the monthly
 // reminder to Gerencia that the Business Pulse is ready to issue (decision 2026-11-11).
 
-export const JOB_KINDS = ["MAIL_REPLIES", "CUSTOMER_MAIL", "CATALOG_SYNC", "PAY_BEHAVIOR", "PAY_BEHAVIOR_ALL", "HOUSEKEEPING", "PULSE_REMINDER", "ADMIN_DAILY", "GERENCIA_DAILY", "GERENCIA_BRIEF"] as const;
+export const JOB_KINDS = ["MAIL_REPLIES", "CUSTOMER_MAIL", "CATALOG_SYNC", "PAY_BEHAVIOR", "PAY_BEHAVIOR_ALL", "HOUSEKEEPING", "PULSE_REMINDER", "ADMIN_DAILY", "GERENCIA_DAILY", "GERENCIA_BRIEF", "FX_RATES"] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
 
 export const JOB_LABEL: Record<JobKind, [string, string]> = {
@@ -26,6 +26,7 @@ export const JOB_LABEL: Record<JobKind, [string, string]> = {
   ADMIN_DAILY: ["Revisar promesas de pago vencidas y obligaciones con decisión cercana", "Check payment promises past their date and obligations with a decision coming"],
   GERENCIA_DAILY: ["Guardar la foto diaria de Gerencia y anotar los cambios materiales", "Save Management's daily picture and note material changes"],
   GERENCIA_BRIEF: ["Avisar a Gerencia por correo que el cierre ejecutivo está listo", "Email Management that the executive close is ready"],
+  FX_RATES: ["Actualizar las tasas de cambio del mercado (Yahoo Finance)", "Update market exchange rates (Yahoo Finance)"],
 };
 
 /** Slot keys contain "@": they stay forever (a slot runs once). Plain keys are released when the job ends. */
@@ -92,6 +93,13 @@ const HANDLERS: Record<JobKind, Handler> = {
     const { gerenciaBrief } = await import("./gerencia-brief");
     return gerenciaBrief();
   },
+  async FX_RATES() {
+    const { refreshMarket } = await import("./fx-market");
+    const r = await refreshMarket();
+    // Nothing read at all = the service is down: fail so the run shows it (pages keep the last saved rates).
+    if (!r.saved) throw new Error(`no rates read · ${r.errors.join(" | ")}`);
+    return `saved ${r.saved}${r.missing.length ? ` · missing ${r.missing.join(",")}` : ""}${r.rejected.length ? ` · rejected ${r.rejected.join(",")}` : ""}`;
+  },
 };
 
 // ---------- planning ----------
@@ -102,6 +110,7 @@ export async function planRecurring(now = new Date()) {
   const day = now.toISOString().slice(0, 10);
   await enqueue("MAIL_REPLIES", {}, { dedupeKey: `MAIL_REPLIES@${slot(now, 15)}`, maxAttempts: 1 });
   await enqueue("CUSTOMER_MAIL", {}, { dedupeKey: `CUSTOMER_MAIL@${slot(now, 15)}`, maxAttempts: 1 });
+  await enqueue("FX_RATES", {}, { dedupeKey: `FX_RATES@${slot(now, 15)}`, maxAttempts: 1 });
   await enqueue("CATALOG_SYNC", {}, { dedupeKey: `CATALOG_SYNC@${slot(now, 60)}`, maxAttempts: 2 });
   await enqueue("PAY_BEHAVIOR_ALL", {}, { dedupeKey: `PAY_BEHAVIOR_ALL@${day}`, maxAttempts: 3 });
   await enqueue("HOUSEKEEPING", {}, { dedupeKey: `HOUSEKEEPING@${day}`, maxAttempts: 2 });

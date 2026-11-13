@@ -16,6 +16,8 @@ import { COST_STATUS } from "@/lib/proposal-rules";
 import { sellerMissing, sellerOf } from "@/lib/sellers";
 import { RATE_MAX, RATE_MIN, docBlockers, effectiveIvaPct, type SellerSnap } from "@/lib/quote-doc";
 import { TRM_SOURCE, trmFor } from "@/lib/fx";
+import { BASE_CURRENCY, cleanCurrency } from "@/lib/currencies";
+import { marketRate, rateSourceText } from "@/lib/fx-market";
 
 const dayOf = (s: FormDataEntryValue | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(`${String(s)}T00:00:00Z`) : null);
 const txt = (fd: FormData, k: string, max = 2000) => {
@@ -100,22 +102,62 @@ export async function saveSolution(id: string, fd: FormData) {
 /** Landed cost: each component keeps its source; a change records why. */
 const costStatus = (fd: FormData, k: string) => { const v = String(fd.get(k) ?? ""); return COST_STATUS[v] ? v : null; };
 
+/** Market rate of a supplier currency against the dollar, for the cost form (shown before saving). */
+export async function previewMarketRate(currency: string): Promise<{ ok: true; usdPerUnit: number; unitsPerUsd: number; sourceText: string; stale: boolean } | { ok: false }> {
+  await requireUser();
+  const r = await marketRate(cleanCurrency(currency));
+  return r ? { ok: true, usdPerUnit: r.usdPerUnit, unitsPerUsd: r.unitsPerUsd, sourceText: rateSourceText(r), stale: r.stale } : { ok: false };
+}
+
+/** One click on a draft: replace the quote's rate with the market's, with its source and time. */
+export async function applyMarketRate(id: string) {
+  const { q } = await draftOnly(id);
+  if (q.costCurrency === BASE_CURRENCY) back(id, "err=estado");
+  const r = await marketRate(q.costCurrency);
+  if (!r) back(id, "err=tasa-mercado");
+  await db.quote.update({ where: { id }, data: { fxRate: r!.usdPerUnit, fxSource: rateSourceText(r!) } });
+  back(id, "ok=tasa-mercado");
+}
+
 export async function saveCosts(id: string, fd: FormData) {
   const { q } = await draftOnly(id);
-  const cur = String(fd.get("costCurrency") ?? "USD").trim().toUpperCase().slice(0, 3) || "USD";
+  const cur = cleanCurrency(fd.get("costCurrency"));
+  // Supplier paid in its own currency: the cost needs a rate to become dollars. None typed = the market's rate now.
+  let fxRate: number | null = null, fxSource: string | null = null;
+  if (cur !== BASE_CURRENCY) {
+    const typed = num(fd, "fxRate");
+    if (typed && typed > 0) {
+      fxRate = typed;
+      fxSource = txt(fd, "fxSource", 200);
+    } else {
+      const r = await marketRate(cur);
+      if (!r) back(id, "err=tasa-mercado");
+      fxRate = r!.usdPerUnit;
+      fxSource = rateSourceText(r!);
+    }
+  }
   // Eságara Gate §49: a known cost can't go down silently to lift the Eságara — it needs a reason (and stays audited).
+  // The supplier's cost is compared in dollars (its amount × its rate), so changing currency is neither a false
+  // drop nor a hidden one. Same amount, same currency and a rate that follows the market is the market moving, not a person.
+  const newSupplier = num(fd, "supplierCost") ?? 0;
+  const usdBefore = q.fxRate ? mulMoney(q.supplierCost, q.fxRate) : money2(q.supplierCost);
+  let usdAfter = fxRate ? mulMoney(newSupplier, fxRate) : money2(newSupplier);
+  if (fxRate && cur === q.costCurrency && money2(newSupplier) === money2(q.supplierCost) && usdAfter < usdBefore) {
+    const m = await marketRate(cur, { wait: false });
+    if (m && Math.abs(fxRate - m.usdPerUnit) / m.usdPerUnit < 0.005) usdAfter = usdBefore;
+  }
   const drops = costDrops(
-    { supplierCost: Number(q.supplierCost), freightCost: Number(q.freightCost), otherCosts: Number(q.otherCosts) },
-    { supplierCost: num(fd, "supplierCost") ?? 0, freightCost: num(fd, "freightCost") ?? 0, otherCosts: num(fd, "otherCosts") ?? 0 },
+    { supplierCost: usdBefore, freightCost: Number(q.freightCost), otherCosts: Number(q.otherCosts) },
+    { supplierCost: usdAfter, freightCost: num(fd, "freightCost") ?? 0, otherCosts: num(fd, "otherCosts") ?? 0 },
   );
   if (drops.length && !txt(fd, "changeNote", 300)) back(id, "err=motivo-costo");
   await db.quote.update({
     where: { id },
     data: {
       costCurrency: cur,
-      fxRate: cur === "USD" ? null : num(fd, "fxRate"),
-      fxSource: cur === "USD" ? null : txt(fd, "fxSource", 200),
-      supplierCost: num(fd, "supplierCost") ?? 0,
+      fxRate,
+      fxSource,
+      supplierCost: newSupplier,
       supplierSrc: txt(fd, "supplierSrc", 200),
       freightCost: num(fd, "freightCost") ?? 0,
       freightSrc: txt(fd, "freightSrc", 200),

@@ -1670,6 +1670,11 @@ tr.muted td { color: var(--ink-3); }
 .vo-tools > button { flex: 0 0 auto; }
 .vo-tools > button.on { border-color: var(--brand); color: var(--brand); }
 button.linkish { background: none; border: 0; padding: 0; color: var(--brand); font: inherit; font-size: 0.85em; cursor: pointer; text-decoration: underline; min-height: 0; width: auto; }
+.cfx { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cfx .qa-row { align-items: flex-end; }
+.cfx select, .cfx input { width: 100%; min-width: 0; }
+.cfx p { margin: 0; }
+.cfx-mkt { border-left: 3px solid var(--line); padding-left: 8px; }
 .emf-fx { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 
 /* Section groups above the tabs (modules with many sections) */

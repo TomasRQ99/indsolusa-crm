@@ -575,6 +575,20 @@ model WebSource {
 }
 
 // Cache of polite fetches: robots.txt, sitemaps and pages (so we never hammer a site).
+/// Market exchange rates against the dollar, refreshed every 15 minutes (src/lib/fx-market.ts).
+/// One row per currency, always the latest reading. Derived data: not audited.
+model FxRate {
+  currency    String   @id
+  /// USD per 1 unit of the currency (what a quote's fxRate stores)
+  usdPerUnit  Decimal  @db.Decimal(18, 10)
+  /// units of the currency per 1 USD (how the market usually quotes it)
+  unitsPerUsd Decimal  @db.Decimal(18, 6)
+  source      String
+  /// market time of the reading
+  quotedAt    DateTime
+  fetchedAt   DateTime @default(now())
+}
+
 model WebCache {
   url         String   @id
   status      Int
@@ -1286,7 +1300,8 @@ model Quote {
   promiseCondition   String?
   // Landed cost (current version), each component with its source
   costCurrency       String    @default("USD")
-  fxRate             Decimal?  @db.Decimal(14, 6)
+  /// USD per 1 unit of the supplier's currency (10 decimals: a peso or a won is worth a small fraction of a dollar)
+  fxRate             Decimal?  @db.Decimal(18, 10)
   fxSource           String?
   supplierCost       Decimal   @default(0) @db.Decimal(14, 2)
   supplierSrc        String?

@@ -18,11 +18,14 @@ import { scopeState } from "@/lib/scope";
 import { EXC_ERR, EXC_OK, ExceptionCard } from "../../comercial/esagara/ExceptionCard";
 import { Popovers } from "@/components/Popovers";
 import {
-  createRevision, markDeclined, presentQuote, recommendScenario, removeLine, removeScenario,
+  applyMarketRate, createRevision, markDeclined, presentQuote, recommendScenario, removeLine, removeScenario,
   saveCosts, saveLine, saveScenario, saveSolution, saveTerms, waitWithControl,
 } from "../actions";
 import { registerPo } from "../../po/actions";
-import { lineAmount, sumMoney } from "@/lib/money";
+import { lineAmount, mulMoney, subMoney, sumMoney } from "@/lib/money";
+import { BASE_CURRENCY, rateGapPct, rateText } from "@/lib/currencies";
+import { marketRate, rateSourceText } from "@/lib/fx-market";
+import { CostFxFields } from "@/components/CostFxFields";
 import { COST_STATUS, costStatusOf, quoteDiff, weakest, type QV } from "@/lib/proposal-rules";
 
 export default async function QuotePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; cmp?: string }> }) {
@@ -50,6 +53,9 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     q.status === "ACCEPTED" ? db.supplierPO.findMany({ where: { dealId: q.dealId }, select: { amount: true, currency: true } }) : [],
   ]);
   const d = q.deal;
+  const foreignCost = q.costCurrency !== BASE_CURRENCY;
+  // Saved market rate (refreshed behind when old): the page never waits on Yahoo.
+  const mkt = foreignCost ? await marketRate(q.costCurrency, { wait: false }) : null;
   const editable = canEdit(user, d.ownerId);
   const draft = q.status === "DRAFT";
   const docView = await quoteDocView(q, q.deal.sellerKey);
@@ -73,6 +79,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     abierta: t("Ya había un borrador abierto: es este.", "There was already an open draft: this one."),
     solucion: t("Solución y promesa guardadas.", "Solution and promise saved."),
     costos: t("Costos guardados. SOLU recalculó la economía esperada.", "Costs saved. SOLU recalculated the expected economics."),
+    "tasa-mercado": t("Tasa actualizada a la del mercado. SOLU recalculó la economía esperada.", "Rate updated to the market's. SOLU recalculated the expected economics."),
     condiciones: t("Condiciones guardadas.", "Terms saved."),
     vendedor: t("Empresa que vende actualizada.", "Selling company updated."),
     moneda: t("Moneda e IVA guardados.", "Currency and IVA saved."),
@@ -104,6 +111,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     "sin-oc": t("Escribe el número de OC del cliente.", "Write the customer's PO number."),
     espera: t("Escribe qué esperas y hasta cuándo.", "Write what you're waiting for and until when."),
     estado: t("Esta acción no aplica en el estado actual.", "This action doesn't apply in the current state."),
+    "tasa-mercado": t("No se pudo consultar la tasa del mercado ahora. Intenta de nuevo en un minuto, o abre «Editar costos» y escribe la tasa del banco con su fuente.", "Couldn't get the market rate right now. Try again in a minute, or open “Edit costs” and type the bank's rate with its source."),
     "motivo-costo": t("Un costo bajó: escribe por qué en «Motivo del cambio» (por ejemplo, nueva proforma). Así nadie sube la Eságara quitando costos reales.", "A cost went down: write why in “Reason for change” (e.g., new proforma). That way nobody lifts Eságara by removing real costs."),
     ...EXC_ERR(t),
   };
@@ -227,18 +235,19 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     const StatusSel = ({ name, value }: { name: string; value: string | null }) => <label>{t("Estado", "Status")}<select name={name} defaultValue={value ?? ""}><option value="">{t("Automático", "Automatic")}</option>{Object.entries(COST_STATUS).map(([k, x]) => <option key={k} value={k}>{t(x.es, x.en)}</option>)}</select></label>;
     const prev = v.length > 1 ? v[v.findIndex((x) => x.current) - 1] : undefined;
     const why = q.changeNote;
+    // Supplier paid in its own currency: the quote's rate next to the market's, and what the difference is worth.
+    const savedRate = q.fxRate ? Number(q.fxRate) : null;
+    const mktGap = mkt && savedRate ? rateGapPct(mkt.usdPerUnit, savedRate) : 0;
+    const mktDelta = mkt && savedRate ? subMoney(mulMoney(q.supplierCost, mkt.usdPerUnit), mulMoney(q.supplierCost, savedRate)) : 0;
+    const mktMoved = Math.abs(mktGap) >= 0.01;
     return (
       <section className="jblock">
         <div className="jbh"><b>ECONOMICS</b><span className="grow" />
           {editable && draft && (
             <QA label={t("Editar costos", "Edit costs")} wide right>
               <form action={saveCosts.bind(null, q.id)} className="qa-form">
-                <div className="qa-row">
-                  <label>{t("Moneda del proveedor", "Supplier currency")}<input name="costCurrency" maxLength={3} defaultValue={q.costCurrency} style={{ width: 70 }} /></label>
-                  <label>{t("Tasa a USD", "Rate to USD")}<input name="fxRate" type="number" step="0.000001" min="0" defaultValue={q.fxRate ? Number(q.fxRate) : ""} /></label>
-                </div>
-                <label>{t("Fuente de la tasa", "Rate source")}<input name="fxSource" maxLength={200} defaultValue={q.fxSource ?? ""} placeholder={t("Ej.: banco, 5 nov 10:00", "E.g.: bank, Nov 5 10:00")} /></label>
-                <div className="qa-row"><label>{t("Proveedor", "Supplier")}<input name="supplierCost" type="number" step="0.01" min="0" defaultValue={Number(q.supplierCost)} /></label><label>{t("Fuente", "Source")}<input name="supplierSrc" maxLength={200} defaultValue={q.supplierSrc ?? ""} placeholder="Proforma…" /></label><StatusSel name="supplierStatus" value={q.supplierStatus} /></div>
+                <CostFxFields lang={user.lang} currency={q.costCurrency} rate={q.fxRate ? Number(q.fxRate) : null} source={q.fxSource} />
+                <div className="qa-row"><label>{foreignCost ? t(`Proveedor (en ${q.costCurrency})`, `Supplier (in ${q.costCurrency})`) : t("Proveedor", "Supplier")}<input name="supplierCost" type="number" step="0.01" min="0" defaultValue={Number(q.supplierCost)} /></label><label>{t("Fuente", "Source")}<input name="supplierSrc" maxLength={200} defaultValue={q.supplierSrc ?? ""} placeholder="Proforma…" /></label><StatusSel name="supplierStatus" value={q.supplierStatus} /></div>
                 <div className="qa-row"><label>{t("Fletes USD", "Freight USD")}<input name="freightCost" type="number" step="0.01" min="0" defaultValue={Number(q.freightCost)} /></label><label>{t("Fuente", "Source")}<input name="freightSrc" maxLength={200} defaultValue={q.freightSrc ?? ""} /></label><StatusSel name="freightStatus" value={q.freightStatus} /></div>
                 <div className="qa-row"><label>{t("Otros USD", "Other USD")}<input name="otherCosts" type="number" step="0.01" min="0" defaultValue={Number(q.otherCosts)} /></label><label>{t("Fuente", "Source")}<input name="otherSrc" maxLength={200} defaultValue={q.otherSrc ?? ""} /></label><StatusSel name="otherStatus" value={q.otherStatus} /></div>
                 <label>{t("¿Por qué cambió respecto a la versión anterior?", "Why did it change from the previous version?")}<input name="changeNote" maxLength={300} defaultValue={q.changeNote ?? ""} /></label>
@@ -317,11 +326,35 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
         </div>
         <p className="src" style={{ marginTop: 6 }}>{t(`La Eságara es tan firme como su costo menos firme: ${COST_STATUS[weak].es.toLowerCase()}. La financiación se muestra aparte y no entra en el umbral.`, `Eságara is only as firm as its least firm cost: ${COST_STATUS[weak].en.toLowerCase()}. Financing is shown separately and isn't part of the threshold.`)}</p>
         {why && <p className="qv-why"><b>{t("Por qué cambió", "Why it changed")}:</b> {why}</p>}
-        <p className="src" style={{ marginTop: 8 }}>
-          {q.costCurrency === "USD" || !q.fxRate
-            ? t("Sin exposición cambiaria: proveedor y cliente en USD.", "No FX exposure: supplier and customer in USD.")
-            : t(`Tasa ${q.costCurrency}→USD ${Number(q.fxRate)} · ${q.fxSource ?? "fuente sin registrar"}. Si la tasa se mueve antes de pagar al proveedor, cambia la eságara.`, `Rate ${q.costCurrency}→USD ${Number(q.fxRate)} · ${q.fxSource ?? "source not recorded"}. If the rate moves before paying the supplier, eságara changes.`)}
-        </p>
+        {!foreignCost ? (
+          <p className="src" style={{ marginTop: 8 }}>{t("Sin exposición cambiaria: proveedor y cliente en USD.", "No FX exposure: supplier and customer in USD.")}</p>
+        ) : (
+          <div className="note" style={{ marginTop: 8 }}>
+            {savedRate == null ? (
+              <p className="small risk-t">{t(`Falta la tasa: el costo del proveedor está en ${q.costCurrency} y hoy se está sumando como si fueran dólares.`, `The rate is missing: the supplier's cost is in ${q.costCurrency} and today it's being added as if it were dollars.`)}</p>
+            ) : (
+              <p className="small">
+                {t("Proveedor", "Supplier")}: <b className="mono">{q.costCurrency} {i.n2(Number(q.supplierCost))}</b> × <b className="mono">{rateText(savedRate)}</b> = <b className="mono">{money(cur.supplier)}</b>
+                <span className="src block">{t(`Tasa de la cotización: 1 ${q.costCurrency} = ${rateText(savedRate)} USD · ${q.fxSource ?? "fuente sin registrar"}`, `Quote rate: 1 ${q.costCurrency} = ${rateText(savedRate)} USD · ${q.fxSource ?? "source not recorded"}`)}</span>
+              </p>
+            )}
+            {mkt ? (
+              <p className="small">
+                {t("Mercado ahora", "Market now")}: <b className="mono">1 {q.costCurrency} = {rateText(mkt.usdPerUnit)} USD</b> <span className="muted">(1 USD = {mkt.unitsPerUsd >= 100 ? i.n2(mkt.unitsPerUsd) : mkt.unitsPerUsd.toFixed(4)} {q.costCurrency})</span>
+                {savedRate != null && (mktMoved
+                  ? <> · <span className={mktDelta > 0 ? "attn-t" : undefined}>{t(`a esta tasa el proveedor costaría ${money(Math.abs(mktDelta))} ${mktDelta > 0 ? "más" : "menos"} (${i.pct(Math.abs(mktGap))})`, `at this rate the supplier would cost ${money(Math.abs(mktDelta))} ${mktDelta > 0 ? "more" : "less"} (${i.pct(Math.abs(mktGap))})`)}</span></>
+                  : <> · {t("igual a la tasa de la cotización", "same as the quote's rate")}</>)}
+                <span className="src block">{rateSourceText(mkt)}{mkt.stale ? ` · ${t("lectura vieja: el mercado no respondió hoy", "old reading: the market didn't answer today")}` : ""} · {t("referencia de mercado; la tasa del banco el día del pago puede variar.", "market reference; the bank's rate on payment day can differ.")}</span>
+              </p>
+            ) : (
+              <p className="src">{t(`Sin tasa de mercado para ${q.costCurrency} por ahora.`, `No market rate for ${q.costCurrency} right now.`)}</p>
+            )}
+            {editable && draft && mkt && (savedRate == null || mktMoved) && (
+              <form action={applyMarketRate.bind(null, q.id)}><button type="submit" className="secondary">{t("Actualizar a la tasa del mercado", "Update to the market rate")}</button></form>
+            )}
+            {!draft && savedRate != null && <p className="src">{t("Lo presentado no cambia. Si la tasa se mueve antes de pagar al proveedor, cambia la eságara real.", "What was presented doesn't change. If the rate moves before paying the supplier, the real eságara changes.")}</p>}
+          </div>
+        )}
       </section>
     );
   };
