@@ -31,10 +31,20 @@ const labelsOf = (step: string) => [...[...step.matchAll(/\[\[(.+?)\]\]/g)].map(
 const insideJourney = (p: string) => /^\/(deals|cotizaciones|po|compras|logistica)\/[^/]+/.test(p);
 const samePage = (href: string, p: string) => href.split(/[?#]/)[0] === p;
 
-function StepText({ text }: { text: string }) {
+/** A name in a blue box works as a link: clicking it takes the person to that thing (it never presses a button for them). */
+function StepText({ text, onPick }: { text: string; onPick?: (label: string) => void }) {
   const parts = text.split(/\[\[(.+?)\]\]/g);
-  return <>{parts.map((p, k) => (k % 2 ? <span className="g-ui" key={k}>{p}</span> : <span key={k}>{p}</span>))}</>;
+  return <>{parts.map((p, k) => (k % 2
+    ? onPick
+      ? <span className="g-ui go" key={k} role="link" tabIndex={0} onClick={(e) => { e.stopPropagation(); e.preventDefault(); onPick(p); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); onPick(p); } }}>{p}</span>
+      : <span className="g-ui" key={k}>{p}</span>
+    : <span key={k}>{p}</span>))}</>;
 }
+
+const nameOf = (el: HTMLElement) => { const raw = el instanceof HTMLInputElement ? el.value : (el.querySelector(".lbl") ?? el).textContent ?? ""; return raw.length > 90 ? "" : plain(raw).replace(/ \d+$/, ""); };
+const isNamed = (text: string, p: string) => text === p || (text.startsWith(p + " ") && text.length <= p.length + 26);
+/** The closed section a control sits in (for a section title: the closed section around its own section). */
+const closedAround = (el: HTMLElement) => (el.matches("summary") ? el.parentElement?.parentElement?.closest<HTMLDetailsElement>("details:not([open])") : el.closest<HTMLDetailsElement>("details:not([open])")) ?? null;
 
 export function GuideOverlay({ lang, path }: { lang: "ES" | "EN"; path: string }) {
   const t = (a: string, b: string) => (lang === "ES" ? a : b);
@@ -272,6 +282,39 @@ export function GuideOverlay({ lang, path }: { lang: "ES" | "EN"; path: string }
     save({ ...s, caseId: e.id, si: k, pi: 0 });
     router.push(e.stages[guide.stages[k].id]?.href ?? `/deals/${e.id}`);
   };
+  // A blue box in a step is a link to the thing it names. Another screen: go there. A tab or a menu entry: open it.
+  // A closed section: open it. A button that does something: bring it into view and mark it; the person presses it.
+  const pick = (k: number, raw: string) => {
+    if (k !== pi) go(si, k);
+    if (stage.locked) return;
+    if (!here) { router.push(cs ? cs.href : stage.needsJourney ? "/deals" : stage.href ?? "/deals"); return; }
+    const root = document.querySelector(".app");
+    if (!root) return;
+    const p = plain(raw);
+    // After this click is over: the page closes its pop-up sections on any click outside them, this one included.
+    window.setTimeout(() => {
+    const cands = Array.from(root.querySelectorAll<HTMLElement>("a, button, summary, [role=tab], input[type=submit]")).filter((el) => !el.closest(".guide") && isNamed(nameOf(el), p));
+    let el: HTMLElement | null = cands.find((c) => !closedAround(c) && (typeof c.checkVisibility !== "function" || c.checkVisibility())) ?? null;
+    if (!el) {
+      // Only inside closed sections: open the way to it (a plain "Guardar" only when one section holds it).
+      const closed = cands.filter((c) => closedAround(c));
+      if (closed.length && (p.includes(" ") || new Set(closed.map((c) => closedAround(c))).size === 1)) {
+        el = closed[0];
+        for (let d = closedAround(el); d; d = closedAround(el)) d.open = true;
+      }
+    }
+    if (!el) {
+      const why = Array.from(root.querySelectorAll<HTMLElement>("[data-guide-for]")).find((w) => plain(w.dataset.guideFor ?? "") === p);
+      (why?.closest<HTMLElement>("[data-guide-block]") ?? why?.parentElement)?.scrollIntoView({ block: "center", behavior: "smooth" });
+      return;
+    }
+    if (el instanceof HTMLAnchorElement && !el.target && el.origin === window.location.origin) { el.click(); return; }
+    if (el.matches("summary")) { const d = el.parentElement as HTMLDetailsElement | null; if (d && !d.open) d.open = true; }
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.focus({ preventScroll: true });
+    }, 40);
+  };
+
   const showExamples = wantsCase && !kase && ((stage.needsJourney && !here) || (guide.route && si === 0));
   const ex = showExamples ? exFor() : [];
 
@@ -379,7 +422,7 @@ export function GuideOverlay({ lang, path }: { lang: "ES" | "EN"; path: string }
               <li key={k} className={k === pi ? "on" : k < pi ? "done" : undefined}>
                 <button type="button" onClick={() => go(si, k)} aria-current={k === pi ? "step" : undefined}>
                   <i>{k < pi ? "✓" : k + 1}</i>
-                  <span><StepText text={st} /></span>
+                  <span><StepText text={st} onPick={(l) => pick(k, l)} /></span>
                 </button>
               </li>
             ))}
