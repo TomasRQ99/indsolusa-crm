@@ -480,7 +480,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
           </section>
 
           <section className="jblock">
-            <div className="jbh"><b>{t("COTIZACIONES Y JOURNEYS", "QUOTES & JOURNEYS")}</b></div>
+            <div className="jbh"><b>{t("COTIZACIONES Y NECESIDADES", "QUOTES & NECESSITIES")}</b></div>
             {h.quotes.length + h.items.length === 0 ? <p className="quiet-p">{t("No aparece en cotizaciones ni Necesidades.", "It doesn't appear in quotes or Necessities.")}</p> : (
               <table>
                 <thead><tr><th>{t("Dónde", "Where")}</th><th>{t("Cliente", "Customer")}</th><th className="n">{t("Cant.", "Qty")}</th><th className="n">{t("Precio unit.", "Unit price")}</th></tr></thead>

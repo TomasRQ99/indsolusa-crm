@@ -618,7 +618,7 @@ export default async function JourneyPage({
       </section>
       {deal.supplierPos.length > 0 && (
         <section className="jblock">
-          <div className="jbh"><b>{t("PROVEEDORES EN ESTE JOURNEY", "SUPPLIERS ON THIS JOURNEY")}</b></div>
+          <div className="jbh"><b>{t("PROVEEDORES EN ESTA NECESIDAD", "SUPPLIERS ON THIS NECESSITY")}</b></div>
           <ul className="plain">{deal.supplierPos.map((p) => <li key={p.id}><b>{p.supplier.name}</b> · {p.code} · {p.currency} {i.n2(p.amount)}</li>)}</ul>
         </section>
       )}
@@ -1037,7 +1037,7 @@ export default async function JourneyPage({
 
       <header className="jh">
         <div className="jh-top">
-          <span className="crumb"><Link href="/deals">{t("COMERCIAL · JOURNEYS", "COMMERCIAL · JOURNEYS")}</Link></span>
+          <span className="crumb"><Link href="/deals">{t("COMERCIAL · NECESIDADES", "COMMERCIAL · NECESSITIES")}</Link></span>
           {deal.code && <span className="jid">{deal.code}</span>}
           <span className="grow" />
           <div className="jh-act">

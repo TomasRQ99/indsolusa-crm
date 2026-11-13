@@ -312,7 +312,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
             )}
           </div>
           <div>
-            <div className="jbh"><b>{t("JOURNEYS QUE CUBRE", "JOURNEYS IT COVERS")}</b></div>
+            <div className="jbh"><b>{t("NECESIDADES QUE CUBRE", "NECESSITIES IT COVERS")}</b></div>
             <ul className="plain small">
               <li><b>{d.code ?? d.title}</b> · USD {i.n2(poTotal - allocated)} <span className="src">{t("(esta Necesidad: lo no asignado)", "(this Necessity: what isn't allocated)")}</span></li>
               {allocs.map((a) => (

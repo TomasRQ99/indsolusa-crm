@@ -10,6 +10,7 @@ import { setLanguage } from "@/app/(app)/profile/actions";
 import { logout } from "@/app/login/actions";
 import { ReportSignal } from "@/components/ReportSignal";
 import { GuideOverlay, startGuide } from "./GuideOverlay";
+import { GlossaryLayer } from "./GlossaryLayer";
 import type { GuideMatch } from "@/lib/guide";
 import { IconBell, IconChevron, IconClose, IconMenu, IconSearch, IconSparkle, MODULE_ICONS } from "./Icons";
 
@@ -297,6 +298,7 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
           <div className="menu-pop">
             <div className="menu-head"><b>{user.name}</b><small>{user.role}</small></div>
             <Link href="/profile">{t("Mi perfil y preferencias", "My profile & preferences")}</Link>
+            <Link href="/glosario">{t("Glosario de términos", "Glossary of terms")}</Link>
             <div className="menu-lang">
               <span>{t("Idioma", "Language")}</span>
               {langSwitch}
@@ -386,6 +388,7 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
       {ask && <AskPanel es={es} where={current ? `${current.label}${activeTab ? ` · ${activeTab.label}` : ""}` : ""} inputRef={askRef} onClose={() => setAsk(false)} />}
 
       {guideOn && <GuideOverlay lang={lang} path={path} />}
+      <GlossaryLayer lang={lang === "ES" ? "es" : "en"} path={path} />
 
       {/* Mobile: bottom bar */}
       <nav className="bottombar" aria-label={t("Accesos", "Shortcuts")}>
