@@ -1893,6 +1893,21 @@
     "Una barra azul delgada arriba se muestra mientras carga una página o se guarda un formulario, y el botón presionado dice \"Guardando…\" para que no se pueda presionar dos veces."
    ],
    "expect": "El cambio de idioma aplica a todas las pantallas; en los PDF eliges EN o ES."
+  },
+  {
+   "id": "glosario",
+   "m": "global",
+   "t": "Glosario: un globo de información en cada término",
+   "path": "En todas las pantallas · menú de tu nombre → Glosario de términos",
+   "why": "Cada término de SOLU (Necesidad, Eságara, OC, Remisión, Cupo, Conciliar…) lleva un globo «i» que explica qué significa en esa pantalla y qué significa en general.",
+   "steps": [
+    "Abre cualquier pantalla: los términos se ven con un subrayado punteado azul y un globo «i» encima.",
+    "Haz clic en el globo, o en la palabra subrayada cuando es texto normal. Lee «En esta pantalla» y «En general».",
+    "Ciérralo con la X, con Esc o haciendo clic fuera.",
+    "Para ver todos los términos: arriba a la derecha, abre el menú de tu nombre y haz clic en [[Glosario de términos]].",
+    "Para quitar los globos: en la página Glosario, [[Ocultar los globos en las pantallas]]. Se vuelven a mostrar ahí mismo con [[Mostrar los globos en las pantallas]]."
+   ],
+   "expect": "El mismo término explica cosas distintas según dónde estés: «Necesidad» en el título de la primera columna del tablero es la etapa; en Mercado es cuándo una señal se vuelve Necesidad. Hay un globo por término en cada bloque de la pantalla, no en cada mención. Ocultarlos vale para ese navegador, no para la persona."
   }
  ]
 }
