@@ -5,6 +5,7 @@
 // scripts/guide-sync.mjs), so the guide on screen and the training page never say different things.
 // Nothing here is AI: matching is plain words, and every step is text a person wrote.
 import data from "./guide-data.json";
+import dataEn from "./guide-data-en.json";
 import { MODULES, NAV_GROUPS, type ModuleKey, type NavTab } from "./nav";
 import { boardMayOpen, canManageAll, isBoard, isGerencia } from "./permissions";
 
@@ -36,6 +37,18 @@ export type GuideMatch = { id: string; title: string; path: string; why: string;
 
 const FEATURES = data.features as Feature[];
 const BY_ID = new Map(FEATURES.map((f) => [f.id, f]));
+// The same guides in English (src/lib/guide-data-en.json): same steps and the same [[buttons]], which the overlay
+// shows and looks for with their English text. A guide without a translation falls back to Spanish.
+const EN = dataEn as Record<string, { t: string; why: string; steps: string[]; expect: string }>;
+/** The guide's words in the person's language. Steps keep their count, so "continue from step 2" still holds. */
+function textOf(f: Feature, lang: "ES" | "EN") {
+  const e = lang === "EN" ? EN[f.id.replace(/#also$/, "")] : undefined;
+  return e && e.steps.length === f.steps.length ? { t: e.t, why: e.why, steps: e.steps, expect: e.expect } : { t: f.t, why: f.why, steps: f.steps, expect: f.expect };
+}
+/** "COMERCIAL → Necesidades → una tarjeta" with the menu names as the person sees them. */
+function pathOf(path: string, words: Map<string, string>) {
+  return path.split(" · ").map((way) => way.split(" → ").map((seg) => { const m = /^(.*?)(\s*\([^)]*\))?$/.exec(seg)!; return (words.get(norm(m[1])) ?? m[1]) + (m[2] ?? ""); }).join(" → ")).join(" · ");
+}
 
 /** The life of an order, in the order it happens. Asking for a late stage offers the whole way to it. */
 const LIFE = ["journeys-board", "need-source", "quote", "po", "compras", "logistica", "ops-despachos", "facturacion", "cobrar", "resultado"];
@@ -59,6 +72,8 @@ function tabVisible(tab: NavTab, user: U) {
 function menuWords(lang: "ES" | "EN") {
   const m = new Map<string, string>();
   const put = (es: string, en: string) => m.set(norm(es), lang === "ES" ? es : en);
+  // Words of a path that are not in the menu: the Need and its tabs, and the generic "a customer", "an order".
+  for (const [es, en] of [["Necesidad", "Need"], ["Resumen", "Summary"], ["Fuente", "Source"], ["Cotización", "Quote"], ["Ejecución", "Execute"], ["Finanzas", "Finance"], ["Expediente", "Business File"], ["Resultado", "Result"], ["Despacho", "Dispatch"], ["Alcance", "Scope"], ["Solución", "Solution"], ["Facturación", "Billing"], ["Eságara real", "Real Eságara"], ["un cliente", "a customer"], ["una persona", "a person"], ["un proveedor", "a supplier"], ["un repuesto", "a part"], ["un código", "a code"], ["una tarjeta", "a card"], ["una orden", "an order"], ["un envío", "a shipment"], ["un pago", "a payment"], ["una decisión", "a decision"], ["una misión", "a mission"], ["Barra superior", "Top bar"], ["En todas las pantallas", "On every screen"], ["Preparar cotización", "Prepare quote"], ["Cotización presentada", "Presented quote"], ["abrir la cotización", "open the quote"], ["bloque ECONOMÍA", "ECONOMICS block"], ["Liquidación de costos", "Cost settlement"], ["Entrega física", "Physical delivery"], ["Garantía y reclamos", "Warranty and claims"], ["franja de promesa", "promise strip"]]) put(es, en);
   for (const mod of MODULES) { put(mod.es, mod.en); for (const tab of mod.tabs) put(tab.es, tab.en); }
   for (const g of Object.values(NAV_GROUPS)) put(g.es, g.en);
   return m;
@@ -98,9 +113,10 @@ function stageOf(f: Feature, user: U): GuideStage {
     const o = BY_ID.get(id);
     if (!o) return [];
     const s = stageOf({ ...o, id: `${o.id}#also` }, user);
-    return s.href && !s.locked ? [{ label: o.t, href: s.href }] : [];
+    return s.href && !s.locked ? [{ label: textOf(o, user.lang).t, href: s.href }] : [];
   });
-  return { id: f.id, title: f.t, path: f.path, way, why: f.why, steps: f.steps, expect: f.expect, mod, href, needsJourney, locked, also };
+  const tx = textOf(f, user.lang);
+  return { id: f.id, title: tx.t, path: pathOf(f.path, words), way, why: tx.why, steps: tx.steps, expect: tx.expect, mod, href, needsJourney, locked, also };
 }
 
 function routeTo(id: string): string[] | null {
@@ -113,7 +129,7 @@ export function getGuide(id: string, route: boolean, user: U): Guide | null {
   const f = BY_ID.get(id);
   if (!f) return null;
   const ids = route ? routeTo(id) : null;
-  if (!ids) return { id, title: f.t, route: false, stages: [stageOf(f, user)] };
+  if (!ids) return { id, title: textOf(f, user.lang).t, route: false, stages: [stageOf(f, user)] };
   const stages = ids.map((x) => stageOf(BY_ID.get(x)!, user));
   return { id, title: stages[stages.length - 1].title, route: true, stages };
 }
@@ -163,7 +179,7 @@ function matchOf(f: Feature, user: U): GuideMatch | null {
   if (st.locked) return null;
   const route = routeTo(f.id);
   const end = route ? BY_ID.get(route[route.length - 1])! : null;
-  return { id: f.id, title: f.t, path: f.path, why: f.why, mod: st.mod, routeLen: route?.length ?? 0, routeTitle: end && end.id !== f.id ? end.t : null };
+  return { id: f.id, title: st.title, path: st.path, why: st.why, mod: st.mod, routeLen: route?.length ?? 0, routeTitle: end && end.id !== f.id ? textOf(end, user.lang).t : null };
 }
 
 /** The everyday work, in the order of a normal day: what a new person is offered before typing anything. */

@@ -922,7 +922,7 @@
     "Cuando la entrega diga «Listo para facturar», haz clic en [[Emitir factura]]. Descarga el PDF.",
     "Registra su estado en contabilidad en [[Puente contable]]: ID confirmado, enviada esperando su ID, o no sabemos si se creó."
    ],
-   "expect": "El PDF de la factura todavía no lleva datos bancarios (ver \"Todavía sin conectar\")."
+   "expect": "El PDF de la factura todavía no lleva datos bancarios: falta verificar el perfil bancario de la empresa."
   },
   {
    "id": "cobrar",

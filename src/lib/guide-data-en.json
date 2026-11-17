@@ -1,0 +1,1468 @@
+{
+ "midia-today": {
+  "t": "Today's attention list",
+  "why": "One ordered list of what needs you today, each item with why it matters, its impact and the next step.",
+  "steps": [
+   "Open [[MI DÍA]]. Read the first card: who, why, what changed and the impact.",
+   "Click the card's main button to go straight to the record.",
+   "Or act from the card: note what happened with [[Registrar]], postpone with [[Mañana]] / [[En 3 días]] / [[1 semana]], or save a customer's promise with [[Guardar promesa]].",
+   "When you finish something, click [[✓ Hecho]] and set what comes next without leaving My Day."
+  ],
+  "expect": "The number next to MY DAY in the menu matches the list. A card you already handled disappears or moves down."
+ },
+ "midia-agenda": {
+  "t": "Your agenda (time blocks)",
+  "why": "Reserve time for the work that matters today and tomorrow.",
+  "steps": [
+   "On a card, click [[Primer espacio libre de hoy]], or pick a time and click [[Agendar a esta hora]].",
+   "In Your agenda, use [[Mover]] to change a block's time, or mark it done or remove it."
+  ],
+  "expect": "The block shows in Your agenda at the right time and does not overlap another one."
+ },
+ "miplan": {
+  "t": "My Plan and the file for Outlook",
+  "why": "Your week of planned work, and a file to take it to Outlook.",
+  "steps": [
+   "Open the [[Mi Plan]] tab. Under “Worth reserving” are the work blocks SOLU proposes for your week.",
+   "Click the button that starts with [[Reservar los]] (it says how many blocks there are) to put them in your agenda.",
+   "To see them in Outlook: if your calendar is already connected, click [[Enviar a mi Outlook]]. If not, click [[Descargar .ics]] and open the file: Outlook offers to add the events.",
+   "To connect it once and for all, click [[Conectar Outlook]]."
+  ],
+  "expect": "The events in Outlook match the blocks of My Plan. “Send to my Outlook” only shows once your calendar is connected; until then you see “Connect Outlook”."
+ },
+ "tasks": {
+  "t": "To-dos",
+  "why": "Small tasks that do not belong to a Need's card.",
+  "steps": [
+   "Type the task, pick the date and click [[Agregar]].",
+   "Change the estimated minutes if needed.",
+   "Click [[Eliminar]] to remove one."
+  ],
+  "expect": "The task shows in the list. Deleting asks for confirmation first."
+ },
+ "comunicacion": {
+  "t": "Communication: record and understand messages",
+  "why": "Keep customers' WhatsApp messages, calls and emails in one place. SOLU separates what the customer said (fact) from what SOLU deduces (inference).",
+  "steps": [
+   "Paste a WhatsApp message or a call summary and click [[Guardar y que SOLU lo lea]].",
+   "Check the \"SOLU understood\" panel: facts and inferences are marked. Click [[Guardar]] to keep an item or [[Descartar]] if it does not apply.",
+   "Link the conversation to a Need with [[Vincular]] (or choose \"New Need\").",
+   "Answer with [[Enviar desde el correo de la empresa]], or close it with [[Nada más que hacer aquí]]."
+  ],
+  "expect": "Urgent or unanswered conversations also show in My Day. Emails go out from sales@indsolusa.com."
+ },
+ "email": {
+  "t": "Email from the company address",
+  "why": "Send emails from sales@indsolusa.com with the company templates, in Spanish or English, without leaving SOLU.",
+  "steps": [
+   "Open the [[Correo]] tab.",
+   "Pick a template (supplier quote request, follow-up, negotiation, delivery, offer or collection) and the language.",
+   "Pick the contact, check the text and send. If the tone sounds harsh, SOLU warns you but does not block you."
+  ],
+  "expect": "The email arrives from sales@indsolusa.com. Try it first with your own address. The domain check (SPF, DKIM and DMARC) should look in order."
+ },
+ "respuestas": {
+  "t": "Replies to what we sent",
+  "why": "Replies to the requests we send from SOLU are matched with their request automatically. Nobody has to look for them in the mailbox.",
+  "steps": [
+   "Send a quote request from Find parts (see Market).",
+   "Open [[Respuestas]] and find the request: each supplier shows whether they replied and when.",
+   "Open a reply and take the price and lead time to the Need's source."
+  ],
+  "expect": "Automatic replies (out of office) and bounces are shown apart. SOLU checks the mailbox every 15 minutes."
+ },
+ "explorar": {
+  "t": "Explore the market",
+  "why": "Organise what we know about a market or a company: signals, open questions, plants and future needs.",
+  "steps": [
+   "Open [[Explorar]] and go into «Mercado lácteo colombiano» (sample).",
+   "Review the signals and open questions of each company and plant.",
+   "When a real need appears, pass it to Commercial: a Need opens with all the context.",
+   "Set a next move: a dated task is created."
+  ],
+  "expect": "A signal alone does not create a sales opportunity. Only a real need passes to Commercial."
+ },
+ "prospectos": {
+  "t": "Explore prospects (Apollo)",
+  "why": "Find people SOLU does not know yet, by job title and company, in Apollo's database. Searching is free; revealing a person uses 1 Apollo credit.",
+  "steps": [
+   "Open [[Explorar prospectos]]. If it says Apollo is not connected yet, Management follows the five steps shown there.",
+   "Type the job titles separated by commas (in Spanish and in English), where the person lives or the company's headquarters, and click [[Buscar en Apollo]].",
+   "Read the results: first name, partial last name, title, company and whether Apollo has their email.",
+   "On the person worth it, click [[Revelar · 1 crédito]] and confirm. They are added to “REVEALED PROSPECTS” with full name, work email and LinkedIn.",
+   "To work with them in SOLU, click [[Pasar a Clientes y Contactos]]: the customer is created if it did not exist and the person becomes a contact.",
+   "If they are no use, [[Descartar]].",
+   "If you already found the person elsewhere (Apollo's site, LinkedIn, a business card): under “REVEAL SOMEONE YOU ALREADY FOUND” paste the link to their LinkedIn profile, or type first name, last name and company, and click [[Pedir sus datos · 1 crédito]].",
+   "Management or Direction: [[Probar qué permite la cuenta]] says, without spending credits, whether the Apollo account allows searching and revealing from SOLU."
+  ],
+  "expect": "With Apollo's free plan, searching from SOLU may be blocked: the screen says so in Apollo's words, and you work by pasting the LinkedIn link. At the top you see the credits used this month and the cap. Revealing the same person twice does not spend another credit. If the company or the person was already in SOLU, they are linked without duplicating. Each prospect says who revealed it, when and with which search. SOLU never asks for personal emails or phone numbers."
+ },
+ "economia": {
+  "t": "Economy (Supersociedades data)",
+  "why": "Explorer of the companies reported to Supersociedades: sales, growth and signals by sector and size.",
+  "steps": [
+   "Open [[Economía]].",
+   "Filter by sector or size.",
+   "Open a company and compare it with another."
+  ],
+  "expect": "The data comes from the last Supersociedades upload made in Sources."
+ },
+ "fuentes": {
+  "t": "Sources: upload market data",
+  "why": "Upload data files (Excel or CSV) and review them before saving.",
+  "steps": [
+   "Open [[Fuentes]] and choose the file.",
+   "Review the preview: new rows, changes and errors.",
+   "Confirm the upload."
+  ],
+  "expect": "Nothing is saved without the review. People without one of those roles do not see this tab."
+ },
+ "accounts": {
+  "t": "Customers and Customer 360",
+  "why": "Everything about a customer: open Needs, history, how they pay and what equipment they have.",
+  "steps": [
+   "Open \"New customer\". Under \"Customer documents\" choose the RUT (PDF downloaded from the DIAN) and, if you want, the Chamber of Commerce certificate.",
+   "SOLU fills in legal name, tax ID, address, phone and invoice email, marked \"from the RUT\". Check them (if the check digit does not match, it says so) and click [[Crear cliente]].",
+   "Click the customer's name to open their 360 view. Under \"Documents\" you can open the RUT, see what SOLU read or upload more files with [[Subir]].",
+   "Review the history, the billing pattern and the installed equipment.",
+   "Start a new need from here with [[Crear y abrir]]. A Need opens.",
+   "Billing profile: say whether they accept partial invoices and who receives the invoices, and [[Guardar]]."
+  ],
+  "expect": "If a customer with that tax ID already exists, SOLU does not create another and takes you to the existing one. Scanned or photographed RUTs are stored, but the boxes are filled in by hand. Charts only show with at least 3 data points."
+ },
+ "contacts": {
+  "t": "Contacts",
+  "why": "The people at each customer.",
+  "steps": [
+   "Fill in name, customer, email and phone, and click [[Crear]].",
+   "Use [[Buscar]] to find someone."
+  ],
+  "expect": "The contact shows in the customer's 360 and in the Need's contact list. Deleting asks for confirmation."
+ },
+ "relacion": {
+  "t": "A person's relationship file",
+  "why": "What matters to treat each person well: notes, open commitments and messages prepared with care.",
+  "steps": [
+   "Open the file of Jorge Pérez (sample).",
+   "Add a note or a dated commitment.",
+   "Prepare a message: SOLU suggests a kind and direct tone."
+  ],
+  "expect": "Each note shows who wrote it and when."
+ },
+ "suppliers": {
+  "t": "Suppliers and Supplier 360",
+  "why": "How each supplier really delivers: real lead times, what was quoted versus what was bought.",
+  "steps": [
+   "Create a supplier with [[Crear proveedor]].",
+   "Open a supplier: review the real times to dispatch and what was quoted versus what was bought.",
+   "Start a need for one of their products with [[Crear y abrir]]."
+  ],
+  "expect": "Facts only; there are no supplier scores."
+ },
+ "localizar": {
+  "t": "Find parts",
+  "why": "Find who has a part by code, alias, brand or description, in Spanish or English, or by reading the text in a photo of a nameplate.",
+  "steps": [
+   "Open [[Localizar repuestos]], type a code or a description, for example «1FK7» or «rodamiento 23148», and click [[Buscar]].",
+   "Or click [[Leer placa desde foto]]: SOLU reads the text on the nameplate and searches with it.",
+   "Open a result. Under “SUPPLIER OFFERS” is each supplier's evidence: saved offers, real lead times and earlier replies.",
+   "To save a supplier's offer, go back to the list, click [[Registrar cotización o proforma de proveedor]], upload their PDF and check what SOLU read before saving."
+  ],
+  "expect": "Reading the text of a photo is free and works. Photo search with AI is off until the company connects the AI service."
+ },
+ "rfq": {
+  "t": "Ask several suppliers for a quote",
+  "why": "One request to several suppliers from sales@, instead of one email per supplier.",
+  "steps": [
+   "Open [[Localizar repuestos]], search for the part and open it.",
+   "On the part, open [[Pedir precio a proveedor]] and click [[Enviar correo a uno o varios proveedores]].",
+   "Review the four blocks: “WHAT WE ASK FOR”, “To whom” (tick the suppliers), “WHAT WE ASK” and “DETAILS”.",
+   "Click [[Enviar solicitud]]. Follow the replies in MY DAY → Replies."
+  ],
+  "expect": "One email per supplier goes out from sales@. The request is recorded and the replies arrive in Replies by themselves. If you will ask by phone or WhatsApp, use “Just create a to-do” instead of the email."
+ },
+ "productos": {
+  "t": "Products and Product 360",
+  "why": "What we know about a product, by code: aliases, packing, compatible parts and specifications, with the source of each fact.",
+  "steps": [
+   "Open [[Productos]] and click a code.",
+   "Add a fact (alias, packing, compatibility or specification) with its source, and [[Guardar]].",
+   "Start a need for this product with [[Crear y abrir]]."
+  ],
+  "expect": "Each fact shows who recorded it and its source."
+ },
+ "journeys-board": {
+  "t": "Needs board",
+  "why": "Every open need by stage, with amount, Eságara and next move.",
+  "steps": [
+   "Click \"New Need\", fill in customer and need, and click [[Crear y abrir]].",
+   "On any card, use the drop-down list to move it to another stage.",
+   "Cards in red say \"No next move\": nobody has decided what comes next."
+  ],
+  "expect": "Closed Needs and those lost more than 90 days ago are hidden. Long columns show 8 cards and a \"See N more\" button. When you move a card, it changes column right away."
+ },
+ "journey": {
+  "t": "The Need's page",
+  "why": "The one workspace for a need: what is happening now, what is coming, and three dates side by side (carrier ETA, SOLU's expected date and the promise to the customer).",
+  "steps": [
+   "Read the signal and its cause at the top.",
+   "Set the next move and its date, and [[Guardar]]. Postpone with [[Mañana]] / [[3 días]] / [[1 semana]].",
+   "Review what changed since your last visit and click [[Marcar como visto]].",
+   "Use the tabs in order: Summary, Need, Source, Quote, Execute, Finance, Business File, Result."
+  ],
+  "expect": "SOLU's expected date is the carrier ETA plus 3 days plus 1 day. If the promise to the customer is earlier, it is flagged."
+ },
+ "journey-catchup": {
+  "t": "What changed? and Catch me up",
+  "why": "Understand a Need in seconds, even if you have not seen it in days.",
+  "steps": [
+   "Open ABC Foods' Need SJ-01842.",
+   "Click [[¿Qué cambió?]] to see what is new since your last visit.",
+   "Click [[Ponerme al día]] to see where it stands and what comes next.",
+   "Use [[Pregúntale a SOLU]] inside the Need for questions about that case."
+  ],
+  "expect": "The answers are built from the Need's data; it is not AI yet."
+ },
+ "alcance": {
+  "t": "Scope matrix",
+  "why": "Separates what was asked, what is required, what is quoted, what is included, what is excluded and what still needs confirming, so nobody finds out at delivery that something was missing.",
+  "steps": [
+   "Open the Need «Bombas dosificadoras» of Papeles del Sur (sample) and the Scope tab.",
+   "Review each line and its state.",
+   "For a line that is \"to be confirmed\", use the suggested message to ask the customer."
+  ],
+  "expect": "Ambiguous words such as \"complete\" or \"kit\" are flagged. The quote cannot be presented while an important line is still to be confirmed."
+ },
+ "need-source": {
+  "t": "Need and source",
+  "why": "Record exactly what the customer needs and where it will come from, before quoting.",
+  "steps": [
+   "[[Necesidad]] tab: describe the need and click [[Guardar necesidad]].",
+   "[[Fuente]] tab: write where we will get it and, in the “Cost settlement” sheet, the first estimate of what it costs to bring it: product, shipping, taxes, customs, packing, bank wire and credit in our favor, in USD. Leave at 0 what you do not know yet. Click [[Guardar fuente]].",
+   "Note in the search log the suppliers' quotes and why you chose one."
+  ],
+  "expect": "The calculated Eságara shows under the source, and the blue box shows the total cost as you type. When the quote is prepared, the sheet carries over in full and is refined there (supplier currency and where each amount comes from)."
+ },
+ "quote": {
+  "t": "Create and present a quote",
+  "why": "Build the solution, check the economics, define the promise and present only when it is complete.",
+  "steps": [
+   "On the Need, open the [[Cotización]] tab and click [[Preparar cotización]]. SOLU brings the products and costs the Need already has.",
+   "In the “SOLUTION” block, open “Edit” and write in one sentence what the customer achieves and the possible promise with its condition.",
+   "Under “PRODUCTS ON THE DOCUMENT”, check each line and give it a price with “Edit”. To add another, open [[Agregar producto]] and click [[Agregar]].",
+   "Under “ECONOMICS”, fill in the “Cost settlement” sheet and click [[Guardar costos]]. Look at the Eságara in $ and %, before and after the cost of financing the payment terms.",
+   "Optional: offer alternatives with [[+ Escenario]] and [[Agregar escenario]], and mark one with [[Recomendar este]].",
+   "Resolve each item with \"!\" in the “Ready to present” list (right column): each one says what is missing.",
+   "Check the document with [[Ver PDF]] (at the top), in English or Spanish.",
+   "With the list complete, click [[Presentar al cliente]] (under the list). The prices are then fixed."
+  ],
+  "expect": "After presenting it, changes need [[Crear revisión]] (Rev. 1, same number). The quote moves to Commercial future."
+ },
+ "liquidacion-costos": {
+  "t": "Cost settlement of the quote",
+  "why": "Before setting the price, work out everything it costs to bring the product: product, shipping, taxes, customs, packing, bank wire and credit in our favor. It is one calculation for the whole quote, and the Eságara comes from it.",
+  "steps": [
+   "Open the draft quote and go down to the ECONOMICS block. The “Cost settlement” sheet is right there: nothing to open. Each cost has its row, with the amount in the middle and, on the right, where it comes from. Leave at 0 what does not apply.",
+   "“Product” row: type what the supplier charges and where it comes from (proforma, email). Right below, under “Currency the supplier is paid in”, pick the currency from the list. If it is not dollars, SOLU brings the market rate and shows how much it is in USD.",
+   "“Shipping” row: type the cost of transport to the customer in USD and where it comes from (DHL's or the carrier's quote). In the “Transit days” row type how many days the goods travel; it is not a cost.",
+   "“Taxes”, “Customs”, “Packaging”, “Bank wire” and “Other” rows: type each amount in USD. “Bank wire” is what the bank charges to send the money, not the amount sent. On the right there is a single box to say where these five amounts come from.",
+   "“Credit in our favor” row: if there is a balance in our favor with the supplier or the carrier, type the amount and where it comes from (credit note, balance). It is subtracted from the cost.",
+   "Look at the blue box under the rows: “Total cost”, “Sale” and “Eságara” are calculated as you type. If a cost is lower than the saved one, the «¿Por qué bajó el costo?» box appears: write the reason (for example, new proforma).",
+   "Click [[Guardar costos]]."
+  ],
+  "expect": "At the top, “Current expected economics” shows the recalculated Eságara in $ and %. Under the sheet, “Customer payment habits” shows the agreed terms, in how many days the customer usually pays and what financing those days costs: SOLU brings it by itself. If you typed a credit in our favor without saying where it comes from, or a cost went down and you did not write the reason, SOLU saves nothing and asks you for it. The sheet can only be edited while the quote is a draft; after presenting it, changes are made with “Create revision”."
+ },
+ "solucion": {
+  "t": "Solution case and printable proposal",
+  "why": "Explains to the customer why this solution solves their need, using only value attributes that have evidence in this case.",
+  "steps": [
+   "Open the Need's Solution tab.",
+   "Choose the value attributes that apply and their evidence.",
+   "Open the printable proposal and review it."
+  ],
+  "expect": "An attribute without evidence cannot be claimed in the proposal."
+ },
+ "esagara-exc": {
+  "t": "Eságara exceptions",
+  "why": "A quote with Eságara under 20% is not presented without an approved exception.",
+  "steps": [
+   "On a quote under 20%, request the exception and write the reasons.",
+   "The Commercial Director or Management reviews it on this tab, with the customer's credit and payment context.",
+   "Approve or reject with a note."
+  ],
+  "expect": "Whoever requests the exception can never approve it. The tab shows the 90-day pattern per customer."
+ },
+ "futuro": {
+  "t": "Commercial future",
+  "why": "All the presented quotes waiting for a customer decision, grouped by what is needed.",
+  "steps": [
+   "Open the tab and review each zone.",
+   "If you are waiting for the customer on purpose, open the quote and record it with [[Guardar espera]] and a date.",
+   "When the PO arrives, record it on the quote with [[Registrar y comparar]]."
+  ],
+  "expect": "A quote in a deliberate wait shows \"No action today\" instead of nagging you."
+ },
+ "po": {
+  "t": "Customer PO versus the quote",
+  "why": "Spots differences between what the customer ordered and what we quoted, before we commit.",
+  "steps": [
+   "On the presented quote, open [[Llegó la PO · registrarla]], type the PO number and click [[Registrar y comparar]].",
+   "Review the comparison: each line, price, quantity, terms and validity.",
+   "For each important difference, choose a solution with [[Elegir esta opción]] and record the customer's confirmation with [[Registrar confirmación]].",
+   "When nothing blocks, click [[Aceptar PO]]."
+  ],
+  "expect": "Accept PO stays disabled while an important difference is open. Once accepted, the record cannot be edited."
+ },
+ "promise": {
+  "t": "Promise to the customer",
+  "why": "The committed delivery date, and an honest record when it changes.",
+  "steps": [
+   "Set the date and click [[Guardar promesa]].",
+   "If you change it later, choose the cause (supplier, logistics, customer, etc.)."
+  ],
+  "expect": "Insights shows the original date, the revised one and the real one, and why it changed."
+ },
+ "resultado": {
+  "t": "Result, Recovery and closing",
+  "why": "Confirm the customer really got the result they needed. If not, recover it.",
+  "steps": [
+   "Record what the customer confirmed with [[Confirmar resultado del cliente]] or [[Agregar evidencia]].",
+   "If something went wrong, choose the cause and click [[Abrir Recovery]]. Pick an option with [[Elegir]].",
+   "Finish it under [[Resolver Recovery]]: successful, not recovered or no longer applies.",
+   "When the CLOSURE READINESS list is complete, close with [[Cerrar Necesidad]]. Note any signal of a future need (continuity), with a follow-up date."
+  ],
+  "expect": "A continuity signal creates a follow-up task. It does not create a sales opportunity by itself."
+ },
+ "dinero": {
+  "t": "Money to move",
+  "why": "All the blocked money, in four buckets, with the cause and who resolves it.",
+  "steps": [
+   "Open [[Dinero por mover]] and pick a case.",
+   "Read the block, which step the invoice is at and the payment promises.",
+   "Make the move that applies, or request credit if needed."
+  ],
+  "expect": "Requesting credit does not approve it: Finance or Management decide."
+ },
+ "fugas": {
+  "t": "Cash leakage",
+  "why": "Where money is delayed, by stage and by cause.",
+  "steps": [
+   "Open [[Fugas de caja]].",
+   "Look at the stage with the most days of delay.",
+   "Review the Needs behind that delay."
+  ],
+  "expect": "The rules it is measured with are written on the screen."
+ },
+ "valor": {
+  "t": "Value attributes",
+  "why": "The catalogue of what we can claim in a proposal.",
+  "steps": [
+   "Open the tab and choose an attribute.",
+   "See what evidence backs it."
+  ],
+  "expect": "In a proposal it is only used with evidence from that case."
+ },
+ "foco": {
+  "t": "High-value focus",
+  "why": "Top 5 by Eságara, decisions of the month, deals to protect, money to move and the big ones that have been still for days.",
+  "steps": [
+   "Open [[Foco de alto valor]].",
+   "Go through the Top 5 and open one.",
+   "Review the big ones that have been still for days and set a move."
+  ],
+  "expect": "Each row leads to its Need."
+ },
+ "visitas": {
+  "t": "Visits",
+  "why": "Prepare and close customer visits without typing what SOLU already knows.",
+  "steps": [
+   "Open [[Visitas]] and click [[Planear visita]] for ABC Foods.",
+   "Review the automatic summary: open needs, quotes waiting, receivables, commitments and earlier visits.",
+   "After the visit, close it with the commitments, photos and PDF. You can dictate the notes by voice.",
+   "Review the trip's mission and budget."
+  ],
+  "expect": "The AI notes draft is off until there is a key. The trip's money (budget, advance, expenses and settlement) is explained in Administration → Trips."
+ },
+ "linea-comunicaciones": {
+  "t": "Communication line",
+  "why": "Each company by the last time we spoke, so no customer goes months without hearing from us.",
+  "steps": [
+   "Open [[Línea de comunicaciones]]. Each range says how many companies have gone that long without contact; the further right, the longer.",
+   "Open a range and pick a company.",
+   "Choose what to record: [[Llamada]], [[Videollamada]], [[Visita]], [[Correo]] or [[Nota]].",
+   "Tick the box that says how it went (for example “Answered” or “Unanswered”), write the notes and save with [[Registrar llamada]].",
+   "Management or Direction: at the bottom, change the cut-offs in months and click [[Guardar rangos]]."
+  ],
+  "expect": "An answered call, a video call or visit that took place and an email move the company to “up to date”. A note, an unanswered call or a visit being organised stay in the history, but the company stays in its range. From the company you can open its profile and diary."
+ },
+ "perfiles": {
+  "t": "Profiles: each customer's diary",
+  "why": "What hurts each customer, what they struggle with and how each person lives it at work, written after every conversation, to present our service as the solution to that struggle.",
+  "steps": [
+   "Open [[Perfiles]] and pick a customer. At the top you see what hurts them, what they struggle with and the next follow-up.",
+   "Click [[Escribir en el diario]]. Choose which conversation it comes from: a call, video call or visit already recorded, a new one, or none if it is just a note.",
+   "Write the pain, the struggle, the impact and the personal side. The rest is under [[Presupuesto, decisión y acuerdo]].",
+   "Under “Follow-up plan”, write what you will do and when. Save with [[Guardar en el diario]].",
+   "Under People, use [[+ Anotar algo de esta persona]]: what they want to achieve, what complicates their day, what worries them, how they decide. Always with how we know it.",
+   "At the bottom, keep what is handy to have with [[+ Agregar documento]], [[+ Agregar producto]] or [[+ Agregar marca]]: a photo or PDF, a link, or both."
+  ],
+  "expect": "The follow-up becomes a to-do of yours with its date in MY DAY → To-dos. A new call, video call or visit also goes into the customer's history and counts in the Communication line. What is noted about a person is about their work: SOLU does not store health, religion, politics or family-life data, or labels, and explains why. Only the commercial team sees that part; Finance and Administration see the diary."
+ },
+ "metas": {
+  "t": "My goals",
+  "why": "Five goals a month, measured with what happened in SOLU.",
+  "steps": [
+   "Open [[Mis metas]].",
+   "Look at the pace you need to get there.",
+   "Read “Where the path narrows”."
+  ],
+  "expect": "Only you and management see them. There is no team ranking."
+ },
+ "cobertura": {
+  "t": "Coverage during absence",
+  "why": "When you are away, another person looks after your Needs for a while.",
+  "steps": [
+   "Open [[Cobertura]].",
+   "Choose who covers you, the dates and, if it is not everything, what the coverage is for.",
+   "Review the handover: each pending item says whether it must move, whether a customer decision is likely, whether it is waiting, whether it can wait or whether it is protected.",
+   "When you return, open the coverage: read what happened and click [[Ya lo leí: recibir mi trabajo de vuelta]]."
+  ],
+  "expect": "The coverage ends by itself on the end date. It never delegates approvals. You remain responsible for your Needs: when you return, the only things that come back are the open to-dos in the name of whoever covered you."
+ },
+ "mejora": {
+  "t": "My improvement",
+  "why": "Your own funnel of the last 90 days against the 270 before, in plain words.",
+  "steps": [
+   "Open [[Mi mejora]].",
+   "Read where you improved and where most deals were lost.",
+   "Read the suggestions."
+  ],
+  "expect": "It does not compare you with the team."
+ },
+ "cierres": {
+  "t": "Closes",
+  "why": "Daily, weekly and monthly close: what happened, what we learned, the visible future and the next moves.",
+  "steps": [
+   "Open [[Cierres]].",
+   "Choose day, week or month.",
+   "Review the next moves."
+  ],
+  "expect": "Everything comes from what happened in SOLU; there is no report to write."
+ },
+ "despacho": {
+  "t": "Dispatch instruction",
+  "why": "After accepting the customer's PO, it says exactly what to dispatch, where to and with which documents.",
+  "steps": [
+   "Accept a PO with [[Aceptar PO]].",
+   "Open the Need's Dispatch tab and review the instruction."
+  ],
+  "expect": "It comes from the accepted commitment (the frozen PO), not from the editable quote."
+ },
+ "compras": {
+  "t": "Supplier purchase orders",
+  "why": "Buy exactly what was quoted, keep versions and schedule the supplier payments.",
+  "steps": [
+   "On the Need's [[Ejecución]] tab, click [[Preparar Supplier PO desde la cotización]].",
+   "SOLU opens the order. Review it and save the changes with [[Guardar borrador]].",
+   "When the READY TO RELEASE list (right column) has nothing open, click [[Liberar Supplier PO]].",
+   "Under PAYMENT PLAN, click [[Solicitar este pago]] on each milestone. If the order must change later: [[Crear nueva versión]]."
+  ],
+  "expect": "Payment requests go to Administration → Supplier payments for verification."
+ },
+ "logistica": {
+  "t": "Shipments",
+  "why": "Where the goods are, when they will really arrive and whether the customer's result is at risk.",
+  "steps": [
+   "Open a shipment. Update the date under [[Nueva ETA del transportista]].",
+   "If customs holds it: [[Retenido en aduana]], and then [[✓ Liberado por la aduana]] when it is released.",
+   "On arrival: [[El transportista entregó]]. If something does not match: [[Registrar discrepancia]]."
+  ],
+  "expect": "Confirming the delivery creates the delivery note. The Need's dates are updated from the shipment."
+ },
+ "sin-despachar": {
+  "t": "Not dispatched",
+  "why": "Every accepted order that has not left yet, with the reason and who has the next step.",
+  "steps": [
+   "Read the cause on each row (no supplier purchase, source not confirmed, in transit…).",
+   "Click the button to open the Need and resolve what is missing."
+  ],
+  "expect": "What is late shows as urgent. Rows in transit show the estimated arrival date, or say there is no carrier date yet."
+ },
+ "remisiones": {
+  "t": "Delivery notes",
+  "why": "The proof of what was delivered, the basis for invoicing.",
+  "steps": [
+   "Click [[Nueva remisión]], fill it in and click [[Registrar remisión]].",
+   "From the delivery note, click [[Emitir factura]] when it is ready."
+  ],
+  "expect": "The delivery note shows in the Need's File."
+ },
+ "por-facturar": {
+  "t": "Delivered, not invoiced",
+  "why": "Money we already earned but have not invoiced yet.",
+  "steps": [
+   "Review the list.",
+   "Click [[Emitir factura]] on each one that is ready."
+  ],
+  "expect": "The row disappears once invoiced."
+ },
+ "ops-inicio": {
+  "t": "Operations home",
+  "why": "What needs attention first, what is ready for the next step, promises at risk and healthy waits. Order volume is never the headline.",
+  "steps": [
+   "Open [[Inicio]] in Operations.",
+   "Read “Needs attention” first and open a row.",
+   "Review “READY FOR NEXT STEP”: each row leads to the screen where it is done."
+  ],
+  "expect": "Each row says what is missing and which Need it belongs to. What is going well shows as a wait, with no alarm."
+ },
+ "ops-altovalor": {
+  "t": "High-value commitments",
+  "why": "Every accepted Need with Eságara of USD 2,000 or more, visible until everything is delivered and collected.",
+  "steps": [
+   "Open [[Alto valor]].",
+   "Read a card: promise, what is at stake, money already committed, next milestone and risks.",
+   "Click the code to open the Need."
+  ],
+  "expect": "Those with risk come first. “No known risk” means SOLU sees nothing material with what is recorded."
+ },
+ "ops-requerimientos": {
+  "t": "Requirements and purchase approval",
+  "why": "Before buying: what is needed, for which Need or for stock, and whether the purchase needs approval.",
+  "steps": [
+   "Open [[Requerimientos]] and click a requirement. At the top, “CAN IT BE PURCHASED?” says what is missing, who it affects and how it is resolved.",
+   "If the purchase needs authorization, go down to “PURCHASE AUTHORIZATION”, write the reason and click [[Pedir autorización]].",
+   "Whoever authorizes decides right there with [[Autorizar]], [[Devolver con pregunta]] or [[No autorizar]]. If it is above their limit: [[Escalar a Gerencia]].",
+   "When nothing is missing, click [[Crear la orden al proveedor]]."
+  ],
+  "expect": "Whoever requests cannot authorize their own purchase. Without authorization the supplier order cannot be created. A routine purchase does not need it. The limit and who authorizes are at the end of the list, under “Purchase authorization policy”. To buy for stock without a Need, use “+ Stock purchase” on the list."
+ },
+ "ops-negociacion": {
+  "t": "Supplier confirmation and savings",
+  "why": "What the supplier confirmed versus what we ordered, and the real savings with their evidence.",
+  "steps": [
+   "On an order, record the supplier's first quote.",
+   "Record their confirmation: SOLU compares it with the order.",
+   "If you got a better price, add it under savings with the evidence."
+  ],
+  "expect": "A saving without evidence is not saved. Differences between what was ordered and what was confirmed stay visible until resolved."
+ },
+ "ops-compromisos": {
+  "t": "Supplier commitments",
+  "why": "The milestones the supplier promised (ready, production, pickup), each with its date and its evidence.",
+  "steps": [
+   "Open the order and go down to the “WHAT THE SUPPLIER PROMISED” block. If it is empty, choose the order type and click [[Crear hitos]]: the milestones change depending on whether it is stock, made to order, a service or a repair.",
+   "On each milestone, type the date the supplier gave and where it came from, and click [[Guardar]].",
+   "When it happens, mark it with [[Ocurrió]] and the evidence."
+  ],
+  "expect": "Before its date it is a healthy wait. Once the grace days pass without evidence, it shows under attention."
+ },
+ "ops-flete": {
+  "t": "Freight: what to move and with whom",
+  "why": "Weight, dimensions and packages before asking for transport, and the comparison of the freight options.",
+  "steps": [
+   "Open the order and go down to the “Freight” block. Open [[Preparar el flete]] (if it was already prepared it is called [[Datos para el transporte]]; it comes filled with what SOLU already knows), complete pickup, weight, dimensions and packages, and click [[Guardar datos del flete]].",
+   "Look at the block's label: \"N items missing\" with the list of what is missing, or “Ready to book transport”.",
+   "For each transport quote you receive, open [[+ Agregar opción de transporte]], fill it in and click [[Agregar opción]].",
+   "Choose one with [[Elegir]]. If it is not the cheapest, SOLU asks for the reason."
+  ],
+  "expect": "Without weight and dimensions no freight can be chosen. The chosen option becomes the basis for checking the carrier's invoice later."
+ },
+ "ops-recepcion": {
+  "t": "Receiving at the warehouse",
+  "why": "On receipt we check it is the right product, in good condition, complete and with documents; not just the quantity.",
+  "steps": [
+   "Choose the warehouse and type the units received per line.",
+   "If something is not right, mark it and write what you saw.",
+   "Add weight, dimensions and up to 8 photos.",
+   "Click [[Registrar recepción]]."
+  ],
+  "expect": "What is in doubt goes to quarantine and does not count as available. An issue opens an exception in Operations."
+ },
+ "ops-inventario": {
+  "t": "Stock",
+  "why": "Physical, committed and available are three different numbers.",
+  "steps": [
+   "Open [[Inventario]].",
+   "If something is “In doubt”, decide: [[Liberar: está bien]], [[Dañado]] or [[Devolver al proveedor]], always with the reason.",
+   "Review the table by warehouse and part number."
+  ],
+  "expect": "Units in quarantine or damaged never go out to a customer."
+ },
+ "ops-despachos": {
+  "t": "Dispatches to the customer",
+  "why": "The physical delivery to the customer: dispatched, delivered and ready to invoice are three different facts.",
+  "steps": [
+   "On the Need, open Dispatch, click [[+ Nuevo despacho]], choose the units and [[Crear despacho]]. Open it from the list.",
+   "Record what the customer requires with [[+ Agregar requisito del cliente]] and mark it fulfilled.",
+   "Click [[Salió hacia el cliente]].",
+   "On delivery: who received it and [[Entregado: crear remisión]]. If it could not be done: [[No se pudo entregar]].",
+   "If the customer gives a goods-receipt number (MIGO or other), save it."
+  ],
+  "expect": "It does not leave without Commercial's instruction or with requirements pending. A failed attempt stays in the history, returns the goods to stock and the dispatch is scheduled again."
+ },
+ "ops-auditoria": {
+  "t": "Carrier invoice",
+  "why": "Compares what the carrier charged with what was quoted, what was declared and what we measured.",
+  "steps": [
+   "Click [[+ Registrar factura del transportador]] and fill in number, total and chargeable weight.",
+   "Read the result: matches, within normal, review difference or a claim is recommended.",
+   "If it applies, [[Abrir reclamo al transportador]].",
+   "When the credit note arrives, record it with [[Crédito recibido]]."
+  ],
+  "expect": "A \"yes\" from the carrier is not money recovered: it only counts with the credit note and the amount received. If there is nothing to compare against, SOLU says so."
+ },
+ "ops-aduana": {
+  "t": "Customs case",
+  "why": "What is missing to import, the tariff classification with its source, expected versus actual duties, and holds.",
+  "steps": [
+   "Click [[+ Abrir caso de aduana]].",
+   "Fill in classification, origin, declared value, consignee and broker.",
+   "Mark the classification as validated only if you write who validated it."
+  ],
+  "expect": "A classification used before is history, not validation. The \"N missing to import\" list goes down as you complete it."
+ },
+ "ops-transportadores": {
+  "t": "Carriers and weight rules",
+  "why": "The carrier accounts and the rule used to calculate each one's chargeable weight.",
+  "steps": [
+   "Review the rules table: divisor, rounding, tolerance and claim threshold.",
+   "Management: [[Cambiar o agregar una regla]] with the values from the contract.",
+   "Tick «Confirmada contra el contrato» only when the rate sheet says so."
+  ],
+  "expect": "A password is never typed here: credentials live in the server's settings."
+ },
+ "ops-garantias": {
+  "t": "Warranties and customer claims",
+  "why": "What was covered and for how long, and the cases the customer opens after delivery.",
+  "steps": [
+   "On the Need, open “Warranty and claims” and click [[+ Registrar garantía]].",
+   "If the customer reports a problem: [[+ Abrir caso del cliente]].",
+   "Add notes as it progresses and close it with what was done, who was responsible and what it cost."
+  ],
+  "expect": "SOLU says whether it was within warranty on the day of the report. The cost of the case goes into the Need's real costs."
+ },
+ "ops-experiencias": {
+  "t": "Product experiences",
+  "why": "What we learned supplying a product, so the team does not rediscover it.",
+  "steps": [
+   "Click [[+ Registrar experiencia]] and write the part number and what we learned.",
+   "If it could be published, write the public draft.",
+   "Management, Commercial Direction or Marketing tick the 7 confidentiality points."
+  ],
+  "expect": "SOLU publishes nothing. It warns if the draft seems to carry a price, a serial number or the customer's name. If the draft changes, the review starts again."
+ },
+ "ops-metricas": {
+  "t": "Operations metrics",
+  "why": "How the operation performed in the last 12 months, counted from what was recorded.",
+  "steps": [
+   "Open [[Métricas]].",
+   "Read each figure with the number of cases it comes from."
+  ],
+  "expect": "With fewer than 5 cases it shows the count and not a percentage. There is no comparison between people."
+ },
+ "ops-config": {
+  "t": "Operations settings",
+  "why": "The thresholds SOLU uses to decide what to show as attention, and the warehouses.",
+  "steps": [
+   "Change a threshold and click [[Guardar umbrales]].",
+   "Add a warehouse with [[+ Agregar bodega]]."
+  ],
+  "expect": "Each change is kept as a version with who and when. A warehouse with stock cannot be deactivated."
+ },
+ "facturacion": {
+  "t": "Ready to bill and invoicing",
+  "why": "Issue an invoice only when everything the customer requires is ready.",
+  "steps": [
+   "Review the BILLING REQUIREMENTS list, built from the customer's billing profile.",
+   "Add what is missing on each requirement: [[Pedir al cliente]] or [[Llegó: registrar]].",
+   "When the delivery says “Ready to Bill?”, click [[Emitir factura]]. Download the PDF.",
+   "Record its state in accounting under [[Puente contable]]: ID confirmed, sent and waiting for its ID, or we do not know whether it was created."
+  ],
+  "expect": "The invoice PDF does not carry bank details yet: the company's bank profile has not been verified."
+ },
+ "cobrar": {
+  "t": "Receivables",
+  "why": "What customers owe, how much is overdue and what they promised.",
+  "steps": [
+   "Review the open invoices by age.",
+   "When a customer commits to a payment date, click [[Registrar promesa]]."
+  ],
+  "expect": "\"Sent\" or \"approved\" does not mean paid. An invoice is paid only after a reconciled payment."
+ },
+ "pagos-recibidos": {
+  "t": "Payments received",
+  "why": "Assign the money that arrived to the right invoices.",
+  "steps": [
+   "Record the payment with [[Registrar]].",
+   "Click [[Ver facturas]], apply it with [[Aplicar]] and then [[Conciliar]]."
+  ],
+  "expect": "A bank receipt never marks an invoice as paid by itself. Unapplied money shows in a notice. Overpayments need a note before reconciling."
+ },
+ "pagos-proveedores": {
+  "t": "Supplier payments",
+  "why": "Pay suppliers safely: independent verification, approval within limits and confirmed execution.",
+  "steps": [
+   "Someone other than the requester checks the bank details and clicks [[Registrar verificación]].",
+   "An approver within their limit clicks [[Aprobar solicitud]].",
+   "After sending the transfer: [[Registrar ejecución]].",
+   "When the bank confirms it: [[Confirmar: el dinero salió]]."
+  ],
+  "expect": "Only the last step marks it as paid. A bank-account change is a full stop until verified by phone on a known number. Never accept an account change by email or WhatsApp."
+ },
+ "pagos-exterior": {
+  "t": "Foreign payments",
+  "why": "Payments to suppliers abroad, for the bank and the accountant.",
+  "steps": [
+   "Choose the dates and click [[Filtrar]].",
+   "Download the CSV."
+  ],
+  "expect": "The CSV opens in Excel with one row per payment."
+ },
+ "cupos": {
+  "t": "Credit limits",
+  "why": "How much credit each customer has, and the approved exceptions.",
+  "steps": [
+   "Set a customer's limit and [[Guardar]].",
+   "When an order exceeds it, a manager can click [[Aprobar excepción]]."
+  ],
+  "expect": "Customers above their limit are flagged."
+ },
+ "adm-banco": {
+  "t": "Bank: upload the statement and explain movements",
+  "why": "What the bank says next to what SOLU already knows. SOLU suggests; a person confirms.",
+  "steps": [
+   "The first time: [[+ Registrar cuenta bancaria]] (name and last 4 digits).",
+   "Download the Bank of America movements as CSV, choose the file and click [[Subir y leer]].",
+   "On each movement: accept a suggestion with [[Sí, es este]] or use [[Decir qué es]].",
+   "Bank charges and transfers between own accounts are set aside with a note."
+  ],
+  "expect": "Uploading the same period twice duplicates nothing. If SOLU does not recognise the columns, it loads nothing and shows the headings it saw."
+ },
+ "adm-retenciones": {
+  "t": "Withholdings",
+  "why": "What the customer withholds when paying: it lowers what the invoice owes, but it is not money received.",
+  "steps": [
+   "Choose the customer and click [[Ver facturas]].",
+   "At the bottom, under Withholdings: [[+ Registrar retención]], with invoice, type and amount.",
+   "Add the certificate number when it arrives."
+  ],
+  "expect": "The invoice balance goes down on every screen. The withholding shows in the customer's history and never in the list of payments received."
+ },
+ "adm-esagara": {
+  "t": "Real Eságara",
+  "why": "What each Need really left: the protected Eságara versus the one expected today with the real costs, and why it changed.",
+  "steps": [
+   "Open [[Eságara real]] and click a Need.",
+   "Read the three figures and the “Why it changed” table.",
+   "Add a cost that is not recorded elsewhere with [[+ Agregar un costo de esta Necesidad]].",
+   "Finance, Administration or Management mark the close: open, substantially complete or final."
+  ],
+  "expect": "The lines of “Why it changed” always add up to the total change. \"Final\" keeps that day's figures and blocks new costs until reopened."
+ },
+ "adm-inicio": {
+  "t": "Administration home",
+  "why": "Only what needs someone today: cash, credit, collections, payments, budget, assets and obligations, unreconciled money, and Eságara and commissions.",
+  "steps": [
+   "Open [[ADMINISTRACIÓN]]. At the top are the groups: Today, Money, Resources, Close and Setup.",
+   "Read each matter: what is happening, how much it weighs, why and what to do.",
+   "Click the action on the right to go where it is resolved."
+  ],
+  "expect": "What is fine shows on a single green line. People outside Administration, Finance, Direction or Management see their own: their file, their assets and their purchases."
+ },
+ "adm-exposicion": {
+  "t": "Resource exposure",
+  "why": "Seven different exposures: cash, customers, suppliers, stock, currency, assets and contracts.",
+  "steps": [
+   "Open [[Exposición de recursos]].",
+   "Go through the seven blocks; each has its link to the detail."
+  ],
+  "expect": "There is no score or total that joins them. What is in another currency is shown apart, without converting."
+ },
+ "adm-tesoreria": {
+  "t": "Treasury: from what is in the bank to what is free",
+  "why": "What the bank shows is not what can be spent. SOLU brings it down step by step and projects cash at 7, 30, 60 and 90 days.",
+  "steps": [
+   "Under “ACCOUNTS AND CONFIRMED BALANCES”, type the balance, the date and where the figure comes from, and click [[Confirmar]].",
+   "Read “AVAILABLE LIQUIDITY”: banks, minus restricted, minus reserved, minus committed.",
+   "Open [[Apartar dinero]] to reserve an amount: what it is for and who decided it.",
+   "Under «Lo que SOLU no puede saber solo», add payroll, taxes or a loan instalment with [[Agregar]].",
+   "Review “PROJECTED CASH” and open “WHAT IS COMING, BY KIND” to see each movement."
+  ],
+  "expect": "A confirmed balance is not edited: a new one replaces it and the earlier one stays as history. If cash goes negative, SOLU shows the shortfall, the date and what could move today. What is contracted or delivered but not invoiced does not count as receivable."
+ },
+ "adm-pagar": {
+  "t": "Payables and supplier invoices",
+  "why": "What must be paid today, in 7 and in 30 days, and each supplier invoice compared with its order and with what was received.",
+  "steps": [
+   "Review the “PAYMENT CALENDAR”.",
+   "Under [[Registrar una factura de proveedor]], choose the order or the internal purchase, type number, amount, dates and how it arrived, and click [[Registrar]].",
+   "Read the result: they match, invoiced above the order, invoiced more than received or service not accepted.",
+   "For a service: [[Aceptar el servicio]]. For a justified difference: [[Aceptar la diferencia]] with the reason.",
+   "If the invoice is not for a customer order: [[Aprobar el pago]] and then [[Registrar el pago]] with the bank reference."
+  ],
+  "expect": "The same invoice number from the same supplier is not recorded twice. Whoever recorded the invoice cannot approve its payment. Approving is not paying. Invoices of an order are paid from the order, with its milestones."
+ },
+ "adm-presupuesto": {
+  "t": "Budget and spending",
+  "why": "What was assigned, committed, spent, what is left and what its owner expects at the end.",
+  "steps": [
+   "Management or Finance: under “ASSIGN A BUDGET”, type name, owner, dates and amount, and click [[Asignar]].",
+   "Open «De dónde salen las cifras» to see each purchase and each trip that uses it.",
+   "The owner: open “Update the forecast” and type the expected total and what it is based on."
+  ],
+  "expect": "An approved purchase uses the budget even if it has not been paid. What is requested and not approved is shown apart and does not use it. Internal purchases and trips appear by themselves."
+ },
+ "adm-compras-internas": {
+  "t": "Internal purchases",
+  "why": "What the company buys for itself: internal use, assets and investments. First the need; then the budget and who authorizes.",
+  "steps": [
+   "Under [[Pedir una compra interna]], type what is bought, what it is needed for, the amount and the budget, and click [[Pedir]].",
+   "Whoever decides opens it from “AWAITING YOUR DECISION” and uses [[Aprobar]], [[Devolver con una pregunta]] or [[No aprobar]].",
+   "When it is bought: [[Ya se compró]]. If it is an asset, register it from the link."
+  ],
+  "expect": "Nobody decides their own purchase. Without a budget, or above what is left of it, it is an exception: Management decides and the reason is required. Marking it bought moves it from committed to spent."
+ },
+ "adm-activos": {
+  "t": "Assets and custody",
+  "why": "What the company owns, who is in charge of it and what it needs soon: insurance, maintenance, warranty.",
+  "steps": [
+   "Under [[Registrar un activo]], type name, type, which company it is registered to and its dates, and click [[Registrar]].",
+   "Open the asset and, under “HAND OVER, MOVE OR RETURN”, choose who it is handed to.",
+   "Whoever is in charge of it records maintenance and mileage under “RECORD SOMETHING THAT HAPPENED”.",
+   "Read the “HISTORY”."
+  ],
+  "expect": "The history is not edited or deleted. Mileage cannot go down. Each person sees the assets in their charge; Administration sees them all."
+ },
+ "adm-obligaciones": {
+  "t": "Contracts and obligations",
+  "why": "With whom, what for, until when, when notice must be given and what is paid or collected.",
+  "steps": [
+   "Under “RECORD A CONTRACT OR OBLIGATION”, type with whom, what for, the dates, the notice days and who is responsible.",
+   "When it shows under “A DECISION IS NEEDED”, open “Decide: renew or end” and click [[Guardar decisión]].",
+   "After paying an instalment: [[Ya se pagó: pasar a la siguiente fecha]]."
+  ],
+  "expect": "SOLU only warns while deciding still changes what happens. A contract that renews by itself stops warning once the notice date passes. The contract's payments go into the projected cash."
+ },
+ "adm-personas": {
+  "t": "People: administrative data and absences",
+  "why": "Relationship, formal position, pay, absences, assets in their charge and the support the company owes each role.",
+  "steps": [
+   "Administration or Management: open a person and complete “BOND WITH THE COMPANY” and “FORMAL POSITION AND ROLE”.",
+   "Each person opens their own file and requests an absence with [[Pedir]].",
+   "Administration or Management decide it with [[Aprobar]] or [[No aprobar]].",
+   "If someone lacks a tool or an access, record it under [[Registrar algo que falta]], with who resolves it and the next step."
+  ],
+  "expect": "Pay is seen only by Management, Finance and the person themselves, and only Management records it. Nobody decides their own absence. An approved absence leaves that day without capacity in My Plan and shows in Coverage. There are no evaluations here."
+ },
+ "adm-autoridad": {
+  "t": "Delegated authority",
+  "why": "When someone who approves is going to be away, they can lend that authority to another person for a while.",
+  "steps": [
+   "Management: under “LEND AUTHORITY”, choose which authority, from whom, to whom, the dates, the cap and the reason, and click [[Prestar]].",
+   "Whoever receives it decides as usual: the screen says they act with delegated authority.",
+   "To remove it early: [[Retirar]] with the reason."
+  ],
+  "expect": "It ends by itself on the end date. More time is a new version. It never serves to approve what the lender requested, or one's own. The decision keeps whose authority it was."
+ },
+ "adm-viajes": {
+  "t": "Trips: advance, expenses and settlement",
+  "why": "The mission gives the purpose; Administration authorizes and controls the trip's money.",
+  "steps": [
+   "The traveller requests the budget; Management approves it and chooses which budget it is charged to.",
+   "Finance or Management record the advance with [[Registrar anticipo]].",
+   "The traveller uploads the expenses with their receipts and sends them for review.",
+   "Finance or Management mark each expense [[Válido]] or [[No aceptar]], and then [[Legalizar gastos]].",
+   "Under “TRIP SETTLEMENT”, [[Cerrar la liquidación]] with the reference of the payment or the refund."
+  ],
+  "expect": "No expense counts until someone reviews it. Accepting an expense without a receipt requires the reason. The settlement is valid expenses minus the advance: the company pays the difference or the traveller returns it."
+ },
+ "adm-contabilidad": {
+  "t": "Accounting: files for the accountant",
+  "why": "SOLU delivers reliable facts to the accounting system; it does not replace it.",
+  "steps": [
+   "Choose the file: customer invoices, supplier invoices, money received, payments made, costs or assets.",
+   "Choose the dates and click [[Descargar]].",
+   "Review “FILES DOWNLOADED”: it records who took what and when."
+  ],
+  "expect": "The file opens in Excel and says at the top the period and who downloaded it. Downloading changes nothing in SOLU."
+ },
+ "adm-politicas": {
+  "t": "Policies and events",
+  "why": "One place to see every rule with numbers: which version applies, since when, who set it and where it is changed.",
+  "steps": [
+   "Open [[Políticas]] and review the register; each name leads to where it is changed.",
+   "Management: change the Administration policy, write why and click [[Guardar como versión nueva]].",
+   "Open [[Eventos]] to see what happened, in business words."
+  ],
+  "expect": "A change never recalculates what was already decided. Events appear by themselves when someone records, approves or reconciles something."
+ },
+ "users": {
+  "t": "People and sample data",
+  "why": "Create user accounts and manage the sample data.",
+  "steps": [
+   "Fill in name, email and role, and click [[Crear usuario]].",
+   "Load the sample data with [[Cargar datos de ejemplo]]. Once it is loaded, [[Quitar datos de ejemplo]] shows in its place."
+  ],
+  "expect": "The new person can sign in. Sample records say (ejemplo)."
+ },
+ "trabajos": {
+  "t": "Background work",
+  "why": "What SOLU does by itself every 15 minutes: read email replies, tidy the parts catalogue and send reminders.",
+  "steps": [
+   "Open the tab.",
+   "Look at the last round and whether anything failed."
+  ],
+  "expect": "A new round appears every 15 minutes."
+ },
+ "profile": {
+  "t": "My profile",
+  "why": "Your details, language and calendar connection.",
+  "steps": [
+   "Update your details, your language and your working hours, and [[Guardar]].",
+   "Click [[Conectar mi calendario]] and sign in with your own Microsoft account.",
+   "Under “On-screen guide (training)” you can turn the search-bar guide off or on."
+  ],
+  "expect": "The connected calendar is only your own Outlook mailbox. After connecting it, your agenda blocks show in Outlook."
+ },
+ "eq-mirol": {
+  "t": "My role",
+  "why": "What the company expects from your role and what you can expect from the company, in six blocks, and the line that joins the company's purpose with what you do today.",
+  "steps": [
+   "Open [[EQUIPO]]: you land on My role. At the top are the groups: My development, My team, Organisation and Setup.",
+   "Read “My line of contribution”: company purpose, function, role, expected results and today's actions.",
+   "Go through the six blocks in order: our company, my function, my role, how I am expected to do it, how I know I am doing well and how I can grow.",
+   "When you have talked it over with your leader, click [[Ya las revisé con mi líder]].",
+   "If an expectation cannot be met because something is missing, open it at the bottom: which expectation, what is missing, who resolves it and the next step."
+  ],
+  "expect": "With the sample data, sign in as Paola to see it complete. The agreement shows its version and since when it applies. If you do not have a role agreement yet, SOLU says so as a \"role clarity gap\" and shows the company and the function. The month's goals are the same as in Commercial → My goals."
+ },
+ "eq-desarrollo": {
+  "t": "My development: the 90-day cycle",
+  "why": "A few priorities, well supported: who I need to become (BE), what I need to do better (DO) and what knowledge or experience I need to build (HAVE).",
+  "steps": [
+   "Write what you want to develop for, choose who supports you and click [[Abrir el ciclo]].",
+   "Under “Add an objective”, write the goal, what evidence will show it was achieved, the next move and the review date. Choose who sees it.",
+   "When something happens that shows it, use “Add evidence”.",
+   "To finish it: “Close the objective” and [[Logrado, con la evidencia registrada]], or write the reason and [[Cerrar con este motivo]].",
+   "Under “COMMITMENTS”, note who does what, what will show it and by when."
+  ],
+  "expect": "A goal without expected evidence, next move or review date is not saved. It is not counted as achieved without evidence. Each dimension has a maximum number of priorities. “WHAT ASKS FOR ATTENTION” warns if a conversation is missing or a date has passed."
+ },
+ "eq-360": {
+  "t": "My 360 and who sees each line",
+  "why": "Who you are, your talents, what you do and what you have. You decide who sees each line.",
+  "steps": [
+   "In each block (BE, Talents, DO, HAVE, History, Reflections), open “Add”, write and choose who sees it.",
+   "To change it later: “change who sees it or remove”.",
+   "If you want, add an assessment (CliftonStrengths, DISC, Enneagram or other) with its source and date.",
+   "Under “CHARACTER: EVIDENCE”, record a behaviour: what you did, in which situation and on which day."
+  ],
+  "expect": "Private is seen only by you. Shared is seen by your leader and your mentor. Organisation is also seen by Management and counts in the talent map. A reflection starts private. An assessment is never organisational, and the zodiac shows as \"just for fun\". Character evidence that rests on a test is not saved."
+ },
+ "eq-conversaciones": {
+  "t": "Development conversations",
+  "why": "The 1:1, mentoring and the checkpoints on days 0, 30, 60 and 90, with the agenda already built.",
+  "steps": [
+   "Under “Schedule a conversation”, choose the type, the date and with whom, and click [[Programar]].",
+   "Open it: the agenda brings the pending commitments, the current focus and the new evidence since last time.",
+   "During the conversation, add the commitments that come up.",
+   "When you finish, write what was discussed, the date of the next one and click [[Cerrar]]."
+  ],
+  "expect": "It does not close without the next conversation or the reason why none is needed. The agenda is kept as it was. Only the two people in the conversation can open it."
+ },
+ "eq-feedback": {
+  "t": "Feedback 360",
+  "why": "Ask for and give feedback in four parts: continue, start, improve and reduce.",
+  "steps": [
+   "Under [[Pedir feedback]], choose who and what that person is to you (leader, peer, mentor, another function), and click [[Pedir]].",
+   "Whoever receives it sees it in their bell and answers it under “FEEDBACK ASKED OF YOU”.",
+   "To give it without being asked: “GIVE FEEDBACK UNASKED”.",
+   "On feedback you received, open [[Convertir en oportunidad de desarrollo]]."
+  ],
+  "expect": "At least one of the four parts must be written. Feedback carries the name of whoever gives it. The person and their leader read it."
+ },
+ "eq-miequipo": {
+  "t": "My team's development (for those who lead)",
+  "why": "Each person you support: their focus, the last and next conversation, the commitments and what needs attention.",
+  "steps": [
+   "Open [[Mi equipo]].",
+   "Read each person's “attention” column.",
+   "Click the name to open their development, or \"schedule\" to book the conversation."
+  ],
+  "expect": "It shows the people you are the formal leader or team leader of. They go in alphabetical order. It never shows private reflections, assessments or goals the person kept private."
+ },
+ "eq-claridad": {
+  "t": "Role clarity",
+  "why": "Per person: their role, level, agreement version, whether they reviewed the expectations, key gaps, authority problems and next development. And where the structure has a hole.",
+  "steps": [
+   "Management: on a person's row, open [[Asignar]], choose the role agreement, the level, the leader, the date and the reason, and click [[Guardar]].",
+   "For a temporary assignment, tick «Es un rol temporal» and set the end date.",
+   "Read “WHERE THE ROLE STRUCTURE HAS A HOLE”.",
+   "Under “Key gaps”, use [[ver o registrar]] to compare the agreement with the evidence."
+  ],
+  "expect": "Whoever has no agreement shows at the top as a role clarity gap. The temporary role does not erase the base role. A gap result without evidence stays as \"not enough evidence\". The leader sees only their people and does not assign."
+ },
+ "eq-continuidad": {
+  "t": "Continuity and succession",
+  "why": "Who holds each role, who can step in if they are missing and who is being prepared.",
+  "steps": [
+   "Open [[Continuidad y sucesión]].",
+   "On a role, open [[Nombrar un respaldo o un sucesor]], choose the person and write what shows they can do the role.",
+   "Read the four answers: capability, authority, access and availability, each with its reason.",
+   "At the top, review the absences of the next 30 days and who covers."
+  ],
+  "expect": "A critical role, or one held by a single person, without a qualified backup shows as a continuity risk. They are four answers, not a score. The reason for an absence is not shown. An absence without notice and without coverage reaches the leader in the bell."
+ },
+ "eq-talentos": {
+  "t": "Talent map",
+  "why": "What the team is made of and where knowledge depends on a single person.",
+  "steps": [
+   "Open [[Mapa de talentos]].",
+   "Read “KNOWLEDGE THAT DEPENDS ON ONE PERSON”.",
+   "Review talents, skills and knowledge, with who has them."
+  ],
+  "expect": "It only includes what each person marked as Organisation. It groups what was written with the same words. It is not a label on anyone."
+ },
+ "eq-roles": {
+  "t": "Role agreements",
+  "why": "The agreement of each position: it is not a task list, it is what the role must achieve, what it answers for, what it decides, its limits and what the company owes it.",
+  "steps": [
+   "Open [[Acuerdos de rol]] and go into the sample one to see a complete one.",
+   "Management: under [[Crear un acuerdo de rol]], complete at least purpose, results, responsibilities, what it can decide and limits, one thing per line.",
+   "Write the principles as behaviours: \"Truth: do not promise a date without operational validation\".",
+   "Write since when it applies and why, and click [[Publicar el acuerdo de rol]].",
+   "To change it, open it and use [[Publicar una versión nueva de este acuerdo]]."
+  ],
+  "expect": "Without the five parts it is not published. A behaviour written as a rating (for example \"4/5\") is rejected. Publishing never deletes: the earlier version stays in the history. If the agreement asks for an authority the policies do not give that role, SOLU points it out."
+ },
+ "eq-organizacion": {
+  "t": "Organisational development and policy",
+  "why": "Whether the company is supporting the growth of its people and whether it has someone to continue each role.",
+  "steps": [
+   "Open [[Desarrollo organizacional]].",
+   "Read “DEVELOPMENT BY FUNCTION”: how many people have a role agreement and an active cycle.",
+   "Read “SUCCESSION AND ROLES WITH NO BACKUP”.",
+   "At the bottom, in the policy, change a value, write why and click [[Guardar como versión nueva]]."
+  ],
+  "expect": "They are counts, with no names or content of anyone's development. The policy starts with the values of the official document. Cycles already open keep their dates."
+ },
+ "inf-desempeno": {
+  "t": "My performance",
+  "why": "How you are doing, what needs movement and whether you are building enough future, on one page.",
+  "steps": [
+   "Open [[INFORMES]] in the menu.",
+   "Read “RESULT AND FUTURE”: this month's figure, the goal, the pace and the previous month.",
+   "Click [[¿Cómo se calcula?]] next to any figure.",
+   "Review “MONEY I MUST MOVE” and “RISKS AND WHAT IS COMING”; each line leads to the Need."
+  ],
+  "expect": "It says whether the month is closed or provisional and the calculation date. Nothing is written for this report."
+ },
+ "inf-equipo": {
+  "t": "Team (for those who lead)",
+  "why": "Who needs help and with what, to prepare the conversation with evidence.",
+  "steps": [
+   "Management: under “SET UP TEAMS”, create the team, choose its leader and add the people.",
+   "The leader opens [[Equipo]] and sees each person with their pace on each goal.",
+   "Click a person to see their full report."
+  ],
+  "expect": "People go in alphabetical order; there is no score or ranking. Each person's commissions are not shown. The team gives no permission to edit or approve."
+ },
+ "inf-diccionario": {
+  "t": "Metrics dictionary",
+  "why": "Each figure has a single definition: what it means, how it is calculated, where it comes from and who answers for it.",
+  "steps": [
+   "Open [[Diccionario de métricas]].",
+   "Find a metric and read its formula and its source."
+  ],
+  "expect": "The same metric means the same on every screen."
+ },
+ "inf-pulso": {
+  "t": "Business pulse",
+  "why": "The month by function: what we discovered, what we transacted, what we delivered and what resources we looked after, against the previous month.",
+  "steps": [
+   "Open [[Pulso del negocio]]: it shows the last finished month.",
+   "Click any line to go to its detail.",
+   "Management: when the month has been reviewed, click the button that starts with [[Emitir el informe de]] (it names the month and ends in \"with these figures\")."
+  ],
+  "expect": "Figures marked \"today's snapshot\" are not compared with the previous month. An issued month is not recalculated by itself; reopening it asks for a reason."
+ },
+ "inf-futuro": {
+  "t": "Future pulse and where to step in",
+  "why": "What is coming, in four futures that are not added together: market, commercial, contracted and financial. And a short list of matters where Management must decide.",
+  "steps": [
+   "Open [[Pulso del futuro]].",
+   "Start with “WHERE MANAGEMENT SHOULD STEP IN”: each matter says its impact, who carries it and what to decide.",
+   "Review each future by term: already past, 30 days, 31 to 90 and beyond."
+  ],
+  "expect": "There are no probabilities or invented forecasts: they are counts and amounts in their real state."
+ },
+ "inf-emitir": {
+  "t": "Issue the month's report and download it",
+  "why": "At the end of each month, Management receives an email saying the report is ready. Management reviews it and issues it from SOLU; the figures are kept as the month's official report.",
+  "steps": [
+   "In the first week of the month Management receives the email \"SOLU: the report for … is ready to issue\". The email carries no figures.",
+   "Open [[Pulso del negocio]] and review the month.",
+   "At the bottom, under “ISSUE THE MONTH'S REPORT”, click the button that starts with [[Emitir el informe de]] (it names the month and ends in \"with these figures\").",
+   "To get the file, click [[Descargar este informe (archivo para Excel)]]. The same link is in the Builder."
+  ],
+  "expect": "If the month was already issued, no email arrives. The file says at the top the period, when it was calculated, who downloaded it and the filters. People outside Management and Finance do not see the download link."
+ },
+ "inf-funcion": {
+  "t": "Review of the Commercial function",
+  "why": "How Commercial did in the month, why Eságara is under the goal and what SOLU found in the data.",
+  "steps": [
+   "Open [[Función Comercial]].",
+   "Read “WHAT SOLU FOUND”: each finding says whether it is a fact or an inference; click [[Ver la evidencia]].",
+   "Under “WHY ESÁGARA IS BELOW GOAL” review how much sales under the threshold explain and how much remains unexplained.",
+   "Use the month arrows to see an earlier month."
+  ],
+  "expect": "The cause and the unexplained part add up exactly to the gap against the goal. People go in alphabetical order and add up to the function's figure. Without goals set, SOLU does not invent one."
+ },
+ "inf-administracion": {
+  "t": "Administration: resources and exposure",
+  "why": "On one page: receivables by age, what must come in and go out, customers over their limit, what the bank shows unexplained, Eságara and commissions.",
+  "steps": [
+   "Open [[Administración]] inside REPORTS.",
+   "Review receivables by age: not due, 1 to 30, 31 to 60 and over 60 days.",
+   "Click each block's link to go where the work is done."
+  ],
+  "expect": "The receivable total is the same as in Receivables. It is today's snapshot. The bank balance, projected cash and budget are in Administration."
+ },
+ "inf-constructor": {
+  "t": "Report builder and saved views",
+  "why": "Build your own report of sales and Eságara by month, by customer or by negotiator, and save the question to come back to it.",
+  "steps": [
+   "Open [[Constructor]].",
+   "Choose the dates under “From” and “until”, and how to group under “Group by”; if you want, filter by negotiator or customer.",
+   "Click [[Ver informe]].",
+   "Type a name and click [[Guardar vista]]. Management, Direction and the money roles can tick the “Share with everyone” box.",
+   "Open the view from “SAVED VIEWS”; delete it with [[Borrar]] if it is yours."
+  ],
+  "expect": "The rows add up to the total. A view saves the question, not the figures: each person sees only their Needs and those of the teams they lead. The order is alphabetical, not a ranking."
+ },
+ "ger-inicio": {
+  "t": "Management home",
+  "why": "In under a minute: what is waiting for your decision, how the business is going, what is coming and where resources are exposed.",
+  "steps": [
+   "Open [[GERENCIA]]. At the top are the groups: Today, Direction, Review, Governance and Money.",
+   "Start with “Decisions waiting for you”: each one says the question, why now, how much it weighs, the options, the facts and the assumptions.",
+   "Go through the “Business pulse” (six blocks) and the “Future pulse”: each figure leads to where its detail is.",
+   "At the bottom, “RESOURCES AND RISK EXPOSED”: seven separate views."
+  ],
+  "expect": "With the sample data loaded you will see one decision requested by Paola and another to review. What is normal does not appear: only what your authority can change. There are no probabilities or a score that joins the risks. The figures are the same as in Reports and Administration. Direction does not see the people block."
+ },
+ "ger-decisiones": {
+  "t": "Ask Management for a decision, and decide",
+  "why": "When something is beyond what you can resolve, you ask here with what Management needs to decide without asking you. What is decided stays written with its reason.",
+  "steps": [
+   "Open [[Decisiones]] and go down to “ASK MANAGEMENT FOR A DECISION” (if you are in Management it is called “OPEN A DECISION”).",
+   "Write the question, the context, how much it weighs, at least two options (one per line), the facts and, separately, the assumptions. Click [[Pedir la decisión]] (Management sees [[Abrir la decisión]]).",
+   "Management: open it, write what is decided, why, what is expected to happen, when it is reviewed and who is left in charge, and click [[Registrar la decisión]].",
+   "If it is no longer needed, whoever asked withdraws it with the reason.",
+   "Also from a Need: at the top, [[Pedir a Gerencia]] opens the request with the Need already linked."
+  ],
+  "expect": "With a single option it is not saved: doing nothing counts as an option. A decision made is never edited or deleted. Each person sees the ones they asked for or were left in charge of; Management and Direction see them all. The bell notifies Management."
+ },
+ "ger-revisar-decision": {
+  "t": "Review a decision against what happened",
+  "why": "A decision is learned from when what was expected is compared with what really happened.",
+  "steps": [
+   "When the follow-up date arrives, the decision shows on the Home and in the bell.",
+   "Open it and, under “WHAT REALLY HAPPENED”, write what happened and choose how it turned out. Click [[Guardar la revisión]].",
+   "If the decision changed, open [[La decisión cambió: escribir una versión nueva]], write why and [[Guardar como versión nueva]]."
+  ],
+  "expect": "If it is still early, SOLU asks for the new review date. The earlier version stays visible, marked as replaced, with what it said."
+ },
+ "ger-cierre": {
+  "t": "Executive close",
+  "why": "The day, the week or the month, starting with the future: what must be decided and what is coming; then result, highest value, risks, cash and delivery, and capacity.",
+  "steps": [
+   "Open [[Cierre ejecutivo]] and choose Day, Week, Month or Quarter.",
+   "Use [[anterior]] and \"next\" to move between periods.",
+   "In Quarter, also read “QUARTERLY REVIEW: DIRECTION AND RESOURCES”: each priority and whether it was reviewed, and the resource-allocation decisions."
+  ],
+  "expect": "The future, result, value and cash blocks count what happened within the period. Decisions, risks and capacity show how things stand today. They are company totals, with no list of people."
+ },
+ "ger-puente": {
+  "t": "Future bridge",
+  "why": "From what someone saw coming to the money in the bank, in eight stages. And the highest-value items that deserve your attention.",
+  "steps": [
+   "Open [[Puente al futuro]] and read the eight stages from left to right.",
+   "Under “VISIBLE FUTURE ESÁGARA”, look at each bucket with the basis it is calculated on.",
+   "Under “High-value focus”, each row says why it is on the list.",
+   "At the bottom, “CONCENTRATION RISK”: what share depends on a single customer or supplier."
+  ],
+  "expect": "There is no total: the stages are not added because they do not have the same certainty. Opportunities and needs are counted, not valued. Receivables equal those in Receivables."
+ },
+ "ger-prioridades": {
+  "t": "Strategic priorities",
+  "why": "The chosen direction: why, what result is sought, what signals announce it, who answers for it and which real records carry it.",
+  "steps": [
+   "Management: under “NEW PRIORITY”, write the title, why, the result, the horizon, the owner and at least one early signal. Click [[Crear la prioridad]].",
+   "Link it to a customer, a Need, an exploration, a decision or a scenario with [[Vincular]].",
+   "The owner writes how it is really going under “Review” and [[Guardar la revisión]].",
+   "When it ends: [[Cerrarla: lograda o abandonada]], with the reason."
+  ],
+  "expect": "With no linked record, SOLU says it is only an intention. Signals tied to a metric show its value today or for the month. It is not a task list."
+ },
+ "ger-cuentas": {
+  "t": "Strategic accounts",
+  "why": "The customers Management decides to follow closely: why they matter, who covers them, what is in progress, how they pay, their risks, where they can grow and the next management move.",
+  "steps": [
+   "Management: under “CHOOSE A STRATEGIC ACCOUNT”, choose the customer, write why and click [[Elegir como estratégica]].",
+   "Open [[Actualizar]] and write the next management move with its date.",
+   "Click the name to go to the customer's full file."
+  ],
+  "expect": "Only the reason and the next move are kept here; everything else is read from the customer's file. Without a next move, or with the date past, the account \"needs attention\"."
+ },
+ "ger-escenarios": {
+  "t": "Scenarios",
+  "why": "Compare options before deciding: accept a low-Eságara deal, raise a credit limit, finance a purchase, buy stock, assign people or speed up an import.",
+  "steps": [
+   "Under “NEW SCENARIO”, write the question and the facts that hold for every option.",
+   "For each option write its assumptions and a range (minimum and maximum) of what it can leave.",
+   "Click [[Guardar el escenario]] and then [[Llevarlo a una decisión]]."
+  ],
+  "expect": "A single figure is not accepted: a scenario is not a forecast. If the ranges overlap, SOLU says so and names no winner. Once the decision is made, the scenario stays as it was."
+ },
+ "ger-revision": {
+  "t": "Functional review",
+  "why": "The month's tour: market, commercial, operations, administration and team. In each one, the same three questions.",
+  "steps": [
+   "Open [[Revisión por función]] and choose the function.",
+   "Read “What changed?” against the previous month.",
+   "Read “Why”: each cause says whether it is a fact or an inference.",
+   "Read «Qué requiere decisión» and open the one that applies."
+  ],
+  "expect": "The figures are those of the Business pulse. When SOLU finds no cause in the records, it says so. Only Management sees the Team review."
+ },
+ "ger-sistema": {
+  "t": "System performance",
+  "why": "It is not the month's result: it is whether the company is getting better at generating, converting, winning, delivering and collecting.",
+  "steps": [
+   "Open [[Desempeño del sistema]].",
+   "Read each row: the last 90 days against the 270 before, with the number of cases."
+  ],
+  "expect": "With fewer than 5 cases it says \"little data\". It compares the company with itself: no person appears."
+ },
+ "ger-personas": {
+  "t": "People and capacity",
+  "why": "Where the company depends on a single person, and where someone is away with nobody covering.",
+  "steps": [
+   "Open [[Personas y capacidad]].",
+   "Review the absences of the next 30 days and who covers.",
+   "Review key relationships without a backup and roles with a single holder.",
+   "Use the links to assign coverage or define a backup."
+  ],
+  "expect": "It does not show the reason for an absence, pay or personal notes. The workload list is in alphabetical order and counts open work, not activity."
+ },
+ "ger-identidad": {
+  "t": "Company identity",
+  "why": "Why we exist, what we offer and how we behave. It is the starting point of each function and each role.",
+  "steps": [
+   "Open [[Identidad]] and read the purpose, the value proposition, the attributes and the principles.",
+   "Management: under “PUBLISH A NEW VERSION”, change the text, write since when it applies and why, and click [[Publicar como versión nueva]].",
+   "Under “HISTORY”, read what changed between versions."
+  ],
+  "expect": "It starts with the official identity as version 1. Publishing deletes nothing. The principles do not yet say what behaviour is expected: it is written next to each one, after a colon."
+ },
+ "ger-funciones": {
+  "t": "Functions and roles",
+  "why": "What each function exists for, what it delivers, what it decides by itself, what it hands to the others and who answers. And where the structure has a hole.",
+  "steps": [
+   "Open [[Funciones y roles]] and read the five functions.",
+   "Management: on a function, open [[Publicar una versión nueva de esta carta]], choose who answers and complete what it delivers, what it answers for, what it decides, what it counts on and its interfaces.",
+   "At the top, “WHERE THE STRUCTURE HAS A HOLE” goes down as you complete it."
+  ],
+  "expect": "Each function's purpose is the official text and is not edited. An interface that names only one side shows as ambiguous. At the bottom, the role-agreements table says which are clear; they are written in Team → Role agreements."
+ },
+ "ger-politicas": {
+  "t": "Policies and authority",
+  "why": "Which rules apply, which exceptions are waiting, what the highest level approved and which exceptions repeat so often that the rule deserves a review.",
+  "steps": [
+   "Open [[Políticas y autoridad]].",
+   "Read “Exceptions that repeat” and open the cases of a pattern.",
+   "Management: at the bottom, under “MANAGEMENT POLICY”, change a value, write why and click [[Guardar como versión nueva]]."
+  ],
+  "expect": "Operating numbers are not changed from here: each policy is changed on its own screen. Management always stays among those who publish the identity and the functions."
+ },
+ "ger-junta": {
+  "t": "Board view (read-only role)",
+  "why": "For partners or board members: they see the direction, how the business is going, what is coming, the risks and what management decided, without being able to change anything.",
+  "steps": [
+   "Management: in TEAM → People & data, create the person and choose the role \"Board or assembly (read only)\".",
+   "Management can see what that person will see under [[Vista de Junta]].",
+   "The person signs in and lands directly on their view. They can also read Identity and Functions, and change their profile."
+  ],
+  "expect": "They do not see people, pay, commissions or any customer's file. If they try to open another screen, SOLU sends them back to their view. They cannot save anything or download files."
+ },
+ "ger-empresas": {
+  "t": "By selling company",
+  "why": "When more than one company sells, the same figures separated by company.",
+  "steps": [
+   "On the Management home, go down to “BY SELLING COMPANY”.",
+   "Click a company: it opens the Future bridge with only its Needs, invoices and purchases.",
+   "Go back to “All companies” with the tab at the top."
+  ],
+  "expect": "It only shows when more than one company has data or is active; today only the United States company sells, so it is normal not to see it. The companies add up to the total. Future opportunities do not belong to a company."
+ },
+ "ger-correo": {
+  "t": "Email: the executive close is ready",
+  "why": "SOLU emails Management when the close is ready, so nobody has to remember to open it.",
+  "steps": [
+   "Management: under “MANAGEMENT POLICY”, choose the email's rhythm: on Mondays, every working day if something is waiting, or never.",
+   "Write why and click [[Guardar como versión nueva]].",
+   "On Monday morning the email \"SOLU: last week's executive close is ready\" arrives, with the link."
+  ],
+  "expect": "The email carries counts and the link, never amounts or names. It reaches only people with the Management role, after 7 in the morning and never at the weekend. It starts on \"Mondays\"."
+ },
+ "insights": {
+  "t": "Insights",
+  "why": "Each chart answers a management question: do customers get results? do we keep promises? what is coming and how certain is it? where is Eságara lost? which Recoveries are open?",
+  "steps": [
+   "Change the view: Month, Forward, Causes, Recovery.",
+   "Filter by person, sector or certainty, and [[Aplicar]].",
+   "Click a bar or a name to go into the Need or the cause.",
+   "Use the \"Ask SOLU\" buttons to see causes and dependencies."
+  ],
+  "expect": "During the first 7 days of the month, Month shows the previous month. There are no counts of messages, calls or time connected. That is intentional."
+ },
+ "comisiones": {
+  "t": "Commissions",
+  "why": "Commissions on confirmed results, split 50/50 for now.",
+  "steps": [
+   "Choose the person and the period, and click [[Ver]].",
+   "Review and click [[Enviar a Gerencia]].",
+   "Corrections create a new version with [[Crear versión]]."
+  ],
+  "expect": "Earlier versions are kept."
+ },
+ "m12-reparto": {
+  "t": "Who receives the commission of a sale",
+  "why": "The commission pool is split between Commercial and Operations, and Management names the people of each function.",
+  "steps": [
+   "Open a Need's Real Eságara page.",
+   "See who receives today and what percentage of the pool.",
+   "Management: [[Cambiar el reparto]], name up to three people per function with their percentage and the reason, and [[Guardar reparto]]."
+  ],
+  "expect": "With nobody named, whoever carries the Need receives everything. Within each function the percentages must add up to 100. What is already approved or paid does not change."
+ },
+ "m12-liquidacion": {
+  "t": "Commission settlement",
+  "why": "Everything that can be paid today, person by person, with its calculation; it is approved together and the payment is recorded.",
+  "steps": [
+   "Open [[Liquidación]] and review “TO APPROVE TODAY”.",
+   "Management or Commercial Direction: choose the month and click [[Aprobar liquidación]].",
+   "When it is paid: type the reference and [[Registrar pago]]."
+  ],
+  "expect": "The collection commission appears in parts, as the customer pays. Nobody approves their own lines. Approving twice duplicates nothing."
+ },
+ "m12-numeros": {
+  "t": "Change the Profitability numbers",
+  "why": "The commission rate, the Commercial / Operations split and the cost of money are changed here, with Management's approval.",
+  "steps": [
+   "Open My profile and, under Setup, click the link.",
+   "Finance, Administration or Management: type the new values, since when they apply and the reason, and [[Enviar propuesta a Gerencia]].",
+   "Management: [[Aprobar cambio]] or [[Rechazar]]."
+  ],
+  "expect": "Nothing changes until Management approves. A date before today is rejected. What is already calculated is not recalculated."
+ },
+ "m12-rentabilidad": {
+  "t": "Profitability (Direction summary)",
+  "why": "What the month leaves and what the open deals leave, how much goes to commissions, what remains afterwards and why Eságara changed.",
+  "steps": [
+   "Open [[Rentabilidad]].",
+   "Read the three figures at the top and click one to see its detail.",
+   "Review «Por cliente»: the sale next to what it leaves."
+  ],
+  "expect": "It is ordered by sale; it is not a ranking. Only Management, Direction, Finance and Administration see it."
+ },
+ "m12-cierre": {
+  "t": "Close and commissions (Administration home)",
+  "why": "Which Needs can be closed today, what is missing on the others and which commissions are ready.",
+  "steps": [
+   "Open [[Cierre y comisiones]].",
+   "Under “READY TO CLOSE”, open one and mark it final.",
+   "Under “SOMETHING MISSING TO CLOSE”, read what is missing and open the Need to resolve it."
+  ],
+  "expect": "Each line leads to the screen where it is resolved."
+ },
+ "auth-rangos": {
+  "t": "Authorization ranges by level",
+  "why": "Up to what amount each person can authorize alone, and who must authorize above that: a colleague, MMS and mentor, or Management.",
+  "steps": [
+   "Management: open the ranges, review the values (today they are those of 2025) and assign each person's level.",
+   "On a Need, open “Authorisation by level”: SOLU converts the sale to pesos with the day's TRM and says who must authorize.",
+   "Click [[+ Registrar autorización]] and type who authorized."
+  ],
+  "expect": "SOLU informs and keeps the record; it blocks no step. If whoever carries the Need has no level, it says so."
+ },
+ "search": {
+  "t": "Search",
+  "why": "Jump to any customer, Need, invoice, supplier or part.",
+  "steps": [
+   "Press [[Ctrl K]] and type or paste part of a name, a code, a tax ID or an invoice number.",
+   "Press Enter. If there is a single result, SOLU opens it directly."
+  ],
+  "expect": "A code or a number always searches records. If you type something you need to do, guides also appear (see \"On-screen guide\")."
+ },
+ "guia-pantalla": {
+  "t": "On-screen guide (training)",
+  "why": "Type what you need to do and SOLU takes you to where it starts and shows you the steps of this guide over the real screen, marking where to click.",
+  "steps": [
+   "If it is your first day: in MY DAY, the «¿Primera vez en SOLU?» box has four things to try, each with its [[Guíame]] button. Remove it with [[Ya conozco SOLU: ocultar]].",
+   "For everything else, click [[¿Cómo hago…?]] (at the top) or the search bar without typing anything: the everyday work appears, each item with its [[Guíame]] button.",
+   "Type \"make invoice\" (or \"hacer factura\"). On the first row click [[Desde el inicio · 8 etapas]]: SOLU opens the Needs board with the guide in the corner.",
+   "Follow the steps with [[Siguiente paso]]. The numbered blue ring marks the button or tab the step names.",
+   "If the step is on another screen, follow the dotted line or use the guide's \"Take me to…\" button.",
+   "If your case is already further along, tap its stage number in the guide. With [[Solo esta parte]] you see a single function.",
+   "To turn it off: TEAM → Setup → My profile and [[Apagar la guía de entrenamiento]]. Turn it on in the same place with [[Encender la guía de entrenamiento]]."
+  ],
+  "expect": "The guide stays with you as you change screens and can be minimised or closed. It never clicks for you. Turning it off only changes it for you: record search stays the same."
+ },
+ "colores": {
+  "t": "Colours: where you are, what can be clicked and what needs you",
+  "why": "Colour has three jobs: say which module you are in, show what can be clicked and signal the state of each thing.",
+  "steps": [
+   "Look at the menu: each module has its colour, and the module you are in is filled.",
+   "Open two different modules: the colour of the line under the top bar and of the band with the module and section name changes.",
+   "Move the cursor over a table: the row that leads somewhere turns blue.",
+   "In My Day, look at each section's title: amber is \"needs you\", blue is \"to move\", green is \"waiting with control\"."
+  ],
+  "expect": "Green, amber and red still mean protected, attention and risk. Purple is still only for SOLU's help. On the Needs board the columns get bluer as the Need advances; \"PO accepted\" is green."
+ },
+ "ask": {
+  "t": "Ask SOLU and report a defect",
+  "why": "Find records fast, ask it to guide you to do something, and tell us when SOLU made you repeat work or showed noise.",
+  "steps": [
+   "Click [[Pregúntale a SOLU]] and type a question or a name.",
+   "Ask how to do something, for example \"how do I make an invoice?\": at the top \"I'll guide you on screen\" appears with [[Desde el inicio · 8 etapas]] and [[Solo esta parte]].",
+   "Type \"training\" or \"help\" to see the everyday-work guides, each with [[Guíame]].",
+   "At the bottom, open \"Report a SOLU defect\", describe what happened and send."
+  ],
+  "expect": "When you pick a guide, the panel closes and the guide stays in the corner. With the training guide turned off in My profile, the panel says so and links to where it is turned on. Reports show in Insights, under product health."
+ },
+ "bell-lang": {
+  "t": "Alerts, language and loading",
+  "why": "Know what needs attention everywhere and work in your language.",
+  "steps": [
+   "Click the bell to see the alerts of every module.",
+   "Change the language with [[ES]] or [[EN]], at the top right.",
+   "A thin blue bar at the top shows while a page loads or a form is saved, and the pressed button says \"Saving…\" so it cannot be pressed twice."
+  ],
+  "expect": "The language change applies to every screen; on PDFs you choose EN or ES."
+ },
+ "glosario": {
+  "t": "Glossary: an information bubble on every term",
+  "why": "Every SOLU term (Need, Eságara, PO, Delivery note, Credit limit, Reconcile…) carries an \"i\" bubble that explains what it means on that screen and what it means in general.",
+  "steps": [
+   "Open any screen: terms show with a dotted underline. Move the cursor over one: an \"i\" bubble appears next to the word.",
+   "Click the bubble, or the underlined word when it is plain text. Read “On this screen” and “In general”.",
+   "Close it with the X, with Esc or by clicking outside.",
+   "To see every term: at the top right, open the menu under your name and click [[Glosario de términos]].",
+   "To remove the bubbles: on the Glossary page, [[Ocultar los globos en las pantallas]]. Show them again in the same place with [[Mostrar los globos en las pantallas]]."
+  ],
+  "expect": "The same term explains different things depending on where you are: \"Need\" in the title of the board's first column is the stage; in Market it is when a signal becomes a Need. There is one bubble per term in each block of the screen, not on every mention. Hiding them applies to that browser, not to the person. On a phone or tablet, where there is no cursor, the \"i\" bubbles always show."
+ }
+}
