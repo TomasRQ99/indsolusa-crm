@@ -366,7 +366,7 @@
    "why": "Arma la solución, revisa la economía, define la promesa y presenta solo cuando esté completa.",
    "steps": [
     "En la Necesidad, abre la pestaña [[Cotización]] y haz clic en [[Preparar cotización]].",
-    "Agrega las líneas ([[Agregar]]) y los costos del proveedor ([[Guardar costos]]). Mira la Eságara en $ y %, antes y después del costo de financiar el plazo de pago.",
+    "Agrega los productos ([[Agregar]]) y llena la hoja «Liquidación de costos», que está en el bloque ECONOMICS de la misma pantalla ([[Guardar costos]]). Mira la Eságara en $ y %, antes y después del costo de financiar el plazo de pago.",
     "Opcional: ofrece alternativas con [[+ Escenario]] y [[Agregar escenario]], y marca una con [[Recomendar este]].",
     "Resuelve cada punto con «!» de la lista READY TO PRESENT (columna derecha): cada uno dice qué falta.",
     "Revisa el documento con [[Ver PDF]] (arriba), en inglés o español.",
@@ -378,19 +378,18 @@
    "id": "liquidacion-costos",
    "m": "comercial",
    "t": "Liquidación de costos de la cotización",
-   "path": "Necesidad → Cotización → abrir la cotización → Editar costos",
+   "path": "Necesidad → Cotización → abrir la cotización → bloque ECONOMICS → Liquidación de costos",
    "why": "Antes de poner el precio, haz la cuenta completa de lo que cuesta traer el producto: producto, envío, impuestos, aduana, empaque, giro y crédito a favor. Es una sola cuenta para toda la cotización, y de ella sale la Eságara.",
    "steps": [
-    "Abre la cotización en borrador y, en el bloque ECONOMICS, haz clic en [[Editar costos]]. Se abre «Liquidación de costos». Llena lo que aplique, en orden; lo que no aplique se deja en 0.",
-    "1 · Producto: elige la moneda en que se le paga al proveedor, escribe el costo del producto y de dónde sale (proforma, correo). Si no es en dólares, SOLU trae la tasa del mercado y muestra el costo en USD.",
-    "2 · Envío: escribe el costo del transporte hasta el cliente en USD, los días de transporte y de dónde sale (cotización de DHL o del transportador).",
-    "3 · Impuestos, aduana, empaque y giro: escribe cada valor en USD. «Giro» es lo que cobra el banco por enviar el dinero, no el monto enviado. «Otros» es para seguro, logística local o imprevistos. Escribe de dónde salen los valores.",
-    "4 · Crédito a favor: si hay un saldo a nuestro favor con el proveedor o el transportador, escribe el valor y de dónde sale (nota crédito, saldo). Se resta del costo.",
-    "Lee «Hábitos de pago del cliente»: SOLU muestra el plazo pactado, a cuántos días suele pagar y cuánto cuesta financiar ese plazo. No se escribe nada.",
-    "Mira abajo el «Costo total» frente a la «Venta». Si algún costo bajó frente a lo guardado, escribe por qué (por ejemplo, nueva proforma).",
+    "Abre la cotización en borrador y baja al bloque ECONOMICS. Ahí mismo está la hoja «Liquidación de costos»: no hay que abrir nada. Cada costo tiene su fila, con el valor en el centro y, a la derecha, de dónde sale. Lo que no aplique se deja en 0.",
+    "Fila «Producto»: escribe lo que cobra el proveedor y de dónde sale (proforma, correo). Justo debajo, en «Moneda en que se le paga al proveedor», elige la moneda de la lista. Si no es dólares, SOLU trae la tasa del mercado y muestra cuánto es en USD.",
+    "Fila «Envío»: escribe el costo del transporte hasta el cliente en USD y de dónde sale (cotización de DHL o del transportador). En la fila «Días de transporte» escribe cuántos días viaja la mercancía; no es un costo.",
+    "Filas «Impuestos», «Aduana», «Empaque», «Giro» y «Otros»: escribe cada valor en USD. «Giro» es lo que cobra el banco por enviar el dinero, no el monto enviado. A la derecha hay una sola casilla para decir de dónde salen estos cinco valores.",
+    "Fila «Crédito a favor»: si hay un saldo a nuestro favor con el proveedor o el transportador, escribe el valor y de dónde sale (nota crédito, saldo). Se resta del costo.",
+    "Mira el recuadro azul debajo de las filas: «Costo total», «Venta» y «Eságara» se calculan solos mientras escribes. Si un costo quedó más bajo que el guardado, aparece la casilla «¿Por qué bajó el costo?»: escribe el motivo (por ejemplo, nueva proforma).",
     "Haz clic en [[Guardar costos]]."
    ],
-   "expect": "El bloque ECONOMICS muestra cada costo con su fuente y la Eságara en $ y %, recalculada. Si un costo bajó y no escribiste el motivo, SOLU no guarda nada y te lo pide: así nadie sube la Eságara quitando costos reales. El crédito a favor aparece como una línea que resta. Los días de transporte son informativos. «Editar costos» solo aparece mientras la cotización es un borrador; después de presentarla se cambia con «Crear revisión»."
+   "expect": "Arriba, «Economía esperada actual» muestra la Eságara recalculada en $ y %. Debajo de la hoja, «Hábitos de pago del cliente» muestra el plazo pactado, a cuántos días suele pagar el cliente y cuánto cuesta financiar ese plazo: SOLU lo trae solo. Si escribiste un crédito a favor sin decir de dónde sale, o un costo bajó y no escribiste el motivo, SOLU no guarda nada y te lo pide. La hoja solo se puede escribir mientras la cotización es un borrador; después de presentarla se cambia con «Crear revisión»."
   },
   {
    "id": "solucion",

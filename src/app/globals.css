@@ -1675,19 +1675,39 @@ button.linkish { background: none; border: 0; padding: 0; color: var(--brand); f
 .cfx select, .cfx input { width: 100%; min-width: 0; }
 .cfx p { margin: 0; }
 .cfx-mkt { border-left: 3px solid var(--line); padding-left: 8px; }
-/* Cost settlement form on the quote ("Liquidación de costos") */
-@media (min-width: 600px) { .jw .qa-pop.liq { width: min(560px, 92vw); max-height: 78vh; overflow-y: auto; } }
-.liq-step { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
-.liq-step:first-of-type { border-top: 0; padding-top: 0; }
-.liq-step > b { font-size: 13px; }
-.liq-step > b small { font-weight: 400; color: var(--ink-2); font-size: 12px; }
-.qa-form label.liq-line { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 2px 10px; align-items: center; font-size: 13px; color: var(--ink); }
-.liq-line small { display: block; color: var(--ink-2); font-size: 11px; }
-.liq-line input { width: 100%; min-width: 0; text-align: right; }
-.liq-info { margin: 0; font-size: 12px; color: var(--ink-2); border-left: 3px solid var(--line); padding-left: 8px; }
-.liq-total { display: flex; flex-direction: column; gap: 3px; background: var(--brand-soft); border-radius: 8px; padding: 8px 10px; font-size: 13px; position: sticky; bottom: -12px; box-shadow: 0 -6px 10px var(--surface); }
+/* Cost settlement sheet on the quote ("Liquidación de costos"): typed on the page, like a spreadsheet */
+.liq-sheet { margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 12px; background: var(--surface); scroll-margin-top: 90px; }
+.liq-head { display: flex; flex-direction: column; gap: 2px; }
+.liq-head b { font-size: 14px; }
+.liq-grid { display: grid; grid-template-columns: minmax(170px, 1.1fr) 150px minmax(160px, 1.4fr); gap: 8px 12px; align-items: center; }
+.liq-th { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.liq-th.r { text-align: right; }
+.liq-name { grid-column: 1; font-size: 13px; font-weight: 600; color: var(--ink); display: flex; flex-direction: column; }
+.liq-name small { font-weight: 400; font-size: 11px; color: var(--ink-2); }
+.liq-name.minus::before { content: "−"; position: absolute; margin-left: -12px; color: var(--ink-2); }
+.liq-val { grid-column: 2; width: 100%; min-width: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.liq-src { grid-column: 3; width: 100%; min-width: 0; }
+.liq-span { grid-row: span 5; align-self: stretch; display: flex; flex-direction: column; gap: 4px; border-left: 3px solid var(--line); padding-left: 10px; justify-content: center; }
+.liq-span input { width: 100%; min-width: 0; }
+.liq-span small { font-size: 11px; color: var(--ink-2); }
+.liq-wide { grid-column: 1 / -1; background: var(--bg, #f6f8fb); border-radius: 8px; padding: 10px; }
+.liq-wide .cfx label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
+.liq-end { display: flex; flex-direction: column; gap: 10px; }
+.liq-total { display: flex; flex-direction: column; gap: 4px; background: var(--brand-soft); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
 .liq-total > div { display: flex; justify-content: space-between; gap: 10px; }
+.liq-total > div.big { font-size: 15px; border-top: 1px solid var(--line); padding-top: 6px; margin-top: 2px; }
+.liq-total > div.big span { font-weight: 600; }
 .liq-total > div.neg b { color: var(--risk); }
+.liq-why { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); }
+.liq-why.on { color: var(--ink); border-left: 3px solid var(--attn); padding-left: 10px; }
+.liq-why input { width: 100%; }
+.liq-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+@media (max-width: 720px) {
+  .liq-grid { grid-template-columns: minmax(0, 1fr) 120px; }
+  .liq-th:nth-child(3) { display: none; }
+  .liq-src { grid-column: 1 / -1; }
+  .liq-span { grid-row: auto; }
+}
 .qv-cost tr.sub td:first-child { padding-left: 22px; color: var(--ink-2); }
 .emf-fx { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 

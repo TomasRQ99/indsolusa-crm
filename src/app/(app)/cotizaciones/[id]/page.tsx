@@ -113,9 +113,9 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     "sin-oc": t("Escribe el número de OC del cliente.", "Write the customer's PO number."),
     espera: t("Escribe qué esperas y hasta cuándo.", "Write what you're waiting for and until when."),
     estado: t("Esta acción no aplica en el estado actual.", "This action doesn't apply in the current state."),
-    "tasa-mercado": t("No se pudo consultar la tasa del mercado ahora. Intenta de nuevo en un minuto, o abre «Editar costos» y escribe la tasa del banco con su fuente.", "Couldn't get the market rate right now. Try again in a minute, or open “Edit costs” and type the bank's rate with its source."),
+    "tasa-mercado": t("No se pudo consultar la tasa del mercado ahora. Intenta de nuevo en un minuto, o escribe la tasa del banco con su fuente en «Liquidación de costos».", "Couldn't get the market rate right now. Try again in a minute, or type the bank's rate with its source in “Cost settlement”."),
     "credito-fuente": t("Escribiste un crédito a favor: di de dónde sale (nota crédito, saldo con el transportador). No se guardó nada todavía.", "You typed a credit in our favor: say where it comes from (credit note, balance with the carrier). Nothing was saved yet."),
-    "motivo-costo": t("Un costo bajó: escribe por qué en «Si algún costo bajó, ¿por qué?», al final de «Editar costos» (por ejemplo, nueva proforma). No se guardó nada todavía. Así nadie sube la Eságara quitando costos reales.", "A cost went down: write why in “If a cost went down, why?”, at the end of “Edit costs” (e.g., new proforma). Nothing was saved yet. That way nobody lifts Eságara by removing real costs."),
+    "motivo-costo": t("Un costo bajó: escribe por qué en la casilla «¿Por qué bajó el costo?», debajo del total de «Liquidación de costos» (por ejemplo, nueva proforma). No se guardó nada todavía. Así nadie sube la Eságara quitando costos reales.", "A cost went down: write why in the “Why did the cost go down?” box, under the total of “Cost settlement” (e.g., new proforma). Nothing was saved yet. That way nobody lifts Eságara by removing real costs."),
     ...EXC_ERR(t),
   };
 
@@ -202,7 +202,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   );
 
   // ---------- Collection days (§10.4): agreed vs what history says ----------
-  const PayLine = () => (pay ? <p className="small" style={{ marginTop: 10 }}>{t("Cobro", "Collection")}: {t(`plazo pactado ${pay.contractualDays} d`, `${pay.contractualDays}-day agreed terms`)}{pay.expectedDays != null ? <> · {t(`según historial ${pay.expectedDays} d`, `history says ${pay.expectedDays} d`)}{pay.deltaDays ? <b className={pay.deltaDays > 0 ? "attn-t" : ""}> ({pay.deltaDays > 0 ? "+" : ""}{pay.deltaDays} {t("días de financiación", "days of financing")})</b> : null}<span className="src"> · {t(`promedio de ${pay.n} factura(s) cobrada(s) y conciliada(s)${pay.enough ? "" : ", orientativo"}`, `average of ${pay.n} collected and reconciled invoice(s)${pay.enough ? "" : ", indicative"}`)} · <Link href={`/mercado/empresas/${q.deal.accountId}#pagos`}>{t("cómo paga", "how they pay")}</Link></span></> : <span className="src"> · {t("sin historial de cobro todavía", "no collection history yet")}</span>}</p> : null);
+  const PayLine = () => (pay ? <p className="small" style={{ marginTop: 10 }}>{t("Hábitos de pago del cliente", "Customer payment habits")}: {t(`plazo pactado ${pay.contractualDays} d`, `${pay.contractualDays}-day agreed terms`)}{pay.expectedDays != null ? <> · {t(`según historial ${pay.expectedDays} d`, `history says ${pay.expectedDays} d`)}{pay.deltaDays ? <b className={pay.deltaDays > 0 ? "attn-t" : ""}> ({pay.deltaDays > 0 ? "+" : ""}{pay.deltaDays} {t("días de financiación", "days of financing")})</b> : null}<span className="src"> · {t(`promedio de ${pay.n} factura(s) cobrada(s) y conciliada(s)${pay.enough ? "" : ", orientativo"}`, `average of ${pay.n} collected and reconciled invoice(s)${pay.enough ? "" : ", indicative"}`)} · <Link href={`/mercado/empresas/${q.deal.accountId}#pagos`}>{t("cómo paga", "how they pay")}</Link></span></> : <span className="src"> · {t("sin historial de cobro todavía", "no collection history yet")}</span>}</p> : null);
 
   // ---------- Financing cost (decision 2026-11-10): shown next to Eságara; the gate keeps today's formula ----------
   const finSale = q.status === "DRAFT" ? B.sale : B.curSale;
@@ -248,68 +248,57 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     const mktGap = mkt && savedRate ? rateGapPct(mkt.usdPerUnit, savedRate) : 0;
     const mktDelta = mkt && savedRate ? subMoney(mulMoney(q.supplierCost, mkt.usdPerUnit), mulMoney(q.supplierCost, savedRate)) : 0;
     const mktMoved = Math.abs(mktGap) >= 0.01;
+    // Cost settlement sheet: on a draft the costs are typed right here, like a spreadsheet (no pop-up).
+    const canSheet = editable && draft;
+    const showTable = !canSheet || showVersions;
+    const srcLabel = t("De dónde sale", "Where it is from");
+    const Sheet = () => (
+      <form action={saveCosts.bind(null, q.id)} className="liq-sheet" id="costos">
+        <div className="liq-head">
+          <b>{t("Liquidación de costos", "Cost settlement")}</b>
+          <span className="src">{t("Escribe cada costo en su fila; lo que no aplique se deja en 0. El total y la Eságara se calculan solos mientras escribes.", "Type each cost on its row; leave at 0 what doesn't apply. The total and Eságara are calculated as you type.")}</span>
+        </div>
+        <div className="liq-grid">
+          <span className="liq-th">{t("Concepto", "Item")}</span><span className="liq-th r">{t("Valor", "Amount")}</span><span className="liq-th">{t("¿De dónde sale?", "Where is it from?")}</span>
+
+          <label htmlFor="lq-supplierCost" className="liq-name">{t("Producto", "Product")}<small>{t("lo que cobra el proveedor, en su moneda", "what the supplier charges, in its currency")}</small></label>
+          <input id="lq-supplierCost" className="liq-val" name="supplierCost" type="number" step="0.01" min="0" defaultValue={Number(q.supplierCost)} />
+          <input className="liq-src" name="supplierSrc" maxLength={200} defaultValue={q.supplierSrc ?? ""} aria-label={`${srcLabel}: ${t("producto", "product")}`} placeholder={t("Proforma, correo del proveedor…", "Proforma, supplier email…")} />
+          <div className="liq-wide"><CostFxFields lang={user.lang} currency={q.costCurrency} rate={q.fxRate ? Number(q.fxRate) : null} source={q.fxSource} /></div>
+
+          <label htmlFor="lq-freightCost" className="liq-name">{t("Envío", "Shipping")}<small>{t("transporte hasta el cliente, en USD", "transport to the customer, in USD")}</small></label>
+          <input id="lq-freightCost" className="liq-val" name="freightCost" type="number" step="0.01" min="0" defaultValue={Number(q.freightCost)} />
+          <input className="liq-src" name="freightSrc" maxLength={200} defaultValue={q.freightSrc ?? ""} aria-label={`${srcLabel}: ${t("envío", "shipping")}`} placeholder={t("Cotización de DHL, transportador…", "DHL quote, carrier…")} />
+
+          <label htmlFor="lq-transitDays" className="liq-name">{t("Días de transporte", "Transit days")}<small>{t("cuántos días viaja la mercancía", "how many days the goods travel")}</small></label>
+          <input id="lq-transitDays" className="liq-val" name="transitDays" type="number" step="1" min="0" max="365" defaultValue={q.transitDays ?? ""} />
+          <span className="liq-src src">{t("días · no es un costo", "days · not a cost")}</span>
+
+          {COST_LINES.flatMap((c, n) => [
+            <label key={`${c.k}-l`} htmlFor={`lq-${c.name}`} className="liq-name">{t(c.es, c.en)}<small>{t(c.hintEs, c.hintEn)}, {t("en USD", "in USD")}</small></label>,
+            <input key={`${c.k}-v`} id={`lq-${c.name}`} className="liq-val" name={c.name} type="number" step="0.01" min="0" defaultValue={Math.max(0, det[c.k])} />,
+            ...(n === 0 ? [
+              <div key="osrc" className="liq-src liq-span">
+                <input name="otherSrc" maxLength={200} defaultValue={q.otherSrc ?? ""} aria-label={`${srcLabel}: ${t("impuestos, aduana, empaque, giro y otros", "taxes, customs, packing, bank wire and other")}`} placeholder={t("Agencia de aduana, banco…", "Customs broker, bank…")} />
+                <small>{t("Una sola respuesta para impuestos, aduana, empaque, giro y otros.", "One answer for taxes, customs, packing, bank wire and other.")}</small>
+              </div>,
+            ] : []),
+          ])}
+
+          <label htmlFor="lq-creditAmount" className="liq-name minus">{t("Crédito a favor", "Credit in our favor")}<small>{t("saldo a favor con el proveedor o el transportador, en USD: se resta", "balance in our favor with the supplier or the carrier, in USD: subtracted")}</small></label>
+          <input id="lq-creditAmount" className="liq-val" name="creditAmount" type="number" step="0.01" min="0" defaultValue={det.credit} />
+          <input className="liq-src" name="creditSrc" maxLength={200} defaultValue={q.creditSrc ?? ""} aria-label={`${srcLabel}: ${t("crédito a favor", "credit in our favor")}`} placeholder={t("Nota crédito, saldo con el transportador…", "Credit note, balance with the carrier…")} />
+        </div>
+        <CostTotal lang={user.lang} sale={B.sale} saved={{ supplier: cur.supplier, freight: cur.freight, other: otherGross }} note={q.changeNote} askAlways={q.rev > 0} />
+        <div className="liq-foot">
+          <button type="submit">{t("Guardar costos", "Save costs")}</button>
+          <span className="src">{t("Al guardar, SOLU recalcula la Eságara de la cotización.", "On save, SOLU recalculates the quote's Eságara.")}</span>
+        </div>
+      </form>
+    );
     return (
       <section className="jblock">
         <div className="jbh"><b>ECONOMICS</b><span className="grow" />
-          {editable && draft && (
-            <QA label={t("Editar costos", "Edit costs")} wide right popCls="liq">
-              <form action={saveCosts.bind(null, q.id)} className="qa-form">
-                <b>{t("Liquidación de costos", "Cost settlement")}</b>
-                <span className="src">{t("Llena lo que aplique, en este orden. Lo que no aplique se deja en 0.", "Fill in what applies, in this order. Leave at 0 what doesn't.")}</span>
-
-                <div className="liq-step">
-                  <b>1 · {t("Producto", "Product")} <small>{t("lo que cobra el proveedor", "what the supplier charges")}</small></b>
-                  <CostFxFields lang={user.lang} currency={q.costCurrency} rate={q.fxRate ? Number(q.fxRate) : null} source={q.fxSource} />
-                  <div className="qa-row">
-                    <label>{t("Costo del producto", "Product cost")}{foreignCost ? ` (${q.costCurrency})` : ""}<input name="supplierCost" type="number" step="0.01" min="0" defaultValue={Number(q.supplierCost)} /></label>
-                    <label>{t("¿De dónde sale? (proforma, correo)", "Where is it from? (proforma, email)")}<input name="supplierSrc" maxLength={200} defaultValue={q.supplierSrc ?? ""} placeholder="Proforma…" /></label>
-                  </div>
-                </div>
-
-                <div className="liq-step">
-                  <b>2 · {t("Envío", "Shipping")} <small>{t("transporte hasta el cliente, en USD", "transport to the customer, in USD")}</small></b>
-                  <div className="qa-row">
-                    <label>{t("Costo del transporte USD", "Transport cost USD")}<input name="freightCost" type="number" step="0.01" min="0" defaultValue={Number(q.freightCost)} /></label>
-                    <label>{t("Días de transporte", "Transit days")}<input name="transitDays" type="number" step="1" min="0" max="365" defaultValue={q.transitDays ?? ""} /></label>
-                  </div>
-                  <label>{t("¿De dónde sale? (cotización DHL, transportador)", "Where is it from? (DHL quote, carrier)")}<input name="freightSrc" maxLength={200} defaultValue={q.freightSrc ?? ""} /></label>
-                </div>
-
-                <div className="liq-step">
-                  <b>3 · {t("Impuestos, aduana, empaque y giro", "Taxes, customs, packing and bank wire")} <small>USD</small></b>
-                  {COST_LINES.map((c) => (
-                    <label key={c.k} className="liq-line">
-                      <span>{t(c.es, c.en)}<small>{t(c.hintEs, c.hintEn)}</small></span>
-                      <input name={c.name} type="number" step="0.01" min="0" defaultValue={Math.max(0, det[c.k])} />
-                    </label>
-                  ))}
-                  <label>{t("¿De dónde salen estos valores?", "Where are these amounts from?")}<input name="otherSrc" maxLength={200} defaultValue={q.otherSrc ?? ""} placeholder={t("Ej.: agencia de aduana, banco", "E.g.: customs broker, bank")} /></label>
-                </div>
-
-                <div className="liq-step">
-                  <b>4 · {t("Crédito a favor", "Credit in our favor")} <small>{t("saldo a favor con el proveedor o el transportador: se resta del costo", "balance in our favor with the supplier or the carrier: subtracted from the cost")}</small></b>
-                  <div className="qa-row">
-                    <label>{t("Valor USD (se resta)", "Amount USD (subtracted)")}<input name="creditAmount" type="number" step="0.01" min="0" defaultValue={det.credit} /></label>
-                    <label>{t("¿De dónde sale? (nota crédito, saldo)", "Where is it from? (credit note, balance)")}<input name="creditSrc" maxLength={200} defaultValue={q.creditSrc ?? ""} /></label>
-                  </div>
-                </div>
-
-                <div className="liq-step">
-                  <b>{t("Hábitos de pago del cliente", "Customer payment habits")} <small>{t("SOLU lo trae solo; no se escribe", "SOLU brings it; nothing to type")}</small></b>
-                  <p className="liq-info">
-                    {pay
-                      ? <>{t(`Plazo pactado: ${pay.contractualDays} días.`, `Agreed terms: ${pay.contractualDays} days.`)} {pay.expectedDays != null ? t(`Suele pagar a los ${pay.expectedDays} días (${pay.n} factura(s) cobrada(s)).`, `Usually pays in ${pay.expectedDays} days (${pay.n} collected invoice(s)).`) : t("Todavía no hay facturas cobradas para saber cómo paga.", "No collected invoices yet to know how they pay.")}</>
-                      : t("Sin datos de pago de este cliente.", "No payment data for this customer.")}
-                    {!fin.rateMissing && finSale > 0 && <> {t(`Financiar esos ${fin.days} días cuesta ${money(fin.cost)}.`, `Financing those ${fin.days} days costs ${money(fin.cost)}.`)}</>}
-                  </p>
-                </div>
-
-                <CostTotal lang={user.lang} sale={B.sale} />
-                <label>{t("Si algún costo bajó, ¿por qué?", "If a cost went down, why?")}<input name="changeNote" maxLength={300} defaultValue={q.changeNote ?? ""} placeholder={t("Ej.: nueva proforma", "E.g.: new proforma")} /></label>
-                <button type="submit">{t("Guardar costos", "Save costs")}</button>
-              </form>
-            </QA>
-          )}
         </div>
 
         <div className="qv-econ">
@@ -333,12 +322,15 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
             <span className="src">{t(`Umbral de Eságara · política v${policy.version}. Por debajo se presenta solo con una excepción aprobada.`, `Eságara threshold · policy v${policy.version}. Below it, it's presented only with an approved exception.`)}{policy.floorPct < policy.threshold && ` ${t(`Con la excepción aprobada, esta versión se cubre hasta ${i.pct2(policy.floorPct)}.`, `With the approved exception, this version is covered down to ${i.pct2(policy.floorPct)}.`)}`}</span>
           </div>
         </div>
+        {canSheet && <Sheet />}
         <PayLine />
         <FinLine />
         {B.econAlert && !draft && <p className="qv-alert">{t("Los costos de hoy dejan la Eságara por debajo del umbral. Lo presentado no cambia; revisa con el proveedor o crea una revisión.", "Today's costs leave Eságara below the threshold. What was presented doesn't change; check with the supplier or create a revision.")}</p>}
         <ExceptionCard quoteId={q.id} i={i} user={user} editable={editable} draft={draft} gate={gate} threshold={policy.threshold} exception={policy.exception} outside={policy.outside} />
 
-        <div className="tscroll" style={{ marginTop: 14 }}>
+        {showTable && canSheet && <p className="small" style={{ marginTop: 14 }}><b>{t("Comparación con las versiones anteriores", "Comparison with earlier versions")}</b></p>}
+        {showTable && (
+        <div className="tscroll" style={{ marginTop: canSheet ? 4 : 14 }}>
           <table className="qv-cost">
             <thead>
               <tr>
@@ -379,6 +371,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
             </tbody>
           </table>
         </div>
+        )}
         <p className="src" style={{ marginTop: 6 }}>{t(`La Eságara es tan firme como su costo menos firme: ${COST_STATUS[weak].es.toLowerCase()}. La financiación se muestra aparte y no entra en el umbral.`, `Eságara is only as firm as its least firm cost: ${COST_STATUS[weak].en.toLowerCase()}. Financing is shown separately and isn't part of the threshold.`)}</p>
         {why && <p className="qv-why"><b>{t("Por qué cambió", "Why it changed")}:</b> {why}</p>}
         {!foreignCost ? (
@@ -809,7 +802,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
               </tbody>
             </table>
           </div>
-          <p className="small" style={{ marginTop: 6 }}>{t("Motivo", "Reason")}: {q.changeNote ? q.changeNote : <span className="attn-t">{t("sin escribir — anótalo en «Editar costos» para que quede con la versión", "not written — note it in “Edit costs” so it stays with the version")}</span>}</p>
+          <p className="small" style={{ marginTop: 6 }}>{t("Motivo", "Reason")}: {q.changeNote ? q.changeNote : <span className="attn-t">{t("sin escribir — anótalo en «Liquidación de costos», debajo del total, para que quede con la versión", "not written — note it in “Cost settlement”, under the total, so it stays with the version")}</span>}</p>
         </>
       )}
     </section>
