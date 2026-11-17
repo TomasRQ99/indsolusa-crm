@@ -36,6 +36,20 @@ export type ShellProps = {
 
 type Side = "" | "expanded" | "collapsed";
 
+// The route of an order, as the documents people handle, in the order they happen. Shown in Comercial and
+// Operaciones so the process itself is the menu (learned from the earlier SOLU). Each station is an existing list.
+const RAIL = [
+  { href: "/deals", es: "Necesidades", en: "Needs" },
+  { href: "/localizar", es: "Buscar proveedor", en: "Find supplier" },
+  { href: "/cotizaciones", es: "Cotizaciones", en: "Quotes" },
+  { href: "/compras", es: "Órdenes de compra", en: "Purchase orders" },
+  { href: "/logistica", es: "Envíos", en: "Shipments" },
+  { href: "/operaciones/despachos", es: "Despachos", en: "Dispatches" },
+  { href: "/operaciones/remisiones", es: "Remisiones", en: "Delivery notes" },
+  { href: "/operaciones/por-facturar", es: "Por facturar", en: "To invoice" },
+  { href: "/administracion/cobrar", es: "Cobros", en: "Collections" },
+];
+
 export function ShellClient({ lang, guideOn, user, modules: baseModules, children }: ShellProps) {
   const [att, setAtt] = useState<{ counters: Partial<Record<ModuleKey, Counter>>; alerts: Alert[] }>({ counters: {}, alerts: [] });
   const path = usePathname() ?? "/";
@@ -350,6 +364,15 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
                     {tab.label}
                   </Link>
                 ))}
+              </nav>
+            )}
+            {(current.key === "comercial" || current.key === "operaciones") && (
+              <nav className="rail" aria-label={t("La ruta de un pedido", "The route of an order")}>
+                <span className="rail-t">{t("Ruta del pedido", "Order route")}</span>
+                {RAIL.map((s, n) => {
+                  const on = path === s.href || path.startsWith(s.href + "/");
+                  return <Link key={s.href} href={s.href} className={on ? "on" : undefined} aria-current={on ? "step" : undefined}><i>{n + 1}</i>{t(s.es, s.en)}</Link>;
+                })}
               </nav>
             )}
           </div>
