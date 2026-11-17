@@ -1696,6 +1696,11 @@ button.linkish { background: none; border: 0; padding: 0; color: var(--brand); f
 .liq-wide { grid-column: 1 / -1; background: var(--bg, #f6f8fb); border-radius: 8px; padding: 10px; }
 .liq-wide .cfx label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
 .liq-end { display: flex; flex-direction: column; gap: 10px; }
+.liq-grid.two { grid-template-columns: minmax(180px, 1fr) 160px; max-width: 560px; }
+.liq-grid.two .liq-wide.plain { background: none; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
+.liq-grid.two .liq-wide.plain input { width: 100%; }
+.liq-sheet.in-form { margin-top: 4px; }
+.liq-sheet.in-form .liq-end { max-width: 560px; }
 .liq-total { display: flex; flex-direction: column; gap: 4px; background: var(--brand-soft); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
 .liq-total > div { display: flex; justify-content: space-between; gap: 10px; }
 .liq-total > div.big { font-size: 15px; border-top: 1px solid var(--line); padding-top: 6px; margin-top: 2px; }
@@ -2382,7 +2387,18 @@ details.card[open] > summary:not(.small) { font-size: 14px; font-weight: 600; ma
 @media (max-width: 599px) { td.vz-col, th.vz-col { display: none; } .vz-meter-row { grid-template-columns: 1fr; gap: 4px; } }
 /* ───────────── Glossary bubbles (components/shell/GlossaryLayer.tsx) ─────────────
    Terms are underlined with a CSS highlight (the page is not modified) and carry a small "i" bubble. */
-::highlight(gl-term) { text-decoration: underline dotted; text-decoration-color: var(--brand); text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+::highlight(gl-term) { text-decoration: underline dotted; text-decoration-color: var(--brand-line, var(--brand)); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+/* First day in SOLU (Mi Día) */
+.first-day { border: 1px solid var(--brand-line, var(--line)); border-left: 4px solid var(--brand); background: var(--brand-soft); border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 10px; }
+.fd-head { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.fd-head > div { display: flex; flex-direction: column; gap: 2px; flex: 1 1 380px; }
+.fd-head b { font-size: 16px; }
+.fd-head span, .fd-list span, .fd-tip { font-size: 13px; color: var(--ink-2); }
+.fd-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px; }
+.fd-list li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.fd-list li > div { display: flex; flex-direction: column; gap: 1px; }
+.fd-list .fd-n { width: 28px; height: 28px; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 700; font-size: 13px; display: grid; place-items: center; }
+.fd-tip { margin: 0; }
 .gl-layer { position: fixed; inset: 0; z-index: 43; pointer-events: none; }
 .gl-b { position: fixed; pointer-events: auto; width: 13px; height: 13px; min-height: 0; padding: 0; border-radius: 50%; border: 1px solid var(--brand-line); background: var(--brand-soft); color: var(--brand-strong); font: 700 9px/11px Georgia, "Times New Roman", serif; font-style: italic; text-align: center; cursor: pointer; opacity: .92; box-shadow: 0 0 0 1.5px var(--surface, #fff); }
 .gl-b:hover, .gl-b:focus-visible { background: var(--brand); border-color: var(--brand); color: #fff; opacity: 1; transform: scale(1.25); }

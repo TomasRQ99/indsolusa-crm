@@ -336,6 +336,31 @@ export const GLOSSARY: GlossTerm[] = [
     id: "ecsa", area: "general", name: { es: "ECSA", en: "ECSA" }, forms: ["ECSA"], cs: true,
     def: { es: "La forma de trabajar de Industry Solutions: Explorar (entender antes de proponer), Conectar (con quien vive el problema), Solucionar (cumplir lo prometido) y Acompañar (hasta que el cliente logra su resultado).", en: "Industry Solutions' way of working: Explore (understand before proposing), Connect (with whoever lives the problem), Solve (deliver what was promised) and Accompany (until the customer achieves their result)." },
   },
+  // Words SOLU keeps in English on Spanish screens (they are the words printed on the documents, or product names).
+  {
+    id: "quote-doc", area: "comercial", name: { es: "Quote (cotización, el documento)", en: "Quote (the document)" }, forms: ["Quote Nº", "Quote"], cs: true,
+    def: { es: "«Quote» es la palabra en inglés para cotización: así se llama el documento que recibe el cliente, y por eso su número aparece como «Quote Nº». En SOLU, Quote y cotización son lo mismo.", en: "The quote is the document the customer receives; its number shows as “Quote Nº”." },
+  },
+  {
+    id: "po-word", area: "general", name: { es: "PO (orden de compra)", en: "PO (purchase order)" }, forms: ["PO"], cs: true,
+    def: { es: "«PO» es la sigla en inglés de orden de compra (Purchase Order); en español se dice OC. Sola, es la orden que nos manda el cliente. «Supplier PO» es la que nosotros le mandamos al proveedor.", en: "PO stands for purchase order. On its own it is the order the customer sends us. “Supplier PO” is the one we send the supplier." },
+  },
+  {
+    id: "lead-time", area: "comercial", name: { es: "Lead Time (tiempo de entrega)", en: "Lead time" }, forms: ["Lead Time", "Lead time"], cs: true,
+    def: { es: "El tiempo de entrega: cuántos días pasan desde que el cliente manda su OC hasta que recibe. Se escribe en inglés porque así sale impreso en la cotización. SOLU lo calcula con los días que escribas; no se digita como texto.", en: "How many days pass from the customer's PO to delivery. SOLU calculates it from the days you enter." },
+  },
+  {
+    id: "incoterm", area: "comercial", name: { es: "Incoterm / Shipping Terms", en: "Incoterm / Shipping terms" }, forms: ["Incoterm", "Incoterms", "Shipping Terms"], cs: true,
+    def: { es: "La regla internacional que dice hasta dónde llevamos la mercancía y quién paga flete, seguro y aduana. Ejemplo: «DAP Bogotá» significa que la entregamos en Bogotá y el cliente paga los impuestos de importación. En la cotización aparece como «Shipping Terms».", en: "The international rule that says how far we carry the goods and who pays freight, insurance and customs. Example: “DAP Bogotá”. On the quote it shows as “Shipping Terms”." },
+  },
+  {
+    id: "insights", area: "general", name: { es: "Insights (hallazgos)", en: "Insights" }, forms: ["Insights"], cs: true,
+    def: { es: "Las gráficas de Gerencia que responden preguntas del negocio: si los clientes logran su resultado, si cumplimos las promesas, qué viene y dónde se pierde Eságara. «Insights» significa hallazgos.", en: "Management's charts that answer business questions: whether customers get their result, whether we keep promises, what is coming and where Eságara is lost." },
+  },
+  {
+    id: "forward", area: "general", name: { es: "Forward (lo que viene)", en: "Forward" }, forms: ["Forward"], cs: true,
+    def: { es: "«Forward» significa hacia adelante: la vista de lo que viene (decisiones, entregas y cobros esperados), no de lo que ya pasó.", en: "The view of what is coming (expected decisions, deliveries and collections), not of what already happened." },
+  },
   {
     id: "solu", area: "general", name: { es: "SOLU", en: "SOLU" }, forms: ["SOLU"], cs: true,
     def: { es: "Este sistema: Sistema Operativo de Logística de Urgencia. Recuerda lo que ya sabe, calcula lo que se puede calcular y te llama solo cuando hace falta tu criterio.", en: "This system: Sistema Operativo de Logística de Urgencia (urgent-logistics operating system). It remembers what it knows, calculates what can be calculated and calls you only when your judgment is needed." },

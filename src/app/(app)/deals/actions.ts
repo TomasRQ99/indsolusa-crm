@@ -9,6 +9,7 @@ import { optionalDate, optionalId, optionalText, parseForm, requiredText } from 
 import { refreshApp } from "@/lib/revalidate";
 import { nextCode, today } from "@/lib/domain";
 import { CAUSE_KEYS } from "@/lib/causes";
+import { otherTotal } from "@/lib/cost-lines";
 
 const stage = z.enum(["LEAD", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON", "LOST"]);
 const money = z.coerce.number().min(0).max(1e12);
@@ -224,13 +225,25 @@ export async function savePromise(id: string, fd: FormData) {
 /** Source: how we will get it (candidates, brand, origin) and the cost structure. */
 export async function saveSourcing(id: string, fd: FormData) {
   await editableDeal(id);
+  // Cost settlement sheet (same lines as the quote): the other costs are typed one by one; otherCosts is their total.
+  const parts = { tax: num(fd, "taxCost") ?? 0, customs: num(fd, "customsCost") ?? 0, packing: num(fd, "packingCost") ?? 0, wire: num(fd, "wireCost") ?? 0, misc: num(fd, "miscCost") ?? 0, credit: num(fd, "creditAmount") ?? 0 };
+  const creditSrc = txt(fd, "creditSrc", 200);
+  const sheet = fd.has("taxCost");
+  // A credit in our favor lowers the cost: it must say where it comes from.
+  if (sheet && parts.credit > 0 && !creditSrc) {
+    refreshApp();
+    redirect(`/deals/${id}?tab=source&err=credito-fuente`);
+  }
+  const days = num(fd, "transitDays");
   await db.deal.update({
     where: { id },
     data: {
       sourcingNote: txt(fd, "sourcingNote"),
       ...(num(fd, "supplierCost") !== undefined ? { supplierCost: num(fd, "supplierCost") } : {}),
       ...(num(fd, "freightCost") !== undefined ? { freightCost: num(fd, "freightCost") } : {}),
-      ...(num(fd, "otherCosts") !== undefined ? { otherCosts: num(fd, "otherCosts") } : {}),
+      ...(sheet
+        ? { otherCosts: otherTotal(parts), taxCost: parts.tax, customsCost: parts.customs, packingCost: parts.packing, wireCost: parts.wire, creditAmount: parts.credit, creditSrc: parts.credit > 0 ? creditSrc : null, transitDays: days === undefined ? null : Math.min(365, Math.round(days)) }
+        : num(fd, "otherCosts") !== undefined ? { otherCosts: num(fd, "otherCosts") } : {}),
     },
   });
   jback(id, fd, "source");

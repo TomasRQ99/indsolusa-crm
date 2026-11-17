@@ -144,7 +144,7 @@
    "id": "explorar",
    "m": "mercado",
    "t": "Explorar el mercado",
-   "path": "MERCADO → Explorar",
+   "path": "MERCADO → Explorar el mercado → Explorar",
    "why": "Organiza lo que sabemos de un mercado o una empresa: señales, preguntas abiertas, plantas y necesidades futuras.",
    "steps": [
     "Abre [[Explorar]] y entra a «Mercado lácteo colombiano» (ejemplo).",
@@ -158,7 +158,7 @@
    "id": "prospectos",
    "m": "mercado",
    "t": "Explorar prospectos (Apollo)",
-   "path": "MERCADO → Explorar prospectos (Gerencia, Dirección Comercial, Negociador Comercial, Mercadeo)",
+   "path": "MERCADO → Explorar el mercado → Explorar prospectos (Gerencia, Dirección Comercial, Negociador Comercial, Mercadeo)",
    "why": "Encuentra personas que SOLU todavía no conoce, por cargo y empresa, en la base de datos de Apollo. Buscar no cuesta; revelar a una persona usa 1 crédito de Apollo.",
    "steps": [
     "Abre [[Explorar prospectos]]. Si dice que Apollo aún no está conectado, Gerencia sigue los cinco pasos que aparecen ahí.",
@@ -176,7 +176,7 @@
    "id": "economia",
    "m": "mercado",
    "t": "Economía (datos de Supersociedades)",
-   "path": "MERCADO → Economía",
+   "path": "MERCADO → Explorar el mercado → Economía",
    "why": "Explorador de las empresas reportadas a Supersociedades: ventas, crecimiento y señales por sector y tamaño.",
    "steps": [
     "Abre [[Economía]].",
@@ -189,7 +189,7 @@
    "id": "fuentes",
    "m": "mercado",
    "t": "Fuentes: cargar datos del mercado",
-   "path": "MERCADO → Fuentes (Gerencia, Director Comercial, Mercadeo)",
+   "path": "MERCADO → Explorar el mercado → Fuentes (Gerencia, Director Comercial, Mercadeo)",
    "why": "Carga archivos de datos (Excel o CSV) y revísalos antes de guardarlos.",
    "steps": [
     "Abre [[Fuentes]] y elige el archivo.",
@@ -202,7 +202,7 @@
    "id": "accounts",
    "m": "mercado",
    "t": "Clientes y Cliente 360",
-   "path": "MERCADO → Clientes → un cliente",
+   "path": "MERCADO → Clientes y proveedores → Clientes → un cliente",
    "why": "Todo sobre un cliente: Necesidades abiertas, historia, cómo paga y qué equipos tiene.",
    "steps": [
     "Abre \"Nuevo cliente\". En \"Documentos del cliente\" elige el RUT (PDF descargado de la DIAN) y, si quieres, el certificado de Cámara de Comercio.",
@@ -218,7 +218,7 @@
    "id": "contacts",
    "m": "mercado",
    "t": "Contactos",
-   "path": "MERCADO → Contactos",
+   "path": "MERCADO → Clientes y proveedores → Contactos",
    "why": "Las personas en cada cliente.",
    "steps": [
     "Completa nombre, cliente, correo y teléfono, y haz clic en [[Crear]].",
@@ -230,7 +230,7 @@
    "id": "relacion",
    "m": "mercado",
    "t": "Ficha de relación de una persona",
-   "path": "MERCADO → Contactos → una persona",
+   "path": "MERCADO → Clientes y proveedores → Contactos → una persona",
    "why": "Lo que importa para tratar bien a cada persona: notas, compromisos abiertos y mensajes preparados con trato cuidadoso.",
    "steps": [
     "Abre la ficha de Jorge Pérez (ejemplo).",
@@ -243,7 +243,7 @@
    "id": "suppliers",
    "m": "mercado",
    "t": "Proveedores y Proveedor 360",
-   "path": "MERCADO → Proveedores → un proveedor",
+   "path": "MERCADO → Clientes y proveedores → Proveedores → un proveedor",
    "why": "Cómo cumple realmente cada proveedor: plazos reales, lo cotizado frente a lo comprado.",
    "steps": [
     "Crea un proveedor con [[Crear proveedor]].",
@@ -256,7 +256,7 @@
    "id": "localizar",
    "m": "mercado",
    "t": "Localizar repuestos",
-   "path": "MERCADO → Localizar repuestos",
+   "path": "MERCADO → Repuestos y productos → Localizar repuestos",
    "why": "Encuentra quién tiene un repuesto por código, alias, marca o descripción, en español o inglés, o leyendo el texto de la foto de una placa.",
    "steps": [
     "Abre [[Localizar repuestos]], escribe un código o una descripción, por ejemplo «1FK7» o «rodamiento 23148», y haz clic en [[Buscar]].",
@@ -270,7 +270,7 @@
    "id": "rfq",
    "m": "mercado",
    "t": "Pedir cotización a varios proveedores",
-   "path": "MERCADO → Localizar repuestos → un repuesto → Pedir precio a proveedor",
+   "path": "MERCADO → Repuestos y productos → Localizar repuestos → un repuesto → Pedir precio a proveedor",
    "why": "Una sola solicitud a varios proveedores desde sales@, en lugar de un correo por proveedor.",
    "steps": [
     "Abre [[Localizar repuestos]], busca el repuesto y ábrelo.",
@@ -284,7 +284,7 @@
    "id": "productos",
    "m": "mercado",
    "t": "Productos y Producto 360",
-   "path": "MERCADO → Productos → un código",
+   "path": "MERCADO → Repuestos y productos → Productos → un código",
    "why": "Lo que sabemos de un producto, por código: alias, empaque, repuestos compatibles y especificaciones, con la fuente de cada dato.",
    "steps": [
     "Abre [[Productos]] y haz clic en un código.",
@@ -355,10 +355,10 @@
    "why": "Registra exactamente qué necesita el cliente y de dónde vendrá, antes de cotizar.",
    "steps": [
     "Pestaña [[Necesidad]]: describe la necesidad y haz clic en [[Guardar necesidad]].",
-    "Pestaña [[Fuente]]: proveedor, costo y plazo, y [[Guardar fuente]].",
+    "Pestaña [[Fuente]]: escribe de dónde lo vamos a conseguir y, en la hoja «Liquidación de costos», la primera cuenta de lo que cuesta traerlo: producto, envío, impuestos, aduana, empaque, giro y crédito a favor, en USD. Lo que no sepas todavía se deja en 0. Haz clic en [[Guardar fuente]].",
     "Anota en el registro de búsqueda las cotizaciones de proveedores y por qué elegiste uno."
    ],
-   "expect": "La Eságara calculada aparece debajo de la fuente."
+   "expect": "La Eságara calculada aparece debajo de la fuente, y el recuadro azul muestra el costo total mientras escribes. Al preparar la cotización, la hoja pasa completa y allá se afina (moneda del proveedor y de dónde sale cada valor)."
   },
   {
    "id": "quote",
@@ -1867,7 +1867,8 @@
    "path": "Barra superior · barra de búsqueda",
    "why": "Escribe lo que necesitas hacer y SOLU te lleva a donde empieza y te muestra los pasos de esta guía sobre la pantalla real, marcando dónde hacer clic.",
    "steps": [
-    "Haz clic en la barra de búsqueda sin escribir nada: aparece el trabajo de todos los días, cada uno con su botón [[Guíame]].",
+    "Si es tu primer día: en MI DÍA, el recuadro «¿Primera vez en SOLU?» tiene cuatro cosas para probar, cada una con su botón [[Guíame]]. Se quita con [[Ya conozco SOLU: ocultar]].",
+    "Para todo lo demás, haz clic en [[¿Cómo hago…?]] (arriba) o en la barra de búsqueda sin escribir nada: aparece el trabajo de todos los días, cada uno con su botón [[Guíame]].",
     "Escribe «hacer factura» (o «make invoice»). En la primera fila haz clic en [[Desde el inicio · 8 etapas]]: SOLU abre el tablero de Necesidades con la guía en la esquina.",
     "Sigue los pasos con [[Siguiente paso]]. El anillo azul con número marca el botón o la pestaña que nombra el paso.",
     "Si el paso está en otra pantalla, sigue la línea punteada o usa el botón «Llévame a…» de la guía.",
@@ -1924,13 +1925,13 @@
    "path": "En todas las pantallas · menú de tu nombre → Glosario de términos",
    "why": "Cada término de SOLU (Necesidad, Eságara, OC, Remisión, Cupo, Conciliar…) lleva un globo «i» que explica qué significa en esa pantalla y qué significa en general.",
    "steps": [
-    "Abre cualquier pantalla: los términos se ven con un subrayado punteado azul y un globo «i» encima.",
+    "Abre cualquier pantalla: los términos se ven con un subrayado de puntos. Pasa el cursor sobre uno: aparece un globo «i» junto a la palabra.",
     "Haz clic en el globo, o en la palabra subrayada cuando es texto normal. Lee «En esta pantalla» y «En general».",
     "Ciérralo con la X, con Esc o haciendo clic fuera.",
     "Para ver todos los términos: arriba a la derecha, abre el menú de tu nombre y haz clic en [[Glosario de términos]].",
     "Para quitar los globos: en la página Glosario, [[Ocultar los globos en las pantallas]]. Se vuelven a mostrar ahí mismo con [[Mostrar los globos en las pantallas]]."
    ],
-   "expect": "El mismo término explica cosas distintas según dónde estés: «Necesidad» en el título de la primera columna del tablero es la etapa; en Mercado es cuándo una señal se vuelve Necesidad. Hay un globo por término en cada bloque de la pantalla, no en cada mención. Ocultarlos vale para ese navegador, no para la persona."
+   "expect": "El mismo término explica cosas distintas según dónde estés: «Necesidad» en el título de la primera columna del tablero es la etapa; en Mercado es cuándo una señal se vuelve Necesidad. Hay un globo por término en cada bloque de la pantalla, no en cada mención. Ocultarlos vale para ese navegador, no para la persona. En un teléfono o una tableta, donde no hay cursor, los globos «i» se ven siempre."
   }
  ]
 }

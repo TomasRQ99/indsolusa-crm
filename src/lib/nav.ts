@@ -23,6 +23,10 @@ export const NAV_GROUPS = {
   yo: { es: "Mi desarrollo", en: "My development" },
   miequipo: { es: "Mi equipo", en: "My team" },
   organizacion: { es: "Organización", en: "Organisation" },
+  // Mercado: who we could serve, who we already know, what we sell
+  explorarm: { es: "Explorar el mercado", en: "Explore the market" },
+  relaciones: { es: "Clientes y proveedores", en: "Customers and suppliers" },
+  catalogo: { es: "Repuestos y productos", en: "Parts and products" },
   // Operaciones: the order things happen in
   comprar: { es: "Comprar", en: "Buy" },
   mover: { es: "Mover y entregar", en: "Move and deliver" },
@@ -47,15 +51,15 @@ export const MODULES: NavModule[] = [
   {
     key: "mercado", es: "MERCADO", en: "MARKET", match: ["/mercado", "/accounts", "/contacts", "/suppliers", "/localizar", "/productos"],
     tabs: [
-      { href: "/mercado", es: "Explorar", en: "Explore" },
-      { href: "/mercado/prospectos", es: "Explorar prospectos", en: "Explore prospects", roles: ["GERENCIA", "DIRECTOR_COMERCIAL", "NEGOCIADOR_COMERCIAL", "MARKETING"] },
-      { href: "/mercado/economia", es: "Economía", en: "Economy" },
-      { href: "/mercado/fuentes", es: "Fuentes", en: "Sources", roles: ["GERENCIA", "DIRECTOR_COMERCIAL", "MARKETING"] },
-      { href: "/accounts", es: "Clientes", en: "Customers" },
-      { href: "/contacts", es: "Contactos", en: "Contacts" },
-      { href: "/suppliers", es: "Proveedores", en: "Suppliers" },
-      { href: "/localizar", es: "Localizar repuestos", en: "Find parts" },
-      { href: "/productos", es: "Productos", en: "Products" },
+      { href: "/mercado", es: "Explorar", en: "Explore", group: "explorarm" },
+      { href: "/mercado/prospectos", es: "Explorar prospectos", en: "Explore prospects", roles: ["GERENCIA", "DIRECTOR_COMERCIAL", "NEGOCIADOR_COMERCIAL", "MARKETING"], group: "explorarm" },
+      { href: "/mercado/economia", es: "Economía", en: "Economy", group: "explorarm" },
+      { href: "/mercado/fuentes", es: "Fuentes", en: "Sources", roles: ["GERENCIA", "DIRECTOR_COMERCIAL", "MARKETING"], group: "explorarm" },
+      { href: "/accounts", es: "Clientes", en: "Customers", group: "relaciones" },
+      { href: "/contacts", es: "Contactos", en: "Contacts", group: "relaciones" },
+      { href: "/suppliers", es: "Proveedores", en: "Suppliers", group: "relaciones" },
+      { href: "/localizar", es: "Localizar repuestos", en: "Find parts", group: "catalogo" },
+      { href: "/productos", es: "Productos", en: "Products", group: "catalogo" },
     ],
   },
   {

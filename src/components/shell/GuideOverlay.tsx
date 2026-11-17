@@ -1,5 +1,6 @@
 "use client";
 
+import enLabels from "@/lib/guide-labels-en.json";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Guide } from "@/lib/guide";
@@ -23,6 +24,7 @@ export function startGuide(id: string, route: boolean) {
 type Saved = { guide: Guide; si: number; pi: number; min: boolean; caseId?: string | null };
 type Ring = { key: string; x: number; y: number; w: number; h: number; kind: "step" | "way" | "see"; n?: number };
 const KEY = "solu.guide";
+const EN_LABEL = enLabels as Record<string, string>;
 
 const plain = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9ñ]+/g, " ").trim();
 /** What a step names: its buttons ([[Button]]) and anything it quotes ("Nuevo Journey"). */
@@ -31,13 +33,16 @@ const labelsOf = (step: string) => [...[...step.matchAll(/\[\[(.+?)\]\]/g)].map(
 const insideJourney = (p: string) => /^\/(deals|cotizaciones|po|compras|logistica)\/[^/]+/.test(p);
 const samePage = (href: string, p: string) => href.split(/[?#]/)[0] === p;
 
+/** With SOLU in English, the button a step names in Spanish is shown and looked for with its English text. */
+const inLang = (label: string, lang: "ES" | "EN") => (lang === "EN" ? EN_LABEL[plain(label)] ?? label : label);
+
 /** A name in a blue box works as a link: clicking it takes the person to that thing (it never presses a button for them). */
-function StepText({ text, onPick }: { text: string; onPick?: (label: string) => void }) {
+function StepText({ text, onPick, lang = "ES" }: { text: string; onPick?: (label: string) => void; lang?: "ES" | "EN" }) {
   const parts = text.split(/\[\[(.+?)\]\]/g);
   return <>{parts.map((p, k) => (k % 2
     ? onPick
-      ? <span className="g-ui go" key={k} role="link" tabIndex={0} onClick={(e) => { e.stopPropagation(); e.preventDefault(); onPick(p); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); onPick(p); } }}>{p}</span>
-      : <span className="g-ui" key={k}>{p}</span>
+      ? <span className="g-ui go" key={k} role="link" tabIndex={0} onClick={(e) => { e.stopPropagation(); e.preventDefault(); onPick(p); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); onPick(p); } }}>{inLang(p, lang)}</span>
+      : <span className="g-ui" key={k}>{inLang(p, lang)}</span>
     : <span key={k}>{p}</span>))}</>;
 }
 
@@ -156,7 +161,7 @@ export function GuideOverlay({ lang, path }: { lang: "ES" | "EN"; path: string }
     if (!s || !stage || s.min) { setRings([]); setMissing(false); setHints([]); return; }
     const es = lang === "ES";
     // On another screen the step's buttons are not there yet: only the way is marked.
-    const want = step && here ? labelsOf(step).map((l) => ({ raw: l, p: plain(l) })).filter((l) => l.p) : [];
+    const want = step && here ? labelsOf(step).map((l) => ({ raw: inLang(l, lang), p: plain(inLang(l, lang)) })).filter((l) => l.p) : [];
     const way = here ? [] : stage.way.map(plain).filter(Boolean);
     const stepKey = `${s.guide.id}/${s.si}/${s.pi}/${path}`;
 
@@ -290,7 +295,7 @@ export function GuideOverlay({ lang, path }: { lang: "ES" | "EN"; path: string }
     if (!here) { router.push(cs ? cs.href : stage.needsJourney ? "/deals" : stage.href ?? "/deals"); return; }
     const root = document.querySelector(".app");
     if (!root) return;
-    const p = plain(raw);
+    const p = plain(inLang(raw, lang));
     // After this click is over: the page closes its pop-up sections on any click outside them, this one included.
     window.setTimeout(() => {
     const cands = Array.from(root.querySelectorAll<HTMLElement>("a, button, summary, [role=tab], input[type=submit]")).filter((el) => !el.closest(".guide") && isNamed(nameOf(el), p));
@@ -422,16 +427,16 @@ export function GuideOverlay({ lang, path }: { lang: "ES" | "EN"; path: string }
               <li key={k} className={k === pi ? "on" : k < pi ? "done" : undefined}>
                 <button type="button" onClick={() => go(si, k)} aria-current={k === pi ? "step" : undefined}>
                   <i>{k < pi ? "✓" : k + 1}</i>
-                  <span><StepText text={st} onPick={(l) => pick(k, l)} /></span>
+                  <span><StepText text={st} lang={lang} onPick={(l) => pick(k, l)} /></span>
                 </button>
               </li>
             ))}
           </ol>
           {hints.map((h) => <p key={h} className="g-why">{h}</p>)}
           {missing && hints.length === 0 && <p className="g-miss">{t("Ese botón no está en esta pantalla ahora. Lo más común: aparece solo cuando hay algo por hacer (por ejemplo, un pago por aprobar o un borrador abierto); está en otra pestaña de este caso; o lo usa otro rol. Si es tu caso, sigue con «Siguiente paso».", "That button isn't on this screen right now. Most often: it only shows when there is something to do (for example, a payment to approve or an open draft); it is on another tab of this case; or another role uses it. If so, continue with “Next step”.")}</p>}
-          {lang === "EN" && <p className="g-miss">The guide text is in Spanish for now, and buttons are only marked when the screen is in Spanish.</p>}
+          {lang === "EN" && <p className="g-miss">The steps are written in Spanish for now. The buttons they name are shown here, and marked on the screen, with their English names.</p>}
 
-          {lastStep && stage.expect && <p className="g-expect"><b>{t("Qué deberías ver", "What you should see")}</b><StepText text={stage.expect} /></p>}
+          {lastStep && stage.expect && <p className="g-expect"><b>{t("Qué deberías ver", "What you should see")}</b><StepText text={stage.expect} lang={lang} /></p>}
           {lastStep && stage.also.length > 0 && (
             <p className="g-also">{t("Los casos que ya llegaron aquí:", "Cases that already got here:")} {stage.also.map((a) => <button key={a.href} type="button" className="link" onClick={() => router.push(a.href)}>{a.label}</button>)}</p>
           )}

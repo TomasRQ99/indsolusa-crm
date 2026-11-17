@@ -1,7 +1,9 @@
 "use client";
 
-// Glossary bubbles. Every term of src/lib/glossary.ts found in the page gets a dotted underline and, once per
-// block, a small "i" bubble; a click opens what the term means on THIS screen and in general.
+// Glossary bubbles. Every term of src/lib/glossary.ts found in the page gets a dotted underline; a click on the
+// word opens what the term means on THIS screen and in general. With a mouse, the small "i" bubble only appears
+// on the word the pointer is over (2026-11-17: a bubble on every term was too noisy); on a touch screen, where
+// there is no pointer to hover with, the bubbles stay visible, once per block.
 // The page itself is never modified (React owns it): the underline is a CSS highlight over text ranges and the
 // bubbles live in a fixed layer on top, repositioned as the page scrolls or changes.
 
@@ -49,12 +51,17 @@ export function GlossaryLayer({ lang, path }: { lang: "es" | "en"; path: string 
   const [open, setOpen] = useState<Open | null>(null);
   const [off, setOff] = useState(false);
   const sig = useRef("");
+  // With a mouse: the one term under the pointer.
+  const [hot, setHot] = useState<Bubble | null>(null);
+  const canHover = useRef(true);
+  useEffect(() => { try { canHover.current = window.matchMedia("(hover: hover) and (pointer: fine)").matches; } catch { canHover.current = true; } }, []);
 
   /** Where the bubbles go: the first visible mention of each term in each block. */
   const place = useCallback(() => {
     const seen = new Map<Element, Set<string>>();
     const root = document.getElementById("contenido");
     const out: Bubble[] = [];
+    if (canHover.current) { if (sig.current !== "") { sig.current = ""; setBubbles([]); } return; }
     const top = 58, h = window.innerHeight, w = window.innerWidth;
     hits.current.forEach((hit, n) => {
       if (!hit.el.isConnected) return;
@@ -137,6 +144,36 @@ export function GlossaryLayer({ lang, path }: { lang: "es" | "en"; path: string 
     };
   }, [scan, place]);
 
+  // With a mouse: show the bubble of the word under the pointer, and keep it while the pointer goes to the bubble.
+  useEffect(() => {
+    let frame = 0;
+    const onMove = (e: MouseEvent) => {
+      if (!canHover.current) return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const target = e.target as Element | null;
+        if (target?.closest?.(".gl-b, .gl-pop")) return;
+        const x = e.clientX, y = e.clientY;
+        let next: Bubble | null = null;
+        const under = target ?? null;
+        if (under) {
+          for (let n = 0; n < hits.current.length && !next; n++) {
+            const hit = hits.current[n];
+            if (!hit.el.isConnected || !(hit.el === under || hit.el.contains(under) || under.contains(hit.el))) continue;
+            for (const r of hit.range.getClientRects()) {
+              if (x >= r.left - 3 && x <= r.right + 12 && y >= r.top - 12 && y <= r.bottom + 3) { next = { k: `${hit.term.id}-${n}`, x: Math.round(r.right - 4), y: Math.round(r.top - 9), n }; break; }
+            }
+          }
+        }
+        setHot((p) => (p?.k === next?.k && p?.x === next?.x && p?.y === next?.y ? p : next));
+      });
+    };
+    const clear = () => setHot(null);
+    document.addEventListener("mousemove", onMove);
+    window.addEventListener("scroll", clear, true);
+    return () => { cancelAnimationFrame(frame); document.removeEventListener("mousemove", onMove); window.removeEventListener("scroll", clear, true); };
+  }, []);
+
   // A click on the underlined word itself (when it is plain text, not a link or a button) opens it too.
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -163,7 +200,7 @@ export function GlossaryLayer({ lang, path }: { lang: "es" | "en"; path: string 
   const name = (x: GlossTerm) => (lang === "es" ? x.name.es : x.name.en);
   return (
     <div className="gl-layer">
-      {bubbles.map((b) => {
+      {(hot ? [hot] : bubbles).map((b) => {
         const hit = hits.current[b.n];
         if (!hit) return null;
         return (

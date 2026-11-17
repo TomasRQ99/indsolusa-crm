@@ -295,6 +295,14 @@ model Deal {
   supplierCost          Decimal      @default(0) @db.Decimal(14, 2)
   freightCost           Decimal      @default(0) @db.Decimal(14, 2)
   otherCosts            Decimal      @default(0) @db.Decimal(14, 2)
+  /// Cost settlement of the Need (same sheet as the quote): the parts of otherCosts, USD. otherCosts stays the total.
+  taxCost               Decimal      @default(0) @db.Decimal(14, 2)
+  customsCost           Decimal      @default(0) @db.Decimal(14, 2)
+  packingCost           Decimal      @default(0) @db.Decimal(14, 2)
+  wireCost              Decimal      @default(0) @db.Decimal(14, 2)
+  creditAmount          Decimal      @default(0) @db.Decimal(14, 2)
+  creditSrc             String?
+  transitDays           Int?
   nextMove              String?
   nextMoveDate          DateTime?
   waitingFor            String?

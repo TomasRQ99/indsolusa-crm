@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FirstDay } from "@/components/FirstDay";
 import { ValueKindSelect } from "@/components/ValueKindSelect";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
@@ -224,6 +225,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
 
   return (
     <div className="midia">
+      {user.guideOn !== false && <FirstDay lang={user.lang} name={first} />}
       <section className="greet">
         <div className="grow">
           <h1>{hello}, {first}.</h1>

@@ -39,6 +39,8 @@ import { prepareSpo } from "../../compras/actions";
 import { recordShipment } from "../../logistica/actions";
 import { forwardOf, fwdLabel } from "@/lib/logistics";
 import { lineAmount, linesTotal } from "@/lib/money";
+import { CostTotal } from "@/components/CostTotal";
+import { COST_LINES, costDetail } from "@/lib/cost-lines";
 import type { NeedContext } from "@/lib/need-handoff";
 import MarketContext from "@/components/MarketContext";
 
@@ -606,10 +608,29 @@ export default async function JourneyPage({
           <form action={saveSourcing.bind(null, deal.id)} className="stack jform">
             <H />
             <label>{t("Fuente: marca, proveedor candidato, origen, alternativas", "Source: brand, candidate supplier, origin, alternatives")}<textarea name="sourcingNote" rows={3} defaultValue={deal.sourcingNote ?? ""} placeholder={t("Ej.: Grundfos vía distribuidor en Miami; alternativa ProMinent desde Alemania", "E.g.: Grundfos via Miami distributor; alternative ProMinent from Germany")} /></label>
-            <div className="qa-row">
-              <label>{t("Costo proveedor USD", "Supplier cost USD")}<input name="supplierCost" type="number" min="0" step="0.01" defaultValue={Number(deal.supplierCost)} /></label>
-              <label>{t("Fletes USD", "Freight USD")}<input name="freightCost" type="number" min="0" step="0.01" defaultValue={Number(deal.freightCost)} /></label>
-              <label>{t("Otros USD (aranceles, bancos)", "Other USD (duties, bank)")}<input name="otherCosts" type="number" min="0" step="0.01" defaultValue={Number(deal.otherCosts)} /></label>
+            {sp.err === "credito-fuente" && <p className="note risk">{t("Escribiste un crédito a favor: di de dónde sale (nota crédito, saldo con el transportador). No se guardó nada todavía.", "You typed a credit in our favor: say where it comes from (credit note, balance with the carrier). Nothing was saved yet.")}</p>}
+            <div className="liq-sheet in-form" id="costos">
+              <div className="liq-head">
+                <b>{t("Liquidación de costos", "Cost settlement")}</b>
+                <span className="src">{t("La primera cuenta de lo que cuesta traerlo, en USD. Escribe cada costo en su fila; lo que no sepas todavía se deja en 0. Al preparar la cotización, esta hoja pasa completa y allá se afina (moneda del proveedor, de dónde sale cada valor).", "The first estimate of what it costs to bring it, in USD. Type each cost on its row; leave at 0 what you don't know yet. When the quote is prepared, this sheet carries over and is refined there (supplier currency, where each amount comes from).")}</span>
+              </div>
+              <div className="liq-grid two">
+                <span className="liq-th">{t("Concepto", "Item")}</span><span className="liq-th r">{t("Valor USD", "Amount USD")}</span>
+                <label htmlFor="dl-supplierCost" className="liq-name">{t("Producto", "Product")}<small>{t("lo que cobra el proveedor", "what the supplier charges")}</small></label>
+                <input id="dl-supplierCost" className="liq-val" name="supplierCost" type="number" min="0" step="0.01" defaultValue={Number(deal.supplierCost)} />
+                <label htmlFor="dl-freightCost" className="liq-name">{t("Envío", "Shipping")}<small>{t("transporte hasta el cliente", "transport to the customer")}</small></label>
+                <input id="dl-freightCost" className="liq-val" name="freightCost" type="number" min="0" step="0.01" defaultValue={Number(deal.freightCost)} />
+                <label htmlFor="dl-transitDays" className="liq-name">{t("Días de transporte", "Transit days")}<small>{t("cuántos días viaja la mercancía; no es un costo", "how many days the goods travel; not a cost")}</small></label>
+                <input id="dl-transitDays" className="liq-val" name="transitDays" type="number" min="0" max="365" step="1" defaultValue={deal.transitDays ?? ""} />
+                {COST_LINES.flatMap((c) => [
+                  <label key={`${c.k}-l`} htmlFor={`dl-${c.name}`} className="liq-name">{t(c.es, c.en)}<small>{t(c.hintEs, c.hintEn)}</small></label>,
+                  <input key={`${c.k}-v`} id={`dl-${c.name}`} className="liq-val" name={c.name} type="number" min="0" step="0.01" defaultValue={Math.max(0, costDetail(deal)[c.k])} />,
+                ])}
+                <label htmlFor="dl-creditAmount" className="liq-name minus">{t("Crédito a favor", "Credit in our favor")}<small>{t("saldo a favor con el proveedor o el transportador: se resta", "balance in our favor with the supplier or the carrier: subtracted")}</small></label>
+                <input id="dl-creditAmount" className="liq-val" name="creditAmount" type="number" min="0" step="0.01" defaultValue={Number(deal.creditAmount)} />
+                <label className="liq-wide plain">{t("¿De dónde sale el crédito a favor? (solo si escribiste uno)", "Where does the credit come from? (only if you typed one)")}<input name="creditSrc" maxLength={200} defaultValue={deal.creditSrc ?? ""} placeholder={t("Nota crédito, saldo con el transportador…", "Credit note, balance with the carrier…")} /></label>
+              </div>
+              <CostTotal lang={user.lang} sale={Number(deal.amount)} saved={{ supplier: 0, freight: 0, other: 0 }} note={null} askAlways={false} />
             </div>
             <button type="submit">{t("Guardar fuente", "Save source")}</button>
           </form>
