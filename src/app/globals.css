@@ -2426,14 +2426,14 @@ details.card[open] > summary:not(.small) { font-size: 14px; font-weight: 600; ma
 @media (max-width: 700px) { .gl-list > div { grid-template-columns: 1fr; } .gl-b { width: 16px; height: 16px; line-height: 14px; font-size: 10px; } }
 @media print { .gl-layer { display: none; } }
 /* ───────────── Order route (ShellClient RAIL): the process as a menu, in Comercial and Operaciones ───────────── */
-.rail { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px; padding: 8px 0 10px; font-size: 13px; }
-.rail .rail-t { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #5b6b7c); margin-right: 6px; }
-.rail a { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 5px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface, #fff); color: var(--ink, #14202e); text-decoration: none; white-space: nowrap; }
-.rail a + a { position: relative; margin-left: 12px; }
-.rail a + a::before { content: "›"; position: absolute; left: -12px; color: var(--muted, #5b6b7c); }
-.rail a i { font-style: normal; font-weight: 700; font-size: 11px; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; background: var(--mod-soft, var(--brand-soft)); color: var(--mod, var(--brand-strong)); }
-.rail a:hover { border-color: var(--brand); color: var(--brand-strong); }
-.rail a.on { background: var(--mod, var(--brand)); border-color: var(--mod, var(--brand)); color: #fff; font-weight: 600; }
-.rail a.on i { background: #fff; color: var(--mod, var(--brand-strong)); }
-@media (max-width: 700px) { .rail { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; } .rail .rail-t { display: none; } }
-@media print { .rail { display: none; } }
+.oroute { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px; padding: 8px 0 10px; font-size: 13px; }
+.oroute .oroute-t { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #5b6b7c); margin-right: 6px; }
+.oroute a { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 5px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface, #fff); color: var(--ink, #14202e); text-decoration: none; white-space: nowrap; }
+.oroute a + a { position: relative; margin-left: 12px; }
+.oroute a + a::before { content: "›"; position: absolute; left: -12px; color: var(--muted, #5b6b7c); }
+.oroute a i { font-style: normal; font-weight: 700; font-size: 11px; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; background: var(--mod-soft, var(--brand-soft)); color: var(--mod, var(--brand-strong)); }
+.oroute a:hover { border-color: var(--brand); color: var(--brand-strong); }
+.oroute a.on { background: var(--mod, var(--brand)); border-color: var(--mod, var(--brand)); color: #fff; font-weight: 600; }
+.oroute a.on i { background: #fff; color: var(--mod, var(--brand-strong)); }
+@media (max-width: 700px) { .oroute { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; } .oroute .oroute-t { display: none; } }
+@media print { .oroute { display: none; } }

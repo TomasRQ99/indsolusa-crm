@@ -367,8 +367,8 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
               </nav>
             )}
             {(current.key === "comercial" || current.key === "operaciones") && (
-              <nav className="rail" aria-label={t("La ruta de un pedido", "The route of an order")}>
-                <span className="rail-t">{t("Ruta del pedido", "Order route")}</span>
+              <nav className="oroute" aria-label={t("La ruta de un pedido", "The route of an order")}>
+                <span className="oroute-t">{t("Ruta del pedido", "Order route")}</span>
                 {RAIL.map((s, n) => {
                   const on = path === s.href || path.startsWith(s.href + "/");
                   return <Link key={s.href} href={s.href} className={on ? "on" : undefined} aria-current={on ? "step" : undefined}><i>{n + 1}</i>{t(s.es, s.en)}</Link>;
