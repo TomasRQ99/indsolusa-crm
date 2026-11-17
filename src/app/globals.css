@@ -77,6 +77,9 @@ p { margin: 0; }
 
 .ask-btn { height: 36px; padding: 0 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); font-size: 13px; gap: 8px; flex: none; }
 .ask-btn svg { color: var(--ai); }
+.how-btn { height: 36px; padding: 0 12px; background: var(--brand-soft); color: var(--brand); border: 1px solid transparent; font-size: 13px; font-weight: 600; flex: none; }
+.how-btn:hover { border-color: var(--brand); }
+@media (max-width: 1100px) { .how-btn { display: none; } }
 .ask-btn:hover, .ask-btn.on { background: var(--ai-soft); border-color: #d9cdf0; }
 
 .bell-wrap { position: relative; }

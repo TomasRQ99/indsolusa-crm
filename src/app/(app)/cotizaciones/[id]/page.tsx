@@ -298,7 +298,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     );
     return (
       <section className="jblock">
-        <div className="jbh"><b>ECONOMICS</b><span className="grow" />
+        <div className="jbh"><b>{t("ECONOMÍA", "ECONOMICS")}</b><span className="grow" />
         </div>
 
         <div className="qv-econ">
@@ -570,7 +570,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const ReadyRail = () => (
     <aside className="jrail">
       <div>
-        <div className="jbh"><b>READY TO PRESENT</b><span className="grow" />{B.blocking.length === 0 ? <span className="sig ok">{t("Lista", "Ready")}</span> : <span className="sig attn">{t(`${B.blocking.length} pendiente(s)`, `${B.blocking.length} open`)}</span>}</div>
+        <div className="jbh"><b>{t("LISTA PARA PRESENTAR", "READY TO PRESENT")}</b><span className="grow" />{B.blocking.length === 0 ? <span className="sig ok">{t("Lista", "Ready")}</span> : <span className="sig attn">{t(`${B.blocking.length} pendiente(s)`, `${B.blocking.length} open`)}</span>}</div>
         <ul className="qv-checks">{B.ready.map((c, n) => <Check key={n} {...c} />)}</ul>
         <p className="src" style={{ marginTop: 6 }}><Link href={`/deals/${d.id}/alcance`}>{t("Técnico y alcance", "Technical & scope")}</Link>{scope && scope.state === "NOT_STARTED" ? ` · ${t("caso simple, nada que aclarar", "simple case, nothing to clarify")}` : ""}</p>
         {editable && B.blocking.length === 0 && (
@@ -583,7 +583,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
             <span className="src">{t("Crea la versión que ya no cambia y protege su economía. Descarga el PDF para enviarlo.", "Creates the version that no longer changes and protects its economics. Download the PDF to send it.")}</span>
           </form>
         )}
-        {B.blocking.length > 0 && <GuideWhy button="Presentar al cliente">{t(`«Presentar al cliente» aparece aquí, debajo de la lista READY TO PRESENT, cuando ningún punto tenga «!». Ahora hay ${B.blocking.length} pendiente(s): resuélvelos primero (cada uno dice qué hacer).`, `“Present to customer” shows here, under the READY TO PRESENT list, once no item has a “!”. There are ${B.blocking.length} open now: resolve them first (each one says what to do).`)}</GuideWhy>}
+        {B.blocking.length > 0 && <GuideWhy button="Presentar al cliente">{t(`«Presentar al cliente» aparece aquí, debajo de la lista LISTA PARA PRESENTAR, cuando ningún punto tenga «!». Ahora hay ${B.blocking.length} pendiente(s): resuélvelos primero (cada uno dice qué hacer).`, `“Present to customer” shows here, under the READY TO PRESENT list, once no item has a “!”. There are ${B.blocking.length} open now: resolve them first (each one says what to do).`)}</GuideWhy>}
         {B.blocking.length === 0 && !editable && <GuideWhy button="Presentar al cliente">{t("La lista está completa, pero solo el responsable de esta Necesidad (o Dirección) puede presentar la cotización.", "The list is complete, but only the owner of this Need (or management) can present the quote.")}</GuideWhy>}
       </div>
       <div>
@@ -762,7 +762,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
 
   const EconCompact = () => (
     <section className="jblock">
-      <div className="jbh"><b>ECONOMICS</b><span className="grow" />{B.econAlert ? <span className="sig risk">{t("Cruzó el umbral de la política", "Crossed the policy threshold")}</span> : <span className="sig ok">{t("Dentro de la política", "Within policy")}</span>}</div>
+      <div className="jbh"><b>{t("ECONOMÍA", "ECONOMICS")}</b><span className="grow" />{B.econAlert ? <span className="sig risk">{t("Cruzó el umbral de la política", "Crossed the policy threshold")}</span> : <span className="sig ok">{t("Dentro de la política", "Within policy")}</span>}</div>
       <div className={`qv-econ${q.status === "ACCEPTED" ? "" : " two"}`}>
         <div className="qv-box prot"><span className="k">{t("Protegida al presentar", "Protected at presenting")}</span><b className="tv">{money(Number(q.protEsagra ?? 0))}</b><span className="tsub">{i.pct(q.protSale ? (Number(q.protEsagra) / Number(q.protSale)) * 100 : null)}</span><span className="src">{t(`Política v${q.protPolicy ?? "—"} · ${i.day(q.presentedAt)}`, `Policy v${q.protPolicy ?? "—"} · ${i.day(q.presentedAt)}`)}</span></div>
         <div className={`qv-box cur${B.econAlert ? " alert" : ""}`}><span className="k">{t("Esperada hoy", "Expected today")}</span><b className="tv">{money(B.curEsagra)}</b><span className="tsub">{i.pct(B.curPct)}</span><span className="src">{B.econChanged ? t("Los costos cambiaron después de presentar.", "Costs changed after presenting.") : t("Sin cambios de costo.", "No cost changes.")}{q.protEsagra != null && Math.abs(B.curEsagra - Number(q.protEsagra)) > 0.5 && <> · Δ {money(B.curEsagra - Number(q.protEsagra))}</>}</span></div>
@@ -857,10 +857,11 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
         <div className="jbody">
           <div className="jmain">
             <DiffBlock />
+            {/* The order the team works in: what the customer gets, the products, then the cost settlement. */}
             <Solution />
+            <Lines />
             <Economics />
             <Scenarios />
-            <Lines />
             <Terms />
           </div>
           <ReadyRail />

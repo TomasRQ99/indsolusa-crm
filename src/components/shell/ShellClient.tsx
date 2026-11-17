@@ -271,6 +271,12 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
           <IconSearch />
         </button>
 
+        {/* A new person does not know the search bar also guides: one visible door to the everyday guides. */}
+        {guideOn && (
+          <button type="button" className="how-btn" onClick={() => { setBell(false); setAsk(false); setSq(""); openSearch(); setSugOpen(true); }} title={t("Elige qué necesitas hacer y SOLU te guía paso a paso en la pantalla", "Pick what you need to do and SOLU guides you step by step on the screen")}>
+            <span>{t("¿Cómo hago…?", "How do I…?")}</span>
+          </button>
+        )}
         <button type="button" className={`ask-btn${ask ? " on" : ""}`} onClick={() => { setBell(false); setAsk((v) => !v); }} aria-expanded={ask}>
           <IconSparkle />
           <span>{t("Pregúntale a SOLU", "Ask SOLU")}</span>

@@ -80,11 +80,12 @@
    "path": "MI DÍA → Mi Plan",
    "why": "Tu semana de trabajo planeado, y un archivo para pasarla a Outlook.",
    "steps": [
-    "Abre la pestaña [[Mi Plan]].",
-    "Haz clic en [[Enviar a mi Outlook]]. Se descarga un archivo .ics.",
-    "Abre el archivo. Outlook ofrece agregar los eventos."
+    "Abre la pestaña [[Mi Plan]]. En «Vale la pena reservar» están los bloques de trabajo que SOLU propone para tu semana.",
+    "Haz clic en el botón que empieza por [[Reservar los]] (dice cuántos bloques son) para ponerlos en tu agenda.",
+    "Para verlos en Outlook: si tu calendario ya está conectado, haz clic en [[Enviar a mi Outlook]]. Si no, haz clic en [[Descargar .ics]] y abre el archivo: Outlook ofrece agregar los eventos.",
+    "Para conectarlo de una vez, haz clic en [[Conectar Outlook]]."
    ],
-   "expect": "Los eventos en Outlook coinciden con los bloques de Mi Plan."
+   "expect": "Los eventos en Outlook coinciden con los bloques de Mi Plan. «Enviar a mi Outlook» solo aparece cuando tu calendario ya está conectado; mientras tanto ves «Conectar Outlook»."
   },
   {
    "id": "tasks",
@@ -258,25 +259,26 @@
    "path": "MERCADO → Localizar repuestos",
    "why": "Encuentra quién tiene un repuesto por código, alias, marca o descripción, en español o inglés, o leyendo el texto de la foto de una placa.",
    "steps": [
-    "Abre [[Localizar repuestos]] y escribe un código, por ejemplo «1FK7» o «rodamiento 23148».",
-    "O sube la foto de la placa: SOLU lee el texto y lo usa para buscar.",
-    "Revisa la evidencia de cada proveedor: ofertas guardadas, plazos reales y respuestas anteriores.",
-    "Para guardar la oferta de un proveedor, sube su PDF y revisa lo que SOLU leyó antes de guardar."
+    "Abre [[Localizar repuestos]], escribe un código o una descripción, por ejemplo «1FK7» o «rodamiento 23148», y haz clic en [[Buscar]].",
+    "O haz clic en [[Leer placa desde foto]]: SOLU lee el texto de la placa y lo usa para buscar.",
+    "Abre un resultado. En «OFERTAS DE PROVEEDORES» está la evidencia de cada proveedor: ofertas guardadas, plazos reales y respuestas anteriores.",
+    "Para guardar la oferta de un proveedor, vuelve a la lista, haz clic en [[Registrar cotización o proforma de proveedor]], sube su PDF y revisa lo que SOLU leyó antes de guardar."
    ],
-   "expect": "La lectura del texto de una foto es gratuita y funciona. La búsqueda por foto con IA está apagada hasta tener la llave de la API (ver «Todavía sin conectar»)."
+   "expect": "La lectura del texto de una foto es gratuita y funciona. La búsqueda por foto con IA está apagada hasta que la empresa conecte el servicio de IA."
   },
   {
    "id": "rfq",
    "m": "mercado",
    "t": "Pedir cotización a varios proveedores",
-   "path": "MERCADO → Localizar repuestos → Solicitar cotización",
+   "path": "MERCADO → Localizar repuestos → un repuesto → Pedir precio a proveedor",
    "why": "Una sola solicitud a varios proveedores desde sales@, en lugar de un correo por proveedor.",
    "steps": [
-    "En un resultado, haz clic en [[Solicitar cotización]].",
-    "Elige los proveedores y revisa «Qué le preguntamos»: cantidad, plazo y condiciones.",
-    "Envía. Sigue las respuestas en MI DÍA → Respuestas."
+    "Abre [[Localizar repuestos]], busca el repuesto y ábrelo.",
+    "En el repuesto, abre [[Pedir precio a proveedor]] y haz clic en [[Enviar correo a uno o varios proveedores]].",
+    "Revisa los cuatro bloques: «QUÉ PEDIMOS», «A QUIÉN» (marca los proveedores), «QUÉ LE PREGUNTAMOS» y «DETALLES».",
+    "Haz clic en [[Enviar solicitud]]. Sigue las respuestas en MI DÍA → Respuestas."
    ],
-   "expect": "La solicitud queda registrada y las respuestas llegan solas a Respuestas."
+   "expect": "Sale un correo por proveedor desde sales@. La solicitud queda registrada y las respuestas llegan solas a Respuestas. Si lo vas a pedir por teléfono o WhatsApp, usa «Solo crear pendiente» en lugar del correo."
   },
   {
    "id": "productos",
@@ -352,8 +354,8 @@
    "path": "Necesidad → Necesidad / Fuente",
    "why": "Registra exactamente qué necesita el cliente y de dónde vendrá, antes de cotizar.",
    "steps": [
-    "Pestaña Necesidad: describe la necesidad y haz clic en [[Guardar necesidad]].",
-    "Pestaña Fuente: proveedor, costo y plazo, y [[Guardar fuente]].",
+    "Pestaña [[Necesidad]]: describe la necesidad y haz clic en [[Guardar necesidad]].",
+    "Pestaña [[Fuente]]: proveedor, costo y plazo, y [[Guardar fuente]].",
     "Anota en el registro de búsqueda las cotizaciones de proveedores y por qué elegiste uno."
    ],
    "expect": "La Eságara calculada aparece debajo de la fuente."
@@ -365,10 +367,12 @@
    "path": "Necesidad → Cotización → Preparar cotización",
    "why": "Arma la solución, revisa la economía, define la promesa y presenta solo cuando esté completa.",
    "steps": [
-    "En la Necesidad, abre la pestaña [[Cotización]] y haz clic en [[Preparar cotización]].",
-    "Agrega los productos ([[Agregar]]) y llena la hoja «Liquidación de costos», que está en el bloque ECONOMICS de la misma pantalla ([[Guardar costos]]). Mira la Eságara en $ y %, antes y después del costo de financiar el plazo de pago.",
+    "En la Necesidad, abre la pestaña [[Cotización]] y haz clic en [[Preparar cotización]]. SOLU trae los productos y costos que ya tiene la Necesidad.",
+    "En el bloque «SOLUCIÓN», abre «Editar» y escribe en una frase qué logra el cliente y la promesa posible con su condición.",
+    "En «PRODUCTOS EN EL DOCUMENTO», revisa cada línea y ponle precio con «Editar». Para sumar otra, abre [[Agregar producto]] y haz clic en [[Agregar]].",
+    "En «ECONOMÍA», llena la hoja «Liquidación de costos» y haz clic en [[Guardar costos]]. Mira la Eságara en $ y %, antes y después del costo de financiar el plazo de pago.",
     "Opcional: ofrece alternativas con [[+ Escenario]] y [[Agregar escenario]], y marca una con [[Recomendar este]].",
-    "Resuelve cada punto con «!» de la lista READY TO PRESENT (columna derecha): cada uno dice qué falta.",
+    "Resuelve cada punto con «!» de la lista «LISTA PARA PRESENTAR» (columna derecha): cada uno dice qué falta.",
     "Revisa el documento con [[Ver PDF]] (arriba), en inglés o español.",
     "Con la lista completa, haz clic en [[Presentar al cliente]] (debajo de la lista). Los precios quedan fijos."
    ],
@@ -378,10 +382,10 @@
    "id": "liquidacion-costos",
    "m": "comercial",
    "t": "Liquidación de costos de la cotización",
-   "path": "Necesidad → Cotización → abrir la cotización → bloque ECONOMICS → Liquidación de costos",
+   "path": "Necesidad → Cotización → abrir la cotización → bloque ECONOMÍA → Liquidación de costos",
    "why": "Antes de poner el precio, haz la cuenta completa de lo que cuesta traer el producto: producto, envío, impuestos, aduana, empaque, giro y crédito a favor. Es una sola cuenta para toda la cotización, y de ella sale la Eságara.",
    "steps": [
-    "Abre la cotización en borrador y baja al bloque ECONOMICS. Ahí mismo está la hoja «Liquidación de costos»: no hay que abrir nada. Cada costo tiene su fila, con el valor en el centro y, a la derecha, de dónde sale. Lo que no aplique se deja en 0.",
+    "Abre la cotización en borrador y baja al bloque ECONOMÍA. Ahí mismo está la hoja «Liquidación de costos»: no hay que abrir nada. Cada costo tiene su fila, con el valor en el centro y, a la derecha, de dónde sale. Lo que no aplique se deja en 0.",
     "Fila «Producto»: escribe lo que cobra el proveedor y de dónde sale (proforma, correo). Justo debajo, en «Moneda en que se le paga al proveedor», elige la moneda de la lista. Si no es dólares, SOLU trae la tasa del mercado y muestra cuánto es en USD.",
     "Fila «Envío»: escribe el costo del transporte hasta el cliente en USD y de dónde sale (cotización de DHL o del transportador). En la fila «Días de transporte» escribe cuántos días viaja la mercancía; no es un costo.",
     "Filas «Impuestos», «Aduana», «Empaque», «Giro» y «Otros»: escribe cada valor en USD. «Giro» es lo que cobra el banco por enviar el dinero, no el monto enviado. A la derecha hay una sola casilla para decir de dónde salen estos cinco valores.",
@@ -559,7 +563,7 @@
    "steps": [
     "Abre [[Perfiles]] y elige un cliente. Arriba ves qué le duele, con qué lucha y el próximo seguimiento.",
     "Haz clic en [[Escribir en el diario]]. Elige de qué conversación sale: una llamada, videollamada o visita ya registrada, una nueva, o ninguna si es solo una nota.",
-    "Escribe el dolor, la lucha, el impacto y lo personal. En «Presupuesto, decisión y acuerdo» está el resto.",
+    "Escribe el dolor, la lucha, el impacto y lo personal. En [[Presupuesto, decisión y acuerdo]] está el resto.",
     "En «Plan de seguimiento», escribe qué vas a hacer y cuándo. Guarda con [[Guardar en el diario]].",
     "En Personas, usa [[+ Anotar algo de esta persona]]: qué quiere lograr, qué le complica el día, qué le preocupa, cómo decide. Siempre con cómo lo sabemos.",
     "Abajo, guarda lo que conviene tener a la mano con [[+ Agregar documento]], [[+ Agregar producto]] o [[+ Agregar marca]]: una foto o PDF, un enlace, o los dos."
@@ -638,7 +642,7 @@
    "path": "Necesidad → Ejecución → Preparar Supplier PO desde la cotización",
    "why": "Compra exactamente lo cotizado, guarda versiones y programa los pagos al proveedor.",
    "steps": [
-    "En la pestaña Ejecución de la Necesidad, haz clic en [[Preparar Supplier PO desde la cotización]].",
+    "En la pestaña [[Ejecución]] de la Necesidad, haz clic en [[Preparar Supplier PO desde la cotización]].",
     "SOLU abre la orden. Revísala y guarda los cambios con [[Guardar borrador]].",
     "Cuando la lista LISTA PARA LIBERAR (columna derecha) no tenga pendientes, haz clic en [[Liberar Supplier PO]].",
     "En PLAN DE PAGO, haz clic en [[Solicitar este pago]] en cada hito. Si después hay que cambiar la orden: [[Crear nueva versión]]."
@@ -649,7 +653,7 @@
    "id": "logistica",
    "m": "operaciones",
    "t": "Envíos",
-   "path": "OPERACIONES → Envíos",
+   "path": "OPERACIONES → Mover y entregar → Envíos",
    "why": "Dónde está la mercancía, cuándo llegará de verdad y si el resultado del cliente está en riesgo.",
    "steps": [
     "Abre un envío. Actualiza la fecha en [[Nueva ETA del transportista]].",
@@ -662,7 +666,7 @@
    "id": "sin-despachar",
    "m": "operaciones",
    "t": "Sin despachar",
-   "path": "OPERACIONES → Sin despachar",
+   "path": "OPERACIONES → Mover y entregar → Sin despachar",
    "why": "Cada pedido aceptado que aún no sale, con la razón y quién tiene el siguiente paso.",
    "steps": [
     "Lee la causa de cada fila (sin compra al proveedor, fuente sin confirmar, en tránsito…).",
@@ -674,7 +678,7 @@
    "id": "remisiones",
    "m": "operaciones",
    "t": "Remisiones",
-   "path": "OPERACIONES → Remisiones",
+   "path": "OPERACIONES → Mover y entregar → Remisiones",
    "why": "La prueba de lo entregado, base para facturar.",
    "steps": [
     "Haz clic en [[Nueva remisión]], complétala y haz clic en [[Registrar remisión]].",
@@ -686,7 +690,7 @@
    "id": "por-facturar",
    "m": "operaciones",
    "t": "Entregado sin facturar",
-   "path": "OPERACIONES → Entregado sin facturar",
+   "path": "OPERACIONES → Mover y entregar → Entregado sin facturar",
    "why": "Dinero que ya ganamos pero aún no hemos facturado.",
    "steps": [
     "Revisa la lista.",
@@ -698,7 +702,7 @@
    "id": "ops-inicio",
    "m": "operaciones",
    "t": "Inicio de Operaciones",
-   "path": "OPERACIONES → Inicio",
+   "path": "OPERACIONES → Hoy → Inicio",
    "why": "Lo que necesita atención primero, lo que está listo para el siguiente paso, las promesas en riesgo y las esperas sanas. El volumen de órdenes nunca es el titular.",
    "steps": [
     "Abre [[Inicio]] en Operaciones.",
@@ -711,7 +715,7 @@
    "id": "ops-altovalor",
    "m": "operaciones",
    "t": "Compromisos de alto valor",
-   "path": "OPERACIONES → Alto valor",
+   "path": "OPERACIONES → Hoy → Alto valor",
    "why": "Cada Necesidad aceptada con Eságara de USD 2.000 o más, visible hasta que se entrega todo y se cobra todo.",
    "steps": [
     "Abre [[Alto valor]].",
@@ -724,20 +728,21 @@
    "id": "ops-requerimientos",
    "m": "operaciones",
    "t": "Requerimientos y aprobación de compras",
-   "path": "OPERACIONES → Requerimientos",
+   "path": "OPERACIONES → Comprar → Requerimientos",
    "why": "Antes de comprar: qué se necesita, para qué Necesidad o para inventario, y si la compra necesita aprobación.",
    "steps": [
-    "Abre un requerimiento y revisa «¿Lista para comprar?».",
-    "Si pide aprobación, haz clic en [[Pedir aprobación]] y escribe el motivo.",
-    "Quien aprueba (Finanzas o Administración hasta USD 25.000; Gerencia por encima) decide con una nota."
+    "Abre [[Requerimientos]] y haz clic en un requerimiento. Arriba, «¿SE PUEDE COMPRAR?» dice qué falta, a quién afecta y cómo se resuelve.",
+    "Si la compra pide autorización, baja a «AUTORIZACIÓN DE LA COMPRA», escribe el motivo y haz clic en [[Pedir autorización]].",
+    "Quien autoriza decide ahí mismo con [[Autorizar]], [[Devolver con pregunta]] o [[No autorizar]]. Si supera su límite: [[Escalar a Gerencia]].",
+    "Cuando no falte nada, haz clic en [[Crear la orden al proveedor]]."
    ],
-   "expect": "Quien pide no puede aprobar su propia compra. Sin aprobación no se puede crear la orden al proveedor."
+   "expect": "Quien pide no puede autorizar su propia compra. Sin autorización no se puede crear la orden al proveedor. Una compra de rutina no la pide. El límite y quién autoriza están al final de la lista, en «Política de autorización de compras». Para comprar para inventario sin una Necesidad, usa «+ Compra para stock» en la lista."
   },
   {
    "id": "ops-negociacion",
    "m": "operaciones",
    "t": "Confirmación del proveedor y ahorros",
-   "path": "OPERACIONES → Compras → una orden",
+   "path": "OPERACIONES → Comprar → Compras → una orden",
    "why": "Lo que el proveedor confirmó frente a lo que pedimos, y los ahorros reales con su evidencia.",
    "steps": [
     "En una orden, registra la primera cotización del proveedor.",
@@ -750,11 +755,11 @@
    "id": "ops-compromisos",
    "m": "operaciones",
    "t": "Compromisos del proveedor",
-   "path": "OPERACIONES → Compras → una orden → Compromisos",
+   "path": "OPERACIONES → Comprar → Compras → una orden → LO QUE PROMETIÓ EL PROVEEDOR",
    "why": "Los hitos que prometió el proveedor (listo, producción, recogida), cada uno con su fecha y su evidencia.",
    "steps": [
-    "Elige el tipo de pedido: los hitos cambian según sea de stock, fabricado, servicio o reparación.",
-    "Escribe la fecha que dio el proveedor y de dónde salió.",
+    "Abre la orden y baja al bloque «LO QUE PROMETIÓ EL PROVEEDOR». Si está vacío, elige el tipo de pedido y haz clic en [[Crear hitos]]: los hitos cambian según sea de stock, fabricado, servicio o reparación.",
+    "En cada hito, escribe la fecha que dio el proveedor y de dónde salió, y haz clic en [[Guardar]].",
     "Cuando ocurra, márcalo con [[Ocurrió]] y la evidencia."
    ],
    "expect": "Antes de su fecha es una espera sana. Pasados los días de gracia sin evidencia, aparece en atención."
@@ -763,12 +768,13 @@
    "id": "ops-flete",
    "m": "operaciones",
    "t": "Flete: qué mover y con quién",
-   "path": "OPERACIONES → Compras → una orden → Flete",
+   "path": "OPERACIONES → Comprar → Compras → una orden → FLETE",
    "why": "Peso, medidas y bultos antes de pedir transporte, y la comparación de las opciones de flete.",
    "steps": [
-    "Completa lo que falte en «¿Listo para mover?».",
-    "Agrega las cotizaciones de flete que recibas.",
-    "Elige una. Si no es la más barata, SOLU pide el motivo."
+    "Abre la orden y baja al bloque «FLETE». Abre «Preparar el flete» (si ya se preparó se llama «Datos para el transporte»), completa recogida, peso, medidas y bultos, y haz clic en [[Guardar datos del flete]].",
+    "Mira la etiqueta del bloque: «Faltan N datos» con la lista de lo que falta, o «Listo para reservar transporte».",
+    "Por cada cotización de transporte que recibas, abre [[+ Agregar opción de transporte]], llénala y haz clic en [[Agregar opción]].",
+    "Elige una con [[Elegir]]. Si no es la más barata, SOLU pide el motivo."
    ],
    "expect": "Sin peso y medidas no se puede elegir flete. La opción elegida queda como base para revisar después la factura del transportador."
   },
@@ -776,7 +782,7 @@
    "id": "ops-recepcion",
    "m": "operaciones",
    "t": "Recepción en bodega",
-   "path": "OPERACIONES → Compras → una orden → Recepción",
+   "path": "OPERACIONES → Comprar → Compras → una orden → Recepción",
    "why": "Al recibir se valida que sea el producto correcto, en buen estado, completo y con documentos; no solo la cantidad.",
    "steps": [
     "Elige la bodega y escribe las unidades recibidas por línea.",
@@ -790,7 +796,7 @@
    "id": "ops-inventario",
    "m": "operaciones",
    "t": "Inventario",
-   "path": "OPERACIONES → Inventario",
+   "path": "OPERACIONES → Mover y entregar → Inventario",
    "why": "Físico, comprometido y disponible son tres números distintos.",
    "steps": [
     "Abre [[Inventario]].",
@@ -803,7 +809,7 @@
    "id": "ops-despachos",
    "m": "operaciones",
    "t": "Despachos al cliente",
-   "path": "Necesidad → Despacho → Entrega física · OPERACIONES → Despachos",
+   "path": "Necesidad → Despacho → Entrega física · OPERACIONES → Mover y entregar → Despachos",
    "why": "La entrega física al cliente: despachado, entregado y listo para facturar son tres hechos distintos.",
    "steps": [
     "En la Necesidad, abre Despacho, haz clic en [[+ Nuevo despacho]], elige las unidades y [[Crear despacho]]. Ábrelo desde la lista.",
@@ -818,7 +824,7 @@
    "id": "ops-auditoria",
    "m": "operaciones",
    "t": "Factura del transportador",
-   "path": "OPERACIONES → Envíos → un envío → Factura del transportador",
+   "path": "OPERACIONES → Mover y entregar → Envíos → un envío → Factura del transportador",
    "why": "Compara lo que cobró el transportador con lo cotizado, lo declarado y lo que medimos.",
    "steps": [
     "Haz clic en [[+ Registrar factura del transportador]] y completa número, total y peso cobrable.",
@@ -832,7 +838,7 @@
    "id": "ops-aduana",
    "m": "operaciones",
    "t": "Caso de aduana",
-   "path": "OPERACIONES → Envíos → un envío internacional → Caso de aduana",
+   "path": "OPERACIONES → Mover y entregar → Envíos → un envío internacional → Caso de aduana",
    "why": "Lo que falta para importar, la clasificación arancelaria con su fuente, tributos esperados frente a reales y retenciones.",
    "steps": [
     "Haz clic en [[+ Abrir caso de aduana]].",
@@ -845,7 +851,7 @@
    "id": "ops-transportadores",
    "m": "operaciones",
    "t": "Transportadores y reglas de peso",
-   "path": "OPERACIONES → Transportadores",
+   "path": "OPERACIONES → Configuración → Transportadores",
    "why": "Las cuentas de transportadores y la regla con que se calcula el peso cobrable de cada uno.",
    "steps": [
     "Revisa la tabla de reglas: divisor, redondeo, tolerancia y umbral de reclamo.",
@@ -858,7 +864,7 @@
    "id": "ops-garantias",
    "m": "operaciones",
    "t": "Garantías y reclamos del cliente",
-   "path": "Necesidad → Ejecución → Garantía y reclamos · OPERACIONES → Garantías",
+   "path": "Necesidad → Ejecución → Garantía y reclamos · OPERACIONES → Después de entregar → Garantías",
    "why": "Qué quedó cubierto y por cuánto tiempo, y los casos que abre el cliente después de la entrega.",
    "steps": [
     "En la Necesidad, abre «Garantía y reclamos» y haz clic en [[+ Registrar garantía]].",
@@ -871,7 +877,7 @@
    "id": "ops-experiencias",
    "m": "operaciones",
    "t": "Experiencias de producto",
-   "path": "OPERACIONES → Experiencias",
+   "path": "OPERACIONES → Después de entregar → Experiencias",
    "why": "Lo que aprendimos al suministrar un producto, para que el equipo no lo redescubra.",
    "steps": [
     "Haz clic en [[+ Registrar experiencia]] y escribe la referencia y qué aprendimos.",
@@ -884,7 +890,7 @@
    "id": "ops-metricas",
    "m": "operaciones",
    "t": "Métricas de Operaciones",
-   "path": "OPERACIONES → Métricas",
+   "path": "OPERACIONES → Después de entregar → Métricas",
    "why": "Cómo funcionó la operación en los últimos 12 meses, contado de lo registrado.",
    "steps": [
     "Abre [[Métricas]].",
@@ -896,7 +902,7 @@
    "id": "ops-config",
    "m": "operaciones",
    "t": "Configuración de Operaciones",
-   "path": "OPERACIONES → Configuración (cambia Gerencia)",
+   "path": "OPERACIONES → Configuración → Configuración (cambia Gerencia)",
    "why": "Los umbrales con los que SOLU decide qué mostrar como atención, y las bodegas.",
    "steps": [
     "Cambia un umbral y haz clic en [[Guardar umbrales]].",
@@ -1055,7 +1061,7 @@
    "steps": [
     "En «Cuentas y saldos confirmados», escribe el saldo, la fecha y de dónde sale el dato, y haz clic en [[Confirmar]].",
     "Lee «Liquidez disponible»: bancos, menos restringido, menos reservado, menos comprometido.",
-    "Abre «Apartar dinero» para reservar un valor: para qué es y quién lo decidió.",
+    "Abre [[Apartar dinero]] para reservar un valor: para qué es y quién lo decidió.",
     "En «Lo que SOLU no puede saber solo», agrega la nómina, los impuestos o una cuota de crédito con [[Agregar]].",
     "Revisa «Caja proyectada» y abre «Lo que viene, por tipo» para ver cada movimiento."
    ],
@@ -1069,7 +1075,7 @@
    "why": "Qué hay que pagar hoy, en 7 y en 30 días, y cada factura de proveedor comparada con su orden y con lo que se recibió.",
    "steps": [
     "Revisa el «Calendario de pagos».",
-    "En «Registrar una factura de proveedor», elige la orden o la compra interna, escribe número, valor, fechas y cómo llegó, y haz clic en [[Registrar]].",
+    "En [[Registrar una factura de proveedor]], elige la orden o la compra interna, escribe número, valor, fechas y cómo llegó, y haz clic en [[Registrar]].",
     "Lee el resultado: coinciden, facturado por encima de la orden, facturado más de lo recibido o servicio sin aceptar.",
     "Para un servicio: [[Aceptar el servicio]]. Para una diferencia justificada: [[Aceptar la diferencia]] con el motivo.",
     "Si la factura no es de una orden de cliente: [[Aprobar el pago]] y después [[Registrar el pago]] con la referencia del banco."
@@ -1096,7 +1102,7 @@
    "path": "ADMINISTRACIÓN → Recursos → Compras internas",
    "why": "Lo que la empresa compra para sí misma: uso interno, activos e inversiones. Primero la necesidad; después el presupuesto y quién autoriza.",
    "steps": [
-    "En «Pedir una compra interna», escribe qué se compra, para qué se necesita, el valor y el presupuesto, y haz clic en [[Pedir]].",
+    "En [[Pedir una compra interna]], escribe qué se compra, para qué se necesita, el valor y el presupuesto, y haz clic en [[Pedir]].",
     "Quien decide la abre desde «Esperan tu decisión» y usa [[Aprobar]], [[Devolver con una pregunta]] o [[No aprobar]].",
     "Cuando se compre: [[Ya se compró]]. Si es un activo, regístralo desde el enlace."
    ],
@@ -1109,7 +1115,7 @@
    "path": "ADMINISTRACIÓN → Recursos → Activos",
    "why": "Lo que la empresa tiene, quién lo tiene a cargo y lo que necesita pronto: seguro, mantenimiento, garantía.",
    "steps": [
-    "En «Registrar un activo», escribe nombre, tipo, a nombre de qué empresa está y sus fechas, y haz clic en [[Registrar]].",
+    "En [[Registrar un activo]], escribe nombre, tipo, a nombre de qué empresa está y sus fechas, y haz clic en [[Registrar]].",
     "Abre el activo y, en «Entregar, trasladar o devolver», elige a quién se entrega.",
     "Quien lo tiene a cargo registra mantenimientos y kilometraje en «Registrar algo que pasó».",
     "Lee la «Historia»."
@@ -1139,7 +1145,7 @@
     "Administración o Gerencia: abre una persona y completa «Vínculo con la empresa» y «Cargo formal y rol».",
     "Cada persona abre su propia ficha y pide una ausencia con [[Pedir]].",
     "Administración o Gerencia la decide con [[Aprobar]] o [[No aprobar]].",
-    "Si a alguien le falta una herramienta o un acceso, regístralo en «Registrar algo que falta», con quién lo resuelve y el próximo paso."
+    "Si a alguien le falta una herramienta o un acceso, regístralo en [[Registrar algo que falta]], con quién lo resuelve y el próximo paso."
    ],
    "expect": "La remuneración la ven solo Gerencia, Finanzas y la propia persona, y solo Gerencia la registra. Nadie decide su propia ausencia. Una ausencia aprobada deja ese día sin capacidad en Mi Plan y aparece en Cobertura. Aquí no hay evaluaciones."
   },
@@ -1205,7 +1211,7 @@
    "why": "Crea cuentas de usuario y administra los datos de ejemplo.",
    "steps": [
     "Completa nombre, correo y rol, y haz clic en [[Crear usuario]].",
-    "Carga o quita los datos de ejemplo con [[Cargar datos de ejemplo]] / [[Quitar datos de ejemplo]]."
+    "Carga los datos de ejemplo con [[Cargar datos de ejemplo]]. Cuando ya están cargados, en su lugar aparece [[Quitar datos de ejemplo]]."
    ],
    "expect": "La persona nueva puede iniciar sesión. Los registros de ejemplo dicen (ejemplo)."
   },
@@ -1299,10 +1305,10 @@
    "path": "EQUIPO → Mi desarrollo → Feedback 360",
    "why": "Pedir y dar feedback en cuatro partes: continuar, empezar, mejorar y reducir.",
    "steps": [
-    "En «Pedir feedback», elige a quién y qué es esa persona para ti (líder, par, mentor, otra función), y haz clic en [[Pedir]].",
+    "En [[Pedir feedback]], elige a quién y qué es esa persona para ti (líder, par, mentor, otra función), y haz clic en [[Pedir]].",
     "Quien lo recibe lo ve en su campana y lo responde en «Te pidieron feedback».",
     "Para darlo sin que lo pidan: «Dar feedback sin que lo pidan».",
-    "En un feedback recibido, abre «Convertir en oportunidad de desarrollo»."
+    "En un feedback recibido, abre [[Convertir en oportunidad de desarrollo]]."
    ],
    "expect": "Hay que escribir al menos una de las cuatro partes. El feedback lleva el nombre de quien lo da. Lo leen la persona y su líder."
   },
@@ -1326,10 +1332,10 @@
    "path": "EQUIPO → Mi equipo → Claridad de roles",
    "why": "Por persona: su rol, nivel, versión del acuerdo, si revisó las expectativas, brechas clave, problemas de autoridad y próximo desarrollo. Y dónde la estructura tiene un hueco.",
    "steps": [
-    "Gerencia: en la fila de una persona, abre «Asignar», elige el acuerdo de rol, el nivel, el líder, la fecha y el motivo, y haz clic en [[Guardar]].",
+    "Gerencia: en la fila de una persona, abre [[Asignar]], elige el acuerdo de rol, el nivel, el líder, la fecha y el motivo, y haz clic en [[Guardar]].",
     "Para un encargo por un tiempo, marca «Es un rol temporal» y pon la fecha final.",
     "Lee «Dónde la estructura de roles tiene un hueco».",
-    "En «Brechas clave», usa «ver o registrar» para comparar el acuerdo con la evidencia."
+    "En «Brechas clave», usa [[ver o registrar]] para comparar el acuerdo con la evidencia."
    ],
    "expect": "Quien no tiene acuerdo aparece arriba como brecha de claridad de rol. El rol temporal no borra el rol base. Un resultado de brecha sin evidencia queda como «sin evidencia suficiente». El líder ve solo a su gente y no asigna."
   },
@@ -1341,7 +1347,7 @@
    "why": "Quién tiene cada rol, quién puede entrar si falta y a quién se está preparando.",
    "steps": [
     "Abre [[Continuidad y sucesión]].",
-    "En un rol, abre «Nombrar un respaldo o un sucesor», elige la persona y escribe qué muestra que puede hacer el rol.",
+    "En un rol, abre [[Nombrar un respaldo o un sucesor]], elige la persona y escribe qué muestra que puede hacer el rol.",
     "Lee las cuatro respuestas: capacidad, autoridad, acceso y disponibilidad, cada una con su razón.",
     "Arriba, revisa las ausencias de los próximos 30 días y quién cubre."
    ],
@@ -1368,10 +1374,10 @@
    "why": "El acuerdo de cada cargo: no es una lista de tareas, es lo que el rol debe lograr, por qué responde, qué decide, sus límites y lo que la compañía le debe.",
    "steps": [
     "Abre [[Acuerdos de rol]] y entra al de ejemplo para ver uno completo.",
-    "Gerencia: en «Crear un acuerdo de rol», completa al menos propósito, resultados, responsabilidades, qué puede decidir y límites, una cosa por línea.",
+    "Gerencia: en [[Crear un acuerdo de rol]], completa al menos propósito, resultados, responsabilidades, qué puede decidir y límites, una cosa por línea.",
     "Escribe los principios como conductas: «Verdad: no prometer fecha sin validación operativa».",
     "Escribe desde cuándo rige y por qué, y haz clic en [[Publicar el acuerdo de rol]].",
-    "Para cambiarlo, ábrelo y usa «Publicar una versión nueva de este acuerdo»."
+    "Para cambiarlo, ábrelo y usa [[Publicar una versión nueva de este acuerdo]]."
    ],
    "expect": "Sin las cinco partes no se publica. Una conducta escrita como calificación (por ejemplo «4/5») se rechaza. Publicar nunca borra: la versión anterior queda en la historia. Si el acuerdo pide una autoridad que las políticas no le dan a ese rol, SOLU lo señala."
   },
@@ -1437,9 +1443,9 @@
    "steps": [
     "Abre [[Pulso del negocio]]: muestra el último mes terminado.",
     "Haz clic en cualquier línea para ir a su detalle.",
-    "Gerencia: cuando el mes esté revisado, haz clic en [[Cerrar el mes con estas cifras]]."
+    "Gerencia: cuando el mes esté revisado, haz clic en el botón que empieza por [[Emitir el informe de]] (dice el mes y termina en «con estas cifras»)."
    ],
-   "expect": "Las cifras marcadas «foto de hoy» no se comparan con el mes anterior. Un mes cerrado no se recalcula solo; reabrirlo pide un motivo."
+   "expect": "Las cifras marcadas «foto de hoy» no se comparan con el mes anterior. Un mes emitido no se recalcula solo; reabrirlo pide un motivo."
   },
   {
    "id": "inf-futuro",
@@ -1463,7 +1469,7 @@
    "steps": [
     "En la primera semana del mes llega a Gerencia el correo «SOLU: el informe de … está listo para emitir». El correo no trae cifras.",
     "Abre [[Pulso del negocio]] y revisa el mes.",
-    "Abajo, en «Emitir el informe del mes», haz clic en [[Emitir el informe de … con estas cifras]].",
+    "Abajo, en «Emitir el informe del mes», haz clic en el botón que empieza por [[Emitir el informe de]] (dice el mes y termina en «con estas cifras»).",
     "Para sacar el archivo, haz clic en [[Descargar este informe (archivo para Excel)]]. El mismo enlace está en el Constructor."
    ],
    "expect": "Si el mes ya se emitió, no llega correo. El archivo dice arriba el periodo, cuándo se calculó, quién lo descargó y los filtros. Quien no es Gerencia ni Finanzas no ve el enlace de descarga."
@@ -1503,9 +1509,9 @@
    "why": "Arma tu propio informe de ventas y Eságara por mes, por cliente o por negociador, y guarda la pregunta para volver a ella.",
    "steps": [
     "Abre [[Constructor]].",
-    "Elige [[Desde]], [[Hasta]] y [[Agrupar por]]; si quieres, filtra por negociador o cliente.",
+    "Elige las fechas en «Desde» y «Hasta», y cómo agrupar en «Agrupar por»; si quieres, filtra por negociador o cliente.",
     "Haz clic en [[Ver informe]].",
-    "Escribe un nombre y haz clic en [[Guardar vista]]. Gerencia, Dirección y los roles de dinero pueden marcar [[Compartir con todos]].",
+    "Escribe un nombre y haz clic en [[Guardar vista]]. Gerencia, Dirección y los roles de dinero pueden marcar la casilla «Compartir con todos».",
     "Abre la vista desde «Vistas guardadas»; bórrala con [[Borrar]] si es tuya."
    ],
    "expect": "Las filas suman el total. Una vista guarda la pregunta, no las cifras: cada persona ve solo sus Necesidades y las de los equipos que lidera. El orden es alfabético, no un ranking."
@@ -1531,8 +1537,8 @@
    "path": "GERENCIA → Hoy → Decisiones (todos piden; decide Gerencia)",
    "why": "Cuando algo supera lo que puedes resolver, lo pides aquí con lo que Gerencia necesita para decidir sin preguntarte. Lo decidido queda escrito con su porqué.",
    "steps": [
-    "Abre [[Decisiones]] y baja a «Pedir una decisión a Gerencia».",
-    "Escribe la pregunta, el contexto, cuánto pesa, al menos dos opciones (una por línea), los hechos y, aparte, los supuestos. Haz clic en [[Pedir la decisión]].",
+    "Abre [[Decisiones]] y baja a «PEDIR UNA DECISIÓN A GERENCIA» (si eres de Gerencia se llama «ABRIR UNA DECISIÓN»).",
+    "Escribe la pregunta, el contexto, cuánto pesa, al menos dos opciones (una por línea), los hechos y, aparte, los supuestos. Haz clic en [[Pedir la decisión]] (Gerencia ve [[Abrir la decisión]]).",
     "Gerencia: ábrela, escribe qué se decide, por qué, qué se espera que pase, cuándo se revisa y quién queda a cargo, y haz clic en [[Registrar la decisión]].",
     "Si ya no hace falta, quien la pidió la retira con el motivo.",
     "También desde una Necesidad: arriba, [[Pedir a Gerencia]] abre la solicitud con la Necesidad ya enlazada."
@@ -1548,7 +1554,7 @@
    "steps": [
     "Cuando llega la fecha de seguimiento, la decisión aparece en el Inicio y en la campana.",
     "Ábrela y, en «Lo que pasó de verdad», escribe qué pasó y elige cómo resultó. Haz clic en [[Guardar la revisión]].",
-    "Si la decisión cambió, abre «La decisión cambió: escribir una versión nueva», escribe por qué y [[Guardar como versión nueva]]."
+    "Si la decisión cambió, abre [[La decisión cambió: escribir una versión nueva]], escribe por qué y [[Guardar como versión nueva]]."
    ],
    "expect": "Si todavía es pronto, SOLU pide la nueva fecha de revisión. La versión anterior queda a la vista, marcada como reemplazada, con lo que decía."
   },
@@ -1560,7 +1566,7 @@
    "why": "El día, la semana o el mes, empezando por el futuro: qué hay que decidir y qué viene; después resultado, mayor valor, riesgos, caja y cumplimiento, y capacidad.",
    "steps": [
     "Abre [[Cierre ejecutivo]] y elige Día, Semana, Mes o Trimestre.",
-    "Usa «anterior» y «siguiente» para moverte entre periodos.",
+    "Usa [[anterior]] y «siguiente» para moverte entre periodos.",
     "En Trimestre, lee además «Revisión del trimestre: dirección y recursos»: cada prioridad y si se revisó, y las decisiones de asignación de recursos."
    ],
    "expect": "Los bloques de futuro, resultado, valor y caja cuentan lo que ocurrió dentro del periodo. Decisiones, riesgos y capacidad muestran cómo están las cosas hoy. Son totales de la empresa, sin lista de personas."
@@ -1589,7 +1595,7 @@
     "Gerencia: en «Nueva prioridad», escribe el título, por qué, el resultado, el horizonte, el responsable y al menos una señal temprana. Haz clic en [[Crear la prioridad]].",
     "Vincúlala a un cliente, una Necesidad, una exploración, una decisión o un escenario con [[Vincular]].",
     "El responsable escribe cómo va de verdad en «Revisar» y [[Guardar la revisión]].",
-    "Al terminar: «Cerrarla: lograda o abandonada», con el porqué."
+    "Al terminar: [[Cerrarla: lograda o abandonada]], con el porqué."
    ],
    "expect": "Sin ningún registro vinculado, SOLU dice que es solo una intención. Las señales atadas a una métrica muestran su valor de hoy o del mes. No es una lista de tareas."
   },
@@ -1601,7 +1607,7 @@
    "why": "Los clientes que Gerencia decide seguir de cerca: por qué importan, quién los cubre, qué hay en curso, cómo pagan, sus riesgos, dónde pueden crecer y el próximo movimiento directivo.",
    "steps": [
     "Gerencia: en «Elegir una cuenta estratégica», elige el cliente, escribe por qué y haz clic en [[Elegir como estratégica]].",
-    "Abre «Actualizar» y escribe el próximo movimiento directivo con su fecha.",
+    "Abre [[Actualizar]] y escribe el próximo movimiento directivo con su fecha.",
     "Haz clic en el nombre para ir a la ficha completa del cliente."
    ],
    "expect": "Aquí solo se guarda el porqué y el próximo movimiento; todo lo demás se lee de la ficha del cliente. Sin próximo movimiento, o con la fecha pasada, la cuenta «pide atención»."
@@ -1680,7 +1686,7 @@
    "why": "Para qué existe cada función, qué entrega, qué decide por sí misma, qué le entrega a las otras y quién responde. Y dónde la estructura tiene un hueco.",
    "steps": [
     "Abre [[Funciones y roles]] y lee las cinco funciones.",
-    "Gerencia: en una función, abre «Publicar una versión nueva de esta carta», elige quién responde y completa qué entrega, por qué responde, qué decide, con qué cuenta y sus interfaces.",
+    "Gerencia: en una función, abre [[Publicar una versión nueva de esta carta]], elige quién responde y completa qué entrega, por qué responde, qué decide, con qué cuenta y sus interfaces.",
     "Arriba, «Dónde la estructura tiene un hueco» baja a medida que completas."
    ],
    "expect": "El propósito de cada función es el texto oficial y no se edita. Una interfaz que solo nombra un lado aparece como ambigua. Abajo, la tabla de acuerdos de rol dice cuáles están claros; se escriben en Equipo → Acuerdos de rol."
@@ -1906,7 +1912,7 @@
    "why": "Saber qué necesita atención en todas partes y trabajar en tu idioma.",
    "steps": [
     "Haz clic en la campana para ver las alertas de todos los módulos.",
-    "Cambia [[ES | EN]].",
+    "Cambia el idioma con [[ES]] o [[EN]], arriba a la derecha.",
     "Una barra azul delgada arriba se muestra mientras carga una página o se guarda un formulario, y el botón presionado dice \"Guardando…\" para que no se pueda presionar dos veces."
    ],
    "expect": "El cambio de idioma aplica a todas las pantallas; en los PDF eliges EN o ES."

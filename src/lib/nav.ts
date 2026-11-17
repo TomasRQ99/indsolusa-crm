@@ -23,6 +23,10 @@ export const NAV_GROUPS = {
   yo: { es: "Mi desarrollo", en: "My development" },
   miequipo: { es: "Mi equipo", en: "My team" },
   organizacion: { es: "Organización", en: "Organisation" },
+  // Operaciones: the order things happen in
+  comprar: { es: "Comprar", en: "Buy" },
+  mover: { es: "Mover y entregar", en: "Move and deliver" },
+  despues: { es: "Después de entregar", en: "After delivery" },
 } as const;
 export type NavModule = { key: ModuleKey; es: string; en: string; match: string[]; tabs: NavTab[] };
 
@@ -77,21 +81,21 @@ export const MODULES: NavModule[] = [
   {
     key: "operaciones", es: "OPERACIONES", en: "OPERATIONS", match: ["/operaciones", "/compras", "/logistica"],
     tabs: [
-      { href: "/operaciones", es: "Inicio", en: "Home" },
-      { href: "/operaciones/compromisos", es: "Alto valor", en: "High value" },
-      { href: "/compras/requerimientos", es: "Requerimientos", en: "Requirements" },
-      { href: "/compras", es: "Compras", en: "Purchasing" },
-      { href: "/logistica", es: "Envíos", en: "Shipments" },
-      { href: "/operaciones/inventario", es: "Inventario", en: "Stock" },
-      { href: "/operaciones/despachos", es: "Despachos", en: "Dispatch" },
-      { href: "/operaciones/sin-despachar", es: "Sin despachar", en: "Unshipped" },
-      { href: "/operaciones/remisiones", es: "Remisiones", en: "Delivery notes" },
-      { href: "/operaciones/por-facturar", es: "Entregado sin facturar", en: "Delivered, not invoiced" },
-      { href: "/operaciones/transportadores", es: "Transportadores", en: "Carriers" },
-      { href: "/operaciones/garantias", es: "Garantías", en: "Warranties" },
-      { href: "/operaciones/experiencias", es: "Experiencias", en: "Experiences" },
-      { href: "/operaciones/metricas", es: "Métricas", en: "Metrics" },
-      { href: "/operaciones/configuracion", es: "Configuración", en: "Settings" },
+      { href: "/operaciones", es: "Inicio", en: "Home", group: "hoy" },
+      { href: "/operaciones/compromisos", es: "Alto valor", en: "High value", group: "hoy" },
+      { href: "/compras/requerimientos", es: "Requerimientos", en: "Requirements", group: "comprar" },
+      { href: "/compras", es: "Compras", en: "Purchasing", group: "comprar" },
+      { href: "/logistica", es: "Envíos", en: "Shipments", group: "mover" },
+      { href: "/operaciones/inventario", es: "Inventario", en: "Stock", group: "mover" },
+      { href: "/operaciones/despachos", es: "Despachos", en: "Dispatch", group: "mover" },
+      { href: "/operaciones/sin-despachar", es: "Sin despachar", en: "Unshipped", group: "mover" },
+      { href: "/operaciones/remisiones", es: "Remisiones", en: "Delivery notes", group: "mover" },
+      { href: "/operaciones/por-facturar", es: "Entregado sin facturar", en: "Delivered, not invoiced", group: "mover" },
+      { href: "/operaciones/garantias", es: "Garantías", en: "Warranties", group: "despues" },
+      { href: "/operaciones/experiencias", es: "Experiencias", en: "Experiences", group: "despues" },
+      { href: "/operaciones/metricas", es: "Métricas", en: "Metrics", group: "despues" },
+      { href: "/operaciones/transportadores", es: "Transportadores", en: "Carriers", group: "ajustes" },
+      { href: "/operaciones/configuracion", es: "Configuración", en: "Settings", group: "ajustes" },
     ],
   },
   {

@@ -428,7 +428,7 @@ export function GuideOverlay({ lang, path }: { lang: "ES" | "EN"; path: string }
             ))}
           </ol>
           {hints.map((h) => <p key={h} className="g-why">{h}</p>)}
-          {missing && hints.length === 0 && <p className="g-miss">{t("No veo ese botón en esta pantalla todavía. Puede estar en otra pestaña o aparecer después del paso anterior.", "I can't see that button on this screen yet. It may be on another tab or show up after the previous step.")}</p>}
+          {missing && hints.length === 0 && <p className="g-miss">{t("Ese botón no está en esta pantalla ahora. Lo más común: aparece solo cuando hay algo por hacer (por ejemplo, un pago por aprobar o un borrador abierto); está en otra pestaña de este caso; o lo usa otro rol. Si es tu caso, sigue con «Siguiente paso».", "That button isn't on this screen right now. Most often: it only shows when there is something to do (for example, a payment to approve or an open draft); it is on another tab of this case; or another role uses it. If so, continue with “Next step”.")}</p>}
           {lang === "EN" && <p className="g-miss">The guide text is in Spanish for now, and buttons are only marked when the screen is in Spanish.</p>}
 
           {lastStep && stage.expect && <p className="g-expect"><b>{t("Qué deberías ver", "What you should see")}</b><StepText text={stage.expect} /></p>}
