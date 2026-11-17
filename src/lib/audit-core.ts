@@ -10,7 +10,7 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   User: ["role", "active", "email", "name"],
   Prospect: ["status", "email", "contactId", "accountId", "revealedById"],
   Account: ["creditLimit", "paymentTermsDays", "allowsPartialBilling", "taxId", "requiresReceptionCode", "requiresPortal", "ownerId"],
-  Deal: ["sellerKey", "amount", "supplierCost", "freightCost", "otherCosts", "stage", "ownerId", "promisedDate", "poAcceptedAt", "creditExceptionById", "creditExceptionAt", "creditExceptionNote", "closedAt", "explorationId", "plantId", "originRef"],
+  Deal: ["sellerKey", "amount", "supplierCost", "freightCost", "otherCosts", "taxCost", "customsCost", "packingCost", "wireCost", "creditAmount","stage", "ownerId", "promisedDate", "poAcceptedAt", "creditExceptionById", "creditExceptionAt", "creditExceptionNote", "closedAt", "explorationId", "plantId", "originRef"],
   DealItem: ["qty", "unitPrice", "code", "description"],
   Supplier: ["bankBeneficiary", "bankName", "bankAccount", "bankSwift", "bankVerifiedAt", "bankVerifiedById", "paymentTerms", "advancePct", "currency", "taxId"],
   Quote: ["currency", "docFxRate", "docFxSource", "ivaExempt", "ivaExemptReason", "ivaPct", "status", "rev", "supplierCost", "freightCost", "otherCosts", "taxCost", "customsCost", "packingCost", "wireCost", "creditAmount", "fxRate", "protSale", "protCost", "protEsagra", "presentedAt", "decidedAt", "validityDays", "paymentTerms", "incoterm"],

@@ -58,7 +58,7 @@ export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lan
       {f?.reconfirmedAt && <p className="src">{t(`Peso reconfirmado el ${i.day(f.reconfirmedAt)}: ${f.reconfirmNote}`, `Weight reconfirmed on ${i.day(f.reconfirmedAt)}: ${f.reconfirmNote}`)}</p>}
 
       {editable && (
-        <details className="qa" open={!f} style={{ marginTop: 6 }}><summary className="qa-btn">{f ? t("Datos para el transporte", "Transport data") : t("Preparar el flete (viene con lo que SOLU ya sabe)", "Prepare the freight (prefilled with what SOLU already knows)")}</summary>
+        <details className="qa" open={!f} style={{ marginTop: 6 }}><summary className="qa-btn">{f ? t("Datos para el transporte", "Transport data") : t("Preparar el flete", "Prepare the freight")}</summary>
           <form action={saveFreight.bind(null, spo.id)} className="qa-form" style={{ marginTop: 8 }}>
             <div className="qa-row">
               <label>{t("Dirección de recogida", "Pickup address")}<input name="pickupAddress" maxLength={300} defaultValue={v.pickupAddress} /></label>
