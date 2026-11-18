@@ -67,7 +67,7 @@ function bccList() {
 }
 
 /** `html` is optional: when given, Outlook shows it (the plain `text` stays as the fallback). */
-export async function sendMail(opts: { to: Recipient; subject: string; text: string; html?: string; senderName?: string; attachments?: MailAttachment[] }) {
+export async function sendMail(opts: { to: Recipient; alsoTo?: string[]; cc?: string[]; bcc?: string[]; subject: string; text: string; html?: string; senderName?: string; attachments?: MailAttachment[] }) {
   // Test mode: MAIL_DRY_RUN=1 writes the email to the server log instead of sending it.
   // Test mode for the uncertain path: logs, then behaves as if the connection was cut mid-send.
   if (process.env.MAIL_DRY_RUN === "uncertain") {
@@ -75,7 +75,7 @@ export async function sendMail(opts: { to: Recipient; subject: string; text: str
     throw new MailUncertainError("Test: no answer while sending.");
   }
   if (process.env.MAIL_DRY_RUN === "1") {
-    console.log(`[MAIL_DRY_RUN] to=${toAddress(opts.to).address} subject=${opts.subject}${opts.attachments?.length ? ` attachments=${opts.attachments.map((a) => a.name).join(", ")}` : ""}\n${opts.text}\n[/MAIL_DRY_RUN]`);
+    console.log(`[MAIL_DRY_RUN] to=${toAddress(opts.to).address}${opts.alsoTo?.length ? ` +to=${opts.alsoTo.length}` : ""}${opts.cc?.length ? ` cc=${opts.cc.length}` : ""}${opts.bcc?.length ? ` bcc=${opts.bcc.length}` : ""} subject=${opts.subject}${opts.attachments?.length ? ` attachments=${opts.attachments.map((a) => a.name).join(", ")}` : ""}\n${opts.text}\n[/MAIL_DRY_RUN]`);
     return;
   }
   const c = mailConfig();
@@ -138,7 +138,7 @@ function explainTokenError(desc: string) {
 async function sendViaGraph(
   g: { tenant: string; clientId: string; clientSecret: string },
   from: string,
-  opts: { to: Recipient; subject: string; text: string; html?: string; attachments?: MailAttachment[] },
+  opts: { to: Recipient; alsoTo?: string[]; cc?: string[]; bcc?: string[]; subject: string; text: string; html?: string; attachments?: MailAttachment[] },
 ) {
   const token = await graphToken(g);
   const ctl = new AbortController();
@@ -153,8 +153,9 @@ async function sendViaGraph(
       message: {
         subject: opts.subject,
         body: opts.html ? { contentType: "HTML", content: opts.html } : { contentType: "Text", content: opts.text },
-        toRecipients: [{ emailAddress: toAddress(opts.to) }],
-        bccRecipients: bccList().map((address) => ({ emailAddress: { address } })),
+        toRecipients: [{ emailAddress: toAddress(opts.to) }, ...(opts.alsoTo ?? []).map((address) => ({ emailAddress: { address } }))],
+        ...(opts.cc?.length ? { ccRecipients: opts.cc.map((address) => ({ emailAddress: { address } })) } : {}),
+        bccRecipients: [...new Set([...bccList(), ...(opts.bcc ?? [])])].map((address) => ({ emailAddress: { address } })),
         ...(opts.attachments?.length ? { attachments: opts.attachments.map((a) => ({ "@odata.type": "#microsoft.graph.fileAttachment", name: a.name, contentType: a.mime, contentBytes: Buffer.from(a.data).toString("base64") })) } : {}),
       },
       saveToSentItems: true, // the email appears in the mailbox's Sent Items
@@ -190,7 +191,7 @@ let transporter: Transporter | null = null;
 async function sendViaSmtp(
   s: { host?: string; port: number; secure: boolean; user?: string; pass?: string },
   from: string,
-  opts: { to: Recipient; subject: string; text: string; html?: string; senderName?: string; attachments?: MailAttachment[] },
+  opts: { to: Recipient; alsoTo?: string[]; cc?: string[]; bcc?: string[]; subject: string; text: string; html?: string; senderName?: string; attachments?: MailAttachment[] },
 ) {
   transporter ??= nodemailer.createTransport({
     host: s.host,
@@ -199,11 +200,12 @@ async function sendViaSmtp(
     requireTLS: !s.secure,
     auth: { user: s.user, pass: s.pass },
   });
-  const bcc = bccList();
+  const bcc = [...new Set([...bccList(), ...(opts.bcc ?? [])])];
   try { await transporter.sendMail({
     // The From address must be the authenticated mailbox; only the display name varies.
     from: { name: opts.senderName ? `${opts.senderName} | ${COMPANY_NAME}` : `${COMPANY_NAME} Sales`, address: from },
-    to: opts.to,
+    to: opts.alsoTo?.length ? [opts.to, ...opts.alsoTo] : opts.to,
+    cc: opts.cc?.length ? opts.cc : undefined,
     bcc: bcc.length ? bcc : undefined,
     subject: opts.subject,
     text: opts.text,

@@ -1508,7 +1508,13 @@ a.loc-chip:hover { background: var(--brand-soft); color: var(--brand); }
 #fuentes { overflow-x: auto; }
 
 /* E1 · email templates compose */
+.mail-to { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 1.4fr); gap: 10px 14px; margin: 8px 0 6px; }
+.mail-to label { display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); min-width: 0; }
+.mail-to input { width: 100%; min-width: 0; }
+@media (max-width: 760px) { .mail-to { grid-template-columns: minmax(0, 1fr); } }
 .mail-subjects { display: flex; flex-direction: column; gap: 6px; }
+form.stack .mail-subjects label { flex-direction: row; justify-content: flex-start; align-items: center; text-align: left; }
+form.stack .mail-subjects input[type="radio"], form.stack .mail-subjects input[type="checkbox"] { flex: none; width: auto; margin: 0; }
 .mail-subjects label { display: flex; align-items: center; gap: 8px; font-weight: 500; min-width: 0; }
 .mail-subjects label span { overflow-wrap: anywhere; }
 .mail-subjects input[name="customSubject"] { flex: 1; min-width: 0; }

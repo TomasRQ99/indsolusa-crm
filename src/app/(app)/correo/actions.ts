@@ -29,8 +29,15 @@ export async function sendComposed(fd: FormData) {
   if (!c) redirect("/");
   if (!c.canSend) redirect(qs("err=permiso"));
 
-  const to = String(fd.get("to") ?? "").trim().slice(0, 200);
-  if (!emailOk(to)) redirect(qs("err=destino"));
+  // Several addresses are allowed in each box, separated by commas: the first "Para" is the main recipient
+  // (the one SOLU matches replies with); the rest go as more recipients, copy (CC) or hidden copy (CCO).
+  const list = (k: string) => [...new Set(String(fd.get(k) ?? "").split(/[,;\s]+/).map((x) => x.trim().toLowerCase()).filter(Boolean))].slice(0, 12);
+  const tos = list("to"), cc = list("cc"), bcc = list("bcc");
+  if (!tos.length || ![...tos, ...cc, ...bcc].every(emailOk)) redirect(qs("err=destino"));
+  const to = tos[0];
+  const alsoTo = tos.slice(1);
+  const ccOnly = cc.filter((x) => !tos.includes(x));
+  const bccOnly = bcc.filter((x) => !tos.includes(x) && !cc.includes(x));
   const pick = String(fd.get("subject") ?? "");
   const custom = String(fd.get("customSubject") ?? "").trim().slice(0, 250);
   const subject = (pick === "custom" ? custom : c.mail.subjects[Number(pick)] ?? c.mail.subjects[0]).slice(0, 250);
@@ -55,13 +62,13 @@ export async function sendComposed(fd: FormData) {
   // One key per compose screen: a double click or a browser resubmit never sends twice.
   const key = String(fd.get("idem") ?? "").trim();
   const idemKey = /^[A-Za-z0-9-]{16,64}$/.test(key) ? `compose:${key}` : null;
-  const r = await sendTracked({ template: tpl, refKind: c.ref.kind, refId: c.ref.id, refCode: c.ref.code, partyKind: c.ref.party, supplierId: c.ref.supplierId, accountId: c.ref.party === "CUSTOMER" ? c.accountId : null, dealId: c.dealId, toAddr: to, toName: c.toName, subject, text: body, html, senderName: user.name, idemKey, attachments });
+  const r = await sendTracked({ template: tpl, refKind: c.ref.kind, refId: c.ref.id, refCode: c.ref.code, partyKind: c.ref.party, supplierId: c.ref.supplierId, accountId: c.ref.party === "CUSTOMER" ? c.accountId : null, dealId: c.dealId, toAddr: to, toName: c.toName, subject, text: body, html, senderName: user.name, idemKey, attachments, alsoTo, cc: ccOnly, bcc: bccOnly });
   const done = `${c.back}${c.back.includes("?") ? "&" : "?"}ok=correo`;
   if (r.status === "DUPLICATE") redirect(r.prior === "SENT" ? done : "/correo/respuestas?ok=incierto");
   if (r.status === "FAILED") redirect(qs(`err=envio&msg=${encodeURIComponent((r.error ?? "").slice(0, 200))}`));
   if (c.dealId || c.accountId) {
     const unsure = r.status === "UNCERTAIN";
-    await db.activity.create({ data: { type: "EMAIL", subject: `${TEMPLATES[tpl].es}: ${subject}${unsure ? " (envío sin confirmar)" : ""}`.slice(0, 200), body: (body + (attachments.length ? `\n\nAdjuntos: ${attachments.map((a) => a.name).join(", ")}` : "")).slice(0, 4000), userId: user.id, accountId: c.accountId, dealId: c.dealId, phase: PHASE[tpl], source: "Plantillas de correo", uncertain: unsure } });
+    await db.activity.create({ data: { type: "EMAIL", subject: `${TEMPLATES[tpl].es}: ${subject}${unsure ? " (envío sin confirmar)" : ""}`.slice(0, 200), body: (body + (alsoTo.length || ccOnly.length || bccOnly.length ? `\n\nTambién para: ${[...alsoTo, ...ccOnly.map((x) => `${x} (CC)`), ...bccOnly.map((x) => `${x} (CCO)`)].join(", ")}` : "") + (attachments.length ? `\n\nAdjuntos: ${attachments.map((a) => a.name).join(", ")}` : "")).slice(0, 4000), userId: user.id, accountId: c.accountId, dealId: c.dealId, phase: PHASE[tpl], source: "Plantillas de correo", uncertain: unsure } });
   }
   refreshApp();
   // Uncertain: say so plainly and don't invite a resend; SOLU checks Sent Items in the next minutes.

@@ -125,7 +125,7 @@
     "Elige una plantilla (cotización a proveedor, seguimiento, negociación, entrega, oferta o cobro) y el idioma.",
     "Elige el contacto, revisa el texto y envía. Si el tono suena brusco, SOLU te avisa, pero no te bloquea."
    ],
-   "expect": "El correo llega desde sales@indsolusa.com. Pruébalo primero con tu propia dirección. La revisión del dominio (SPF, DKIM y DMARC) debe verse en orden."
+   "expect": "El correo llega desde sales@indsolusa.com. Pruébalo primero con tu propia dirección. La revisión del dominio (SPF, DKIM y DMARC) debe verse en orden. En cada correo de plantilla puedes escribir varios destinatarios en «Para», y copias en «CC» y «CCO», separados por coma."
   },
   {
    "id": "respuestas",
@@ -304,7 +304,7 @@
     "Escribe el asunto (qué necesita, en una línea), el detalle de la solicitud y, si hace falta, las observaciones de uso interno: esas nunca salen al cliente.",
     "Escribe el código del producto o repuesto, o elígelo de la lista de los ya registrados (SOLU trae su descripción), la cantidad y la máquina del cliente. Sube fotos o archivos si los hay.",
     "Deja la fecha del próximo contacto y la casilla del correo «Recibimos su solicitud» marcada, y haz clic en [[Crear Necesidad y revisar el correo]].",
-    "SOLU abre el correo ya escrito, con el número de la Necesidad: revisa el texto, marca los archivos que van adjuntos y haz clic en [[Enviar correo]].",
+    "SOLU abre el correo ya escrito, con el número de la Necesidad: revisa el texto, agrega más correos en «Para», «CC (con copia)» o «CCO (copia oculta)» si hace falta (separados por coma), marca los archivos que van adjuntos y haz clic en [[Enviar correo]].",
     "De vuelta en el tablero: en cualquier tarjeta, usa la lista desplegable para moverla de etapa. Las tarjetas en rojo dicen «Sin siguiente movimiento»: nadie ha decidido qué sigue."
    ],
    "expect": "La Necesidad queda con su número (J-…), el correo registrado y el próximo contacto como siguiente movimiento. Un código nuevo queda registrado en Localizar repuestos, y la máquina queda en la lista de ese cliente, para no escribirlos otra vez. Si desmarcas la casilla del correo, el botón dice «Crear Necesidad» y no se envía nada. El tablero oculta las Necesidades cerradas y las perdidas hace más de 90 días."

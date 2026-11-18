@@ -59,7 +59,7 @@
    "Pick a template (supplier quote request, follow-up, negotiation, delivery, offer or collection) and the language.",
    "Pick the contact, check the text and send. If the tone sounds harsh, SOLU warns you but does not block you."
   ],
-  "expect": "The email arrives from sales@indsolusa.com. Try it first with your own address. The domain check (SPF, DKIM and DMARC) should look in order."
+  "expect": "The email arrives from sales@indsolusa.com. Try it first with your own address. The domain check (SPF, DKIM and DMARC) should look in order. On every template email you can type several recipients under “To”, and copies under “CC” and “BCC”, separated by commas."
  },
  "respuestas": {
   "t": "Replies to what we sent",
@@ -199,7 +199,7 @@
    "Type the subject (what they need, in one line), the request detail and, if needed, the notes for internal use: those never go to the customer.",
    "Type the product or spare part code, or pick it from the list of those already registered (SOLU brings its description), the quantity and the customer's machine. Upload photos or files if there are any.",
    "Leave the date of the next contact and the “We received your request” email box ticked, and click [[Crear Necesidad y revisar el correo]].",
-   "SOLU opens the email already written, with the Need's number: review the text, tick the files to attach and click [[Enviar correo]].",
+   "SOLU opens the email already written, with the Need's number: review the text, add more addresses under “To”, “CC (copy)” or “BCC (hidden copy)” if needed (separated by commas), tick the files to attach and click [[Enviar correo]].",
    "Back on the board: on any card, use the drop-down list to move it to another stage. Cards in red say “No next movement”: nobody has decided what comes next."
   ],
   "expect": "The Need gets its number (J-…), the email is logged and the next contact becomes its next move. A new code is registered in Find parts, and the machine stays on that customer's list, so they are not typed again. If you untick the email box, the button says “Create Need” and nothing is sent. The board hides closed Needs and those lost more than 90 days ago."

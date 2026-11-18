@@ -25,7 +25,7 @@ export async function recordOutbound(o: OutboundInput) {
 export type SendStatus = "SENT" | "UNCERTAIN" | "FAILED" | "DUPLICATE";
 /** Records the email, sends it once, and keeps the outcome (constitution: idempotency + reconcile
  *  uncertain external processes before retrying). The same idemKey never sends twice. */
-export async function sendTracked(o: OutboundInput & { idemKey?: string | null; text: string; html?: string; senderName?: string; toName?: string | null; attachments?: MailAttachment[] }):
+export async function sendTracked(o: OutboundInput & { idemKey?: string | null; text: string; html?: string; senderName?: string; toName?: string | null; attachments?: MailAttachment[]; alsoTo?: string[]; cc?: string[]; bcc?: string[] }):
   Promise<{ status: SendStatus; id: string | null; error?: string; prior?: string }> {
   let row: { id: string };
   try {
@@ -38,7 +38,7 @@ export async function sendTracked(o: OutboundInput & { idemKey?: string | null; 
     throw e;
   }
   try {
-    await sendMail({ to: o.toName ? { address: o.toAddr, name: o.toName } : o.toAddr, subject: o.subject, text: o.text, html: o.html, senderName: o.senderName, attachments: o.attachments });
+    await sendMail({ to: o.toName ? { address: o.toAddr, name: o.toName } : o.toAddr, subject: o.subject, text: o.text, html: o.html, senderName: o.senderName, attachments: o.attachments, alsoTo: o.alsoTo, cc: o.cc, bcc: o.bcc });
     await db.outboundMail.update({ where: { id: row.id }, data: { status: "SENT", sentAt: new Date() } });
     return { status: "SENT", id: row.id };
   } catch (e) {

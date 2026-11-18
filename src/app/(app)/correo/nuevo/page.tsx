@@ -25,7 +25,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
   const errs: Record<string, string> = {
     correo: t("El correo de la empresa no está configurado.", "Company email isn't configured."),
     permiso: t("Solo el responsable de la Necesidad (o un administrador) puede enviar este correo.", "Only the Need owner (or an admin) can send this email."),
-    destino: t("Escribe un correo de destino válido.", "Enter a valid recipient email."),
+    destino: t("Revisa los correos: falta el destinatario principal o alguno está mal escrito. Varios correos van separados por coma.", "Check the addresses: the main recipient is missing or one is mistyped. Several addresses are separated by commas."),
     asunto: t("Escribe el asunto.", "Enter the subject."),
     texto: t("El mensaje está vacío.", "The message is empty."),
     adjuntos: t("No se envió: los archivos marcados pesan más de 3 MB en total, y el buzón no los acepta. Desmarca alguno.", "Not sent: the ticked files weigh more than 3 MB in total and the mailbox won't accept them. Untick some."),
@@ -55,9 +55,12 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
           <div className="jbh"><b>{t("PARA", "TO")}</b><span className="grow" />
             <span className="src">{c.lang === "ES" ? "Español" : "English"} · <Link href={langHref}>{other === "ES" ? t("Cambiar a español", "Switch to Spanish") : t("Cambiar a inglés", "Switch to English")}</Link></span>
           </div>
-          <div className="loc-docgrid">
-            <label>{c.toName}<input type="email" name="to" defaultValue={c.to ?? ""} required placeholder={t("correo@empresa.com", "name@company.com")} /></label>
+          <div className="mail-to">
+            <label>{t("Para", "To")} · {c.toName}<input type="text" inputMode="email" name="to" defaultValue={c.to ?? ""} required autoComplete="off" placeholder={t("correo@empresa.com", "name@company.com")} /></label>
+            <label>{t("CC (con copia)", "CC (copy)")}<input type="text" inputMode="email" name="cc" autoComplete="off" placeholder={t("opcional", "optional")} /></label>
+            <label>{t("CCO (copia oculta)", "BCC (hidden copy)")}<input type="text" inputMode="email" name="bcc" autoComplete="off" placeholder={t("opcional", "optional")} /></label>
           </div>
+          <span className="src">{t("Puedes escribir varios correos en cada casilla, separados por coma. El primero de «Para» es el destinatario principal: con ese SOLU empareja la respuesta. Los de CCO reciben el correo sin que los demás los vean.", "You can type several addresses in each box, separated by commas. The first one under “To” is the main recipient: SOLU matches the reply with that one. BCC recipients get the email without the others seeing them.")}</span>
           {!c.to && <p className="note">{t("No hay correo guardado para este destinatario. Escríbelo aquí y agrégalo también a su ficha.", "No email saved for this recipient. Type it here and add it to their record too.")}</p>}
         </section>
 
