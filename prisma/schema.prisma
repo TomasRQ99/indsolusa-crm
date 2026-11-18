@@ -303,6 +303,10 @@ model Deal {
   creditAmount          Decimal      @default(0) @db.Decimal(14, 2)
   creditSrc             String?
   transitDays           Int?
+  /// Notes for the team only (never printed or emailed to the customer).
+  internalNotes         String?
+  /// The customer's machine or equipment this need is about (kept so it is not typed again next time).
+  machine               String?
   nextMove              String?
   nextMoveDate          DateTime?
   waitingFor            String?
@@ -365,6 +369,7 @@ model Deal {
   customerPos           CustomerPO[]
   activities            Activity[]
   items                 DealItem[]
+  files                 NeedFile[]
   supplierPos           SupplierPO[]
   rfqs                  Rfq[]
   shipments             Shipment[]
@@ -729,6 +734,21 @@ model ProductSignal {
   resolvedAt     DateTime?
 
   @@index([createdAt])
+}
+
+// Photos and files of a Need (the customer's nameplate photo, a drawing, their request). Can be attached to emails.
+model NeedFile {
+  id             String   @id @default(cuid())
+  dealId         String
+  deal           Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  name           String
+  mime           String
+  size           Int
+  data           Bytes
+  uploadedByName String?
+  createdAt      DateTime @default(now())
+
+  @@index([dealId])
 }
 
 model DealItem {

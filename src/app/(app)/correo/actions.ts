@@ -4,13 +4,13 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { refreshApp } from "@/lib/revalidate";
-import { mailConfig } from "@/lib/mail";
+import { MAX_ATTACH_BYTES, mailConfig, type MailAttachment } from "@/lib/mail";
 import { composeFrom } from "@/lib/email-compose";
 import { sendTracked, syncReplies } from "@/lib/mail-replies";
 import { domainReport, linkIssues, stripTracking } from "@/lib/mail-health";
 import { TEMPLATES, textToHtml, type MailLang, type TemplateKey } from "@/lib/email-templates";
 
-const PHASE: Record<TemplateKey, string> = { RFQ: "source", FOLLOWUP: "source", NEGOTIATE: "source", DELIVERY: "execute", OFFER: "quote", PAYMENT: "finance" };
+const PHASE: Record<TemplateKey, string> = { RFQ: "source", FOLLOWUP: "source", NEGOTIATE: "source", DELIVERY: "execute", OFFER: "quote", PAYMENT: "finance", ACK: "need" };
 const emailOk = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
 
 /** Sends a template email from the company mailbox (sales@). The template is rebuilt here from the record;
@@ -43,16 +43,25 @@ export async function sendComposed(fd: FormData) {
   // Unedited text keeps the formatted version (tables); edited text is sent as the person wrote it.
   const html = body === c.mail.text.trim() ? c.mail.html : textToHtml(body);
 
+  // Files of the Need the person ticked go attached (photos, PDF): only files of that same Need, within the size the mailbox accepts.
+  let attachments: MailAttachment[] = [];
+  const want = fd.getAll("attach").map(String).filter((x) => /^[a-z0-9]{10,40}$/i.test(x)).slice(0, 10);
+  if (want.length && c.dealId) {
+    const rows = await db.needFile.findMany({ where: { dealId: c.dealId, id: { in: want } }, select: { name: true, mime: true, size: true, data: true } });
+    if (rows.reduce((s, r) => s + r.size, 0) > MAX_ATTACH_BYTES) redirect(qs("err=adjuntos"));
+    attachments = rows.map((r) => ({ name: r.name, mime: r.mime, data: r.data }));
+  }
+
   // One key per compose screen: a double click or a browser resubmit never sends twice.
   const key = String(fd.get("idem") ?? "").trim();
   const idemKey = /^[A-Za-z0-9-]{16,64}$/.test(key) ? `compose:${key}` : null;
-  const r = await sendTracked({ template: tpl, refKind: c.ref.kind, refId: c.ref.id, refCode: c.ref.code, partyKind: c.ref.party, supplierId: c.ref.supplierId, accountId: c.ref.party === "CUSTOMER" ? c.accountId : null, dealId: c.dealId, toAddr: to, toName: c.toName, subject, text: body, html, senderName: user.name, idemKey });
+  const r = await sendTracked({ template: tpl, refKind: c.ref.kind, refId: c.ref.id, refCode: c.ref.code, partyKind: c.ref.party, supplierId: c.ref.supplierId, accountId: c.ref.party === "CUSTOMER" ? c.accountId : null, dealId: c.dealId, toAddr: to, toName: c.toName, subject, text: body, html, senderName: user.name, idemKey, attachments });
   const done = `${c.back}${c.back.includes("?") ? "&" : "?"}ok=correo`;
   if (r.status === "DUPLICATE") redirect(r.prior === "SENT" ? done : "/correo/respuestas?ok=incierto");
   if (r.status === "FAILED") redirect(qs(`err=envio&msg=${encodeURIComponent((r.error ?? "").slice(0, 200))}`));
   if (c.dealId || c.accountId) {
     const unsure = r.status === "UNCERTAIN";
-    await db.activity.create({ data: { type: "EMAIL", subject: `${TEMPLATES[tpl].es}: ${subject}${unsure ? " (envío sin confirmar)" : ""}`.slice(0, 200), body: body.slice(0, 4000), userId: user.id, accountId: c.accountId, dealId: c.dealId, phase: PHASE[tpl], source: "Plantillas de correo", uncertain: unsure } });
+    await db.activity.create({ data: { type: "EMAIL", subject: `${TEMPLATES[tpl].es}: ${subject}${unsure ? " (envío sin confirmar)" : ""}`.slice(0, 200), body: (body + (attachments.length ? `\n\nAdjuntos: ${attachments.map((a) => a.name).join(", ")}` : "")).slice(0, 4000), userId: user.id, accountId: c.accountId, dealId: c.dealId, phase: PHASE[tpl], source: "Plantillas de correo", uncertain: unsure } });
   }
   refreshApp();
   // Uncertain: say so plainly and don't invite a resend; SOLU checks Sent Items in the next minutes.

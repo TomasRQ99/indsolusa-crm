@@ -3,11 +3,12 @@
 // looked at: matched by Outlook conversation, or by our reference code in the subject from the same
 // address/domain. Stored per email: when the reply came, from which address, its subject and a short
 // preview. Results are reported per template and per supplier — never per person.
+import type { MailAttachment } from "./mail";
 import { db } from "./db";
 import { describeMailError, forgetGraphToken, graphAccessToken, isMailUncertain, mailConfig, sendMail } from "./mail";
 
 export type OutboundInput = {
-  template: string; refKind: "RFQR" | "OFFER" | "SPO" | "QUOTE" | "INVOICE"; refId: string; refCode: string | null;
+  template: string; refKind: "RFQR" | "OFFER" | "SPO" | "QUOTE" | "INVOICE" | "NEED"; refId: string; refCode: string | null;
   partyKind: "SUPPLIER" | "CUSTOMER"; supplierId?: string | null; accountId?: string | null; dealId?: string | null;
   toAddr: string; subject: string;
 };
@@ -24,7 +25,7 @@ export async function recordOutbound(o: OutboundInput) {
 export type SendStatus = "SENT" | "UNCERTAIN" | "FAILED" | "DUPLICATE";
 /** Records the email, sends it once, and keeps the outcome (constitution: idempotency + reconcile
  *  uncertain external processes before retrying). The same idemKey never sends twice. */
-export async function sendTracked(o: OutboundInput & { idemKey?: string | null; text: string; html?: string; senderName?: string; toName?: string | null }):
+export async function sendTracked(o: OutboundInput & { idemKey?: string | null; text: string; html?: string; senderName?: string; toName?: string | null; attachments?: MailAttachment[] }):
   Promise<{ status: SendStatus; id: string | null; error?: string; prior?: string }> {
   let row: { id: string };
   try {
@@ -37,7 +38,7 @@ export async function sendTracked(o: OutboundInput & { idemKey?: string | null; 
     throw e;
   }
   try {
-    await sendMail({ to: o.toName ? { address: o.toAddr, name: o.toName } : o.toAddr, subject: o.subject, text: o.text, html: o.html, senderName: o.senderName });
+    await sendMail({ to: o.toName ? { address: o.toAddr, name: o.toName } : o.toAddr, subject: o.subject, text: o.text, html: o.html, senderName: o.senderName, attachments: o.attachments });
     await db.outboundMail.update({ where: { id: row.id }, data: { status: "SENT", sentAt: new Date() } });
     return { status: "SENT", id: row.id };
   } catch (e) {

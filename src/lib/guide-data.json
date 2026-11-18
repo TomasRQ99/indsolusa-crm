@@ -296,15 +296,18 @@
   {
    "id": "journeys-board",
    "m": "comercial",
-   "t": "Tablero de Necesidades",
+   "t": "Nueva Necesidad y tablero de Necesidades",
    "path": "COMERCIAL → Necesidades",
-   "why": "Cada necesidad abierta por etapa, con monto, Eságara y siguiente movimiento.",
+   "why": "Todo pedido empieza aquí: se registra lo que pide el cliente, se le confirma por correo que lo recibimos y queda la fecha del próximo contacto. Debajo, el tablero muestra cada Necesidad abierta por etapa.",
    "steps": [
-    "Haz clic en \"Nueva Necesidad\", completa cliente y necesidad, y haz clic en [[Crear y abrir]].",
-    "En cualquier tarjeta, usa la lista desplegable para moverla a otra etapa.",
-    "Las tarjetas en rojo dicen \"Sin siguiente movimiento\": nadie ha decidido qué sigue."
+    "Arriba, en «Nueva Necesidad», elige el cliente y el contacto principal. Si el cliente no está en la lista, créalo primero en Clientes.",
+    "Escribe el asunto (qué necesita, en una línea), el detalle de la solicitud y, si hace falta, las observaciones de uso interno: esas nunca salen al cliente.",
+    "Escribe el código del producto o repuesto, o elígelo de la lista de los ya registrados (SOLU trae su descripción), la cantidad y la máquina del cliente. Sube fotos o archivos si los hay.",
+    "Deja la fecha del próximo contacto y la casilla del correo «Recibimos su solicitud» marcada, y haz clic en [[Crear Necesidad y revisar el correo]].",
+    "SOLU abre el correo ya escrito, con el número de la Necesidad: revisa el texto, marca los archivos que van adjuntos y haz clic en [[Enviar correo]].",
+    "De vuelta en el tablero: en cualquier tarjeta, usa la lista desplegable para moverla de etapa. Las tarjetas en rojo dicen «Sin siguiente movimiento»: nadie ha decidido qué sigue."
    ],
-   "expect": "Se ocultan las Necesidades cerradas y las pérdidas de hace más de 90 días. Las columnas largas muestran 8 tarjetas y un botón \"Ver N más\". Al mover una tarjeta, cambia de columna enseguida."
+   "expect": "La Necesidad queda con su número (J-…), el correo registrado y el próximo contacto como siguiente movimiento. Un código nuevo queda registrado en Localizar repuestos, y la máquina queda en la lista de ese cliente, para no escribirlos otra vez. Si desmarcas la casilla del correo, el botón dice «Crear Necesidad» y no se envía nada. El tablero oculta las Necesidades cerradas y las perdidas hace más de 90 días."
   },
   {
    "id": "journey",
@@ -354,7 +357,7 @@
    "path": "Necesidad → Necesidad / Fuente",
    "why": "Registra exactamente qué necesita el cliente y de dónde vendrá, antes de cotizar.",
    "steps": [
-    "Pestaña [[Necesidad]]: describe la necesidad y haz clic en [[Guardar necesidad]].",
+    "Pestaña [[Necesidad]]: describe el resultado que busca el cliente y la necesidad, y haz clic en [[Guardar necesidad]]. Ahí mismo están la máquina del cliente, las observaciones de uso interno y «FOTOS Y ARCHIVOS».",
     "Pestaña [[Fuente]]: escribe de dónde lo vamos a conseguir y, en la hoja «Liquidación de costos», la primera cuenta de lo que cuesta traerlo: producto, envío, impuestos, aduana, empaque, giro y crédito a favor, en USD. Lo que no sepas todavía se deja en 0. Haz clic en [[Guardar fuente]].",
     "Anota en el registro de búsqueda las cotizaciones de proveedores y por qué elegiste uno."
    ],

@@ -9,7 +9,7 @@ import { COMPANY } from "./company";
 export type MailLang = "EN" | "ES";
 export type ItemRow = { qty: number; code: string; brand?: string | null; description: string; unitPrice?: number | null };
 export type Mail = { subjects: string[]; text: string; html: string };
-export type TemplateKey = "RFQ" | "FOLLOWUP" | "NEGOTIATE" | "DELIVERY" | "OFFER" | "PAYMENT";
+export type TemplateKey = "RFQ" | "FOLLOWUP" | "NEGOTIATE" | "DELIVERY" | "OFFER" | "PAYMENT" | "ACK";
 
 export const TEMPLATES: Record<TemplateKey, { es: string; en: string; to: "SUPPLIER" | "CUSTOMER"; help: { es: string; en: string } }> = {
   RFQ: { es: "Solicitud de cotización", en: "Request for quotation", to: "SUPPLIER", help: { es: "Plantilla de la empresa para pedir precio a proveedores.", en: "Company template to ask suppliers for a price." } },
@@ -17,6 +17,7 @@ export const TEMPLATES: Record<TemplateKey, { es: string; en: string; to: "SUPPL
   NEGOTIATE: { es: "Negociación", en: "Negotiation", to: "SUPPLIER", help: { es: "Pedir mejor precio, plazo o forma de pago sobre su oferta.", en: "Ask for a better price, lead time or terms on their offer." } },
   DELIVERY: { es: "Problema de entrega", en: "Delivery issue", to: "SUPPLIER", help: { es: "Pedir fecha confirmada de despacho y guía de una orden.", en: "Ask for a confirmed ship date and tracking for an order." } },
   OFFER: { es: "Oferta al cliente", en: "Customer offer", to: "CUSTOMER", help: { es: "Enviar la cotización al cliente con un solo paso siguiente: la orden de compra.", en: "Send the quote to the customer with one next step: the purchase order." } },
+  ACK: { es: "Recibimos su solicitud", en: "We received your request", to: "CUSTOMER", help: { es: "El primer correo de una Necesidad: confirma al cliente que recibimos su solicitud, con su número, y cuándo volvemos a escribirle.", en: "The first email of a Need: confirms to the customer that we received their request, with its number, and when we will write again." } },
   PAYMENT: { es: "Recordatorio de pago", en: "Payment reminder", to: "CUSTOMER", help: { es: "Recordar con respeto una factura por vencer o vencida.", en: "Respectfully remind about an invoice coming due or overdue." } },
 };
 
@@ -208,6 +209,34 @@ export function deliveryMail(o: { lang: MailLang; poCode: string; proformaRef: s
 }
 
 // ---------- 5. Customer offer ----------
+/** First email of a Need: we received your request, its number, and when we come back to you. */
+export function ackMail(o: { lang: MailLang; code: string | null; contactName: string | null; customer: string; need: string; items: ItemRow[]; machine: string | null; followUp: Date | null; sender: string; from: string }): Mail {
+  const en = o.lang === "EN";
+  const ref = o.code ?? "";
+  const blocks: Block[] = en ? [
+    { p: o.contactName ? `Good day ${o.contactName},` : "Good day," },
+    { p: `We have received your request${ref ? ` under number ${ref}` : ""}${o.items.length ? ", for the following products:" : `: ${o.need}.`}` },
+    ...(o.items.length ? [{ items: o.items } as Block] : []),
+    ...(o.machine ? [{ p: `Equipment: ${o.machine}.` } as Block] : []),
+    { p: `From this moment, solving your need is our challenge. ${o.followUp ? `We will contact you again no later than ${longDay(o.followUp, "EN")}.` : "We will contact you within the next 24 to 48 business hours."}`, strong: true },
+    { p: "If you have photos of the nameplate, the part number or the equipment's manual, just reply to this email with them: they help us find the exact part faster." },
+    ...signature("EN", o.sender, o.from),
+  ] : [
+    { p: o.contactName ? `Buen día ${o.contactName}:` : "Buen día:" },
+    { p: `Hemos recibido su solicitud${ref ? ` bajo el número ${ref}` : ""}${o.items.length ? ", por los siguientes productos:" : `: ${o.need}.`}` },
+    ...(o.items.length ? [{ items: o.items } as Block] : []),
+    ...(o.machine ? [{ p: `Equipo: ${o.machine}.` } as Block] : []),
+    { p: `A partir de este momento, es nuestro reto solucionarle su necesidad. ${o.followUp ? `Lo contactaremos de nuevo a más tardar el ${longDay(o.followUp, "ES")}.` : "Lo contactaremos dentro de las próximas 24 a 48 horas hábiles."}`, strong: true },
+    { p: "Si tiene fotos de la placa, el número de parte o el manual del equipo, responda este correo con ellos: nos ayudan a encontrar la pieza exacta más rápido." },
+    ...signature("ES", o.sender, o.from),
+  ];
+  const what = o.items.length ? `${first(o.items)}${more(o.items)}` : o.need.slice(0, 70);
+  const subjects = en
+    ? [`We received your request${ref ? ` ${ref}` : ""} – ${what}`, `Your request${ref ? ` ${ref}` : ""}: we are working on it – ${COMPANY.shortName}`, `${o.customer}: request received${ref ? ` (${ref})` : ""}`]
+    : [`Recibimos su solicitud${ref ? ` ${ref}` : ""} – ${what}`, `Su solicitud${ref ? ` ${ref}` : ""}: ya estamos trabajando en ella – ${COMPANY.shortName}`, `${o.customer}: solicitud recibida${ref ? ` (${ref})` : ""}`];
+  return { subjects, ...sigFix(render(blocks, o.lang)) };
+}
+
 export function offerMail(o: { lang: MailLang; quoteNumber: string; contactName: string | null; items: ItemRow[]; currency: string; total: number; leadText: string | null; validUntil: Date | null; incoterm: string | null; paymentTerms: string | null; condition: string | null; sender: string; from: string }): Mail {
   const en = o.lang === "EN";
   const terms = en

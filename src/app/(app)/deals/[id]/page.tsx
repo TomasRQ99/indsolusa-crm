@@ -15,7 +15,7 @@ import { buildJourney, journeyInclude, typeLabel, type TabKey, type Tone } from 
 import { OutlookNote } from "@/components/OutlookNote";
 import { JourneyPath } from "@/components/JourneyPath";
 import { Popovers } from "@/components/Popovers";
-import {
+import { addNeedFiles, removeNeedFile,
   acceptCustomerPo,
   addItem,
   confirmFact,
@@ -118,6 +118,12 @@ export default async function JourneyPage({
     permiso: t("No tienes permiso para cambiar esta Necesidad.", "You don't have permission to change this Need."),
   };
   const okMsg: Record<string, string> = {
+    creada: t("Necesidad creada. Completa el resultado deseado y, cuando sepas de dónde conseguirlo, sigue con la pestaña Fuente.", "Need created. Complete the desired result and, once you know where to get it, continue with the Source tab."),
+    correo: t("Correo enviado al cliente desde la cuenta de la empresa. Quedó registrado en la Necesidad.", "Email sent to the customer from the company account. It's logged on the Need."),
+    archivos: t("Archivos guardados en la Necesidad.", "Files saved on the Need."),
+    "archivos-parte": t("Se guardaron algunos archivos. Los demás no: solo fotos o PDF de hasta 5 MB.", "Some files were saved. The rest weren't: only photos or PDFs up to 5 MB."),
+    "archivos-nada": t("No se guardó ningún archivo: solo fotos o PDF de hasta 5 MB, máximo 20 por Necesidad.", "No file was saved: only photos or PDFs up to 5 MB, 20 per Need at most."),
+    "archivo-quitado": t("Archivo quitado.", "File removed."),
     vendedor: t("Empresa que vende actualizada.", "Selling company updated."),
     mercado: t("Necesidad creada. Ya trae lo que Mercado sabía: no hace falta volver a escribirlo.", "Need created. It already carries what Mercado knew: no need to retype it."),
     need: t("Necesidad guardada.", "Need saved."),
@@ -259,10 +265,37 @@ export default async function JourneyPage({
           <label style={{ flex: "2 1 200px" }}>{t("Cómo se mide el éxito", "How success is measured")}<input name="successMeasure" defaultValue={deal.successMeasure ?? ""} placeholder={t("Ej.: 0 paradas en 90 días", "E.g.: 0 stops in 90 days")} /></label>
         </div>
         <label>{t("Qué le cuesta no resolverlo", "What it costs not to solve it")}<input name="impactIfNot" defaultValue={deal.impactIfNot ?? ""} placeholder={t("Ej.: USD 8.000 por día de línea parada", "E.g.: USD 8,000 per day of downtime")} /></label>
+        {inline && <label>{t("Máquina o equipo del cliente", "Customer's machine or equipment")}<input name="machine" maxLength={200} defaultValue={deal.machine ?? ""} placeholder={t("Ej.: envasadora Krones línea 3", "E.g.: Krones filler, line 3")} /></label>}
+        {inline && <label>{t("Observaciones (uso interno)", "Notes (internal use)")}<textarea name="internalNotes" rows={3} maxLength={2000} defaultValue={deal.internalNotes ?? ""} placeholder={t("Solo para el equipo: nunca se imprime ni se envía al cliente", "For the team only: never printed or sent to the customer")} /></label>}
         <button type="submit">{t("Guardar necesidad", "Save need")}</button>
       </form>
     );
-    if (inline) return form;
+    if (inline) return (
+      <>
+        {form}
+        <div id="archivos" style={{ marginTop: 16, scrollMarginTop: 90 }}>
+          <div className="jbh"><b>{t("FOTOS Y ARCHIVOS", "PHOTOS AND FILES")}</b><span className="grow" /><span className="src">{t("placa, plano, la solicitud del cliente", "nameplate, drawing, the customer's request")}</span></div>
+          {deal.files.length === 0 ? <p className="quiet-p">{t("Sin archivos todavía.", "No files yet.")}</p> : (
+            <ul className="plain small">
+              {deal.files.map((f) => (
+                <li key={f.id} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                  <a href={`/deals/${deal.id}/archivo/${f.id}`} target="_blank" rel="noopener">{f.name}</a>
+                  <span className="src">{f.size >= 1048576 ? `${(f.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(f.size / 1024))} KB`} · {f.uploadedByName ?? "—"} · {i.day(f.createdAt)}</span>
+                  {editable && <form action={removeNeedFile.bind(null, deal.id, f.id)} style={{ display: "inline" }}><button type="submit" className="link small" data-confirm={t("¿Quitar este archivo?", "Remove this file?")}>{t("Quitar", "Remove")}</button></form>}
+                </li>
+              ))}
+            </ul>
+          )}
+          {editable && (
+            <form action={addNeedFiles.bind(null, deal.id)} className="inline" style={{ marginTop: 8, alignItems: "flex-end" }}>
+              <label>{t("Agregar fotos o PDF (hasta 5 MB cada uno)", "Add photos or PDFs (up to 5 MB each)")}<input name="files" type="file" multiple required accept="image/*,application/pdf" /></label>
+              <button type="submit" className="secondary">{t("Subir archivos", "Upload files")}</button>
+            </form>
+          )}
+          {editable && <p style={{ marginTop: 10 }}><Link className="qa-btn" href={`/correo/nuevo?tpl=ACK&id=${deal.id}`}>{t("Enviar al cliente «Recibimos su solicitud»", "Send the customer “We received your request”")}</Link> <span className="src">{t("correo ya escrito, con el número de la Necesidad; ahí marcas qué archivos van adjuntos", "email already written, with the Need's number; there you tick which files go attached")}</span></p>}
+        </div>
+      </>
+    );
     return !editable ? null : <QA label={deal.desiredResult ? t("Editar", "Edit") : t("Escribir resultado deseado", "Write desired result")} wide>{form}</QA>;
   };
 

@@ -8,6 +8,9 @@ import { COMPANY_NAME } from "./brand";
 //  - "smtp":  classic SMTP login (fallback, e.g. GoDaddy Professional Email)
 
 type Recipient = Mail.Address | string;
+/** A file sent with the email. Microsoft's simple send accepts about 3 MB in total, so callers keep to that. */
+export type MailAttachment = { name: string; mime: string; data: Uint8Array };
+export const MAX_ATTACH_BYTES = 3 * 1024 * 1024;
 
 class MailError extends Error {}
 /** The request may have reached the mail server but no answer came back (network cut, timeout,
@@ -64,7 +67,7 @@ function bccList() {
 }
 
 /** `html` is optional: when given, Outlook shows it (the plain `text` stays as the fallback). */
-export async function sendMail(opts: { to: Recipient; subject: string; text: string; html?: string; senderName?: string }) {
+export async function sendMail(opts: { to: Recipient; subject: string; text: string; html?: string; senderName?: string; attachments?: MailAttachment[] }) {
   // Test mode: MAIL_DRY_RUN=1 writes the email to the server log instead of sending it.
   // Test mode for the uncertain path: logs, then behaves as if the connection was cut mid-send.
   if (process.env.MAIL_DRY_RUN === "uncertain") {
@@ -72,7 +75,7 @@ export async function sendMail(opts: { to: Recipient; subject: string; text: str
     throw new MailUncertainError("Test: no answer while sending.");
   }
   if (process.env.MAIL_DRY_RUN === "1") {
-    console.log(`[MAIL_DRY_RUN] to=${toAddress(opts.to).address} subject=${opts.subject}\n${opts.text}\n[/MAIL_DRY_RUN]`);
+    console.log(`[MAIL_DRY_RUN] to=${toAddress(opts.to).address} subject=${opts.subject}${opts.attachments?.length ? ` attachments=${opts.attachments.map((a) => a.name).join(", ")}` : ""}\n${opts.text}\n[/MAIL_DRY_RUN]`);
     return;
   }
   const c = mailConfig();
@@ -135,7 +138,7 @@ function explainTokenError(desc: string) {
 async function sendViaGraph(
   g: { tenant: string; clientId: string; clientSecret: string },
   from: string,
-  opts: { to: Recipient; subject: string; text: string; html?: string },
+  opts: { to: Recipient; subject: string; text: string; html?: string; attachments?: MailAttachment[] },
 ) {
   const token = await graphToken(g);
   const ctl = new AbortController();
@@ -152,6 +155,7 @@ async function sendViaGraph(
         body: opts.html ? { contentType: "HTML", content: opts.html } : { contentType: "Text", content: opts.text },
         toRecipients: [{ emailAddress: toAddress(opts.to) }],
         bccRecipients: bccList().map((address) => ({ emailAddress: { address } })),
+        ...(opts.attachments?.length ? { attachments: opts.attachments.map((a) => ({ "@odata.type": "#microsoft.graph.fileAttachment", name: a.name, contentType: a.mime, contentBytes: Buffer.from(a.data).toString("base64") })) } : {}),
       },
       saveToSentItems: true, // the email appears in the mailbox's Sent Items
     }),
@@ -186,7 +190,7 @@ let transporter: Transporter | null = null;
 async function sendViaSmtp(
   s: { host?: string; port: number; secure: boolean; user?: string; pass?: string },
   from: string,
-  opts: { to: Recipient; subject: string; text: string; html?: string; senderName?: string },
+  opts: { to: Recipient; subject: string; text: string; html?: string; senderName?: string; attachments?: MailAttachment[] },
 ) {
   transporter ??= nodemailer.createTransport({
     host: s.host,
@@ -204,6 +208,7 @@ async function sendViaSmtp(
     subject: opts.subject,
     text: opts.text,
     html: opts.html,
+    attachments: opts.attachments?.map((a) => ({ filename: a.name, content: Buffer.from(a.data), contentType: a.mime })),
   }); } catch (e) {
     const err = e as { code?: string; command?: string; responseCode?: number };
     if (err.command === "DATA" || (!err.responseCode && err.command !== "CONN" && /ETIMEDOUT|ECONNRESET|ESOCKET/.test(err.code ?? ""))) throw new MailUncertainError("The mail server stopped answering while sending: it may have gone out.");

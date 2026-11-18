@@ -192,14 +192,17 @@
   "expect": "Each fact shows who recorded it and its source."
  },
  "journeys-board": {
-  "t": "Needs board",
-  "why": "Every open need by stage, with amount, Eságara and next move.",
+  "t": "New Need and the Needs board",
+  "why": "Every order starts here: what the customer asks for is recorded, we confirm by email that we received it, and the date of the next contact is set. Below, the board shows every open Need by stage.",
   "steps": [
-   "Click \"New Need\", fill in customer and need, and click [[Crear y abrir]].",
-   "On any card, use the drop-down list to move it to another stage.",
-   "Cards in red say \"No next move\": nobody has decided what comes next."
+   "At the top, under “New Need”, pick the customer and the main contact. If the customer is not on the list, create it first in Customers.",
+   "Type the subject (what they need, in one line), the request detail and, if needed, the notes for internal use: those never go to the customer.",
+   "Type the product or spare part code, or pick it from the list of those already registered (SOLU brings its description), the quantity and the customer's machine. Upload photos or files if there are any.",
+   "Leave the date of the next contact and the “We received your request” email box ticked, and click [[Crear Necesidad y revisar el correo]].",
+   "SOLU opens the email already written, with the Need's number: review the text, tick the files to attach and click [[Enviar correo]].",
+   "Back on the board: on any card, use the drop-down list to move it to another stage. Cards in red say “No next movement”: nobody has decided what comes next."
   ],
-  "expect": "Closed Needs and those lost more than 90 days ago are hidden. Long columns show 8 cards and a \"See N more\" button. When you move a card, it changes column right away."
+  "expect": "The Need gets its number (J-…), the email is logged and the next contact becomes its next move. A new code is registered in Find parts, and the machine stays on that customer's list, so they are not typed again. If you untick the email box, the button says “Create Need” and nothing is sent. The board hides closed Needs and those lost more than 90 days ago."
  },
  "journey": {
   "t": "The Need's page",
@@ -237,7 +240,7 @@
   "t": "Need and source",
   "why": "Record exactly what the customer needs and where it will come from, before quoting.",
   "steps": [
-   "[[Necesidad]] tab: describe the need and click [[Guardar necesidad]].",
+   "[[Necesidad]] tab: describe the result the customer wants and the need, and click [[Guardar necesidad]]. The customer's machine, the notes for internal use and “PHOTOS AND FILES” are right there.",
    "[[Fuente]] tab: write where we will get it and, in the “Cost settlement” sheet, the first estimate of what it costs to bring it: product, shipping, taxes, customs, packing, bank wire and credit in our favor, in USD. Leave at 0 what you do not know yet. Click [[Guardar fuente]].",
    "Note in the search log the suppliers' quotes and why you chose one."
   ],

@@ -28,6 +28,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
     destino: t("Escribe un correo de destino válido.", "Enter a valid recipient email."),
     asunto: t("Escribe el asunto.", "Enter the subject."),
     texto: t("El mensaje está vacío.", "The message is empty."),
+    adjuntos: t("No se envió: los archivos marcados pesan más de 3 MB en total, y el buzón no los acepta. Desmarca alguno.", "Not sent: the ticked files weigh more than 3 MB in total and the mailbox won't accept them. Untick some."),
     envio: t("No se pudo enviar: ", "Couldn't send: ") + (sp.msg ?? ""),
     enlace: t("No se envió: el texto tiene un enlace acortado o a una dirección IP, y los filtros de spam suelen bloquearlos. Usa el enlace completo: ", "Not sent: the text has a shortened link or a link to an IP address, which spam filters often block. Use the full link: ") + (sp.msg ?? ""),
   };
@@ -78,6 +79,18 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
             <div className="mail-preview" dangerouslySetInnerHTML={{ __html: c.mail.html }} />
           </details>
         </section>
+
+        {c.files && (
+          <section className="jblock loc-sec">
+            <div className="jbh"><b>{t("ARCHIVOS ADJUNTOS", "ATTACHMENTS")}</b><span className="grow" /><span className="src">{t("fotos y PDF guardados en la Necesidad · máximo 3 MB en total", "photos and PDFs saved on the Need · 3 MB in total at most")}</span></div>
+            {c.files.length === 0 ? <p className="src">{t("Esta Necesidad no tiene archivos. Se agregan en la Necesidad, pestaña Necesidad, bloque «Fotos y archivos».", "This Need has no files. Add them on the Need, Need tab, “Photos and files” block.")}</p> : (
+              <div className="mail-subjects">
+                {c.files.map((f) => <label key={f.id}><input type="checkbox" name="attach" value={f.id} /> <span>{f.name} <span className="src">· {f.size >= 1048576 ? `${(f.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(f.size / 1024))} KB`}</span></span></label>)}
+              </div>
+            )}
+            <span className="src">{t("Marca solo lo que el cliente debe recibir. Las observaciones de uso interno nunca se envían.", "Tick only what the customer should receive. Internal notes are never sent.")}</span>
+          </section>
+        )}
 
         <div className="loc-rowacts">
           <button type="submit" disabled={!c.canSend}>{t("Enviar correo", "Send email")}</button>

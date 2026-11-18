@@ -10,6 +10,8 @@ import { refreshApp } from "@/lib/revalidate";
 import { nextCode, today } from "@/lib/domain";
 import { CAUSE_KEYS } from "@/lib/causes";
 import { otherTotal } from "@/lib/cost-lines";
+import { partKey } from "@/lib/parts";
+import { addWorkingDays } from "@/lib/holidays";
 
 const stage = z.enum(["LEAD", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON", "LOST"]);
 const money = z.coerce.number().min(0).max(1e12);
@@ -192,6 +194,8 @@ export async function saveNeed(id: string, fd: FormData) {
       neededBy: dayOf(fd.get("neededBy")),
       successMeasure: txt(fd, "successMeasure", 500),
       impactIfNot: txt(fd, "impactIfNot", 500),
+      ...(fd.has("machine") ? { machine: txt(fd, "machine", 200) } : {}),
+      ...(fd.has("internalNotes") ? { internalNotes: txt(fd, "internalNotes") } : {}),
     },
   });
   jback(id, fd, "need");
@@ -346,4 +350,79 @@ export async function markJourneySeen(id: string) {
   });
   refreshApp();
   redirect(`/deals/${id}?ok=seen`);
+}
+
+// ---------- New request (the first step of an order) and the files of a Need ----------
+
+const FILE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+const MAX_FILES = 6;
+
+async function storeFiles(dealId: string, fd: FormData, by: string, room = MAX_FILES) {
+  const files = fd.getAll("files").filter((f): f is File => f instanceof File && f.size > 0).slice(0, Math.max(0, room));
+  let saved = 0, skipped = 0;
+  for (const file of files) {
+    if (file.size > MAX_FILE_BYTES || !FILE_MIMES.includes(file.type)) { skipped++; continue; }
+    await db.needFile.create({ data: { dealId, name: file.name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 120) || "archivo", mime: file.type, size: file.size, data: new Uint8Array(await file.arrayBuffer()), uploadedByName: by } });
+    saved++;
+  }
+  return { saved, skipped };
+}
+
+/** A customer asks for something: the Need is created with who asks, what they need, the product or spare part
+ *  (registered in the parts catalogue so it is not typed again), the customer's machine, notes for internal use,
+ *  photos, and the date of the next contact. With "send the email" ticked, the person lands on the confirmation
+ *  email already written, to review and send it. */
+export async function createNeed(fd: FormData) {
+  const user = await requireUser();
+  const accountId = String(fd.get("accountId") ?? "");
+  const title = txt(fd, "title", 150);
+  if (!accountId || !title) redirect("/deals?err=nueva");
+  const account = await db.account.findFirst({ where: { id: accountId, internal: false }, select: { id: true } });
+  if (!account) redirect("/deals?err=nueva");
+  const contactId = String(fd.get("contactId") ?? "");
+  const contact = contactId ? await db.contact.findFirst({ where: { id: contactId, accountId }, select: { id: true } }) : null;
+  const itemDescription = txt(fd, "itemDescription", 300);
+  const itemCode = txt(fd, "itemCode", 60);
+  const qty = Math.max(1, Math.min(100000, Math.round(num(fd, "itemQty") ?? 1)));
+  // Next contact: the date the person chose; with none, two working days from today (what the email promises).
+  const nextContact = dayOf(fd.get("nextContact")) ?? addWorkingDays(today(), 2);
+  const created = await db.$transaction(async (tx) => {
+    const code = await nextCode("J", "deal", tx);
+    const deal = await tx.deal.create({
+      data: {
+        title: title!, amount: 0, stage: "LEAD", accountId, contactId: contact?.id ?? null, code, ownerId: user.id,
+        needSpecs: txt(fd, "needSpecs"), internalNotes: txt(fd, "internalNotes"), machine: txt(fd, "machine", 200),
+        nextMove: "Contactar al cliente: avance de su solicitud", nextMoveDate: nextContact,
+      },
+    });
+    if (itemDescription || itemCode) {
+      await tx.dealItem.create({ data: { dealId: deal.id, qty, code: itemCode, description: itemDescription ?? itemCode!, unitPrice: 0 } });
+      // A new code is registered right away, so the next request picks it from the list.
+      const key = itemCode ? partKey(itemCode) : "";
+      if (key.length >= 3 && !(await tx.part.findUnique({ where: { mpnKey: key }, select: { id: true } }))) {
+        await tx.part.create({ data: { mpn: itemCode!, mpnKey: key, name: itemDescription ?? itemCode!, createdByName: user.name } });
+      }
+    }
+    await tx.activity.create({ data: { type: "NOTE", subject: `Solicitud recibida: ${title}`.slice(0, 200), userId: user.id, accountId, dealId: deal.id, phase: "need", source: "Nueva Necesidad" } });
+    return deal;
+  });
+  await storeFiles(created.id, fd, user.name);
+  refreshApp();
+  redirect(fd.get("sendAck") === "1" ? `/correo/nuevo?tpl=ACK&id=${created.id}` : `/deals/${created.id}?tab=need&ok=creada`);
+}
+
+export async function addNeedFiles(id: string, fd: FormData) {
+  const { user } = await editableDeal(id);
+  const have = await db.needFile.count({ where: { dealId: id } });
+  const r = await storeFiles(id, fd, user.name, 20 - have);
+  refreshApp();
+  redirect(`/deals/${id}?tab=need&ok=${r.saved ? (r.skipped ? "archivos-parte" : "archivos") : "archivos-nada"}#archivos`);
+}
+
+export async function removeNeedFile(id: string, fileId: string) {
+  await editableDeal(id);
+  await db.needFile.deleteMany({ where: { id: fileId, dealId: id } });
+  refreshApp();
+  redirect(`/deals/${id}?tab=need&ok=archivo-quitado#archivos`);
 }

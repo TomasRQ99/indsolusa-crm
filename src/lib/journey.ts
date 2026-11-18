@@ -18,6 +18,7 @@ export const journeyInclude = {
   contact: true,
   owner: { select: { id: true, name: true } },
   items: { include: { deliveryLines: { select: { qty: true } } }, orderBy: { id: "asc" } },
+  files: { orderBy: { createdAt: "asc" }, select: { id: true, name: true, size: true, mime: true, createdAt: true, uploadedByName: true } },
   supplierPos: {
     include: { supplier: true, payments: { orderBy: { createdAt: "desc" }, include: { executions: true } } },
     orderBy: { createdAt: "asc" },

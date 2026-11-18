@@ -10,7 +10,7 @@ import { quoteNo } from "./quote";
 import type { SessionUser } from "./auth";
 import type { RfqItem } from "./rfq";
 import { journeyUrgency } from "./urgency";
-import { deliveryMail, followUpMail, negotiateMail, offerMail, paymentMail, type Mail, type MailLang, type TemplateKey } from "./email-templates";
+import { ackMail, deliveryMail, followUpMail, negotiateMail, offerMail, paymentMail, type Mail, type MailLang, type TemplateKey } from "./email-templates";
 import { linesTotal } from "./money";
 
 export type ComposeCtx = { tpl: TemplateKey; id: string; lang?: MailLang | null };
@@ -18,7 +18,9 @@ export type Composed = {
   mail: Mail; lang: MailLang; to: string | null; toName: string; about: string;
   dealId: string | null; accountId: string | null; back: string; warn: string | null; canSend: boolean;
   /** E2: what this email is about, to match its reply later. */
-  ref: { kind: "RFQR" | "OFFER" | "SPO" | "QUOTE" | "INVOICE"; id: string; code: string | null; party: "SUPPLIER" | "CUSTOMER"; supplierId: string | null };
+  ref: { kind: "RFQR" | "OFFER" | "SPO" | "QUOTE" | "INVOICE" | "NEED"; id: string; code: string | null; party: "SUPPLIER" | "CUSTOMER"; supplierId: string | null };
+  /** Files of the Need that can go attached to this email (photos, PDF). */
+  files?: { id: string; name: string; size: number; mime: string }[];
 };
 
 const workingDaysAhead = (n: number) => addWorkingDays(today(), n);
@@ -84,6 +86,21 @@ export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: stri
       dealId: q.deal.id, accountId: q.deal.accountId, back: `/cotizaciones/${q.id}`, ref: { kind: "QUOTE", id: q.id, code: q.number, party: "CUSTOMER", supplierId: null },
       warn: !q.lines.length ? (ui ? "This quote has no product lines yet: add them before sending." : "Esta cotización aún no tiene productos: agrégalos antes de enviarla.") : q.status === "DRAFT" ? (ui ? "This quote is still a draft: present it first so its price is protected." : "Esta cotización aún es borrador: preséntala primero para proteger su precio.") : validUntil < today() ? (ui ? "This quote's validity has expired." : "La validez de esta cotización ya venció.") : null,
       canSend: q.lines.length > 0 && canEdit(user, q.deal.ownerId),
+    };
+  }
+
+  if (ctx.tpl === "ACK") {
+    const d = await db.deal.findUnique({ where: { id: ctx.id }, select: { id: true, code: true, title: true, ownerId: true, accountId: true, machine: true, nextMoveDate: true, items: { select: { qty: true, code: true, description: true } }, files: { orderBy: { createdAt: "asc" }, select: { id: true, name: true, size: true, mime: true } }, contact: { select: { firstName: true, lastName: true, email: true } }, account: { select: { name: true, docLang: true, contacts: { where: { email: { not: null } }, select: { firstName: true, lastName: true, email: true }, take: 1 } } } } });
+    if (!d) return null;
+    // This first email goes in the language the person works in (they are talking to this customer), unless they switch it.
+    const lang = pickLang(ctx.lang, user.lang === "EN" ? "EN" : "ES");
+    const c = d.contact?.email ? d.contact : d.contact ?? d.account.contacts[0] ?? null;
+    const items = d.items.map((l) => ({ qty: l.qty, code: l.code ?? "", description: l.description.slice(0, 160) }));
+    return {
+      mail: ackMail({ lang, code: d.code, contactName: c ? c.firstName : null, customer: d.account.name, need: d.title, items, machine: d.machine, followUp: d.nextMoveDate && d.nextMoveDate >= today() ? d.nextMoveDate : null, sender, from }), lang,
+      to: c?.email ?? null, toName: c ? `${c.firstName} ${c.lastName}`.trim() : d.account.name, about: `${d.code ?? ""} · ${d.account.name}`.replace(/^ · /, ""),
+      dealId: d.id, accountId: d.accountId, back: `/deals/${d.id}?tab=need`, ref: { kind: "NEED", id: d.id, code: d.code, party: "CUSTOMER", supplierId: null },
+      warn: null, canSend: canEdit(user, d.ownerId), files: d.files,
     };
   }
 

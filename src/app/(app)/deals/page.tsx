@@ -3,25 +3,27 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { canEdit } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
-import { addDays, esagra, today } from "@/lib/domain";
+import { addDays, dayInput, esagra, today } from "@/lib/domain";
 import { STAGES, stageLabel } from "@/lib/labels";
 import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
 import { Split } from "@/components/Viz";
 import { PathLegend, pathWords } from "@/components/JourneyPath";
 import { cardAsk } from "@/lib/journey";
-import { createDeal, moveDealStage } from "./actions";
+import { createNeed, moveDealStage } from "./actions";
+import { NewNeedForm } from "@/components/NewNeedForm";
+import { addWorkingDays } from "@/lib/holidays";
 
-export default async function DealsPage({ searchParams }: { searchParams: Promise<{ mine?: string }> }) {
+export default async function DealsPage({ searchParams }: { searchParams: Promise<{ mine?: string; err?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
-  const { mine } = await searchParams;
+  const { mine, err } = await searchParams;
   const now = today();
 
   // The board shows working Journeys: closed ones and losses older than 90 days stay in history
   // (Customer 360, Insights), so this page doesn't grow forever.
   const scope = mine ? { ownerId: user.id } : {};
-  const [deals, accounts, closedCount] = await Promise.all([
+  const [deals, accounts, closedCount, contacts, parts, pastMachines, assets] = await Promise.all([
     db.deal.findMany({
       where: { ...scope, internal: false, closedAt: null, OR: [{ stage: { not: "LOST" } }, { updatedAt: { gte: addDays(now, -90) } }] },
       orderBy: { updatedAt: "desc" },
@@ -32,7 +34,16 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
     }),
     db.account.findMany({ where: { internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.deal.count({ where: { ...scope, closedAt: { not: null } } }),
+    // For the new-request form: contacts per customer, and what is already registered so nobody types it twice.
+    db.contact.findMany({ where: { account: { internal: false } }, orderBy: { firstName: "asc" }, select: { id: true, accountId: true, firstName: true, lastName: true, email: true } }),
+    db.part.findMany({ where: { mergedIntoId: null }, orderBy: { updatedAt: "desc" }, take: 600, select: { mpn: true, name: true } }),
+    db.deal.findMany({ where: { machine: { not: null }, internal: false }, distinct: ["accountId", "machine"], select: { accountId: true, machine: true }, take: 800 }),
+    db.installedAsset.findMany({ select: { name: true, manufacturer: true, model: true, plant: { select: { accountId: true } } }, take: 800 }),
   ]);
+  const machines = [
+    ...pastMachines.map((m) => ({ accountId: m.accountId, name: m.machine! })),
+    ...assets.map((x) => ({ accountId: x.plant.accountId, name: [x.name, x.manufacturer, x.model].filter(Boolean).join(" · ") })),
+  ];
 
   const open = deals.filter((d) => !["WON", "LOST"].includes(d.stage));
   const noMove = open.filter((d) => !d.nextMove && !d.waitingFor);
@@ -53,6 +64,9 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
         </div>
       </div>
 
+      {err === "nueva" && <p className="note risk">{t("Para crear la Necesidad faltan el cliente y el asunto.", "To create the Need, the customer and the subject are missing.")}</p>}
+      <NewNeedForm lang={user.lang} action={createNeed} accounts={accounts} contacts={contacts.flatMap((c) => (c.accountId ? [{ id: c.id, accountId: c.accountId, name: `${c.firstName} ${c.lastName}`.trim(), email: c.email }] : []))} parts={parts.map((x) => ({ code: x.mpn, name: x.name }))} machines={machines} defaultFollowUp={dayInput(addWorkingDays(now, 2))} />
+
       <section className="sum">
         <div data-tone={mineNow.length > 0 ? "info" : undefined}><span className="k">{t("Tu paso ahora", "Your step now")}</span><span className="v">{mineNow.length}</span><span className="s">{t("Necesidades con un paso nuestro para hoy", "Needs with a step of ours for today")}</span>{mineNow[0] && <Link className="go" href={`/deals/${mineNow[0].id}`}>{t("Abrir el primero", "Open the first one")} →</Link>}</div>
         <div><span className="k">{t("En curso", "In progress")}</span><span className="v">{open.length}</span><span className="s">{i.money(open.reduce((s, d) => s + Number(d.amount), 0))}</span></div>
@@ -61,22 +75,6 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
       </section>
       <Split label={t("Valor en curso por etapa", "Value in progress by stage")} caption={<><b>{t("DÓNDE ESTÁ EL VALOR EN CURSO", "WHERE THE VALUE IN PROGRESS SITS")}</b> · {t("el azul se hace más profundo a medida que la Necesidad avanza", "the blue gets deeper as the Need advances")}</>} parts={STAGES.filter((s) => s !== "WON" && s !== "LOST").map((s, n) => { const col = open.filter((d) => d.stage === s); const sum = col.reduce((x, d) => x + Number(d.amount), 0); return { key: s, label: stageLabel(i, s), value: sum, tone: (["s1", "s2", "s3", "s4"] as const)[Math.min(n, 3)], text: i.money(sum), n: col.length }; })} />
 
-      <details className="card">
-        <summary>{t("Nueva Necesidad", "New Need")}</summary>
-        <form action={createDeal} className="inline">
-          <input type="hidden" name="open" value="1" />
-          <label style={{ flex: 1, minWidth: 220 }}>{t("Qué necesita el cliente", "What the customer needs")}<input name="title" required /></label>
-          <label>{t("Cliente", "Customer")}
-            <select name="accountId" required defaultValue="">
-              <option value="" disabled>{t("Elegir…", "Choose…")}</option>
-              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select>
-          </label>
-          <label>{t("Venta estimada USD", "Estimated sale USD")}<input name="amount" type="number" min="0" step="100" required style={{ width: 140 }} /></label>
-          <label>{t("Cierre esperado", "Expected close")}<input name="closeDate" type="date" /></label>
-          <button type="submit">{t("Crear y abrir", "Create and open")}</button>
-        </form>
-      </details>
 
       <PathLegend es={i.es} />
       <div className="kanban">
