@@ -36,6 +36,7 @@ import { defineNext, doneAndNext, logHappened, newPromise, postpone, scheduleMov
 import { createSupplierPo, markSupplierPo } from "../../operaciones/actions";
 import { createQuote } from "../../cotizaciones/actions";
 import { prepareSpo } from "../../compras/actions";
+import { matchSupplier } from "@/lib/purchasing";
 import { recordShipment } from "../../logistica/actions";
 import { forwardOf, fwdLabel } from "@/lib/logistics";
 import { lineAmount, linesTotal } from "@/lib/money";
@@ -73,6 +74,8 @@ export default async function JourneyPage({
     tab === "quote" ? db.quote.findMany({ where: { dealId: id }, orderBy: [{ number: "desc" }, { rev: "desc" }], select: { id: true, number: true, rev: true, status: true, lines: { select: { qty: true, unitPrice: true } } } }) : Promise.resolve([]),
   ]);
   if (!deal) notFound();
+  // What the quote says about where to buy: SOLU only suggests a supplier from it; the person chooses.
+  const spoBasis = tab === "execute" ? (await db.quote.findFirst({ where: { dealId: id, status: { in: ["ACCEPTED", "PRESENTED"] } }, orderBy: { createdAt: "desc" }, select: { supplyPrimary: true } }))?.supplyPrimary ?? null : null;
 
   // "What changed since my last visit": a new visit starts after 2 hours away.
   // The visit is recorded without making the page wait for the write.
@@ -832,8 +835,20 @@ export default async function JourneyPage({
         )}
         {editable && (
           <div className="qa-bar" style={{ marginTop: 10 }}>
-            <form action={prepareSpo.bind(null, deal.id)}><button type="submit" className="btn sm">{t("Preparar Supplier PO desde la cotización", "Prepare Supplier PO from the quote")}</button></form>
-            {sp.ok === "sin-proveedor" && <span className="attn-t small">{t("La base de suministro de la cotización no coincide con ningún proveedor registrado.", "The quote's supply basis doesn't match any registered supplier.")}</span>}
+            {suppliers.length === 0 ? <p className="small">{t("Primero crea el proveedor en ", "First create the supplier in ")}<Link href="/suppliers">{t("Proveedores", "Suppliers")}</Link>.</p> : (() => {
+              const basis = spoBasis;
+              const suggested = matchSupplier(basis, suppliers);
+              return (
+                <form action={prepareSpo.bind(null, deal.id)} className="inline" style={{ alignItems: "flex-end" }}>
+                  <label>{t("¿A qué proveedor se le compra?", "Which supplier do we buy from?")}
+                    <select name="supplierId" required defaultValue={suggested?.id ?? ""}><option value="" disabled>{t("Elegir…", "Choose…")}</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+                  </label>
+                  <button type="submit" className="btn sm">{t("Preparar Supplier PO desde la cotización", "Prepare Supplier PO from the quote")}</button>
+                  <span className="src" style={{ flexBasis: "100%" }}>{basis ? t(`La cotización dice: «${basis}».`, `The quote says: “${basis}”.`) : ""} {suggested ? t(`SOLU sugiere ${suggested.name} por el nombre: confírmalo o elige otro.`, `SOLU suggests ${suggested.name} by name: confirm it or pick another.`) : t("Elige el proveedor de la lista. Si no está, créalo primero en Mercado → Proveedores.", "Pick the supplier from the list. If it isn't there, create it first in Market → Suppliers.")}</span>
+                </form>
+              );
+            })()}
+            {sp.ok === "sin-proveedor" && <span className="attn-t small">{t("Elige el proveedor de la lista antes de preparar la orden.", "Pick the supplier from the list before preparing the order.")}</span>}
           </div>
         )}
         {editable && (

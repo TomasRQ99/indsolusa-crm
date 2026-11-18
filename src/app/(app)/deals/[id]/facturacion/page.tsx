@@ -123,7 +123,8 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
                 <form action={recordEvidence.bind(null, deal.id, deliveryId ?? "", r.key)} className="qa-form">
                   {r.key === "PORTAL"
                     ? <label>{t("Registro vigente hasta", "Registration valid until")}<input name="date" type="date" required /></label>
-                    : <label>{({ PO: t("Número de OC", "PO number"), POD: t("Quién firmó la entrega", "Who signed the delivery"), RECEPTION_CODE: t("Código de entrada de mercancía", "Goods-receipt code"), TAX: t("NIT / Tax ID", "Tax ID"), PARTIAL: t("Quién aprobó y dónde", "Who approved, and where") })[r.key]}<input name="value" required /></label>}
+                    : <label>{({ PO: t("Número de OC", "PO number"), POD: t("Quién firmó la entrega", "Who signed the delivery"), RECEPTION_CODE: t("Código de entrada de mercancía", "Goods-receipt code"), TAX: t("NIT / Tax ID", "Tax ID"), PARTIAL: t("Quién aprobó y dónde", "Who approved, and where") })[r.key]}<input name="value" required defaultValue={r.key === "TAX" ? deal.account.taxId ?? "" : ""} /></label>}
+                  {r.key === "TAX" && deal.account.taxId && <span className="src">{t("Es el NIT que ya está en la ficha del cliente: confírmalo contra el RUT y regístralo.", "It is the tax ID already on the customer's file: confirm it against the RUT and record it.")}</span>}
                   <button type="submit">{t("Registrar evidencia", "Record evidence")}</button>
                 </form>
               </div></details>

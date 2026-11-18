@@ -29,6 +29,8 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
   const B = buildSpo(spo, i);
   const prBase = await readinessForSpo(spo.id);
   const prRead = prBase ? { pr: prBase.pr, readiness: (await fullReadiness(prBase.pr)).readiness } : null;
+  // Same rule as the release command: an open point on the requirement stops the release, so the list must show it.
+  const prOpen = !spo.releasedAt && prRead?.readiness.result === "NEEDS_RESOLUTION";
   const d = spo.deal;
   const s = spo.supplier;
   const editable = canEditOps(user, d.ownerId);
@@ -44,6 +46,21 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
     liberada: t("Supplier PO liberada. Sus términos ya no se editan; los pagos siguen sus hitos.", "Supplier PO released. Its terms are no longer edited; payments follow its milestones."),
     "ya-liberada": t("Ya estaba liberada; no se repitió.", "It was already released; nothing repeated."),
     version: t("Nueva versión en preparación. La anterior queda en el historial.", "New version in preparation. The previous one stays in the history."),
+    // Every action on this page answers: without it the person cannot tell whether it was saved (trial of 2026-11-18).
+    hecho: t("Registrado en los hechos de la orden.", "Recorded in the order's facts."),
+    guardado: t("Guardado.", "Saved."),
+    "conf-coincide": t("Confirmación registrada: coincide con la orden.", "Confirmation recorded: it matches the order."),
+    "conf-diferencias": t("Confirmación registrada. Hay diferencias con la orden: revísalas en «CONFIRMACIÓN DEL PROVEEDOR» y escribe cómo se resuelven.", "Confirmation recorded. There are differences with the order: review them under “SUPPLIER CONFIRMATION” and write how they are resolved."),
+    "conf-resuelta": t("Diferencias resueltas y anotadas.", "Differences resolved and noted."),
+    ahorro: t("Ahorro registrado con su evidencia.", "Saving recorded with its evidence."),
+    tipo: t("Hitos creados para este tipo de pedido. Escribe en cada uno la fecha que dio el proveedor.", "Milestones created for this kind of order. Type on each one the date the supplier gave."),
+    compromiso: t("Fecha del hito guardada.", "Milestone date saved."),
+    ocurrio: t("Hito marcado como ocurrido, con su evidencia.", "Milestone marked as done, with its evidence."),
+    flete: t("Datos del flete guardados. La etiqueta del bloque FLETE dice qué falta.", "Freight data saved. The FREIGHT block's label says what is missing."),
+    "flete-opcion": t("Opción de transporte agregada.", "Transport option added."),
+    "flete-elegida": t("Opción de transporte elegida.", "Transport option chosen."),
+    recibido: t("Recepción registrada. Las unidades ya están en el inventario de esa bodega.", "Receipt recorded. The units are now in that warehouse's stock."),
+    lote: t("Lote guardado.", "Lot saved."),
   };
   const errMsg: Record<string, string> = {
     precondicion: t("No se liberó: hay condiciones sin cumplir.", "Not released: conditions are not met."),
@@ -58,7 +75,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
     evidencia: t("Escribe la evidencia de que ocurrió.", "Write the evidence that it happened."), ocurrido: t("Ese hito ya ocurrió.", "That milestone already happened."),
     ahorro: t("Un ahorro necesita tipo, valor final, base y evidencia.", "A saving needs a kind, final amount, baseline and evidence."),
     "ahorro-monto": t("No hay ahorro: el valor final no es menor que la base, o lo que pasó al cliente supera el ahorro.", "There is no saving: the final amount isn't below the baseline, or what was passed to the customer exceeds the saving."),
-    requerimiento: t("No se liberó: el requerimiento de compra tiene puntos por resolver (por ejemplo, una autorización pendiente).", "Not released: the purchase requirement has open points (for example, a pending authorization)."),
+    requerimiento: t("No se liberó: el requerimiento de compra tiene algo por resolver (por ejemplo, la autorización de una compra a un proveedor nuevo). Ábrelo desde la lista LISTA PARA LIBERAR: ahí dice qué falta.", "Not released: the purchase requirement has open points (for example, a pending authorization)."),
     liberada: t("Está liberada: para cambiarla crea una nueva versión.", "It's released: to change it create a new version."),
     "no-liberada": t("Primero se libera la Supplier PO; después se pide el pago.", "Release the supplier PO first; then request payment."),
     motivo: t("Escribe por qué cambia.", "Write why it changes."),
@@ -215,15 +232,18 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
 
         <aside className="jrail">
           <div>
-            <div className="jbh"><b>{t("LISTA PARA LIBERAR", "RELEASE READINESS")}</b><span className="grow" />{B.released ? <span className="sig ok">{t("Liberada", "Released")}</span> : B.blocking.length ? <span className="sig attn">{t(`${B.blocking.length} pendiente(s)`, `${B.blocking.length} open`)}</span> : <span className="sig ok">{t("Lista", "Ready")}</span>}</div>
+            <div className="jbh"><b>{t("LISTA PARA LIBERAR", "RELEASE READINESS")}</b><span className="grow" />{B.released ? <span className="sig ok">{t("Liberada", "Released")}</span> : B.blocking.length + (prOpen ? 1 : 0) ? <span className="sig attn">{t(`${B.blocking.length + (prOpen ? 1 : 0)} pendiente(s)`, `${B.blocking.length + (prOpen ? 1 : 0)} open`)}</span> : <span className="sig ok">{t("Lista", "Ready")}</span>}</div>
             <ul className="qv-checks">
               {B.ready.map((c, k) => (
                 <li key={k} className={c.ok ? "ok" : c.info ? "no info" : "no"}><span className="ic" aria-hidden>{c.ok ? "✓" : c.info ? "i" : "!"}</span><span>{c.text}{!c.ok && c.fix && <span className="src block">{c.fix}</span>}</span></li>
               ))}
+              {prOpen && prRead && (
+                <li className="no"><span className="ic" aria-hidden>!</span><span>{t("El requerimiento de compra tiene algo por resolver", "The purchase requirement has something to resolve")}<span className="src block">{t("Por ejemplo, la autorización de una compra a un proveedor nuevo. ", "For example, the authorization of a purchase from a new supplier. ")}<Link href={`/compras/requerimientos/${prRead.pr.id}`}>{t("Abrir el requerimiento: ahí dice qué falta y se pide la autorización", "Open the requirement: it says what is missing and the authorization is requested there")}</Link></span></span></li>
+              )}
             </ul>
             {!B.released && editable && (
               <form action={releaseSpo.bind(null, spo.id)} style={{ marginTop: 12 }}>
-                <button type="submit" className="wide" disabled={B.blocking.length > 0}>{t("Liberar Supplier PO", "Release Supplier PO")} v{spo.version}</button>
+                <button type="submit" className="wide" disabled={B.blocking.length > 0 || prOpen}>{t("Liberar Supplier PO", "Release Supplier PO")} v{spo.version}</button>
                 <span className="src block" style={{ marginTop: 6 }}>{t("Al liberarla, sus términos quedan fijos y los hitos de pago se pueden solicitar.", "Once released, its terms are fixed and payment milestones can be requested.")}</span>
               </form>
             )}

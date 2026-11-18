@@ -33,12 +33,15 @@ async function loadSpo(id: string) {
 }
 
 /** One click: the Supplier PO is prepared from the Supply Basis of the quote + the Purchase Requirement. */
-export async function prepareSpo(dealId: string) {
+export async function prepareSpo(dealId: string, fd?: FormData) {
   const user = await requireUser();
   const deal = await db.deal.findUniqueOrThrow({ where: { id: dealId }, include: spoInclude.deal.include });
   assertCanEditOps(user, deal.ownerId);
   const suppliers = await db.supplier.findMany();
-  const supplier = matchSupplier(purchaseRequirement(deal).supply, suppliers);
+  // The person chooses the supplier on the screen (SOLU only suggests one from the quote's supply basis):
+  // a loose word match must never decide who we buy from.
+  const chosen = fd ? String(fd.get("supplierId") ?? "") : "";
+  const supplier = chosen ? suppliers.find((s) => s.id === chosen) ?? null : matchSupplier(purchaseRequirement(deal).supply, suppliers);
   if (!supplier) redirect(`/deals/${dealId}?tab=execute&ok=sin-proveedor`);
   const pr = purchaseRequirement(deal, isDomestic(supplier));
   const saleTotal = sumMoney(pr.lines.map((l) => l.sale));

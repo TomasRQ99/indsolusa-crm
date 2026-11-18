@@ -14,7 +14,7 @@ export const resultInclude = {
   owner: { select: { id: true, name: true } },
   items: { include: { deliveryLines: { select: { qty: true } } } },
   deliveries: { orderBy: { deliveredAt: "asc" }, include: { invoice: { select: { id: true } } } },
-  shipments: { select: { id: true, code: true, receipt: true } },
+  shipments: { select: { id: true, code: true, receipt: true, toCustomer: true, supplierPo: { select: { receivedAt: true } } } },
   invoices: {
     orderBy: { issuedAt: "asc" },
     include: { applications: { select: { amount: true, payment: { select: { reconciledAt: true, receivedAt: true } } } }, promises: { orderBy: { createdAt: "desc" } } },
@@ -112,7 +112,9 @@ export function closureChecks(deal: ResultDeal, i: I, now = today()): Check[] {
 
   const ordered = deal.items.reduce((x, it) => x + it.qty, 0);
   const delivered = deal.items.reduce((x, it) => x + it.deliveryLines.reduce((y, l) => y + l.qty, 0), 0);
-  const openShips = deal.shipments.filter((sh) => sh.receipt !== "CONFIRMED");
+  // A shipment from the supplier to our own warehouse is done when the warehouse received the order in full
+  // (Compras → Recepción); only a shipment that goes straight to the customer waits for the customer's receipt.
+  const openShips = deal.shipments.filter((sh) => sh.receipt !== "CONFIRMED" && !(!sh.toCustomer && sh.supplierPo?.receivedAt));
   const execOk = nlr ? openShips.length === 0 : (ordered > 0 ? delivered >= ordered : deal.deliveries.length > 0) && openShips.length === 0;
   out.push({
     key: "execution", ok: execOk, label: t("Ejecución completa", "Execution complete"),

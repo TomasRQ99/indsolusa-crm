@@ -69,6 +69,12 @@ export async function recordReceipt(spoId: string, fd: FormData) {
     // The order counts as received only when every line arrived in full.
     const full = spo.lines.every((l) => done(l.position) + (lines.find((x) => x.l.position === l.position)?.qtyReceived ?? 0) >= l.qty);
     if (full && !spo.receivedAt) await tx.supplierPO.update({ where: { id: spoId }, data: { receivedAt } });
+    // The shipment that brought it to our warehouse is now received too: nobody has to "confirm receipt" on the
+    // shipment page (that button is for goods that travel straight to the customer and would create a delivery note).
+    if (full) {
+      await tx.shipment.updateMany({ where: { supplierPoId: spoId, toCustomer: false, receipt: { not: "CONFIRMED" }, deliveredAt: null }, data: { deliveredAt: receivedAt } });
+      await tx.shipment.updateMany({ where: { supplierPoId: spoId, toCustomer: false, receipt: { not: "CONFIRMED" } }, data: { receipt: "CONFIRMED", receivedAt, receivedByName: `${loc!.name} · ${user.name}`.slice(0, 120), receiptNote: `Recepción ${code} en bodega` } });
+    }
     await tx.activity.create({ data: { type: "NOTE", subject: `Recepción ${code} de ${spo.code} en ${loc!.name}${lines.some((x) => x.kind) ? " · con novedades" : ""}`.slice(0, 200), userId: user.id, accountId: spo.deal.accountId, dealId: spo.dealId, phase: "execute", source: "Recepción" } });
     return r;
   });

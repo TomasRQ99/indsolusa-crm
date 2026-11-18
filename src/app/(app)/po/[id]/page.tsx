@@ -3,7 +3,8 @@ import { GuideWhy } from "@/components/GuideWhy";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canEdit } from "@/lib/permissions";
+import { canDecideCredit, canEdit } from "@/lib/permissions";
+import { requestCreditReview } from "../../comercial/dinero/actions";
 import { makeI18n } from "@/lib/i18n";
 import { addDays, daysBetween } from "@/lib/domain";
 import { quoteNo } from "@/lib/quote";
@@ -45,6 +46,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
   const snap = acc?.snapshot as { effects?: string[] } | undefined;
 
   const okMsg: Record<string, string> = {
+    "cupo-pedido": t("Solicitud de cupo enviada. La deciden Finanzas o Gerencia; cuando la aprueben, «Aceptar PO» se habilita aquí.", "Credit request sent. Finance or Management decide; once approved, “Accept PO” becomes available here."),
     registrada: t("PO registrada tal como llegó. SOLU la comparó con la cotización.", "PO recorded as received. SOLU compared it with the quote."),
     elegida: t("Opción elegida. Falta su confirmación para habilitar «Aceptar PO».", "Option chosen. It needs its confirmation to enable “Accept PO”."),
     confirmada: t("Resolución confirmada con evidencia.", "Resolution confirmed with evidence."),
@@ -59,6 +61,10 @@ export default async function PoPage({ params, searchParams }: { params: Promise
     rechazada: t("Registrado: esta PO no se acepta.", "Recorded: this PO is not accepted."),
   };
   const errMsg: Record<string, string> = {
+    "motivo-cupo": t("Escribe por qué pides el cupo.", "Write why you request the limit."),
+    "monto-cupo": t("Escribe el cupo que propones, en USD.", "Type the limit you propose, in USD."),
+    "valor": t("Revisa el valor del cupo.", "Check the limit amount."),
+    "cupo-pendiente": t("Este cliente ya tiene una solicitud de cupo abierta: espera la decisión de Finanzas o Gerencia.", "This customer already has an open credit request: wait for Finance or Management's decision."),
     precondicion: t("El command no se ejecutó: hay precondiciones sin cumplir.", "The command did not run: preconditions are not met."),
     evidencia: t("Escribe la evidencia: quién confirmó qué y dónde.", "Write the evidence: who confirmed what, and where."),
     motivo: t("Escribe el motivo.", "Write the reason."),
@@ -306,7 +312,23 @@ export default async function PoPage({ params, searchParams }: { params: Promise
                 </form>
               </details>
             )}
-            {open && ctx.credit && !ctx.credit.ok && <p className="src" style={{ marginTop: 6 }}><Link href="/comercial/dinero">{t("Pedir revisión de cupo", "Request a credit review")}</Link> · {t("la deciden Finanzas o Gerencia", "Finance or Management decide")}</p>}
+            {/* Credit is what blocks: ask for the review right here (a new customer has no limit and is not on the credit list yet). */}
+            {open && ctx.credit && !ctx.credit.ok && (
+              <div style={{ marginTop: 8 }}>
+                <details className="scp-add" open={sp.err === "motivo-cupo" || sp.err === "monto-cupo"}><summary className="qa-btn">{t("Pedir revisión de cupo", "Request a credit review")}</summary>
+                  <form action={requestCreditReview.bind(null, d.account.id)} className="qa-form">
+                    <input type="hidden" name="back" value={`/po/${po.id}`} />
+                    <input type="hidden" name="kind" value="INCREASE" />
+                    <input type="hidden" name="dealId" value={d.id} />
+                    <label>{t("Cupo que propones (USD)", "Limit you propose (USD)")}<input name="requestedLimit" inputMode="decimal" required defaultValue={Math.ceil(Number(d.amount) || 0) || ""} /></label>
+                    <label>{t("Por qué (qué sabes del cliente y de esta orden)", "Why (what you know about the customer and this order)")}<textarea name="reason" rows={2} required maxLength={1200} /></label>
+                    <button type="submit">{t("Enviar solicitud", "Send request")}</button>
+                    <span className="src">{t("La deciden Finanzas o Gerencia, nunca quien la pide. Cuando la aprueben, vuelve aquí: «Aceptar PO» se habilita.", "Finance or Management decide, never the requester. Once approved, come back here: “Accept PO” becomes available.")}</span>
+                  </form>
+                </details>
+                {canDecideCredit(user) && <p className="src" style={{ marginTop: 6 }}><Link href="/administracion/cupos">{t("Tú puedes decidirlo: ir a Cupos de crédito", "You can decide it: go to Credit limits")}</Link> · {t("define el cupo de este cliente o decide la solicitud", "set this customer's limit or decide the request")}</p>}
+              </div>
+            )}
             {B.accepted && (
               <p style={{ marginTop: 10 }}><Link className="qa-btn" href={`/deals/${d.id}/despacho?po=${po.id}`}>{dispatch ? t(`Instrucción de despacho v${dispatch.version}`, `Dispatch instruction v${dispatch.version}`) : t("Emitir instrucción de despacho", "Issue dispatch instruction")}</Link></p>
             )}

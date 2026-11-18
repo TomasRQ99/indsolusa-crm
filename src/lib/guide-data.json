@@ -446,7 +446,7 @@
     "Para cada diferencia importante, elige una solución con [[Elegir esta opción]] y registra la confirmación del cliente con [[Registrar confirmación]].",
     "Cuando nada bloquee, haz clic en [[Aceptar PO]]."
    ],
-   "expect": "Aceptar PO sigue desactivado mientras haya una diferencia importante abierta. Una vez aceptada, el registro no se puede editar."
+   "expect": "Aceptar PO sigue desactivado mientras haya una diferencia importante abierta o una precondición en «!». Si el cliente es nuevo y no tiene cupo de crédito, pídelo ahí mismo con «Pedir revisión de cupo»: lo deciden Finanzas o Gerencia. Una vez aceptada, el registro no se puede editar."
   },
   {
    "id": "promise",
@@ -642,12 +642,12 @@
    "path": "Necesidad → Ejecución → Preparar Supplier PO desde la cotización",
    "why": "Compra exactamente lo cotizado, guarda versiones y programa los pagos al proveedor.",
    "steps": [
-    "En la pestaña [[Ejecución]] de la Necesidad, haz clic en [[Preparar Supplier PO desde la cotización]].",
+    "En la pestaña [[Ejecución]] de la Necesidad, elige en la lista «¿A qué proveedor se le compra?» (SOLU sugiere uno por el nombre: confírmalo) y haz clic en [[Preparar Supplier PO desde la cotización]].",
     "SOLU abre la orden. Revísala y guarda los cambios con [[Guardar borrador]].",
     "Cuando la lista LISTA PARA LIBERAR (columna derecha) no tenga pendientes, haz clic en [[Liberar Supplier PO]].",
     "En PLAN DE PAGO, haz clic en [[Solicitar este pago]] en cada hito. Si después hay que cambiar la orden: [[Crear nueva versión]]."
    ],
-   "expect": "Las solicitudes de pago van a Administración → Pagos a proveedores para verificación."
+   "expect": "Las solicitudes de pago van a Administración → Pagos a proveedores para verificación. Si la lista muestra «El requerimiento de compra tiene algo por resolver», ábrelo desde ahí: por ejemplo, la primera compra a un proveedor nuevo pide la autorización de otra persona."
   },
   {
    "id": "logistica",
@@ -660,7 +660,7 @@
     "Si la aduana lo retiene: [[Retenido en aduana]], y luego [[✓ Liberado por la aduana]] cuando se libere.",
     "Al llegar: [[El transportista entregó]]. Si algo no cuadra: [[Registrar discrepancia]]."
    ],
-   "expect": "Confirmar la entrega crea la remisión. Las fechas de la Necesidad se actualizan desde el envío."
+   "expect": "Si el envío llega a nuestra bodega, se recibe en la orden de compra (bloque RECEPCIÓN) y el envío queda recibido solo; la entrega al cliente se hace después, desde Despachos. Si va directo al cliente, confirmar su recibo crea la remisión. Las fechas de la Necesidad se actualizan desde el envío."
   },
   {
    "id": "sin-despachar",

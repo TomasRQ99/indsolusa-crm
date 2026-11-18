@@ -70,7 +70,7 @@ export default async function ShipmentPage({ params, searchParams }: { params: P
     retenido: t("Retención en aduana registrada.", "Customs hold recorded."),
     liberado: t("Liberado por la aduana.", "Released by customs."),
     docs: t("Documentos actualizados.", "Documents updated."),
-    entregado: t("Entrega del transportista registrada. Falta que el cliente confirme.", "Carrier delivery recorded. Customer confirmation pending."),
+    entregado: t("Entrega del transportista registrada. Falta el recibo: abajo dice si es en nuestra bodega o del cliente.", "Carrier delivery recorded. The receipt is pending: below it says whether it is at our warehouse or the customer's."),
     recibido: t("Recibo confirmado. Se creó la remisión para facturar.", "Receipt confirmed. The delivery note was created for invoicing."),
     disputa: t("Discrepancia registrada. No se factura hasta resolverla.", "Discrepancy recorded. No invoicing until it's resolved."),
     opcion: t("Opción elegida. Quedó como siguiente movimiento de la Necesidad.", "Option chosen. It's now the Need's next movement."),
@@ -287,7 +287,17 @@ export default async function ShipmentPage({ params, searchParams }: { params: P
               </div>
             </div>
           )}
-          {editable && open && (s.deliveredAt || s.receipt === "DISPUTED") && (
+          {/* Goods that arrive at our own warehouse are received on the supplier order (Recepción), not here:
+              "Confirmar recibo" is the customer's receipt and creates a delivery note. */}
+          {editable && open && (s.deliveredAt || s.receipt === "DISPUTED") && !s.toCustomer && s.supplierPoId && s.receipt !== "DISPUTED" && (
+            <div>
+              <div className="jbh"><b>{t("RECEPCIÓN EN NUESTRA BODEGA", "RECEIPT AT OUR WAREHOUSE")}</b></div>
+              <p className="small">{t("Este envío llega a nuestra bodega, no al cliente. Registra qué llegó y en qué estado en la orden de compra:", "This shipment arrives at our warehouse, not at the customer. Record what arrived and in what condition on the supplier order:")}</p>
+              <p><Link className="btn" href={`/compras/${s.supplierPoId}#recepcion`}>{t("Ir a Recepción de la orden", "Go to the order's Receiving")}</Link></p>
+              <span className="src">{t("Al recibir la orden completa, este envío queda recibido solo. La entrega al cliente se hace después, desde Despachos.", "Once the order is fully received, this shipment is marked received by itself. Delivery to the customer comes later, from Dispatch.")}</span>
+            </div>
+          )}
+          {editable && open && (s.deliveredAt || s.receipt === "DISPUTED") && (s.toCustomer || !s.supplierPoId || s.receipt === "DISPUTED") && (
             <div>
               <div className="jbh"><b>{t("RECIBO DEL CLIENTE", "CUSTOMER RECEIPT")}</b></div>
               <form action={confirmReceipt.bind(null, s.id)} className="qa-form">

@@ -311,7 +311,7 @@
    "For each important difference, choose a solution with [[Elegir esta opción]] and record the customer's confirmation with [[Registrar confirmación]].",
    "When nothing blocks, click [[Aceptar PO]]."
   ],
-  "expect": "Accept PO stays disabled while an important difference is open. Once accepted, the record cannot be edited."
+  "expect": "Accept PO stays disabled while an important difference is open or a precondition shows “!”. If the customer is new and has no credit limit, request it right there with “Request a credit review”: Finance or Management decide. Once accepted, the record cannot be edited."
  },
  "promise": {
   "t": "Promise to the customer",
@@ -462,12 +462,12 @@
   "t": "Supplier purchase orders",
   "why": "Buy exactly what was quoted, keep versions and schedule the supplier payments.",
   "steps": [
-   "On the Need's [[Ejecución]] tab, click [[Preparar Supplier PO desde la cotización]].",
+   "On the Need's [[Ejecución]] tab, pick from the “Which supplier do we buy from?” list (SOLU suggests one by name: confirm it) and click [[Preparar Supplier PO desde la cotización]].",
    "SOLU opens the order. Review it and save the changes with [[Guardar borrador]].",
    "When the READY TO RELEASE list (right column) has nothing open, click [[Liberar Supplier PO]].",
    "Under PAYMENT PLAN, click [[Solicitar este pago]] on each milestone. If the order must change later: [[Crear nueva versión]]."
   ],
-  "expect": "Payment requests go to Administration → Supplier payments for verification."
+  "expect": "Payment requests go to Administration → Supplier payments for verification. If the list shows “The purchase requirement has something to resolve”, open it from there: for example, the first purchase from a new supplier needs another person's authorization."
  },
  "logistica": {
   "t": "Shipments",
@@ -477,7 +477,7 @@
    "If customs holds it: [[Retenido en aduana]], and then [[✓ Liberado por la aduana]] when it is released.",
    "On arrival: [[El transportista entregó]]. If something does not match: [[Registrar discrepancia]]."
   ],
-  "expect": "Confirming the delivery creates the delivery note. The Need's dates are updated from the shipment."
+  "expect": "If the shipment arrives at our warehouse, it is received on the supplier order (RECEIVING block) and the shipment is marked received by itself; delivery to the customer comes later, from Dispatch. If it goes straight to the customer, confirming their receipt creates the delivery note. The Need's dates are updated from the shipment."
  },
  "sin-despachar": {
   "t": "Not dispatched",
