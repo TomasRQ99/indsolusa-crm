@@ -180,20 +180,24 @@ export async function treasuryChecks(
 
 /** Who may approve this request, and whether this person can. */
 /** Payment approval authority. Decided 2026-11-10: payments follow the same versioned policy as purchases
- *  (level-1 roles up to the limit, level-2 roles above), always someone other than who requested and who verified. */
-export function authorityFor(user: { id: string; role: Role }, p: { requestedById: string; verifiedById: string | null }, usd: number | null, i: I, pol: { value: { level1Roles: string[]; level2Roles: string[]; level1LimitUsd: number }; version: number }) {
+ *  (level-1 roles up to the limit, level-2 roles above), always someone other than who requested and who verified.
+ *  Owner's decision 2026-11-18: Gerencia, with its OWN role (ownRole; never a lent authority), may approve a payment it
+ *  requested or verified itself, so a company with one manager can pay. The record says so. Other roles: unchanged. */
+export function authorityFor(user: { id: string; role: Role }, p: { requestedById: string; verifiedById: string | null }, usd: number | null, i: I, pol: { value: { level1Roles: string[]; level2Roles: string[]; level1LimitUsd: number }; version: number }, ownRole: string = user.role) {
+  const solo = user.role === "GERENCIA" && ownRole === "GERENCIA";
   const { t } = i;
   const limit = pol.value.level2Roles.includes(user.role) ? Infinity : pol.value.level1Roles.includes(user.role) ? pol.value.level1LimitUsd : 0;
   const reasons: string[] = [];
   if (limit === 0) reasons.push(t("Tu rol no aprueba pagos", "Your role doesn't approve payments"));
   if (usd == null) reasons.push(t("Falta el equivalente en USD para aplicar el límite", "USD equivalent missing to apply the limit"));
   else if (usd > limit) reasons.push(t(`Supera tu límite (USD ${i.n(limit)})`, `Exceeds your limit (USD ${i.n(limit)})`));
-  if (p.requestedById === user.id) reasons.push(t("Tú solicitaste este pago", "You requested this payment"));
-  if (p.verifiedById === user.id) reasons.push(t("Tú verificaste el banco", "You verified the bank"));
+  if (p.requestedById === user.id && !solo) reasons.push(t("Tú solicitaste este pago", "You requested this payment"));
+  if (p.verifiedById === user.id && !solo) reasons.push(t("Tú verificaste el banco", "You verified the bank"));
+  const self = solo && (p.requestedById === user.id || p.verifiedById === user.id);
   const lim = i.n(pol.value.level1LimitUsd);
   const names = (rs: string[], es: boolean) => rs.map((r) => (ROLE_NAMES[r] ? (es ? ROLE_NAMES[r].es : ROLE_NAMES[r].en) : r)).join(", ");
-  const rule = t(`Aprueban ${names(pol.value.level1Roles, true)} hasta USD ${lim}; ${names(pol.value.level2Roles, true)} sin límite. Siempre una persona distinta de quien solicitó y de quien verificó. Misma política que las compras, v${pol.version}.`, `${names(pol.value.level1Roles, false)} approve up to USD ${lim}; ${names(pol.value.level2Roles, false)} without limit. Always someone other than the requester and the verifier. Same policy as purchases, v${pol.version}.`);
-  return { can: reasons.length === 0, reasons, rule, limit };
+  const rule = t(`Aprueban ${names(pol.value.level1Roles, true)} hasta USD ${lim}; ${names(pol.value.level2Roles, true)} sin límite. Siempre una persona distinta de quien solicitó y de quien verificó, salvo Gerencia, que puede aprobar un pago que ella misma pidió (queda registrado). Misma política que las compras, v${pol.version}.`, `${names(pol.value.level1Roles, false)} approve up to USD ${lim}; ${names(pol.value.level2Roles, false)} without limit. Always someone other than the requester and the verifier, except Management, which may approve a payment it requested itself (it is recorded). Same policy as purchases, v${pol.version}.`);
+  return { can: reasons.length === 0, reasons, rule, limit, self };
 }
 
 export const ageDays = (d: Date) => daysBetween(d, new Date());

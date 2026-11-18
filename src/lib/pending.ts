@@ -69,7 +69,8 @@ export async function pendingFor(user: SessionUser): Promise<{ mine: PendingRow[
       title: verify ? t(`Verificar el pago a ${what}`, `Verify the payment to ${what}`) : t(`Aprobar el pago a ${what}`, `Approve the payment to ${what}`),
       detail: t(p.reason ?? "", p.reason ?? ""), amount: money(p.currency, p.amount), since: p.createdAt ?? null, href: `/administracion/pagos-proveedores/${p.id}`, cta: verify ? t("Abrir y verificar", "Open and verify") : t("Abrir y aprobar", "Open and approve"),
     };
-    const own = p.requestedById === user.id || (!verify && p.verifiedById === user.id);
+    // Gerencia may verify and approve a payment it requested itself (owner's decision 2026-11-18).
+    const own = user.role !== "GERENCIA" && (p.requestedById === user.id || (!verify && p.verifiedById === user.id));
     if (own) waiting.push({ ...row, cta: t("Ver el pago", "See the payment"), waitsFor: t(verify ? "Lo pediste tú: lo verifica otra persona" : "Lo pediste o lo verificaste tú: lo aprueba otra persona", verify ? "You requested it: another person verifies it" : "You requested or verified it: another person approves it") });
     else if (manager) mine.push(row);
   }

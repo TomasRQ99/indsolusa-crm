@@ -263,7 +263,8 @@ export async function verifySupplierPayment(id: string, formData: FormData) {
   const user = await requireFinance(); // Treasury only (least privilege); never the requester
   const { p, state } = await loadPayment(id);
   if (state !== "VERIFY") throw new Error("Este pago no requiere verificación / This payment needs no verification.");
-  if (p.requestedById === user.id) throw new Error("Quien solicita el pago no puede verificarlo / The requester cannot verify.");
+  // Never the requester, except Gerencia (owner's decision 2026-11-18: one manager must be able to pay).
+  if (p.requestedById === user.id && user.role !== "GERENCIA") throw new Error("Quien solicita el pago no puede verificarlo / The requester cannot verify.");
   const { verificationNote } = parseForm(z.object({ verificationNote: requiredText }), formData);
   // The verification route: the registered phone (never the document's), every field confirmed.
   if (formData.get("calledRegistered") !== "on" || formData.get("allFields") !== "on") payBack(id, "err=ruta");
@@ -312,11 +313,12 @@ export async function approveSupplierPayment(id: string, formData: FormData) {
   if (dup.hits.length && formData.get("dupChecked") !== "1") payBack(id, "err=revisar-duplicados");
   const payPol = await getPurchasePolicy();
   // Módulo 14 §16: own role, or an authority lent for payments (same checks: never the requester or the verifier).
-  const act = await actWith(user, "PAYMENT_APPROVAL", usd, p.requestedById, (role) => authorityFor({ id: user.id, role: role as Role }, p, usd, i, payPol).can);
+  const act = await actWith(user, "PAYMENT_APPROVAL", usd, p.requestedById, (role) => authorityFor({ id: user.id, role: role as Role }, p, usd, i, payPol, user.role).can);
   if (!act.ok) payBack(id, "err=autoridad");
+  const ownRequest = user.role === "GERENCIA" && (p.requestedById === user.id || p.verifiedById === user.id);
   await db.supplierPayment.updateMany({
     where: { id, approvedAt: null },
-    data: { approvedById: user.id, approvedAt: new Date(), dupCheckedByName: user.name, dupCheckNote: `${dup.hits.length ? `Revisados ${dup.hits.length} posibles duplicados` : "Sin duplicados"}${act.fromName ? ` · aprobado con autoridad prestada por ${act.fromName}` : ""}` },
+    data: { approvedById: user.id, approvedAt: new Date(), dupCheckedByName: user.name, dupCheckNote: `${dup.hits.length ? `Revisados ${dup.hits.length} posibles duplicados` : "Sin duplicados"}${act.fromName ? ` · aprobado con autoridad prestada por ${act.fromName}` : ""}${ownRequest ? " · aprobado por Gerencia sobre un pago que ella misma solicitó o verificó" : ""}` },
   });
   payBack(id, "ok=aprobado");
 }

@@ -964,7 +964,7 @@
     "Después de enviar la transferencia: [[Registrar ejecución]].",
     "Cuando el banco lo confirme: [[Confirmar: el dinero salió]]."
    ],
-   "expect": "Solo el último paso lo marca como pagado. Un cambio de cuenta bancaria es un alto total hasta verificarlo por teléfono a un número conocido. Nunca aceptes un cambio de cuenta por correo o WhatsApp."
+   "expect": "Solo el último paso lo marca como pagado. Un cambio de cuenta bancaria es un alto total hasta verificarlo por teléfono a un número conocido. Nunca aceptes un cambio de cuenta por correo o WhatsApp. Quien solicita un pago no lo verifica ni lo aprueba; la única excepción es Gerencia, que puede hacerlo sobre un pago que ella misma pidió, y queda registrado así."
   },
   {
    "id": "pagos-exterior",
@@ -1864,7 +1864,7 @@
     "Haz clic en el botón azul de la línea (por ejemplo [[Abrir y autorizar]]): SOLU te lleva al sitio exacto donde se aprueba.",
     "Allí toma la decisión con el botón de esa pantalla («Autorizar», «Aceptar PO», «Liberar Supplier PO»…). Al volver, la línea ya no aparece."
    ],
-   "expect": "Aquí no se aprueba nada: cada aprobación se hace en su propia pantalla, con sus reglas. Abajo, «Lo que pediste y espera a otra persona» muestra lo que tú pediste y no puedes aprobar tú mismo. La autorización de una compra pedida por Gerencia sí la puede dar Gerencia."
+   "expect": "Aquí no se aprueba nada: cada aprobación se hace en su propia pantalla, con sus reglas. Abajo, «Lo que pediste y espera a otra persona» muestra lo que tú pediste y no puedes aprobar tú mismo. Gerencia sí puede autorizar una compra y verificar o aprobar un pago que ella misma pidió."
   },
   {
    "id": "search",

@@ -32,7 +32,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
   const payPol = await getPurchasePolicy();
   const own = authorityFor(user, p, usd, i, payPol);
   // Módulo 14 §16: an authority lent to this person for payments counts too.
-  const act = own.can ? null : await actWith(user, "PAYMENT_APPROVAL", usd, p.requestedById, (role) => authorityFor({ id: user.id, role: role as Role }, p, usd, i, payPol).can);
+  const act = own.can ? null : await actWith(user, "PAYMENT_APPROVAL", usd, p.requestedById, (role) => authorityFor({ id: user.id, role: role as Role }, p, usd, i, payPol, user.role).can);
   const auth = act?.ok ? { ...own, can: true, reasons: [t(`Apruebas con autoridad prestada por ${act.fromName}`, `You approve with authority lent by ${act.fromName}`)] } : own;
   const L = paymentStateLabel(i, p.state);
   const m = (v: unknown) => `${p.currency} ${i.n2(v)}`;
@@ -42,7 +42,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
   const confirmed = p.executions.find((e) => e.state === "CONFIRMED");
   // Least privilege: full account numbers and the verification call are for Treasury (Management/Admin);
   // everyone else sees the last 4 digits. The requester can never verify their own request.
-  const canVerify = p.state === "VERIFY" && p.requestedById !== user.id && manager;
+  const canVerify = p.state === "VERIFY" && (p.requestedById !== user.id || user.role === "GERENCIA") && manager;
   const shown = (key: string, v: string | null) => (v == null ? "—" : manager || key !== "account" ? v : `•••• ${v.replace(/[^A-Za-z0-9]/g, "").slice(-4)}`);
   const fields = [
     { key: "beneficiary", label: t("Beneficiario", "Beneficiary"), profile: s.bankBeneficiary, doc: p.docBeneficiary },
@@ -150,7 +150,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
               <p className="src">{t(`En esta PO: ${m(dup.onPo)} solicitados de ${m(spoFull.amount)}.`, `On this PO: ${m(dup.onPo)} requested of ${m(spoFull.amount)}.`)}{p.dupCheckedByName ? ` · ${t("Revisó", "Reviewed by")} ${p.dupCheckedByName}` : ""}</p>
             </section>
             <section className={`jblock ${p.state === "APPROVE" && !auth.can ? "warn" : "good"}`}>
-              <div className="jbh"><b>AUTHORITY</b><span className="grow" />{p.approvedAt ? <span className="sig ok">✓ {p.approvedBy?.name}</span> : auth.can ? <span className="sig ok">{t("Puedes aprobar", "You can approve")}</span> : <span className="sig wait">{t("No eres quien aprueba", "Not your approval")}</span>}</div>
+              <div className="jbh"><b>AUTHORITY</b><span className="grow" />{p.approvedAt ? <span className="sig ok">✓ {p.approvedBy?.name}</span> : auth.can ? <span className="sig ok">{own.self && !act?.ok ? t("Puedes aprobar (como Gerencia)", "You can approve (as Management)") : t("Puedes aprobar", "You can approve")}</span> : <span className="sig wait">{t("No eres quien aprueba", "Not your approval")}</span>}</div>
               <p className="small">{auth.rule}</p>
               {!p.approvedAt && auth.reasons.length > 0 && <ul className="plain small">{auth.reasons.map((r, k) => <li key={k}>{r}</li>)}</ul>}
               <p className="src">{t("Monto para el límite", "Amount for the limit")}: {usd != null ? `USD ${i.n2(usd)}` : "—"}</p>

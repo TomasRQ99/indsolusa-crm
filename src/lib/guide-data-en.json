@@ -712,7 +712,7 @@
    "After sending the transfer: [[Registrar ejecución]].",
    "When the bank confirms it: [[Confirmar: el dinero salió]]."
   ],
-  "expect": "Only the last step marks it as paid. A bank-account change is a full stop until verified by phone on a known number. Never accept an account change by email or WhatsApp."
+  "expect": "Only the last step marks it as paid. A bank-account change is a full stop until verified by phone on a known number. Never accept an account change by email or WhatsApp. Whoever requests a payment does not verify or approve it; the only exception is Management, which may do so on a payment it requested itself, and the record says so."
  },
  "pagos-exterior": {
   "t": "Foreign payments",
@@ -1478,6 +1478,6 @@
    "Click the blue button on the line (for example [[Abrir y autorizar]]): SOLU takes you to the exact place where it is approved.",
    "There, take the decision with that screen's button (“Approve”, “Accept PO”, “Release Supplier PO”…). When you come back, the line is gone."
   ],
-  "expect": "Nothing is approved here: each approval is done on its own screen, with its rules. Below, “What you asked for and waits for someone else” shows what you requested and cannot approve yourself. A purchase authorization requested by Management can be given by Management."
+  "expect": "Nothing is approved here: each approval is done on its own screen, with its rules. Below, “What you asked for and waits for someone else” shows what you requested and cannot approve yourself. Management may authorize a purchase and verify or approve a payment it requested itself."
  }
 }
