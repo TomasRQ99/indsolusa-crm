@@ -1,5 +1,6 @@
 "use server";
 
+import { repairItemPrices } from "@/lib/item-prices";
 import { redirect } from "next/navigation";
 import { sellerOf } from "@/lib/sellers";
 import { db } from "@/lib/db";
@@ -25,6 +26,7 @@ const isKey = (k: string): k is ReqKey => (REQ_KEYS as string[]).includes(k);
 
 async function loadDeal(dealId: string) {
   const user = await requireUser();
+  await repairItemPrices(dealId);
   const deal = await db.deal.findUniqueOrThrow({ where: { id: dealId }, include: billingInclude });
   assertCanEditMoney(user, deal.ownerId);
   return { user, deal, i: makeI18n(user.lang) };

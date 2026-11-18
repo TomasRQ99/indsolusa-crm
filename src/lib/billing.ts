@@ -67,7 +67,15 @@ function openRequest(deal: BillingDeal, key: ReqKey, deliveryId: string | null) 
 const units = (d: BDelivery) => d.lines.reduce((s, l) => s + l.qty, 0);
 
 export function deliveryAmount(deal: BillingDeal, d: BDelivery) {
-  if (d.lines.length) return linesTotal(d.lines, (l) => l.qty, (l) => l.dealItem.unitPrice);
+  if (d.lines.length) {
+    const byLines = linesTotal(d.lines, (l) => l.qty, (l) => l.dealItem.unitPrice);
+    if (byLines > 0 || !(Number(deal.amount) > 0)) return byLines;
+    // Products with no price on the Need (the price lives on the quote / PO): the delivery is worth its share of the
+    // agreed sale, by units, never more than what is left to invoice. An invoice must not come out at 0.
+    const ordered = deal.items.reduce((s, it) => s + it.qty, 0);
+    const share = ordered > 0 ? Math.round(Number(deal.amount) * (units(d) / ordered) * 100) / 100 : Number(deal.amount);
+    return Math.max(0, Math.min(share, subMoney(deal.amount, sumMoney(deal.invoices.map((x) => x.amount)))));
+  }
   const invoiced = sumMoney(deal.invoices.map((x) => x.amount));
   return Math.max(0, subMoney(deal.amount, invoiced));
 }

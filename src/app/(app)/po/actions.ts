@@ -1,5 +1,6 @@
 "use server";
 
+import { syncItemPrices } from "@/lib/item-prices";
 import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
@@ -235,6 +236,7 @@ export async function acceptPo(id: string) {
         },
       });
       await tx.quote.update({ where: { id: po.quote!.id }, data: { status: "ACCEPTED", decidedAt: B.base } });
+      await syncItemPrices(tx, deal.id, po.lines, "set");
       await tx.deal.update({
         where: { id: deal.id },
         data: {

@@ -1,3 +1,4 @@
+import { repairItemPrices } from "@/lib/item-prices";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -17,6 +18,7 @@ export default async function BillingReadinessPage({ params, searchParams }: { p
   const { t } = i;
   const { id } = await params;
   const sp = await searchParams;
+  await repairItemPrices(id);
   const deal = await db.deal.findUnique({ where: { id }, include: billingInclude });
   if (!deal) notFound();
   const editable = canEditMoney(user, deal.ownerId);

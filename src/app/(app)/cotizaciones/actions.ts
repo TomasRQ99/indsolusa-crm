@@ -13,6 +13,7 @@ import { costDrops } from "@/lib/esagara-rules";
 import { makeI18n } from "@/lib/i18n";
 import { money2, mulMoney, sumMoney } from "@/lib/money";
 import { otherTotal } from "@/lib/cost-lines";
+import { syncItemPrices } from "@/lib/item-prices";
 import { COST_STATUS } from "@/lib/proposal-rules";
 import { sellerMissing, sellerOf } from "@/lib/sellers";
 import { RATE_MAX, RATE_MIN, docBlockers, effectiveIvaPct, type SellerSnap } from "@/lib/quote-doc";
@@ -329,6 +330,7 @@ export async function presentQuote(id: string, fd: FormData) {
       data: { status: "PRESENTED", issuedAt: on, presentedAt: on, protSale: sale, protCost: cost, protEsagra: sale - cost, protPolicy: policy.version, sellerSnap, ivaPct: effectiveIvaPct(seller.ivaPct, q.ivaExempt) },
     });
     await tx.quote.updateMany({ where: { number: q.number, id: { not: id }, status: "PRESENTED" }, data: { status: "SUPERSEDED" } });
+    await syncItemPrices(tx, q.dealId, q.lines, "fill");
     const offerUntil = validUntil({ issuedAt: on, presentedAt: on, validityDays: q.validityDays });
     await tx.deal.update({
       where: { id: q.dealId },
