@@ -43,6 +43,10 @@ export async function prepareSpo(dealId: string, fd?: FormData) {
   const chosen = fd ? String(fd.get("supplierId") ?? "") : "";
   const supplier = chosen ? suppliers.find((s) => s.id === chosen) ?? null : matchSupplier(purchaseRequirement(deal).supply, suppliers);
   if (!supplier) redirect(`/deals/${dealId}?tab=execute&ok=sin-proveedor`);
+  // One click too many must not create a second order: an order of this Need to the same supplier that has not been
+  // received yet (or any draft) is opened instead. Each extra order would have to be released and confirmed too.
+  const existing = await db.supplierPO.findFirst({ where: { dealId, receivedAt: null, OR: [{ supplierId: supplier!.id }, { releasedAt: null }] }, orderBy: { createdAt: "asc" }, select: { id: true } });
+  if (existing) back(existing.id, "ok=ya-existe");
   const pr = purchaseRequirement(deal, isDomestic(supplier));
   const saleTotal = sumMoney(pr.lines.map((l) => l.sale));
   const target = pr.targetCost ?? 0;
@@ -70,6 +74,24 @@ export async function prepareSpo(dealId: string, fd?: FormData) {
     return made;
   });
   back(spo.id, "ok=preparada");
+}
+
+/** Discard an order that is still a draft (a duplicate, or one that will not be used). Only when nothing hangs from
+ *  it: never released, no payment, no shipment, no receipt. Its purchase requirement is cancelled with it. */
+export async function discardDraftSpo(id: string, fd: FormData) {
+  const { user, spo } = await loadSpo(id);
+  if (spo.releasedAt) back(id, "err=descartar-liberada");
+  const reason = txt(fd, "reason", 300);
+  if (!reason) back(id, "err=descartar-motivo");
+  const [pays, ships, recs] = await Promise.all([db.supplierPayment.count({ where: { supplierPoId: id } }), db.shipment.count({ where: { supplierPoId: id } }), db.goodsReceipt.count({ where: { supplierPoId: id } })]);
+  if (pays + ships + recs > 0) back(id, "err=descartar-usada");
+  await db.$transaction([
+    db.purchaseRequirement.updateMany({ where: { supplierPoId: id }, data: { cancelledAt: new Date(), supplierPoId: null } }),
+    db.activity.create({ data: { type: "NOTE", subject: `Orden al proveedor ${spo.code} (borrador) descartada: ${reason}`.slice(0, 200), userId: user.id, accountId: spo.deal.accountId, dealId: spo.dealId, phase: "execute", source: "Compras" } }),
+    db.supplierPO.delete({ where: { id } }),
+  ]);
+  refreshApp();
+  redirect(`/deals/${spo.dealId}?tab=execute&ok=orden-descartada#fases`);
 }
 
 /** Draft only: the few things a person may still adjust before releasing. */

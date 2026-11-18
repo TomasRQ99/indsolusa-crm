@@ -15,7 +15,7 @@ import { dayInput } from "@/lib/domain";
 import { paymentStateLabel } from "@/lib/labels";
 import { buildSpo, spoInclude } from "@/lib/purchasing";
 import { Popovers } from "@/components/Popovers";
-import { newVersion, releaseSpo, requestPayment, saveDraft } from "../actions";
+import { newVersion, releaseSpo, requestPayment, saveDraft, discardDraftSpo } from "../actions";
 import { lineAmount } from "@/lib/money";
 
 export default async function SupplierPoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string }> }) {
@@ -46,6 +46,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
   const history = (spo.history as { version: number; amount: number; reason: string; releasedAt: string }[] | null) ?? [];
 
   const okMsg: Record<string, string> = {
+    "ya-existe": t("Esta Necesidad ya tenía esta orden al proveedor: SOLU la abrió en lugar de crear otra.", "This Need already had this supplier order: SOLU opened it instead of creating another one."),
     correo: t("Correo enviado al proveedor desde la cuenta de la empresa.", "Email sent to the supplier from the company account."),
     preparada: t("Supplier PO preparada desde la cotización y el requerimiento de compra. Revisa y libera.", "Supplier PO prepared from the quote and the purchase requirement. Review and release."),
     guardada: t("Borrador actualizado.", "Draft updated."),
@@ -83,6 +84,9 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
     "ahorro-monto": t("No hay ahorro: el valor final no es menor que la base, o lo que pasó al cliente supera el ahorro.", "There is no saving: the final amount isn't below the baseline, or what was passed to the customer exceeds the saving."),
     requerimiento: t("No se liberó: el requerimiento de compra tiene algo por resolver (por ejemplo, la autorización de una compra a un proveedor nuevo). Ábrelo desde la lista LISTA PARA LIBERAR: ahí dice qué falta.", "Not released: the purchase requirement has open points (for example, a pending authorization)."),
     liberada: t("Está liberada: para cambiarla crea una nueva versión.", "It's released: to change it create a new version."),
+    "descartar-liberada": t("Una orden liberada no se descarta: para cambiarla crea una nueva versión.", "A released order is not discarded: to change it create a new version."),
+    "descartar-motivo": t("Para descartar el borrador, escribe por qué.", "To discard the draft, write why."),
+    "descartar-usada": t("No se puede descartar: esta orden ya tiene un pago, un envío o una recepción.", "It cannot be discarded: this order already has a payment, a shipment or a receipt."),
     "no-liberada": t("Primero se libera la Supplier PO; después se pide el pago.", "Release the supplier PO first; then request payment."),
     motivo: t("Escribe por qué cambia.", "Write why it changes."),
   };
@@ -275,6 +279,15 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
                 <button type="submit" className="wide" disabled={B.blocking.length > 0 || prOpen}>{t("Liberar Supplier PO", "Release Supplier PO")} v{spo.version}</button>
                 <span className="src block" style={{ marginTop: 6 }}>{t("Al liberarla, sus términos quedan fijos y los hitos de pago se pueden solicitar.", "Once released, its terms are fixed and payment milestones can be requested.")}</span>
               </form>
+            )}
+            {!B.released && editable && (
+              <details className="scp-add" style={{ marginTop: 10 }} id="descartar"><summary className="link small">{t("¿Es un duplicado o no se va a usar? Descartar este borrador", "A duplicate, or not going to be used? Discard this draft")}</summary>
+                <form action={discardDraftSpo.bind(null, spo.id)} className="qa-form" style={{ marginTop: 6 }}>
+                  <label>{t("Por qué se descarta", "Why it is discarded")}<input name="reason" required maxLength={300} placeholder={t("Ej.: se creó dos veces por error", "E.g.: it was created twice by mistake")} /></label>
+                  <button type="submit" className="secondary">{t("Descartar este borrador", "Discard this draft")}</button>
+                  <span className="src block">{t("Se borra solo este borrador (nunca una orden liberada) y queda anotado en la Necesidad. Mientras exista, la Necesidad espera que también se libere y se confirme.", "Only this draft is deleted (never a released order) and it is noted on the Need. While it exists, the Need waits for it to be released and confirmed too.")}</span>
+                </form>
+              </details>
             )}
             {!B.released && ["Solicitar este pago", "Crear versión"].map((b) => <GuideWhy key={b} button={b}>{t(`«${b}» aparece después de liberar la orden. Primero deja la lista LISTA PARA LIBERAR sin pendientes y haz clic en «Liberar Supplier PO».`, `“${b}” shows after the order is released. First leave the RELEASE READINESS list with nothing open and click “Release Supplier PO”.`)}</GuideWhy>)}
             {B.released && ["Guardar borrador", "Liberar Supplier PO"].map((b) => <GuideWhy key={b} button={b}>{t(`«${b}» ya no aparece: esta orden ya está liberada. Los cambios se hacen con «Crear nueva versión», y los pagos se piden en PLAN DE PAGO.`, `“${b}” is no longer shown: this order is already released. Changes are made with “Create new version”, and payments are requested under PAYMENT PLAN.`)}</GuideWhy>)}

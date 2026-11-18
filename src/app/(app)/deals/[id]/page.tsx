@@ -81,6 +81,7 @@ export default async function JourneyPage({
     db.customerPO.findMany({ where: { dealId: id }, orderBy: { createdAt: "desc" }, select: { id: true, rejectedAt: true, acceptance: { select: { id: true } } } }),
     db.dispatchOrder.findMany({ where: { dealId: id }, select: { id: true, deliveredAt: true, cancelledAt: true } }),
   ]);
+  const stepOpenConfs = (await db.supplierConfirmation.findMany({ where: { resolvedAt: null, supplierPo: { dealId: id } }, select: { supplierPoId: true } })).map((c) => c.supplierPoId);
   // What the quote says about where to buy: SOLU only suggests a supplier from it; the person chooses.
   const spoBasis = tab === "execute" ? (await db.quote.findFirst({ where: { dealId: id, status: { in: ["ACCEPTED", "PRESENTED"] } }, orderBy: { createdAt: "desc" }, select: { supplyPrimary: true } }))?.supplyPrimary ?? null : null;
 
@@ -125,6 +126,7 @@ export default async function JourneyPage({
     permiso: t("No tienes permiso para cambiar esta Necesidad.", "You don't have permission to change this Need."),
   };
   const okMsg: Record<string, string> = {
+    "orden-descartada": t("Borrador de orden al proveedor descartado. Quedó anotado en esta Necesidad.", "Draft supplier order discarded. It was noted on this Need."),
     creada: t("Necesidad creada. Completa el resultado deseado y, cuando sepas de dónde conseguirlo, sigue con la pestaña Fuente.", "Need created. Complete the desired result and, once you know where to get it, continue with the Source tab."),
     correo: t("Correo enviado al cliente desde la cuenta de la empresa. Quedó registrado en la Necesidad.", "Email sent to the customer from the company account. It's logged on the Need."),
     archivos: t("Archivos guardados en la Necesidad.", "Files saved on the Need."),
@@ -1167,7 +1169,7 @@ export default async function JourneyPage({
         <JourneyPath path={J.path} self={self} es={i.es} />
         {J.path.current && (() => {
           const isDone = (k: string) => J.path.steps.find((s) => s.key === k)?.state === "done";
-          const needs = stepNeeds({ self, step: J.path.current.key, deal, quotes: stepQuotes, customerPos: stepPos.map((x) => ({ id: x.id, rejectedAt: x.rejectedAt, accepted: !!x.acceptance })), dispatchOrders: stepDispatch, done: { ship: isDone("ship"), deliver: isDone("deliver"), invoice: isDone("invoice"), cash: isDone("cash"), result: isDone("result") } }, t);
+          const needs = stepNeeds({ self, step: J.path.current.key, deal, quotes: stepQuotes, customerPos: stepPos.map((x) => ({ id: x.id, rejectedAt: x.rejectedAt, accepted: !!x.acceptance })), dispatchOrders: stepDispatch, openConfirmations: stepOpenConfs, done: { ship: isDone("ship"), deliver: isDone("deliver"), invoice: isDone("invoice"), cash: isDone("cash"), result: isDone("result") } }, t);
           const missing = needs.filter((n) => !n.ok);
           if (!needs.length) return null;
           return (

@@ -17,13 +17,15 @@ export type StepNeedsInput = {
     desiredResult: string | null; sourcingNote: string | null; supplierCost: Money; quoteSentAt: Date | null; poAcceptedAt: Date | null;
     accountId: string; account: { creditLimit: Money | null };
     items: { qty: number }[];
-    supplierPos: { id: string; releasedAt: Date | null; confirmedAt: Date | null; receivedAt: Date | null; payments: { id: string; executedAt: Date | null }[] }[];
+    supplierPos: { id: string; code: string; releasedAt: Date | null; sentAt: Date | null; confirmedAt: Date | null; receivedAt: Date | null; supplier: { name: string }; payments: { id: string; amount: Money; currency: string; verifiedAt: Date | null; approvedAt: Date | null; executedAt: Date | null; executions: { id: string }[] }[] }[];
     shipments: { id: string }[];
     deliveries: { id: string }[];
   };
   quotes: { id: string; status: string; solution: string | null; supplierCost: Money; supplierSrc: string | null; leadMinDays: number | null; leadMaxDays: number | null; promiseText: string | null; lines: { unitPrice: Money }[] }[];
   customerPos: { id: string; rejectedAt: Date | null; accepted: boolean }[];
   dispatchOrders: { id: string; deliveredAt: Date | null; cancelledAt: Date | null }[];
+  /** ids of supplier orders whose confirmation has differences still to resolve */
+  openConfirmations?: string[];
   done: { ship: boolean; deliver: boolean; invoice: boolean; cash: boolean; result: boolean };
 };
 
@@ -50,7 +52,8 @@ export function stepNeeds(x: StepNeedsInput, t: (es: string, en: string) => stri
   const draft = x.quotes.find((q) => q.status === "DRAFT");
   const shown = x.quotes.find((q) => q.status === "PRESENTED") ?? x.quotes.find((q) => q.status === "ACCEPTED");
   const livePo = x.customerPos.find((p) => !p.rejectedAt && !p.accepted) ?? x.customerPos.find((p) => p.accepted);
-  const spo = d.supplierPos[0];
+  // The order the later steps talk about: one already released and not yet received, before any other.
+  const spo = d.supplierPos.find((p) => p.releasedAt && !p.receivedAt) ?? d.supplierPos.find((p) => p.releasedAt) ?? d.supplierPos[0];
   const pays = d.supplierPos.flatMap((p) => p.payments);
 
   switch (x.step) {
@@ -85,17 +88,42 @@ export function stepNeeds(x: StepNeedsInput, t: (es: string, en: string) => stri
       );
       return list;
     }
-    case "purchase":
-      return [
-        it(d.supplierPos.length > 0, t("La orden de compra al proveedor preparada", "The supplier purchase order prepared"), t("Pestaña Ejecución → elige el proveedor → Preparar Supplier PO desde la cotización", "Execute tab → pick the supplier → Prepare Supplier PO from the quote"), tabAt("execute")),
-        it(d.supplierPos.length > 0 && d.supplierPos.every((p) => !!p.releasedAt), t("La orden liberada", "The order released"), t("En la orden, cuando «LISTA PARA LIBERAR» no tenga pendientes → Liberar Supplier PO", "On the order, once “RELEASE READINESS” has nothing open → Release Supplier PO"), spo ? `/compras/${spo.id}` : null),
-        it(d.supplierPos.length > 0 && d.supplierPos.every((p) => !!p.confirmedAt), t("La orden confirmada por el proveedor", "The order confirmed by the supplier"), t("En la orden → «Marcar enviada» y después «Registrar lo que confirmó el proveedor»; si hay diferencias, «Resolver y dar por confirmada»", "On the order → “Mark sent”, then “Record what the supplier confirmed”; if there are differences, “Resolve and confirm”"), spo ? `/compras/${spo.id}` : null),
-      ];
-    case "pay":
-      return [
-        it(pays.length > 0, t("El pago al proveedor solicitado", "The supplier payment requested"), t("En la orden, PLAN DE PAGO → Solicitar este pago", "On the order, PAYMENT PLAN → Request this payment"), spo ? `/compras/${spo.id}` : null),
-        it(pays.length > 0 && pays.every((p) => !!p.executedAt), t("El pago verificado, aprobado por otra persona y confirmado por el banco", "The payment verified, approved by another person and confirmed by the bank"), t("Administración → Pagos a proveedores → el pago: verificación, aprobación (nunca quien lo pidió), ejecución y «Confirmar: el dinero salió»", "Administration → Supplier payments → the payment: verification, approval (never the requester), execution and “Confirm: the money left”"), pays[0] ? `/administracion/pagos-proveedores/${pays[0].id}` : null),
-      ];
+    case "purchase": {
+      const orders = d.supplierPos;
+      if (orders.length === 0) return [it(false, t("La orden de compra al proveedor preparada", "The supplier purchase order prepared"), t("Pestaña Ejecución → elige el proveedor → Preparar Supplier PO desde la cotización", "Execute tab → pick the supplier → Prepare Supplier PO from the quote"), tabAt("execute"), { go: t("Ir a prepararla", "Go prepare it") })];
+      const many = orders.length > 1;
+      const list: StepNeed[] = [it(true, many ? t(`${orders.length} órdenes de compra al proveedor en esta Necesidad`, `${orders.length} supplier purchase orders on this Need`) : t("La orden de compra al proveedor preparada", "The supplier purchase order prepared"), null, null)];
+      // One line per order and per thing it still needs: the step is done only when EVERY order is released and confirmed.
+      for (const o of orders) {
+        const name = `${o.code} (${o.supplier.name})`, oh = `/compras/${o.id}`;
+        if (!o.releasedAt) {
+          list.push(it(false, t(`La orden ${name} liberada`, `Order ${name} released`),
+            t(`Está en borrador. Ábrela: a la derecha, «LISTA PARA LIBERAR» dice qué falta y cada punto es un enlace; cuando no tenga pendientes → Liberar Supplier PO.${many ? " Si es un duplicado o no se va a usar, ábrela y, debajo del botón de liberar, usa «Descartar este borrador»: mientras exista, este paso la espera." : ""}`, `It is a draft. Open it: on the right, “RELEASE READINESS” says what is missing and each point is a link; once nothing is open → Release Supplier PO.${many ? " If it is a duplicate or will not be used, open it and, under the release button, use “Discard this draft”: while it exists, this step waits for it." : ""}`),
+            oh, { go: t(`Abrir ${o.code}`, `Open ${o.code}`) }));
+          continue;
+        }
+        if (o.confirmedAt) { list.push(it(true, t(`La orden ${name} liberada y confirmada por el proveedor`, `Order ${name} released and confirmed by the supplier`), null, null)); continue; }
+        list.push(it(true, t(`La orden ${name} liberada`, `Order ${name} released`), null, null));
+        if (!o.sentAt) list.push(it(false, t(`La orden ${name} enviada al proveedor`, `Order ${name} sent to the supplier`), t("En la orden, bloque HECHOS DE LA ORDEN → escribe cómo se envió (correo a…, portal…) → Marcar enviada", "On the order, ORDER FACTS block → type how it was sent (email to…, portal…) → Mark sent"), `${oh}#hechos`, { go: t("Marcar enviada", "Mark sent") }));
+        if ((x.openConfirmations ?? []).includes(o.id)) list.push(it(false, t(`Las diferencias de la confirmación de ${name} resueltas`, `The differences in the confirmation of ${name} resolved`), t("El proveedor confirmó algo distinto a la orden. En la orden, bloque CONFIRMACIÓN DEL PROVEEDOR → escribe cómo se resuelven → Resolver y dar por confirmada", "The supplier confirmed something different from the order. On the order, SUPPLIER CONFIRMATION block → type how they are resolved → Resolve and count as confirmed"), `${oh}#confirmacion`, { go: t("Resolver diferencias", "Resolve differences") }));
+        else list.push(it(false, t(`La confirmación del proveedor de ${name} registrada`, `The supplier's confirmation of ${name} recorded`), t("En la orden, bloque CONFIRMACIÓN DEL PROVEEDOR → «Registrar lo que confirmó el proveedor» → escribe de dónde sale (correo, proforma) → Comparar con la orden. Si coincide, queda confirmada sola.", "On the order, SUPPLIER CONFIRMATION block → “Record what the supplier confirmed” → type where it comes from (email, proforma) → Compare with the order. If it matches, it is confirmed by itself."), `${oh}#confirmacion`, { go: t("Registrar confirmación", "Record confirmation") }));
+      }
+      return list;
+    }
+    case "pay": {
+      if (pays.length === 0) return [it(false, t("El pago al proveedor solicitado", "The supplier payment requested"), t("En la orden al proveedor, bloque PLAN DE PAGO → Solicitar este pago", "On the supplier order, PAYMENT PLAN block → Request this payment"), spo ? `/compras/${spo.id}#plan-pago` : null, { go: t("Ir al plan de pago", "Go to the payment plan") })];
+      const list: StepNeed[] = [];
+      // One line per payment, saying which of its stages comes next: requested → approved → sent → confirmed by the bank.
+      for (const o of d.supplierPos) for (const p of o.payments) {
+        const name = `${p.currency} ${Number(p.amount).toFixed(2)} · ${o.code}`, ph = `/administracion/pagos-proveedores/${p.id}`;
+        if (p.executedAt) { list.push(it(true, t(`El pago de ${name} pagado y confirmado por el banco`, `The payment of ${name} paid and confirmed by the bank`), null, null)); continue; }
+        list.push(it(true, t(`El pago de ${name} solicitado`, `The payment of ${name} requested`), null, null));
+        if (!p.approvedAt) list.push(it(false, t(`El pago de ${name} aprobado`, `The payment of ${name} approved`), t("En el pago, a la derecha, SIGUIENTE PASO → Aprobar solicitud. Si SOLU pide verificar el banco, primero «Registrar verificación». Lo aprueba otra persona, o Gerencia.", "On the payment, on the right, NEXT STEP → Approve request. If SOLU asks to verify the bank, first “Record verification”. Another person approves it, or Management."), ph, { go: t("Abrir y aprobar", "Open and approve") }));
+        else if (p.executions.length === 0) list.push(it(false, t(`La transferencia de ${name} enviada desde el banco`, `The transfer of ${name} sent from the bank`), t("Haz la transferencia en el banco. Después, en el pago → escribe la referencia del banco → Registrar ejecución", "Make the transfer at the bank. Then, on the payment → type the bank reference → Record execution"), ph, { go: t("Registrar ejecución", "Record execution") }));
+        else list.push(it(false, t(`El banco confirmó que salió el dinero de ${name}`, `The bank confirmed the money of ${name} left`), t("Cuando el banco muestre el débito: en el pago → Confirmar: el dinero salió", "When the bank shows the debit: on the payment → Confirm: the money left"), ph, { go: t("Confirmar el pago", "Confirm the payment") }));
+      }
+      return list;
+    }
     case "ship":
       return [
         it(d.shipments.length > 0 || x.done.ship, t("El envío del proveedor registrado", "The supplier's shipment recorded"), t("Pestaña Ejecución → «Registrar envío externo» (transportista, guía y fecha)", "Execute tab → “Record external shipment” (carrier, tracking and date)"), tabAt("execute")),

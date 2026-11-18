@@ -322,7 +322,7 @@
     "Revisa qué cambió desde tu última visita y haz clic en [[Marcar como visto]].",
     "Usa las pestañas en orden: Resumen, Necesidad, Fuente, Cotización, Ejecución, Finanzas, Expediente, Resultado."
    ],
-   "expect": "La fecha esperada por SOLU es la ETA del transportista más 3 días más 1 día. Si la promesa al cliente es anterior, se marca. Cuando ya no falta nada en el recuadro, el paso se pone verde solo y aparece el siguiente. El primer paso, «Necesidad», solo pide el «Resultado deseado»."
+   "expect": "La fecha esperada por SOLU es la ETA del transportista más 3 días más 1 día. Si la promesa al cliente es anterior, se marca. Cuando ya no falta nada en el recuadro, el paso se pone verde solo y aparece el siguiente. El primer paso, «Necesidad», solo pide el «Resultado deseado». En los pasos «Compra» y «Pago al proveedor» el recuadro tiene una línea por cada orden y por cada pago, con su número, y cambia con cada acción: liberar, marcar enviada, registrar la confirmación del proveedor, aprobar, registrar la ejecución y confirmar el pago."
   },
   {
    "id": "journey-catchup",
@@ -651,7 +651,7 @@
     "En la columna derecha, LISTA PARA LIBERAR muestra cada punto con «✓» o «!». Cada punto es un enlace: haz clic y SOLU te lleva a donde se resuelve. Cuando no tenga pendientes, haz clic en [[Liberar Supplier PO]].",
     "En PLAN DE PAGO, haz clic en [[Solicitar este pago]] en cada hito. Si después hay que cambiar la orden: [[Crear nueva versión]]."
    ],
-   "expect": "Las solicitudes de pago van a Administración → Pagos a proveedores para verificación. Si la lista dice «Falta: pedir la autorización de esta compra» (por ejemplo, primera compra a un proveedor nuevo), haz clic en esa línea y pídela en el requerimiento. Si dice «Falta: que se autorice esta compra», la lista nombra quién puede hacerlo: esa persona entra con su usuario, abre el enlace y hace clic en «Autorizar». Quien la pide no la autoriza, salvo Gerencia: si la pidió Gerencia, ella misma puede autorizarla y queda registrado así."
+   "expect": "Las solicitudes de pago van a Administración → Pagos a proveedores para verificación. Si la lista dice «Falta: pedir la autorización de esta compra» (por ejemplo, primera compra a un proveedor nuevo), haz clic en esa línea y pídela en el requerimiento. Si dice «Falta: que se autorice esta compra», la lista nombra quién puede hacerlo: esa persona entra con su usuario, abre el enlace y hace clic en «Autorizar». Quien la pide no la autoriza, salvo Gerencia: si la pidió Gerencia, ella misma puede autorizarla y queda registrado así. Si una Necesidad quedó con una orden de más en borrador (un duplicado), ábrela y, debajo del botón de liberar, usa «Descartar este borrador»: mientras exista, el paso «Compra» la espera. Preparar otra vez la misma orden ya no crea un duplicado: SOLU abre la que existe."
   },
   {
    "id": "logistica",

@@ -214,7 +214,7 @@
    "Review what changed since your last visit and click [[Marcar como visto]].",
    "Use the tabs in order: Summary, Need, Source, Quote, Execute, Finance, Business File, Result."
   ],
-  "expect": "SOLU's expected date is the carrier ETA plus 3 days plus 1 day. If the promise to the customer is earlier, it is flagged. Once nothing is missing in the box, the step turns green by itself and the next one appears. The first step, “Need”, only asks for the “Desired result”."
+  "expect": "SOLU's expected date is the carrier ETA plus 3 days plus 1 day. If the promise to the customer is earlier, it is flagged. Once nothing is missing in the box, the step turns green by itself and the next one appears. The first step, “Need”, only asks for the “Desired result”. In the “Purchase” and “Supplier payment” steps the box has one line per order and per payment, with its number, and it changes with every action: release, mark sent, record the supplier's confirmation, approve, record the execution and confirm the payment."
  },
  "journey-catchup": {
   "t": "What changed? and Catch me up",
@@ -471,7 +471,7 @@
    "In the right column, RELEASE READINESS shows each point with “✓” or “!”. Each point is a link: click it and SOLU takes you to where it is resolved. Once nothing is open, click [[Liberar Supplier PO]].",
    "Under PAYMENT PLAN, click [[Solicitar este pago]] on each milestone. If the order must change later: [[Crear nueva versión]]."
   ],
-  "expect": "Payment requests go to Administration → Supplier payments for verification. If the list says “Missing: request the authorization of this purchase” (for example, a first purchase from a new supplier), click that line and request it on the requirement. If it says “Missing: this purchase must be authorized”, the list names who can do it: that person signs in, opens the link and clicks “Approve”. Whoever requests it does not authorize it, except Management: if Management requested it, it can authorize it itself and the record says so."
+  "expect": "Payment requests go to Administration → Supplier payments for verification. If the list says “Missing: request the authorization of this purchase” (for example, a first purchase from a new supplier), click that line and request it on the requirement. If it says “Missing: this purchase must be authorized”, the list names who can do it: that person signs in, opens the link and clicks “Approve”. Whoever requests it does not authorize it, except Management: if Management requested it, it can authorize it itself and the record says so. If a Need was left with one draft order too many (a duplicate), open it and, under the release button, use “Discard this draft”: while it exists, the “Purchase” step waits for it. Preparing the same order again no longer creates a duplicate: SOLU opens the existing one."
  },
  "logistica": {
   "t": "Supplier arrivals (shipments)",
