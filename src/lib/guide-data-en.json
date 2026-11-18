@@ -566,7 +566,7 @@
   "why": "Weight, dimensions and packages before asking for transport, and the comparison of the freight options.",
   "steps": [
    "Open the order and go down to the “Freight” block. Open [[Preparar el flete]] (if it was already prepared it is called [[Datos para el transporte]]; it comes filled with what SOLU already knows), complete pickup, weight, dimensions and packages, and click [[Guardar datos del flete]].",
-   "Look at the block's label: \"N items missing\" with the list of what is missing, or “Ready to book transport”.",
+   "Look at the block's label: “N items missing: see which ↓” or “Ready to book transport”. Below, the red box names each missing item (“Missing: Commercial invoice”…) and what to do. Click [[Ir a llenarlo]]: the form opens on that field, marked in red. Fill it in and save again.",
    "For each transport quote you receive, open [[+ Agregar opción de transporte]], fill it in and click [[Agregar opción]].",
    "Choose one with [[Elegir]]. If it is not the cheapest, SOLU asks for the reason."
   ],

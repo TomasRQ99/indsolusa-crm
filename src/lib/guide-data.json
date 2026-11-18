@@ -776,7 +776,7 @@
    "why": "Peso, medidas y bultos antes de pedir transporte, y la comparación de las opciones de flete.",
    "steps": [
     "Abre la orden y baja al bloque «FLETE». Abre [[Preparar el flete]] (si ya se preparó se llama [[Datos para el transporte]]; trae lo que SOLU ya sabe), completa recogida, peso, medidas y bultos, y haz clic en [[Guardar datos del flete]].",
-    "Mira la etiqueta del bloque: «Faltan N datos» con la lista de lo que falta, o «Listo para reservar transporte».",
+    "Mira la etiqueta del bloque: «Faltan N datos: ver cuáles ↓» o «Listo para reservar transporte». Debajo, el recuadro rojo nombra cada dato que falta («Falta: Factura comercial»…) y qué hacer. Haz clic en [[Ir a llenarlo]]: el formulario se abre en ese campo, marcado en rojo. Llénalo y guarda otra vez.",
     "Por cada cotización de transporte que recibas, abre [[+ Agregar opción de transporte]], llénala y haz clic en [[Agregar opción]].",
     "Elige una con [[Elegir]]. Si no es la más barata, SOLU pide el motivo."
    ],

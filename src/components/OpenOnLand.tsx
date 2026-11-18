@@ -10,7 +10,20 @@ export function OpenOnLand() {
       const id = decodeURIComponent(location.hash.slice(1));
       if (!id) return;
       const el = document.getElementById(id);
-      if (!el || !el.hasAttribute("data-open-on-land")) return;
+      if (!el) return;
+      if (!el.hasAttribute("data-open-on-land")) {
+        // A field (or anything) inside a closed form: open the forms around it, bring it into view, cursor in it.
+        const closed: HTMLDetailsElement[] = [];
+        for (let d = el.closest("details"); d; d = d.parentElement?.closest("details") ?? null) closed.push(d as HTMLDetailsElement);
+        if (!closed.length) return;
+        closed.forEach((d) => { d.open = true; });
+        setTimeout(() => {
+          closed.forEach((d) => { d.open = true; });
+          el.scrollIntoView({ block: "center" });
+          el.querySelector<HTMLElement>("input, select, textarea")?.focus({ preventScroll: true });
+        }, 120);
+        return;
+      }
       const d = el.querySelector<HTMLDetailsElement>("details");
       if (!d) return;
       d.open = true;

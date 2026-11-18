@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { GuideWhy } from "@/components/GuideWhy";
+import { OpenOnLand } from "@/components/OpenOnLand";
 import { readinessForSpo } from "@/lib/pr";
 import { SpoBuying } from "@/components/SpoBuying";
 import { SpoCommitments } from "@/components/SpoCommitments";
@@ -109,6 +110,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
 
   return (
     <div className="jw qv spo">
+      <OpenOnLand />
       {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
 

@@ -32,6 +32,16 @@ export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lan
     dims: f?.dims ?? opt?.dims ?? "", packagingType: f?.packagingType ?? "", incoterm: f?.incoterm ?? spo.incoterm ?? opt?.incoterm ?? "",
   };
   const missing = f ? logisticsReadiness({ ...f, grossKg: f.grossKg != null ? Number(f.grossKg) : null }, international) : null;
+  // Each missing item points at its field in the form below: the item is a link, the field is outlined in red.
+  const FIELD: Record<string, string> = { pickup: "pickupAddress", contact: "pickupContact", hours: "pickupHours", destination: "destination", ready: "readyDate", packages: "packages", weight: "grossKg", dims: "dims", packaging: "packagingType", hazardous: "hazardous", incoterm: "incoterm", origin: "origin", invoice: "hasInvoice", packing: "hasPackingList" };
+  const HOW: Record<string, [string, string]> = {
+    invoice: ["Cuando tengas la factura comercial del proveedor, marca la casilla «Hay factura comercial» y guarda.", "Once you have the supplier's commercial invoice, tick “Commercial invoice on hand” and save."],
+    packing: ["Cuando tengas la lista de empaque del proveedor, marca la casilla «Hay lista de empaque» y guarda.", "Once you have the supplier's packing list, tick “Packing list on hand” and save."],
+    hazardous: ["Elige «Sí» o «No» en «¿Peligrosa?» y guarda.", "Choose “Yes” or “No” under “Hazardous?” and save."],
+  };
+  const miss = new Set((missing ?? []).map((m) => FIELD[m.key]).filter(Boolean));
+  const ff = (name: string, base = "") => ({ id: `ff-${name}`, className: [base, miss.has(name) ? "req-miss" : ""].join(" ").trim() || undefined });
+  const need = (name: string) => (miss.has(name) ? <span className="req-tag"> · {t("Falta", "Missing")}</span> : null);
   const wc = weightCheck(f?.grossKg != null ? Number(f.grossKg) : null, obs.map((o) => Number(o.grossKg)));
   const after = international ? CLEARANCE_DAYS + LAST_MILE_DAYS : LAST_MILE_DAYS;
   const reads = f ? readQuotes(f.quotes.map((q) => ({ id: q.id, cost: Number(q.cost), currency: q.currency, transitDays: q.transitDays, pickupDate: q.pickupDate })), { readyDate: f.readyDate, promise: spo.deal.promisedDate, today: T, afterArrivalDays: after, policy: pol.value }) : [];
@@ -51,8 +61,21 @@ export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lan
 
   return (
     <section className="jblock" id="flete">
-      <div className="jbh"><b>{t("FLETE", "FREIGHT")}</b><span className="grow" />{missing == null ? <span className="sig wait">{t("Sin preparar", "Not prepared")}</span> : missing.length === 0 ? <span className="sig ok">{t("Listo para reservar transporte", "Ready to book transport")}</span> : <span className="sig attn">{t(`Faltan ${missing.length} datos`, `${missing.length} items missing`)}</span>}</div>
-      {missing && missing.length > 0 && <ul className="mk-ul small">{missing.map((m) => <li key={m.key}><b>{t(m.what.es, m.what.en)}</b> · <span className="muted">{t(m.why.es, m.why.en)}</span></li>)}</ul>}
+      <div className="jbh"><b>{t("FLETE", "FREIGHT")}</b><span className="grow" />{missing == null ? <span className="sig wait">{t("Sin preparar", "Not prepared")}</span> : missing.length === 0 ? <span className="sig ok">{t("Listo para reservar transporte", "Ready to book transport")}</span> : <a className="sig risk" href={`#ff-${FIELD[missing[0].key] ?? "flete"}`}>{missing.length === 1 ? t("Falta 1 dato: ver cuál ↓", "1 item missing: see which ↓") : t(`Faltan ${missing.length} datos: ver cuáles ↓`, `${missing.length} items missing: see which ↓`)}</a>}</div>
+      {missing && missing.length > 0 && (
+        <div className="sn miss" style={{ marginTop: 0 }}>
+          <div className="sn-head"><b>{t("PARA RESERVAR EL TRANSPORTE FALTA", "TO BOOK THE TRANSPORT, STILL MISSING")}</b></div>
+          <ul className="sn-list">
+            {missing.map((m) => (
+              <li key={m.key} className="no">
+                <span className="ic" aria-hidden>!</span>
+                <span className="sn-t"><b>{t(`Falta: ${m.what.es}`, `Missing: ${m.what.en}`)}</b><span className="sn-how">{t(m.why.es, m.why.en)}. {HOW[m.key] ? t(HOW[m.key][0], HOW[m.key][1]) : t("Escríbelo en el formulario «Datos para el transporte» y guarda.", "Type it in the “Transport data” form and save.")}</span></span>
+                <a className="btn sm" href={`#ff-${FIELD[m.key] ?? "flete"}`}>{t("Ir a llenarlo", "Go fill it in")} →</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {sc && <p className="small"><span className={`sig ${scTone[sc.cls]}`}>{scWord[sc.cls]}</span> {sc.reasons.map((r) => t(r.es, r.en)).join(" · ")}<span className="src block">{t("Regla de DHL a través de Importsoluciones: cuenta el peso físico (no el volumétrico) y el valor del bien sin fletes ni servicios. Los valores se cambian en Operaciones → Configuración.", "DHL rule through Importsoluciones: physical weight counts (not volumetric) and the value of the goods without freight or services. The values are changed in Operations → Settings.")}</span></p>}
       {wc.ask && !f?.reconfirmedAt && <p className="note attn">{t(`El peso indicado (${Number(f!.grossKg)} kg) no coincide con lo medido antes para esta referencia (${wc.min}–${wc.max} kg). No se sobrescribe ninguno: pide al proveedor que lo reconfirme y anótalo abajo.`, `The stated weight (${Number(f!.grossKg)} kg) doesn't match what was measured before for this part (${wc.min}–${wc.max} kg). Neither is overwritten: ask the supplier to reconfirm and note it below.`)}</p>}
       {f?.reconfirmedAt && <p className="src">{t(`Peso reconfirmado el ${i.day(f.reconfirmedAt)}: ${f.reconfirmNote}`, `Weight reconfirmed on ${i.day(f.reconfirmedAt)}: ${f.reconfirmNote}`)}</p>}
@@ -61,35 +84,35 @@ export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lan
         <details className="qa" open={!f} style={{ marginTop: 6 }}><summary className="qa-btn">{f ? t("Datos para el transporte", "Transport data") : t("Preparar el flete", "Prepare the freight")}</summary>
           <form action={saveFreight.bind(null, spo.id)} className="qa-form" style={{ marginTop: 8 }}>
             <div className="qa-row">
-              <label>{t("Dirección de recogida", "Pickup address")}<input name="pickupAddress" maxLength={300} defaultValue={v.pickupAddress} /></label>
-              <label style={{ flex: "0 0 150px" }}>{t("País de origen", "Country of origin")}<input name="origin" maxLength={80} defaultValue={v.origin} /></label>
+              <label {...ff("pickupAddress")}>{t("Dirección de recogida", "Pickup address")}{need("pickupAddress")}<input name="pickupAddress" maxLength={300} defaultValue={v.pickupAddress} /></label>
+              <label style={{ flex: "0 0 150px" }} {...ff("origin")}>{t("País de origen", "Country of origin")}{need("origin")}<input name="origin" maxLength={80} defaultValue={v.origin} /></label>
             </div>
             <div className="qa-row">
-              <label>{t("Contacto en origen", "Contact at origin")}<input name="pickupContact" maxLength={160} defaultValue={v.pickupContact} /></label>
-              <label>{t("Horario de recogida", "Opening hours")}<input name="pickupHours" maxLength={120} defaultValue={v.pickupHours} /></label>
-              <label style={{ flex: "0 0 auto" }}>{t("Fecha de listo", "Ready date")}<input name="readyDate" type="date" defaultValue={dayInput(v.readyDate)} /></label>
+              <label {...ff("pickupContact")}>{t("Contacto en origen", "Contact at origin")}{need("pickupContact")}<input name="pickupContact" maxLength={160} defaultValue={v.pickupContact} /></label>
+              <label {...ff("pickupHours")}>{t("Horario de recogida", "Opening hours")}{need("pickupHours")}<input name="pickupHours" maxLength={120} defaultValue={v.pickupHours} /></label>
+              <label style={{ flex: "0 0 auto" }} {...ff("readyDate")}>{t("Fecha de listo", "Ready date")}{need("readyDate")}<input name="readyDate" type="date" defaultValue={dayInput(v.readyDate)} /></label>
             </div>
-            <label>{t("Destino", "Destination")}<input name="destination" maxLength={300} defaultValue={v.destination} /></label>
+            <label {...ff("destination")}>{t("Destino", "Destination")}{need("destination")}<input name="destination" maxLength={300} defaultValue={v.destination} /></label>
             <div className="qa-row">
-              <label style={{ flex: "0 0 90px" }}>{t("Bultos", "Packages")}<input name="packages" type="number" min={0} defaultValue={v.packages ?? ""} /></label>
+              <label style={{ flex: "0 0 90px" }} {...ff("packages")}>{t("Bultos", "Packages")}{need("packages")}<input name="packages" type="number" min={0} defaultValue={v.packages ?? ""} /></label>
               <label style={{ flex: "0 0 120px" }}>{t("Peso neto kg", "Net kg")}<input name="netKg" type="number" min={0} step="0.01" defaultValue={v.netKg ?? ""} /></label>
-              <label style={{ flex: "0 0 120px" }}>{t("Peso bruto kg", "Gross kg")}<input name="grossKg" type="number" min={0} step="0.01" defaultValue={v.grossKg ?? ""} /></label>
-              <label>{t("Medidas por bulto (cm)", "Dimensions per package (cm)")}<input name="dims" maxLength={160} defaultValue={v.dims} placeholder="60x40x30" /></label>
+              <label style={{ flex: "0 0 120px" }} {...ff("grossKg")}>{t("Peso bruto kg", "Gross kg")}{need("grossKg")}<input name="grossKg" type="number" min={0} step="0.01" defaultValue={v.grossKg ?? ""} /></label>
+              <label {...ff("dims")}>{t("Medidas por bulto (cm)", "Dimensions per package (cm)")}{need("dims")}<input name="dims" maxLength={160} defaultValue={v.dims} placeholder="60x40x30" /></label>
             </div>
             <div className="qa-row">
               <label>{t("Quién dio peso y medidas", "Who gave weight and measures")}<select name="weightSource" defaultValue={f?.weightSource ?? "SUPPLIER_STATED"}>{Object.entries(WEIGHT_SOURCES).map(([k, w]) => <option key={k} value={k}>{t(w.es, w.en)}</option>)}</select></label>
               <label>{t("Reconfirmación del peso (si se pidió)", "Weight reconfirmation (if asked)")}<input name="reconfirmNote" maxLength={200} placeholder={t("Ej.: el proveedor corrige a 70 kg, correo de hoy", "E.g.: supplier corrects to 70 kg, today's email")} /></label>
             </div>
             <div className="qa-row">
-              <label>{t("Tipo de empaque", "Packaging type")}<input name="packagingType" maxLength={80} defaultValue={v.packagingType} placeholder={t("Caja, guacal, estiba…", "Box, crate, pallet…")} /></label>
-              <label style={{ flex: "0 0 130px" }}>Incoterm<input name="incoterm" maxLength={40} defaultValue={v.incoterm} /></label>
-              <label style={{ flex: "0 0 130px" }}>{t("¿Peligrosa?", "Hazardous?")}{yn("hazardous", f?.hazardous)}</label>
+              <label {...ff("packagingType")}>{t("Tipo de empaque", "Packaging type")}{need("packagingType")}<input name="packagingType" maxLength={80} defaultValue={v.packagingType} placeholder={t("Caja, guacal, estiba…", "Box, crate, pallet…")} /></label>
+              <label style={{ flex: "0 0 130px" }} {...ff("incoterm")}>Incoterm{need("incoterm")}<input name="incoterm" maxLength={40} defaultValue={v.incoterm} /></label>
+              <label style={{ flex: "0 0 130px" }} {...ff("hazardous")}>{t("¿Peligrosa?", "Hazardous?")}{need("hazardous")}{yn("hazardous", f?.hazardous)}</label>
               <label style={{ flex: "0 0 130px" }}>{t("¿Frágil?", "Fragile?")}{yn("fragile", f?.fragile)}</label>
               <label style={{ flex: "0 0 130px" }}>{t("¿Apilable?", "Stackable?")}{yn("stackable", f?.stackable)}</label>
             </div>
             <div className="qa-row" style={{ flexWrap: "wrap" }}>
-              <label className="chk"><input type="checkbox" name="hasInvoice" value="1" defaultChecked={f?.hasInvoice} /> {t("Hay factura comercial", "Commercial invoice on hand")}</label>
-              <label className="chk"><input type="checkbox" name="hasPackingList" value="1" defaultChecked={f?.hasPackingList} /> {t("Hay lista de empaque", "Packing list on hand")}</label>
+              <label {...ff("hasInvoice", "chk")}><input type="checkbox" name="hasInvoice" value="1" defaultChecked={f?.hasInvoice} /> {t("Hay factura comercial", "Commercial invoice on hand")}{need("hasInvoice")}</label>
+              <label {...ff("hasPackingList", "chk")}><input type="checkbox" name="hasPackingList" value="1" defaultChecked={f?.hasPackingList} /> {t("Hay lista de empaque", "Packing list on hand")}{need("hasPackingList")}</label>
               <label className="chk"><input type="checkbox" name="urgent" value="1" defaultChecked={f?.urgent} /> {t("Urgente", "Urgent")}</label>
             </div>
             <div className="qa-row">

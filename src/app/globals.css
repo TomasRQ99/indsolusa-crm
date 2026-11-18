@@ -2472,6 +2472,12 @@ label.req-miss { scroll-margin-top: 110px; }
 .sn-list form { margin: 0; }
 label.req-miss > textarea, label.req-miss > input { border-color: var(--risk); box-shadow: 0 0 0 2px #f6d5d0; background: #fff8f7; }
 .req-tag { color: var(--risk); font-weight: 600; font-size: 12px; }
+label.req-miss > select { border-color: var(--risk); box-shadow: 0 0 0 2px #f6d5d0; background: #fff8f7; }
+label.chk.req-miss { color: var(--risk); font-weight: 600; outline: 2px solid var(--risk); outline-offset: 4px; border-radius: 6px; }
+label[id^="ff-"] { scroll-margin-top: 120px; }
+label[id^="ff-"]:target { background: #fff3c4; box-shadow: 0 0 0 6px #fff3c4; border-radius: 4px; }
+a.sig { text-decoration: none; cursor: pointer; }
+a.sig:hover { text-decoration: underline; }
 /* New Need: the first step of an order, large and first on the Needs page */
 .nn { background: var(--surface); border: 1px solid var(--brand-line, var(--line)); border-top: 4px solid var(--brand); border-radius: 10px; padding: 18px 20px; margin-bottom: 20px; }
 .nn-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
