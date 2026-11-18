@@ -7,7 +7,7 @@ import { prView } from "@/lib/pr";
 import { PURPOSES, exposureOf, lineSplit, prTotals } from "@/lib/pr-rules";
 import { createStockOrder, decideApproval, requestApproval, saveHeader, setAllocation, setLineQty } from "../actions";
 import { fullReadiness } from "@/lib/pr-auth";
-import { REASON_TEXT, canApprovePurchase } from "@/lib/purchase-auth";
+import { REASON_TEXT, SELF_APPROVE_ROLE, canApprovePurchase, mayApproveOwn } from "@/lib/purchase-auth";
 import { actWith } from "@/lib/admin-store";
 
 // Operaciones O1 · one Purchase Requirement: bought vs assigned per Journey, what is left as inventory exposure,
@@ -26,7 +26,7 @@ export default async function PrPage({ params, searchParams }: { params: Promise
   const r = F.readiness;
   const C = F.last?.status === "REQUESTED" ? (F.last.context as unknown as typeof F.auth.context) : F.auth.context;
   const last = F.last;
-  const canDecide = !!last && (await actWith(user, "PURCHASE_APPROVAL", Number(last.relatedTotal), last.requestedById, (role) => canApprovePurchase({ id: user.id, role }, last, F.policy.value))).ok;
+  const canDecide = !!last && (await actWith(user, "PURCHASE_APPROVAL", Number(last.relatedTotal), last.requestedById, (role) => canApprovePurchase({ id: user.id, role }, last, F.policy.value, mayApproveOwn(user.role)))).ok;
   // A pending request keeps the level it was asked at; otherwise show what today's policy would require.
   const lvl = F.last?.status === "REQUESTED" ? F.last.level : F.auth.level;
   const [spo, deals, suppliers] = await Promise.all([
@@ -36,7 +36,7 @@ export default async function PrPage({ params, searchParams }: { params: Promise
   ]);
   const locked = !!spo?.releasedAt || !!pr.cancelledAt;
   // The people in SOLU who can decide a waiting authorization (never the one who asked for it).
-  const deciders = last?.status === "REQUESTED" ? await db.user.findMany({ where: { active: true, id: { not: last.requestedById }, role: { in: [...new Set([...F.policy.value.level2Roles, ...(last.level === 1 ? F.policy.value.level1Roles : [])])] as never } }, orderBy: { name: "asc" }, select: { name: true } }) : [];
+  const deciders = last?.status === "REQUESTED" ? await db.user.findMany({ where: { active: true, OR: [{ id: { not: last.requestedById }, role: { in: [...new Set([...F.policy.value.level2Roles, ...(last.level === 1 ? F.policy.value.level1Roles : [])])] as never } }, { id: last.requestedById, role: SELF_APPROVE_ROLE as never }] }, orderBy: { name: "asc" }, select: { name: true } }) : [];
   const tot = prTotals(pr.lines);
   const ex = exposureOf(pr);
   const money = (n: unknown) => `${pr.currency} ${i.n2(n)}`;
@@ -153,6 +153,7 @@ export default async function PrPage({ params, searchParams }: { params: Promise
           )}
           {F.last?.status === "REQUESTED" && (canDecide ? (
             <form action={decideApproval.bind(null, F.last.id)} className="qa-form exc-decide" style={{ maxWidth: 680 }}>
+              {user.id === F.last.requestedById && <p className="note attn" style={{ margin: 0 }}>{t("Esta autorización la pediste tú. Como Gerencia puedes decidirla; queda registrado que la autorizó quien la pidió.", "You requested this authorization. As Management you can decide it; the record will show that the requester authorized it.")}</p>}
               <label>{t("Nota (obligatoria para devolver o no autorizar)", "Note (required to return or decline)")}<textarea name="note" rows={2} maxLength={500} /></label>
               <div className="qa-row" style={{ flexWrap: "wrap" }}>
                 <button type="submit" name="action" value="APPROVE">{t("Autorizar", "Approve")}</button>

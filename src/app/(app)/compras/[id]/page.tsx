@@ -32,7 +32,8 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
   const prRead = prBase && prFull ? { pr: prBase.pr, readiness: prFull.readiness } : null;
   // An authorization that is waiting: who asked, and the people in SOLU who can decide it (never the one who asked).
   const prWait = prFull?.last?.status === "REQUESTED" ? prFull.last : null;
-  const prDeciders = prWait ? await db.user.findMany({ where: { active: true, id: { not: prWait.requestedById }, role: { in: [...new Set([...prFull!.policy.value.level2Roles, ...(prWait.level === 1 ? prFull!.policy.value.level1Roles : [])])] as never } }, orderBy: { name: "asc" }, select: { name: true } }) : [];
+  const prDeciders = prWait ? await db.user.findMany({ where: { active: true, OR: [{ id: { not: prWait.requestedById }, role: { in: [...new Set([...prFull!.policy.value.level2Roles, ...(prWait.level === 1 ? prFull!.policy.value.level1Roles : [])])] as never } }, { id: prWait.requestedById, role: "GERENCIA" }] }, orderBy: { name: "asc" }, select: { name: true } }) : [];
+  const prMine = !!prWait && prWait.requestedById === user.id && user.role === "GERENCIA";
   const prNeedsAsk = !!prFull && prFull.auth.reasons.length > 0 && !prFull.covered && !prWait;
   // Same rule as the release command: an open point on the requirement stops the release, so the list must show it.
   const prOpen = !spo.releasedAt && prRead?.readiness.result === "NEEDS_RESOLUTION";
@@ -248,9 +249,9 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
                 return (
                   <>
                     {prWait && (
-                      <li className="no"><span className="ic" aria-hidden>!</span><span><a className="chk-a" href={`${prHref}#autorizacion`}>{t("Falta: que otra persona autorice esta compra", "Missing: another person must authorize this purchase")} <span aria-hidden>→</span></a>
-                        <span className="src block">{t(`La pidió ${prWait.requestedByName} el ${i.day(prWait.requestedAt)}. Quien la pide no puede autorizarla.`, `Requested by ${prWait.requestedByName} on ${i.day(prWait.requestedAt)}. Whoever requests it cannot authorize it.`)}</span>
-                        <span className="src block">{prDeciders.length > 0
+                      <li className="no"><span className="ic" aria-hidden>!</span><span><a className="chk-a" href={`${prHref}#autorizacion`}>{prMine ? t("Falta: autorizar esta compra", "Missing: authorize this purchase") : t("Falta: que se autorice esta compra", "Missing: this purchase must be authorized")} <span aria-hidden>→</span></a>
+                        <span className="src block">{prMine ? t("La pediste tú y, como Gerencia, la puedes autorizar: haz clic en esta línea y, en el bloque AUTORIZACIÓN DE LA COMPRA, en «Autorizar». Después vuelve aquí a liberar la orden.", "You requested it and, as Management, you can authorize it: click this line and, in the PURCHASE AUTHORIZATION block, click “Approve”. Then come back here to release the order.") : t(`La pidió ${prWait.requestedByName} el ${i.day(prWait.requestedAt)}. Quien la pide no puede autorizarla, salvo Gerencia.`, `Requested by ${prWait.requestedByName} on ${i.day(prWait.requestedAt)}. Whoever requests it cannot authorize it, except Management.`)}</span>
+                        <span className="src block">{prMine ? null : prDeciders.length > 0
                           ? t(`La puede autorizar: ${prDeciders.map((u) => u.name).join(", ")}. Esa persona entra a SOLU con su usuario, abre este enlace y hace clic en «Autorizar».`, `It can be authorized by: ${prDeciders.map((u) => u.name).join(", ")}. That person signs in to SOLU, opens this link and clicks “Approve”.`)
                           : <b className="risk-t">{t(`Hoy no hay en SOLU otra persona que pueda autorizarla. Hace falta un segundo usuario de ${prWait.level === 2 ? "Gerencia" : "Finanzas, Administración o Gerencia"} (se crea en EQUIPO).`, `Today there is nobody else in SOLU who can authorize it. A second user is needed: ${prWait.level === 2 ? "Management" : "Finance, Administration or Management"} (created under TEAM).`)}</b>}</span>
                       </span></li>

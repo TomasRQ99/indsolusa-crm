@@ -41,8 +41,14 @@ export function reasonsOf(f: AuthFacts, p: PurchasePolicy): Reason[] {
 export const levelOf = (relatedTotal: number, p: PurchasePolicy): 1 | 2 => (relatedTotal > p.level1LimitUsd ? 2 : 1);
 
 /** Level-2 roles can always decide; level-1 roles only level-1 requests. Never the person who asked. */
-export function canApprovePurchase(u: { id: string; role: string }, a: { requestedById: string; level: number }, p: PurchasePolicy) {
-  if (u.id === a.requestedById) return false;
+/** Owner's decision, 2026-11-18: on the authorization of a purchase to a supplier, Gerencia may authorize a request it
+ *  made itself (a company with one manager was locked out of buying). It only applies with the person's OWN role, never
+ *  with a lent authority, and the record says the requester authorized it. Every other role still needs another person. */
+export const SELF_APPROVE_ROLE = "GERENCIA";
+export const mayApproveOwn = (ownRole: string) => ownRole === SELF_APPROVE_ROLE;
+
+export function canApprovePurchase(u: { id: string; role: string }, a: { requestedById: string; level: number }, p: PurchasePolicy, ownRequestOk = false) {
+  if (u.id === a.requestedById) return ownRequestOk && u.role === SELF_APPROVE_ROLE;
   return p.level2Roles.includes(u.role) || (a.level === 1 && p.level1Roles.includes(u.role));
 }
 

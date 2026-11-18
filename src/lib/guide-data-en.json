@@ -471,7 +471,7 @@
    "In the right column, RELEASE READINESS shows each point with “✓” or “!”. Each point is a link: click it and SOLU takes you to where it is resolved. Once nothing is open, click [[Liberar Supplier PO]].",
    "Under PAYMENT PLAN, click [[Solicitar este pago]] on each milestone. If the order must change later: [[Crear nueva versión]]."
   ],
-  "expect": "Payment requests go to Administration → Supplier payments for verification. If the list says “Missing: request the authorization of this purchase” (for example, a first purchase from a new supplier), click that line and request it on the requirement. If it says “Missing: another person must authorize this purchase”, the list names who can do it: that person signs in, opens the link and clicks “Approve”. Whoever requests it never authorizes it."
+  "expect": "Payment requests go to Administration → Supplier payments for verification. If the list says “Missing: request the authorization of this purchase” (for example, a first purchase from a new supplier), click that line and request it on the requirement. If it says “Missing: this purchase must be authorized”, the list names who can do it: that person signs in, opens the link and clicks “Approve”. Whoever requests it does not authorize it, except Management: if Management requested it, it can authorize it itself and the record says so."
  },
  "logistica": {
   "t": "Supplier arrivals (shipments)",

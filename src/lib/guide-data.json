@@ -651,7 +651,7 @@
     "En la columna derecha, LISTA PARA LIBERAR muestra cada punto con «✓» o «!». Cada punto es un enlace: haz clic y SOLU te lleva a donde se resuelve. Cuando no tenga pendientes, haz clic en [[Liberar Supplier PO]].",
     "En PLAN DE PAGO, haz clic en [[Solicitar este pago]] en cada hito. Si después hay que cambiar la orden: [[Crear nueva versión]]."
    ],
-   "expect": "Las solicitudes de pago van a Administración → Pagos a proveedores para verificación. Si la lista dice «Falta: pedir la autorización de esta compra» (por ejemplo, primera compra a un proveedor nuevo), haz clic en esa línea y pídela en el requerimiento. Si dice «Falta: que otra persona autorice esta compra», la lista nombra quién puede hacerlo: esa persona entra con su usuario, abre el enlace y hace clic en «Autorizar». Quien la pide nunca la autoriza."
+   "expect": "Las solicitudes de pago van a Administración → Pagos a proveedores para verificación. Si la lista dice «Falta: pedir la autorización de esta compra» (por ejemplo, primera compra a un proveedor nuevo), haz clic en esa línea y pídela en el requerimiento. Si dice «Falta: que se autorice esta compra», la lista nombra quién puede hacerlo: esa persona entra con su usuario, abre el enlace y hace clic en «Autorizar». Quien la pide no la autoriza, salvo Gerencia: si la pidió Gerencia, ella misma puede autorizarla y queda registrado así."
   },
   {
    "id": "logistica",

@@ -12,7 +12,7 @@ import { nextPrCode, prInclude } from "@/lib/pr";
 import { ITEM_TYPES } from "@/lib/pr-rules";
 import type { Prisma } from "@prisma/client";
 import { fullReadiness, getPurchasePolicy } from "@/lib/pr-auth";
-import { PURCHASE_POLICY_KEY, REASONS, canApprovePurchase, type PurchasePolicy } from "@/lib/purchase-auth";
+import { PURCHASE_POLICY_KEY, REASONS, canApprovePurchase, mayApproveOwn, type PurchasePolicy } from "@/lib/purchase-auth";
 import { actWith } from "@/lib/admin-store";
 
 // Operaciones O1 · Purchase Requirement actions. Quantities and assignments change only while the Supplier PO is
@@ -118,7 +118,7 @@ export async function requestApproval(id: string, fd: FormData) {
   go(id, "ok=pedida#autorizacion");
 }
 
-/** Approve, return with a question, reject, or send up to level 2. Never by the person who asked. */
+/** Approve, return with a question, reject, or send up to level 2. Never by the person who asked, except Gerencia (see purchase-auth). */
 export async function decideApproval(approvalId: string, fd: FormData) {
   const user = await requireUser();
   const a = await db.purchaseApproval.findUnique({ where: { id: approvalId } });
@@ -126,9 +126,10 @@ export async function decideApproval(approvalId: string, fd: FormData) {
   const id = a!.prId;
   const pol = await getPurchasePolicy();
   // Módulo 14 §16: with the person's own role, or with an authority someone lent them (never on the lender's own request).
-  const act = await actWith(user, "PURCHASE_APPROVAL", Number(a!.relatedTotal), a!.requestedById, (role) => canApprovePurchase({ id: user.id, role }, a!, pol.value));
+  const act = await actWith(user, "PURCHASE_APPROVAL", Number(a!.relatedTotal), a!.requestedById, (role) => canApprovePurchase({ id: user.id, role }, a!, pol.value, mayApproveOwn(user.role)));
   if (!act.ok) go(id, "err=autoridad#autorizacion");
-  const who = act.fromName ? `${user.name} (autoridad prestada por ${act.fromName})` : user.name;
+  const own = a!.requestedById === user.id;
+  const who = act.fromName ? `${user.name} (autoridad prestada por ${act.fromName})` : own ? `${user.name} (Gerencia, sobre su propia solicitud)` : user.name;
   if (a!.status !== "REQUESTED") go(id, "err=estado#autorizacion");
   const action = String(fd.get("action") ?? "");
   const note = txt(fd, "note", 500);
