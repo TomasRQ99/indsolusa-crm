@@ -148,6 +148,7 @@ export const MODULES: NavModule[] = [
       { href: "/equipo/organizacion", es: "Desarrollo organizacional", en: "Organizational development", group: "organizacion", adminOnly: true },
       { href: "/admin/users", es: "Personas y datos", en: "People & data", group: "ajustes", adminOnly: true },
       { href: "/admin/trabajos", es: "Trabajos en segundo plano", en: "Background work", group: "ajustes", adminOnly: true },
+      { href: "/profile/pendientes", es: "Pendientes por aprobar", en: "Pending approvals", group: "ajustes" },
       { href: "/profile", es: "Mi perfil", en: "My profile", group: "ajustes" },
     ],
   },

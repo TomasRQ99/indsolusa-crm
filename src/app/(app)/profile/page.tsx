@@ -14,6 +14,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <div className="ph"><div><h1>{t("Mi perfil", "My profile")}</h1><p>{user.name} · {user.email} · <span className="badge">{user.role}</span></p></div></div>
       <OutlookNote code={cal} t={t} />
       <div className="grid cols-2">
+        <div className="card" id="pendientes">
+          <h2>{t("Pendientes por aprobar", "Pending approvals")}</h2>
+          <p className="small muted" style={{ marginBottom: 12 }}>{t("La lista de todo lo que espera una decisión tuya (autorizar una compra, aceptar la OC de un cliente, liberar una orden, aprobar un pago), cada cosa con el botón que te lleva a donde se aprueba.", "The list of everything that waits for a decision of yours (authorize a purchase, accept a customer's PO, release an order, approve a payment), each with the button that takes you to where it is approved.")}</p>
+          <a className="btn" href="/profile/pendientes">{t("Ver mis pendientes por aprobar", "See my pending approvals")} →</a>
+        </div>
         <div className="card" id="outlook">
           <h2>{t("Calendario de Outlook", "Outlook calendar")}</h2>
           {user.outlookConnectedAt ? (

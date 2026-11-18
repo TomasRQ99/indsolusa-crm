@@ -1853,6 +1853,20 @@
    "expect": "SOLU informa y guarda el registro; no bloquea ningún paso. Si quien lleva la Necesidad no tiene nivel, lo dice."
   },
   {
+   "id": "pendientes-aprobar",
+   "m": "equipo",
+   "t": "Pendientes por aprobar",
+   "path": "Tu nombre (arriba a la derecha) → Pendientes por aprobar",
+   "why": "Una sola lista con todo lo que espera una decisión tuya: autorizar una compra, aceptar la OC de un cliente, liberar una orden al proveedor, verificar o aprobar un pago.",
+   "steps": [
+    "Haz clic en tu nombre, arriba a la derecha, y luego en [[Pendientes por aprobar]]. También está en EQUIPO → Configuración.",
+    "En «Lo que tú debes decidir», cada línea dice qué hay que aprobar, de quién es y por cuánto. Están agrupadas por tipo.",
+    "Haz clic en el botón azul de la línea (por ejemplo [[Abrir y autorizar]]): SOLU te lleva al sitio exacto donde se aprueba.",
+    "Allí toma la decisión con el botón de esa pantalla («Autorizar», «Aceptar PO», «Liberar Supplier PO»…). Al volver, la línea ya no aparece."
+   ],
+   "expect": "Aquí no se aprueba nada: cada aprobación se hace en su propia pantalla, con sus reglas. Abajo, «Lo que pediste y espera a otra persona» muestra lo que tú pediste y no puedes aprobar tú mismo. La autorización de una compra pedida por Gerencia sí la puede dar Gerencia."
+  },
+  {
    "id": "search",
    "m": "global",
    "t": "Búsqueda",

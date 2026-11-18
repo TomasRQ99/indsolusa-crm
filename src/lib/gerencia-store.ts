@@ -97,7 +97,7 @@ export async function neededItems(u: U): Promise<NeededItem[]> {
       question: tx(`¿Se aprueba la compra ${a.pr.code} (${who})?`, `Approve purchase ${a.pr.code} (${who})?`),
       whyNow: tx(`Supera lo que el primer nivel puede aprobar: ${reasons.map((r) => r.es).join("; ") || "por valor"}`, `Above what the first level may approve: ${reasons.map((r) => r.en).join("; ") || "by amount"}`),
       impact: usd(Number(a.amount)), options: APPROVE_OPTS, facts: `Compras relacionadas: ${usd(Number(a.relatedTotal))}.${a.requestNote ? ` ${cut(a.requestNote)}` : ""}`, assumptions: null, recommendation: null,
-      ownerAfter: a.requestedByName, askedBy: a.requestedByName, href: `/compras/requerimientos/${a.prId}`,
+      ownerAfter: a.requestedByName, askedBy: a.requestedByName, href: `/compras/requerimientos/${a.prId}#autorizacion`,
     });
   }
   for (const p of internal) out.push({

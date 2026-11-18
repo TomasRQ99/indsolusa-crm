@@ -317,6 +317,7 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
           </summary>
           <div className="menu-pop">
             <div className="menu-head"><b>{user.name}</b><small>{user.role}</small></div>
+            <Link href="/profile/pendientes"><b>{t("Pendientes por aprobar", "Pending approvals")}</b></Link>
             <Link href="/profile">{t("Mi perfil y preferencias", "My profile & preferences")}</Link>
             <Link href="/glosario">{t("Glosario de términos", "Glossary of terms")}</Link>
             <div className="menu-lang">

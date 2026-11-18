@@ -1468,5 +1468,16 @@
    "To remove the bubbles: on the Glossary page, [[Ocultar los globos en las pantallas]]. Show them again in the same place with [[Mostrar los globos en las pantallas]]."
   ],
   "expect": "The same term explains different things depending on where you are: \"Need\" in the title of the board's first column is the stage; in Market it is when a signal becomes a Need. There is one bubble per term in each block of the screen, not on every mention. Hiding them applies to that browser, not to the person. On a phone or tablet, where there is no cursor, the \"i\" bubbles always show."
+ },
+ "pendientes-aprobar": {
+  "t": "Pending approvals",
+  "why": "One list with everything that waits for a decision of yours: authorize a purchase, accept a customer's PO, release a supplier order, verify or approve a payment.",
+  "steps": [
+   "Click your name, top right, and then [[Pendientes por aprobar]]. It is also under TEAM → Settings.",
+   "Under “What you must decide”, each line says what needs approval, whose it is and for how much. They are grouped by kind.",
+   "Click the blue button on the line (for example [[Abrir y autorizar]]): SOLU takes you to the exact place where it is approved.",
+   "There, take the decision with that screen's button (“Approve”, “Accept PO”, “Release Supplier PO”…). When you come back, the line is gone."
+  ],
+  "expect": "Nothing is approved here: each approval is done on its own screen, with its rules. Below, “What you asked for and waits for someone else” shows what you requested and cannot approve yourself. A purchase authorization requested by Management can be given by Management."
  }
 }
