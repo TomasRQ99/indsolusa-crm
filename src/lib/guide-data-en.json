@@ -196,7 +196,7 @@
   "why": "Every order starts here: what the customer asks for is recorded, we confirm by email that we received it, and the date of the next contact is set. Below, the board shows every open Need by stage.",
   "steps": [
    "At the top, under “New Need”, pick the customer and the main contact. If the customer is not on the list, create it first in Customers.",
-   "Type the subject (what they need, in one line), the request detail and, if needed, the notes for internal use: those never go to the customer.",
+   "Type the subject (what they need, in one line) and the “Result the customer wants (what they want to achieve)”: with that written, the “Need” step is done. Then the request detail and, if needed, the notes for internal use: those never reach the customer.",
    "Type the product or spare part code, or pick it from the list of those already registered (SOLU brings its description), the quantity and the customer's machine. Upload photos or files if there are any.",
    "Leave the date of the next contact and the “We received your request” email box ticked, and click [[Crear Necesidad y revisar el correo]].",
    "SOLU opens the email already written, with the Need's number: review the text, add more addresses under “To”, “CC (copy)” or “BCC (hidden copy)” if needed (separated by commas), tick the files to attach and click [[Enviar correo]].",
@@ -209,11 +209,12 @@
   "why": "The one workspace for a need: what is happening now, what is coming, and three dates side by side (carrier ETA, SOLU's expected date and the promise to the customer).",
   "steps": [
    "Read the signal and its cause at the top.",
+   "Look at the path of steps and, right below it, the box “TO FINISH THE … STEP”: in red it says what is missing (“Missing: …”) and where to fill it in. Click [[Ir a llenarlo]] and SOLU takes you to the field, which is also marked in red.",
    "Set the next move and its date, and [[Guardar]]. Postpone with [[Mañana]] / [[3 días]] / [[1 semana]].",
    "Review what changed since your last visit and click [[Marcar como visto]].",
    "Use the tabs in order: Summary, Need, Source, Quote, Execute, Finance, Business File, Result."
   ],
-  "expect": "SOLU's expected date is the carrier ETA plus 3 days plus 1 day. If the promise to the customer is earlier, it is flagged."
+  "expect": "SOLU's expected date is the carrier ETA plus 3 days plus 1 day. If the promise to the customer is earlier, it is flagged. Once nothing is missing in the box, the step turns green by itself and the next one appears. The first step, “Need”, only asks for the “Desired result”."
  },
  "journey-catchup": {
   "t": "What changed? and Catch me up",

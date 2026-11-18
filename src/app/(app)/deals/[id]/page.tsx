@@ -41,6 +41,7 @@ import { recordShipment } from "../../logistica/actions";
 import { forwardOf, fwdLabel } from "@/lib/logistics";
 import { lineAmount, linesTotal } from "@/lib/money";
 import { CostTotal } from "@/components/CostTotal";
+import { stepNeeds } from "@/lib/step-needs";
 import { COST_LINES, costDetail } from "@/lib/cost-lines";
 import type { NeedContext } from "@/lib/need-handoff";
 import MarketContext from "@/components/MarketContext";
@@ -74,6 +75,12 @@ export default async function JourneyPage({
     tab === "quote" ? db.quote.findMany({ where: { dealId: id }, orderBy: [{ number: "desc" }, { rev: "desc" }], select: { id: true, number: true, rev: true, status: true, lines: { select: { qty: true, unitPrice: true } } } }) : Promise.resolve([]),
   ]);
   if (!deal) notFound();
+  // What the current step still needs (the list under the path): quotes, customer POs and deliveries of this Need.
+  const [stepQuotes, stepPos, stepDispatch] = await Promise.all([
+    db.quote.findMany({ where: { dealId: id }, orderBy: { createdAt: "desc" }, select: { id: true, status: true, solution: true, supplierCost: true, supplierSrc: true, leadMinDays: true, leadMaxDays: true, promiseText: true, lines: { select: { unitPrice: true } } } }),
+    db.customerPO.findMany({ where: { dealId: id }, orderBy: { createdAt: "desc" }, select: { id: true, rejectedAt: true, acceptance: { select: { id: true } } } }),
+    db.dispatchOrder.findMany({ where: { dealId: id }, select: { id: true, deliveredAt: true, cancelledAt: true } }),
+  ]);
   // What the quote says about where to buy: SOLU only suggests a supplier from it; the person chooses.
   const spoBasis = tab === "execute" ? (await db.quote.findFirst({ where: { dealId: id, status: { in: ["ACCEPTED", "PRESENTED"] } }, orderBy: { createdAt: "desc" }, select: { supplyPrimary: true } }))?.supplyPrimary ?? null : null;
 
@@ -258,7 +265,7 @@ export default async function JourneyPage({
     const form = (
       <form action={saveNeed.bind(null, deal.id)} className={inline ? "stack jform" : "qa-form"}>
         <H />
-        <label>{t("Resultado deseado: qué quiere lograr el cliente", "Desired result: what the customer wants to achieve")}<textarea name="desiredResult" defaultValue={deal.desiredResult ?? ""} rows={2} placeholder={t("Ej.: que la línea 2 no pare más de 4 horas por falla de bomba", "E.g.: line 2 never stops more than 4 hours for a pump failure")} /></label>
+        <label id={inline ? "resultado-deseado" : undefined} className={!deal.desiredResult ? "req-miss" : undefined}>{t("Resultado deseado: qué quiere lograr el cliente", "Desired result: what the customer wants to achieve")}{!deal.desiredResult && <span className="req-tag">{t("Obligatorio para pasar al siguiente paso", "Required to move to the next step")}</span>}<textarea name="desiredResult" defaultValue={deal.desiredResult ?? ""} rows={2} placeholder={t("Ej.: que la línea 2 no pare más de 4 horas por falla de bomba", "E.g.: line 2 never stops more than 4 hours for a pump failure")} /></label>
         <label>{t("Qué se necesita (especificaciones)", "What is needed (specifications)")}<textarea name="needSpecs" defaultValue={deal.needSpecs ?? ""} rows={3} placeholder={t("Ej.: 2 bombas dosificadoras 50 L/h, 10 bar, acero 316", "E.g.: 2 dosing pumps 50 L/h, 10 bar, 316 steel")} /></label>
         <div className="qa-row">
           <label style={{ flex: "1 1 140px" }}>{t("Lo necesita para", "Needed by")}<input name="neededBy" type="date" defaultValue={dayInput(deal.neededBy)} /></label>
@@ -643,7 +650,7 @@ export default async function JourneyPage({
         {editable ? (
           <form action={saveSourcing.bind(null, deal.id)} className="stack jform">
             <H />
-            <label>{t("Fuente: marca, proveedor candidato, origen, alternativas", "Source: brand, candidate supplier, origin, alternatives")}<textarea name="sourcingNote" rows={3} defaultValue={deal.sourcingNote ?? ""} placeholder={t("Ej.: Grundfos vía distribuidor en Miami; alternativa ProMinent desde Alemania", "E.g.: Grundfos via Miami distributor; alternative ProMinent from Germany")} /></label>
+            <label id="fuente" className={!deal.sourcingNote && !(Number(deal.supplierCost) > 0) && deal.supplierPos.length === 0 ? "req-miss" : undefined}>{t("Fuente: marca, proveedor candidato, origen, alternativas", "Source: brand, candidate supplier, origin, alternatives")}{!deal.sourcingNote && !(Number(deal.supplierCost) > 0) && deal.supplierPos.length === 0 && <span className="req-tag">{t("Obligatorio para pasar al siguiente paso: escribe la fuente aquí, o el costo del producto abajo", "Required to move to the next step: type the source here, or the product's cost below")}</span>}<textarea name="sourcingNote" rows={3} defaultValue={deal.sourcingNote ?? ""} placeholder={t("Ej.: Grundfos vía distribuidor en Miami; alternativa ProMinent desde Alemania", "E.g.: Grundfos via Miami distributor; alternative ProMinent from Germany")} /></label>
             {sp.err === "credito-fuente" && <p className="note risk">{t("Escribiste un crédito a favor: di de dónde sale (nota crédito, saldo con el transportador). No se guardó nada todavía.", "You typed a credit in our favor: say where it comes from (credit note, balance with the carrier). Nothing was saved yet.")}</p>}
             <div className="liq-sheet in-form" id="costos">
               <div className="liq-head">
@@ -1157,6 +1164,30 @@ export default async function JourneyPage({
           {deal.desiredResult ? <span>{deal.desiredResult}</span> : <span className="muted">{t("Aún sin definir", "Not defined yet")} <NeedForm /></span>}
         </div>
         <JourneyPath path={J.path} self={self} es={i.es} />
+        {J.path.current && (() => {
+          const isDone = (k: string) => J.path.steps.find((s) => s.key === k)?.state === "done";
+          const needs = stepNeeds({ self, step: J.path.current.key, deal, quotes: stepQuotes, customerPos: stepPos.map((x) => ({ id: x.id, rejectedAt: x.rejectedAt, accepted: !!x.acceptance })), dispatchOrders: stepDispatch, done: { ship: isDone("ship"), deliver: isDone("deliver"), invoice: isDone("invoice"), cash: isDone("cash"), result: isDone("result") } }, t);
+          const missing = needs.filter((n) => !n.ok);
+          if (!needs.length) return null;
+          return (
+            <section className={`sn${missing.length ? " miss" : ""}`} aria-label={t("Qué falta para pasar al siguiente paso", "What is missing to move to the next step")}>
+              <div className="sn-head">
+                <b>{t(`PARA TERMINAR EL PASO «${J.path.current.label.toUpperCase()}»`, `TO FINISH THE “${J.path.current.label.toUpperCase()}” STEP`)}</b>
+                <span className={`sig ${missing.length ? "risk" : "ok"}`}>{missing.length ? t(missing.length === 1 ? "Falta 1 cosa" : `Faltan ${missing.length} cosas`, missing.length === 1 ? "1 thing missing" : `${missing.length} things missing`) : t("Nada falta", "Nothing missing")}</span>
+              </div>
+              <ul className="sn-list">
+                {needs.map((n, k) => (
+                  <li key={k} className={n.ok ? "ok" : "no"}>
+                    <span className="ic" aria-hidden>{n.ok ? "✓" : "!"}</span>
+                    <span className="sn-t"><b>{n.ok ? n.text : t(`Falta: ${n.text}`, `Missing: ${n.text}`)}</b>{n.how && <span className="sn-how">{n.how}</span>}</span>
+                    {n.href && <Link className="btn sm" href={n.href}>{t("Ir a llenarlo", "Go fill it in")} →</Link>}
+                  </li>
+                ))}
+              </ul>
+              <span className="src">{t("Cuando no falte nada, el paso se pone verde solo y SOLU muestra el siguiente. Lo que está en rojo es lo único obligatorio; lo demás se puede completar después.", "Once nothing is missing, the step turns green by itself and SOLU shows the next one. What is in red is the only mandatory part; the rest can be completed later.")}</span>
+            </section>
+          );
+        })()}
         <div className="strip">
           <div>
             <span className="k">{t("Ahora", "Now")}</span>

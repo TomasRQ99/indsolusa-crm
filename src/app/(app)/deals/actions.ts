@@ -392,7 +392,7 @@ export async function createNeed(fd: FormData) {
     const deal = await tx.deal.create({
       data: {
         title: title!, amount: 0, stage: "LEAD", accountId, contactId: contact?.id ?? null, code, ownerId: user.id,
-        needSpecs: txt(fd, "needSpecs"), internalNotes: txt(fd, "internalNotes"), machine: txt(fd, "machine", 200),
+        needSpecs: txt(fd, "needSpecs"), desiredResult: txt(fd, "desiredResult", 300), internalNotes: txt(fd, "internalNotes"), machine: txt(fd, "machine", 200),
         nextMove: "Contactar al cliente: avance de su solicitud", nextMoveDate: nextContact,
       },
     });

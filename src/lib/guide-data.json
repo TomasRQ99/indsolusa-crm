@@ -301,7 +301,7 @@
    "why": "Todo pedido empieza aquí: se registra lo que pide el cliente, se le confirma por correo que lo recibimos y queda la fecha del próximo contacto. Debajo, el tablero muestra cada Necesidad abierta por etapa.",
    "steps": [
     "Arriba, en «Nueva Necesidad», elige el cliente y el contacto principal. Si el cliente no está en la lista, créalo primero en Clientes.",
-    "Escribe el asunto (qué necesita, en una línea), el detalle de la solicitud y, si hace falta, las observaciones de uso interno: esas nunca salen al cliente.",
+    "Escribe el asunto (qué necesita, en una línea) y el «Resultado que busca el cliente (qué quiere lograr)»: con eso escrito, el paso «Necesidad» queda hecho. Después el detalle de la solicitud y, si hace falta, las observaciones de uso interno: esas nunca salen al cliente.",
     "Escribe el código del producto o repuesto, o elígelo de la lista de los ya registrados (SOLU trae su descripción), la cantidad y la máquina del cliente. Sube fotos o archivos si los hay.",
     "Deja la fecha del próximo contacto y la casilla del correo «Recibimos su solicitud» marcada, y haz clic en [[Crear Necesidad y revisar el correo]].",
     "SOLU abre el correo ya escrito, con el número de la Necesidad: revisa el texto, agrega más correos en «Para», «CC (con copia)» o «CCO (copia oculta)» si hace falta (separados por coma), marca los archivos que van adjuntos y haz clic en [[Enviar correo]].",
@@ -317,11 +317,12 @@
    "why": "El único espacio de trabajo para una necesidad: qué pasa ahora, qué viene, y tres fechas lado a lado (ETA del transportista, fecha esperada por SOLU y promesa al cliente).",
    "steps": [
     "Lee la señal y su causa en la parte de arriba.",
+    "Mira la ruta de pasos y, justo debajo, el recuadro «PARA TERMINAR EL PASO…»: en rojo dice qué falta («Falta: …») y dónde se llena. Haz clic en [[Ir a llenarlo]] y SOLU te lleva al campo, que también queda marcado en rojo.",
     "Define el siguiente movimiento y su fecha, y [[Guardar]]. Pospón con [[Mañana]] / [[3 días]] / [[1 semana]].",
     "Revisa qué cambió desde tu última visita y haz clic en [[Marcar como visto]].",
     "Usa las pestañas en orden: Resumen, Necesidad, Fuente, Cotización, Ejecución, Finanzas, Expediente, Resultado."
    ],
-   "expect": "La fecha esperada por SOLU es la ETA del transportista más 3 días más 1 día. Si la promesa al cliente es anterior, se marca."
+   "expect": "La fecha esperada por SOLU es la ETA del transportista más 3 días más 1 día. Si la promesa al cliente es anterior, se marca. Cuando ya no falta nada en el recuadro, el paso se pone verde solo y aparece el siguiente. El primer paso, «Necesidad», solo pide el «Resultado deseado»."
   },
   {
    "id": "journey-catchup",

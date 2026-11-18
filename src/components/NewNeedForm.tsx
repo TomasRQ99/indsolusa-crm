@@ -60,6 +60,10 @@ export function NewNeedForm({ lang, action, accounts, contacts, parts, machines,
           <label>{t("Asunto: qué necesita el cliente, en una línea", "Subject: what the customer needs, in one line")} *
             <input name="title" required maxLength={150} placeholder={t("Ej.: bomba dosificadora para la línea 2", "E.g.: dosing pump for line 2")} />
           </label>
+          <label>{t("Resultado que busca el cliente (qué quiere lograr)", "Result the customer wants (what they want to achieve)")}
+            <input name="desiredResult" maxLength={300} placeholder={t("Ej.: que la línea 2 no pare por la bomba", "E.g.: line 2 never stops because of the pump")} />
+          </label>
+          <span className="src">{t("Con esto escrito, el paso «Necesidad» queda hecho y sigue «Fuente». Si aún no lo sabes, lo escribes después en la Necesidad.", "With this written, the “Need” step is done and “Source” comes next. If you don't know it yet, write it later on the Need.")}</span>
           <label>{t("Detalle de la solicitud (lo que dijo el cliente)", "Request detail (what the customer said)")}
             <textarea name="needSpecs" rows={4} maxLength={2000} placeholder={t("Especificaciones, cantidades, para cuándo, qué falla hoy…", "Specifications, quantities, by when, what fails today…")} />
           </label>

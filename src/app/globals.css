@@ -2394,6 +2394,24 @@ details.card[open] > summary:not(.small) { font-size: 14px; font-weight: 600; ma
 /* ───────────── Glossary bubbles (components/shell/GlossaryLayer.tsx) ─────────────
    Terms are underlined with a CSS highlight (the page is not modified) and carry a small "i" bubble. */
 ::highlight(gl-term) { text-decoration: underline dotted; text-decoration-color: var(--brand-line, var(--brand)); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+/* What the current step of a Need still needs: red until done */
+.sn { margin-top: 10px; border: 1px solid var(--line); border-left: 4px solid var(--ok, #1d7a46); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; background: var(--surface); }
+.sn.miss { border-color: #f1c4bd; border-left-color: var(--risk); background: #fff8f7; }
+.sn-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.sn-head b { font-size: 12px; letter-spacing: 0.04em; }
+.sn-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sn-list li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.sn-list .ic { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.sn-list li.ok .ic { background: #e2f3e9; color: #1d7a46; }
+.sn-list li.no .ic { background: var(--risk); color: #fff; }
+.sn-list li.no b { color: var(--risk); }
+.sn-list li.ok b { font-weight: 500; color: var(--ink-2); }
+.sn-t { display: flex; flex-direction: column; gap: 1px; font-size: 13.5px; min-width: 0; }
+.sn-how { font-size: 12px; color: var(--ink-2); }
+@media (max-width: 640px) { .sn-list li { grid-template-columns: 22px minmax(0, 1fr); } .sn-list li .btn { grid-column: 2; justify-self: start; } }
+label.req-miss { scroll-margin-top: 110px; }
+label.req-miss > textarea, label.req-miss > input { border-color: var(--risk); box-shadow: 0 0 0 2px #f6d5d0; background: #fff8f7; }
+.req-tag { color: var(--risk); font-weight: 600; font-size: 12px; }
 /* New Need: the first step of an order, large and first on the Needs page */
 .nn { background: var(--surface); border: 1px solid var(--brand-line, var(--line)); border-top: 4px solid var(--brand); border-radius: 10px; padding: 18px 20px; margin-bottom: 20px; }
 .nn-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
