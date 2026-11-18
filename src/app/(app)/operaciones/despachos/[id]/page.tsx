@@ -1,3 +1,4 @@
+import { MarkNeed } from "@/components/WorkingNeed";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
@@ -60,7 +61,7 @@ export default async function DispatchOrderPage({ params, searchParams }: { para
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
       <header className="jh">
         <div className="jh-top">
-          <p className="crumb k"><Link href="/operaciones/despachos">{t("Entregas al cliente", "Customer deliveries")}</Link> · <Link href={`/deals/${d.id}?tab=execute`}>{d.code ?? d.title}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
+          <p className="crumb k"><Link href="/operaciones/despachos">{t("Entregas al cliente", "Customer deliveries")}</Link> · <MarkNeed id={d.id} label={d.code ?? ""} /><Link href={`/deals/${d.id}?tab=execute`}>{d.code ?? d.title}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
           <span className="jid">{o.code}</span><span className="grow" />
           <Link className="qa-btn" href={`/deals/${d.id}/despacho`}>{t("Instrucción de Comercial", "Instruction from Sales")}</Link>
         </div>

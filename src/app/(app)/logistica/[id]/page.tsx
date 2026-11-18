@@ -1,3 +1,4 @@
+import { MarkNeed } from "@/components/WorkingNeed";
 import Link from "next/link";
 import { ShipmentDates } from "@/components/ShipmentDates";
 import { notFound } from "next/navigation";
@@ -105,7 +106,7 @@ export default async function ShipmentPage({ params, searchParams }: { params: P
 
       <header className="jh">
         <div className="jh-top">
-          <p className="crumb k"><Link href="/logistica">{t("Llegadas del proveedor", "Supplier arrivals")}</Link> · <Link href={`/deals/${d.id}?tab=execute`}>{d.code}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link>{s.supplierPo && <> · <Link href={`/compras/${s.supplierPo.id}`}>{s.supplierPo.code}</Link></>}</p>
+          <p className="crumb k"><Link href="/logistica">{t("Llegadas del proveedor", "Supplier arrivals")}</Link> · <MarkNeed id={d.id} label={d.code ?? ""} /><Link href={`/deals/${d.id}?tab=execute`}>{d.code}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link>{s.supplierPo && <> · <Link href={`/compras/${s.supplierPo.id}`}>{s.supplierPo.code}</Link></>}</p>
           <span className="jid">{s.code}</span>
           <span className="grow" />
         </div>

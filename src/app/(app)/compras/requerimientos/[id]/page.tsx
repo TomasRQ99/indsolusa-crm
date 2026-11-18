@@ -1,3 +1,4 @@
+import { MarkNeed } from "@/components/WorkingNeed";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
@@ -63,7 +64,7 @@ export default async function PrPage({ params, searchParams }: { params: Promise
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
       <header className="jh">
         <div className="jh-top">
-          <p className="crumb k"><Link href="/compras/requerimientos">{t("Requerimientos de compra", "Purchase requirements")}</Link>{pr.deal && <> · <Link href={`/deals/${pr.deal.id}`}>{pr.deal.code ?? pr.deal.title}</Link> · {pr.deal.account.name}</>}</p>
+          <p className="crumb k"><Link href="/compras/requerimientos">{t("Requerimientos de compra", "Purchase requirements")}</Link>{pr.deal && <> · <MarkNeed id={pr.deal.id} label={pr.deal.code ?? ""} /><Link href={`/deals/${pr.deal.id}`}>{pr.deal.code ?? pr.deal.title}</Link> · {pr.deal.account.name}</>}</p>
           <span className="grow" />
           <span className={`sig ${res[r.result][1]}`}>{res[r.result][0]}</span>
         </div>

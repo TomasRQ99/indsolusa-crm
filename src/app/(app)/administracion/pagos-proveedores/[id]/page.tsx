@@ -1,3 +1,4 @@
+import { MarkNeed } from "@/components/WorkingNeed";
 import Link from "next/link";
 import { PaymentFacts } from "@/components/PaymentFacts";
 import { getPurchasePolicy } from "@/lib/pr-auth";
@@ -127,7 +128,7 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
 
       <section className="spo-why">
         <div><span className="k">{t("Por qué se mueve este dinero", "Why this money must move")}</span><b>{p.reason}</b></div>
-        <div><span className="k">{t("Necesidad", "Need")} · Supplier PO</span><b><Link href={`/deals/${deal.id}`}>{deal.code}</Link> · <Link href={`/compras/${spo.id}`}>{spo.code} v{spoFull.version}</Link></b><span className="src">{deal.account.name} · {spoFull.releasedAt ? t(`liberada ${i.day(spoFull.releasedAt)}`, `released ${i.day(spoFull.releasedAt)}`) : t("sin liberar", "not released")} · {m(spoFull.amount)}</span></div>
+        <div><span className="k">{t("Necesidad", "Need")} · Supplier PO</span><b><MarkNeed id={deal.id} label={deal.code ?? ""} /><Link href={`/deals/${deal.id}`}>{deal.code}</Link> · <Link href={`/compras/${spo.id}`}>{spo.code} v{spoFull.version}</Link></b><span className="src">{deal.account.name} · {spoFull.releasedAt ? t(`liberada ${i.day(spoFull.releasedAt)}`, `released ${i.day(spoFull.releasedAt)}`) : t("sin liberar", "not released")} · {m(spoFull.amount)}</span></div>
         <div className="prom"><span className="k">{t("Promesa al cliente", "Customer promise")}</span><b>{deal.promiseText ?? "—"}</b><span className="mono">{i.dateShort(deal.promisedDate)}</span></div>
       </section>
 

@@ -1,3 +1,4 @@
+import { MarkNeed } from "@/components/WorkingNeed";
 import Link from "next/link";
 import { GuideWhy } from "@/components/GuideWhy";
 import { OpenOnLand } from "@/components/OpenOnLand";
@@ -114,7 +115,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
 
       <header className="jh">
         <div className="jh-top">
-          <p className="crumb k"><Link href={`/deals/${d.id}`}>{d.code ?? t("Necesidad", "Need")}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
+          <p className="crumb k"><MarkNeed id={d.id} label={d.code ?? ""} /><Link href={`/deals/${d.id}`}>{d.code ?? t("Necesidad", "Need")}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
           <span className="jid">PO {po.number}</span>
           <span className="grow" />
           {q && <div className="jh-act"><Link className="qa-btn" href={`/cotizaciones/${q.id}`}>{t("Ver cotización", "View quote")} {quoteNo(q)}</Link></div>}

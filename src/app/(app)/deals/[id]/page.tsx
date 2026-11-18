@@ -1,3 +1,4 @@
+import { MarkNeed } from "@/components/WorkingNeed";
 import Link from "next/link";
 import { GuideWhy } from "@/components/GuideWhy";
 import { SellerLine } from "@/components/SellerLine";
@@ -1166,6 +1167,7 @@ export default async function JourneyPage({
           <span className="k">{t("Resultado deseado", "Desired result")}</span>
           {deal.desiredResult ? <span>{deal.desiredResult}</span> : <span className="muted">{t("Aún sin definir", "Not defined yet")} <NeedForm /></span>}
         </div>
+        <MarkNeed id={deal.id} label={[deal.code, deal.title].filter(Boolean).join(" · ")} />
         <JourneyPath path={J.path} self={self} es={i.es} />
         {J.path.current && (() => {
           const isDone = (k: string) => J.path.steps.find((s) => s.key === k)?.state === "done";

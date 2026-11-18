@@ -322,7 +322,7 @@
     "Revisa qué cambió desde tu última visita y haz clic en [[Marcar como visto]].",
     "Usa las pestañas en orden: Resumen, Necesidad, Fuente, Cotización, Ejecución, Finanzas, Expediente, Resultado."
    ],
-   "expect": "La fecha esperada por SOLU es la ETA del transportista más 3 días más 1 día. Si la promesa al cliente es anterior, se marca. Cuando ya no falta nada en el recuadro, el paso se pone verde solo y aparece el siguiente. El primer paso, «Necesidad», solo pide el «Resultado deseado». En los pasos «Compra» y «Pago al proveedor» el recuadro tiene una línea por cada orden y por cada pago, con su número, y cambia con cada acción: liberar, marcar enviada, registrar la confirmación del proveedor, aprobar, registrar la ejecución y confirmar el pago."
+   "expect": "La fecha esperada por SOLU es la ETA del transportista más 3 días más 1 día. Si la promesa al cliente es anterior, se marca. Cuando ya no falta nada en el recuadro, el paso se pone verde solo y aparece el siguiente. El primer paso, «Necesidad», solo pide el «Resultado deseado». En los pasos «Compra» y «Pago al proveedor» el recuadro tiene una línea por cada orden y por cada pago, con su número, y cambia con cada acción: liberar, marcar enviada, registrar la confirmación del proveedor, aprobar, registrar la ejecución y confirmar el pago. Cuando el trabajo te saca de la Necesidad (a la cotización, la orden al proveedor, un pago, en otros módulos del menú), en la esquina inferior derecha queda el botón azul «← Volver a la Necesidad» con su número: un clic y regresas a ella. La «×» lo quita."
   },
   {
    "id": "journey-catchup",

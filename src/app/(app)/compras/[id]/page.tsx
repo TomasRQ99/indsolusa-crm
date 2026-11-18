@@ -1,3 +1,4 @@
+import { MarkNeed } from "@/components/WorkingNeed";
 import Link from "next/link";
 import { GuideWhy } from "@/components/GuideWhy";
 import { OpenOnLand } from "@/components/OpenOnLand";
@@ -116,7 +117,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
 
       <header className="jh">
         <div className="jh-top">
-          <p className="crumb k"><Link href={`/deals/${d.id}?tab=execute`}>{d.code ?? t("Necesidad", "Need")}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
+          <p className="crumb k"><MarkNeed id={d.id} label={d.code ?? ""} /><Link href={`/deals/${d.id}?tab=execute`}>{d.code ?? t("Necesidad", "Need")}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
           <span className="jid">{spo.code} · v{spo.version}</span>
           <span className="grow" />
           {B.released && !spo.shippedAt && <Link className="btn secondary" href={`/correo/nuevo?tpl=DELIVERY&id=${spo.id}`}>{t("Pedir fecha de despacho", "Ask for ship date")}</Link>}

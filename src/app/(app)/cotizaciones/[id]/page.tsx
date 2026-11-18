@@ -1,3 +1,4 @@
+import { MarkNeed } from "@/components/WorkingNeed";
 import Link from "next/link";
 import { GuideWhy } from "@/components/GuideWhy";
 import { SellerLine } from "@/components/SellerLine";
@@ -142,7 +143,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const Header = () => (
     <header className="jh">
       <div className="jh-top">
-        <p className="crumb k"><Link href={`/deals/${d.id}?tab=quote`}>{d.code ?? t("Necesidad", "Need")}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
+        <p className="crumb k"><MarkNeed id={d.id} label={d.code ?? ""} /><Link href={`/deals/${d.id}?tab=quote`}>{d.code ?? t("Necesidad", "Need")}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link></p>
         <span className="jid">Quote Nº {quoteNo(q)}</span>
         <span className="grow" />
         <div className="jh-act">

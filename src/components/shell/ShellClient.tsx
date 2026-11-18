@@ -1,5 +1,6 @@
 "use client";
 
+import { BackToNeed } from "@/components/WorkingNeed";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -417,6 +418,7 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
 
       {ask && <AskPanel es={es} where={current ? `${current.label}${activeTab ? ` · ${activeTab.label}` : ""}` : ""} inputRef={askRef} onClose={() => setAsk(false)} />}
 
+      <BackToNeed lang={lang} path={path} />
       {guideOn && <GuideOverlay lang={lang} path={path} />}
       <GlossaryLayer lang={lang === "ES" ? "es" : "en"} path={path} />
 

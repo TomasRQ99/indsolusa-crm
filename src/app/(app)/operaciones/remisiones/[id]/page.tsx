@@ -1,3 +1,4 @@
+import { MarkNeed } from "@/components/WorkingNeed";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -34,7 +35,7 @@ export default async function DeliveryPage({ params }: { params: Promise<{ id: s
         <div>
           <div className="crumb"><Link href="/operaciones/remisiones">{t("Remisiones", "Delivery notes")}</Link> · {d.code}</div>
           <h1>{t("Remisión", "Delivery note")} {d.code}</h1>
-          <p>{d.deal.account.name} · <Link href={`/deals/${d.deal.id}`}>{d.deal.code} · {d.deal.title}</Link> · {t("OC", "PO")} {d.deal.customerPo ?? "—"}</p>
+          <p>{d.deal.account.name} · <MarkNeed id={d.deal.id} label={d.deal.code ?? ""} /><Link href={`/deals/${d.deal.id}`}>{d.deal.code} · {d.deal.title}</Link> · {t("OC", "PO")} {d.deal.customerPo ?? "—"}</p>
         </div>
       </div>
 

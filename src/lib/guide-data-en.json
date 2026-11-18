@@ -214,7 +214,7 @@
    "Review what changed since your last visit and click [[Marcar como visto]].",
    "Use the tabs in order: Summary, Need, Source, Quote, Execute, Finance, Business File, Result."
   ],
-  "expect": "SOLU's expected date is the carrier ETA plus 3 days plus 1 day. If the promise to the customer is earlier, it is flagged. Once nothing is missing in the box, the step turns green by itself and the next one appears. The first step, “Need”, only asks for the “Desired result”. In the “Purchase” and “Supplier payment” steps the box has one line per order and per payment, with its number, and it changes with every action: release, mark sent, record the supplier's confirmation, approve, record the execution and confirm the payment."
+  "expect": "SOLU's expected date is the carrier ETA plus 3 days plus 1 day. If the promise to the customer is earlier, it is flagged. Once nothing is missing in the box, the step turns green by itself and the next one appears. The first step, “Need”, only asks for the “Desired result”. In the “Purchase” and “Supplier payment” steps the box has one line per order and per payment, with its number, and it changes with every action: release, mark sent, record the supplier's confirmation, approve, record the execution and confirm the payment. When the work takes you out of the Need (to the quote, the supplier order, a payment, in other modules of the menu), the blue button “← Back to the Need” with its number stays in the bottom right corner: one click and you are back. The “×” removes it."
  },
  "journey-catchup": {
   "t": "What changed? and Catch me up",
