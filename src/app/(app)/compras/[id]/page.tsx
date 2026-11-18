@@ -28,7 +28,12 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
   if (!spo) notFound();
   const B = buildSpo(spo, i);
   const prBase = await readinessForSpo(spo.id);
-  const prRead = prBase ? { pr: prBase.pr, readiness: (await fullReadiness(prBase.pr)).readiness } : null;
+  const prFull = prBase ? await fullReadiness(prBase.pr) : null;
+  const prRead = prBase && prFull ? { pr: prBase.pr, readiness: prFull.readiness } : null;
+  // An authorization that is waiting: who asked, and the people in SOLU who can decide it (never the one who asked).
+  const prWait = prFull?.last?.status === "REQUESTED" ? prFull.last : null;
+  const prDeciders = prWait ? await db.user.findMany({ where: { active: true, id: { not: prWait.requestedById }, role: { in: [...new Set([...prFull!.policy.value.level2Roles, ...(prWait.level === 1 ? prFull!.policy.value.level1Roles : [])])] as never } }, orderBy: { name: "asc" }, select: { name: true } }) : [];
+  const prNeedsAsk = !!prFull && prFull.auth.reasons.length > 0 && !prFull.covered && !prWait;
   // Same rule as the release command: an open point on the requirement stops the release, so the list must show it.
   const prOpen = !spo.releasedAt && prRead?.readiness.result === "NEEDS_RESOLUTION";
   const d = spo.deal;
@@ -127,7 +132,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
       <div className="jbody">
         <div className="jmain">
           {/* Purchase Requirement */}
-          <section className="jblock">
+          <section className="jblock" id="requerimiento">
             <div className="jbh"><b>{t("REQUERIMIENTO DE COMPRA", "PURCHASE REQUIREMENT")}</b><span className="grow" /><span className="src">{t("Derivado de la Necesidad; nadie lo digita", "Derived from the Need; nobody types it")}</span></div>
             <dl className="qv-dl">
               <dt>{t("Qué", "What")}</dt><dd>{B.pr.lines.map((l, k) => <span key={k} className="block">{l.qty} × <span className="mono">{l.code ?? ""}</span> {l.description}</span>)}</dd>
@@ -138,7 +143,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
           </section>
 
           {/* Supplier PO document */}
-          <section className="jblock">
+          <section className="jblock" id="orden">
             <div className="jbh"><b>SUPPLIER PO</b><span>v{spo.version}</span><span className="grow" />
               {editable && B.released && (
                 <QA label={t("Crear nueva versión", "Create new version")} wide right>
@@ -184,7 +189,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
           </section>
 
           {/* Payment plan */}
-          <section className="jblock">
+          <section className="jblock" id="plan-pago">
             <div className="jbh"><b>{t("PLAN DE PAGO", "PAYMENT PLAN")}</b><span className="grow" /><span className="src">{t("Pagado (confirmado)", "Paid (confirmed)")} {m(B.paidTotal)} / {m(B.total)}</span></div>
             <div className="pay-plan">
               {B.plan.map(({ r, live, st, late }) => {
@@ -235,11 +240,34 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
             <div className="jbh"><b>{t("LISTA PARA LIBERAR", "RELEASE READINESS")}</b><span className="grow" />{B.released ? <span className="sig ok">{t("Liberada", "Released")}</span> : B.blocking.length + (prOpen ? 1 : 0) ? <span className="sig attn">{t(`${B.blocking.length + (prOpen ? 1 : 0)} pendiente(s)`, `${B.blocking.length + (prOpen ? 1 : 0)} open`)}</span> : <span className="sig ok">{t("Lista", "Ready")}</span>}</div>
             <ul className="qv-checks">
               {B.ready.map((c, k) => (
-                <li key={k} className={c.ok ? "ok" : c.info ? "no info" : "no"}><span className="ic" aria-hidden>{c.ok ? "✓" : c.info ? "i" : "!"}</span><span>{c.text}{!c.ok && c.fix && <span className="src block">{c.fix}</span>}</span></li>
+                <li key={k} className={c.ok ? "ok" : c.info ? "no info" : "no"}><span className="ic" aria-hidden>{c.ok ? "✓" : c.info ? "i" : "!"}</span><span>{c.href ? <a className="chk-a" href={c.href} title={t("Ir a donde se resuelve", "Go to where it is resolved")}>{c.text} <span aria-hidden>→</span></a> : c.text}{!c.ok && c.fix && <span className="src block">{c.fix}</span>}</span></li>
               ))}
-              {prOpen && prRead && (
-                <li className="no"><span className="ic" aria-hidden>!</span><span>{t("El requerimiento de compra tiene algo por resolver", "The purchase requirement has something to resolve")}<span className="src block">{t("Por ejemplo, la autorización de una compra a un proveedor nuevo. ", "For example, the authorization of a purchase from a new supplier. ")}<Link href={`/compras/requerimientos/${prRead.pr.id}`}>{t("Abrir el requerimiento: ahí dice qué falta y se pide la autorización", "Open the requirement: it says what is missing and the authorization is requested there")}</Link></span></span></li>
-              )}
+              {prOpen && prRead && (() => {
+                const prHref = `/compras/requerimientos/${prRead.pr.id}`;
+                const authAt = prWait || prNeedsAsk ? "#autorizacion" : "#lectura";
+                return (
+                  <>
+                    {prWait && (
+                      <li className="no"><span className="ic" aria-hidden>!</span><span><a className="chk-a" href={`${prHref}#autorizacion`}>{t("Falta: que otra persona autorice esta compra", "Missing: another person must authorize this purchase")} <span aria-hidden>→</span></a>
+                        <span className="src block">{t(`La pidió ${prWait.requestedByName} el ${i.day(prWait.requestedAt)}. Quien la pide no puede autorizarla.`, `Requested by ${prWait.requestedByName} on ${i.day(prWait.requestedAt)}. Whoever requests it cannot authorize it.`)}</span>
+                        <span className="src block">{prDeciders.length > 0
+                          ? t(`La puede autorizar: ${prDeciders.map((u) => u.name).join(", ")}. Esa persona entra a SOLU con su usuario, abre este enlace y hace clic en «Autorizar».`, `It can be authorized by: ${prDeciders.map((u) => u.name).join(", ")}. That person signs in to SOLU, opens this link and clicks “Approve”.`)
+                          : <b className="risk-t">{t(`Hoy no hay en SOLU otra persona que pueda autorizarla. Hace falta un segundo usuario de ${prWait.level === 2 ? "Gerencia" : "Finanzas, Administración o Gerencia"} (se crea en EQUIPO).`, `Today there is nobody else in SOLU who can authorize it. A second user is needed: ${prWait.level === 2 ? "Management" : "Finance, Administration or Management"} (created under TEAM).`)}</b>}</span>
+                      </span></li>
+                    )}
+                    {prNeedsAsk && (
+                      <li className="no"><span className="ic" aria-hidden>!</span><span><a className="chk-a" href={`${prHref}#autorizacion`}>{t("Falta: pedir la autorización de esta compra", "Missing: request the authorization of this purchase")} <span aria-hidden>→</span></a>
+                        <span className="src block">{t("No es una compra de rutina (por ejemplo, primera compra a un proveedor nuevo). En el requerimiento, bloque AUTORIZACIÓN DE LA COMPRA → «Pedir autorización». La decide otra persona.", "It is not a routine purchase (for example, a first purchase from a new supplier). On the requirement, block PURCHASE AUTHORIZATION → “Request authorization”. Someone else decides it.")}</span>
+                      </span></li>
+                    )}
+                    {!prWait && !prNeedsAsk && prRead.readiness.blockers.map((bl) => (
+                      <li key={bl.key} className="no"><span className="ic" aria-hidden>!</span><span><a className="chk-a" href={`${prHref}${authAt}`}>{t(`Falta: ${bl.blocker.es}`, `Missing: ${bl.blocker.en}`)} <span aria-hidden>→</span></a>
+                        <span className="src block">{t(bl.path.es, bl.path.en)} · {t(bl.owner.es, bl.owner.en)}</span>
+                      </span></li>
+                    ))}
+                  </>
+                );
+              })()}
             </ul>
             {!B.released && editable && (
               <form action={releaseSpo.bind(null, spo.id)} style={{ marginTop: 12 }}>

@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { today, dayInput } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
 import { DEFAULT_WINDOW, DIFF_LABEL, SAVING_KINDS, SCOPE_STATES, WINDOW_TEXT, materialDiffs, negotiationWindow, opportunities, readDiffs, readScope, savingOf } from "@/lib/buying-rules";
+import { SavingForm } from "./SavingForm";
 import { addSaving, markOrderFact, recordConfirmation, resolveConfirmation, setFirstQuote } from "@/app/(app)/compras/actions";
 
 // Operaciones O3 · on the Supplier PO: opportunities before buying (with their evidence), the order's separate facts,
@@ -148,28 +149,15 @@ export async function SpoBuying({ spoId, lang, editable }: { spoId: string; lang
 
       <section className="jblock" id="ahorros">
         <div className="jbh"><b>{t("AHORROS", "SAVINGS")}</b><span className="grow" />{spo.firstQuoteAmount != null && <span className="src">{t(`Primera cotización ${money(spo.firstQuoteAmount)} · hoy ${money(total)}`, `First quote ${money(spo.firstQuoteAmount)} · now ${money(total)}`)}</span>}</div>
-        {spo.savings.length === 0 ? <p className="small muted">{vsFirst?.valid ? t(`La orden está ${money(vsFirst.gross)} por debajo de la primera cotización. Regístralo como ahorro con su evidencia.`, `The order is ${money(vsFirst.gross)} below the first quote. Record it as a saving with its evidence.`) : t("Sin ahorros registrados en esta orden.", "No savings recorded on this order.")}</p> : (
+        {spo.savings.length === 0 ? <p className="small muted">{vsFirst?.valid ? t(`La orden está ${money(vsFirst.gross)} por debajo de la primera cotización. Regístralo como ahorro con su evidencia.`, `The order is ${money(vsFirst.gross)} below the first quote. Record it as a saving with its evidence.`) : t("Sin ahorros registrados en esta orden. Es opcional: no hace falta para liberarla.", "No savings recorded on this order. It is optional: it is not needed to release it.")}</p> : (
           <div className="tscroll"><table>
             <thead><tr><th>{t("Tipo", "Kind")}</th><th className="n">{t("Base", "Baseline")}</th><th className="n">{t("Final", "Final")}</th><th className="n">{t("Ahorro", "Saving")}</th><th className="n">{t("Pasó al cliente", "Passed to customer")}</th><th className="n">{t("Retenido", "Retained")}</th><th>{t("Evidencia", "Evidence")}</th></tr></thead>
             <tbody>{spo.savings.map((s) => <tr key={s.id}><td className="small">{t(SAVING_KINDS[s.kind]?.es ?? s.kind, SAVING_KINDS[s.kind]?.en ?? s.kind)}<span className="src block">{s.baselineSource}</span></td><td className="n mono">{i.n2(s.baselineAmount)}</td><td className="n mono">{i.n2(s.finalAmount)}</td><td className="n mono"><b>{i.n2(s.savingsAmount)}</b></td><td className="n mono">{i.n2(s.passedToCustomer)}</td><td className="n mono">{i.n2(Number(s.savingsAmount) - Number(s.passedToCustomer))}</td><td className="small">{s.evidence}<span className="src block">{s.responsibleName} · {i.day(s.at)}</span></td></tr>)}</tbody>
           </table></div>
         )}
         {editable && (
-          <details className="qa" style={{ marginTop: 8 }}><summary className="qa-btn">{t("+ Registrar ahorro", "+ Record saving")}</summary>
-            <form action={addSaving.bind(null, spo.id)} className="qa-form" style={{ marginTop: 8, maxWidth: 680 }}>
-              <label>{t("Tipo", "Kind")}<select name="kind" defaultValue="SUPPLIER_SAVINGS">{Object.entries(SAVING_KINDS).map(([k, v]) => <option key={k} value={k}>{t(v.es, v.en)}</option>)}</select></label>
-              <div className="qa-row">
-                <label>{t("Valor final", "Final amount")}<input name="finalAmount" type="number" min={0} step="0.01" required defaultValue={total} /></label>
-                <label>{t("De eso, pasó al cliente", "Of that, passed to the customer")}<input name="passedToCustomer" type="number" min={0} step="0.01" defaultValue={0} /></label>
-              </div>
-              <div className="qa-row">
-                <label>{t("Base (solo si NO es ahorro con el proveedor)", "Baseline (only if NOT a supplier saving)")}<input name="baselineAmount" type="number" min={0} step="0.01" /></label>
-                <label>{t("De dónde sale esa base", "Where that baseline comes from")}<input name="baselineSource" maxLength={160} /></label>
-              </div>
-              <label>{t("Evidencia (correo, proforma, nota crédito…)", "Evidence (email, proforma, credit note…)")}<input name="evidence" required maxLength={300} /></label>
-              <button type="submit">{t("Registrar ahorro", "Record saving")}</button>
-              <span className="src block">{t("El ahorro con el proveedor se mide contra su primera cotización. No todo ahorro es margen: lo que pasó al cliente se registra aparte.", "A supplier saving is measured against its first quote. Not every saving is margin: what was passed to the customer is recorded separately.")}</span>
-            </form>
+          <details className="sv-d" style={{ marginTop: 8 }}><summary className="qa-btn">{t("+ Registrar ahorro", "+ Record saving")}</summary>
+            <SavingForm lang={lang} action={addSaving.bind(null, spo.id)} currency={spo.currency} total={Math.round(total * 100) / 100} firstQuote={spo.firstQuoteAmount != null ? Number(spo.firstQuoteAmount) : null} firstQuoteRef={spo.firstQuoteRef} kinds={Object.entries(SAVING_KINDS).map(([key, v]) => ({ key, label: t(v.es, v.en) }))} />
           </details>
         )}
       </section>

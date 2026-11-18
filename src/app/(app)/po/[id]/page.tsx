@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { GuideWhy } from "@/components/GuideWhy";
+import { OpenOnLand } from "@/components/OpenOnLand";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -107,6 +108,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
 
   return (
     <div className="jw qv po">
+      <OpenOnLand />
       {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
 
@@ -157,7 +159,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
       <div className="jbody">
         <div className="jmain">
           {/* Comparison */}
-          <section className="jblock">
+          <section className="jblock" id="comparacion">
             <div className="jbh"><b>{t("PO VS COTIZACIÓN", "PO VS QUOTE")}</b><span className="grow" /><span className="src">{t("Material = cambia lo que prometemos, cuesta o cobramos", "Material = changes what we promise, spend or collect")}</span></div>
             <div className="tscroll">
               <table className="po-cmp">
@@ -188,7 +190,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
 
           {/* Resolution options */}
           {open && B.options.length > 0 && (
-            <section className="jblock">
+            <section className="jblock" id="opciones">
               <div className="jbh"><b>{t("OPCIONES PARA RESOLVER LA FECHA", "OPTIONS TO RESOLVE THE DATE")}</b><span className="grow" /><span className="src">{t("Elige una; «Aceptar PO» se habilita cuando esté confirmada", "Pick one; “Accept PO” is enabled once it's confirmed")}</span></div>
               <div className="po-opts">
                 {B.options.map((o) => {
@@ -278,7 +280,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
             <div className="jbh"><b>{t("COMMAND · ACEPTAR PO", "COMMAND · ACCEPT PO")}</b></div>
             <ul className="qv-checks">
               {B.pre.map((p, k) => (
-                <li key={k} className={p.ok ? "ok" : "no"}><span className="ic" aria-hidden>{p.ok ? "✓" : "!"}</span><span>{p.text}</span></li>
+                <li key={k} className={p.ok ? "ok" : "no"}><span className="ic" aria-hidden>{p.ok ? "✓" : "!"}</span><span>{p.href ? <a className="chk-a" href={p.href} title={t("Ir a donde se resuelve", "Go to where it is resolved")}>{p.text} <span aria-hidden>→</span></a> : p.text}</span></li>
               ))}
             </ul>
             {open && (
@@ -305,7 +307,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
             {!open && <GuideWhy button="Aceptar PO">{B.accepted ? t("«Aceptar PO» ya no aparece: esta OC ya está aceptada y el registro no se edita. Lo que sigue es la instrucción de despacho y la compra al proveedor.", "“Accept PO” is no longer shown: this PO is already accepted and the record can't be edited. Next are the dispatch instruction and the supplier purchase.") : t("«Aceptar PO» no aparece porque esta OC se registró como no aceptada.", "“Accept PO” isn't shown because this PO was recorded as not accepted.")}</GuideWhy>}
             {B.accepted && acc && <p className="small">{t("Aceptada por", "Accepted by")} <b>{acc.acceptedByName}</b> · {i.date(acc.acceptedAt)}</p>}
             {open && editable && ctx.supply && !ctx.supply.ok && (
-              <details className="scp-add" open><summary className="qa-btn">{t("Registrar que revalidé stock y precio", "Record that I re-confirmed stock and price")}</summary>
+              <details className="scp-add land" id="reconfirmar" open><summary className="qa-btn">{t("Registrar que revalidé stock y precio", "Record that I re-confirmed stock and price")}</summary>
                 <form action={revalidateSupply.bind(null, po.id)} className="qa-form">
                   <label>{t("Evidencia (quién confirmó y dónde)", "Evidence (who confirmed and where)")}<input name="evidence" required maxLength={300} placeholder={t("Ej.: Ana (distribuidor) confirma 3 en stock y mismo precio, correo de hoy 9:10", "E.g.: Ana (distributor) confirms 3 in stock, same price, email today 9:10")} /></label>
                   <button type="submit">{t("Registrar", "Record")}</button>
@@ -314,7 +316,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
             )}
             {/* Credit is what blocks: ask for the review right here (a new customer has no limit and is not on the credit list yet). */}
             {open && ctx.credit && !ctx.credit.ok && (
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: 8 }} id="cupo" className="land" data-open-on-land>
                 <details className="scp-add" open={sp.err === "motivo-cupo" || sp.err === "monto-cupo"}><summary className="qa-btn">{t("Pedir revisión de cupo", "Request a credit review")}</summary>
                   <form action={requestCreditReview.bind(null, d.account.id)} className="qa-form">
                     <input type="hidden" name="back" value={`/po/${po.id}`} />

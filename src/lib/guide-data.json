@@ -448,7 +448,7 @@
     "En la cotización presentada, abre [[Llegó la PO · registrarla]], escribe el número de la OC y haz clic en [[Registrar y comparar]].",
     "Revisa la comparación: cada línea, precio, cantidad, condiciones y vigencia.",
     "Para cada diferencia importante, elige una solución con [[Elegir esta opción]] y registra la confirmación del cliente con [[Registrar confirmación]].",
-    "Cuando nada bloquee, haz clic en [[Aceptar PO]]."
+    "En la columna derecha, cada precondición de «ACEPTAR PO» es un enlace que te lleva a donde se resuelve. Cuando todas estén en «✓», haz clic en [[Aceptar PO]]."
    ],
    "expect": "Aceptar PO sigue desactivado mientras haya una diferencia importante abierta o una precondición en «!». Si el cliente es nuevo y no tiene cupo de crédito, pídelo ahí mismo con «Pedir revisión de cupo»: lo deciden Finanzas o Gerencia. Una vez aceptada, el registro no se puede editar. La OC solo se puede registrar sobre una cotización presentada en SOLU: si la Necesidad se marcó como cotizada sin ese documento, el recuadro rojo de la Necesidad pide primero «Preparar cotización» y «Presentar al cliente», y después muestra el botón «Registrar la OC»."
   },
@@ -648,10 +648,10 @@
    "steps": [
     "En la pestaña [[Ejecución]] de la Necesidad, elige en la lista «¿A qué proveedor se le compra?» (SOLU sugiere uno por el nombre: confírmalo) y haz clic en [[Preparar Supplier PO desde la cotización]].",
     "SOLU abre la orden. Revísala y guarda los cambios con [[Guardar borrador]].",
-    "Cuando la lista LISTA PARA LIBERAR (columna derecha) no tenga pendientes, haz clic en [[Liberar Supplier PO]].",
+    "En la columna derecha, LISTA PARA LIBERAR muestra cada punto con «✓» o «!». Cada punto es un enlace: haz clic y SOLU te lleva a donde se resuelve. Cuando no tenga pendientes, haz clic en [[Liberar Supplier PO]].",
     "En PLAN DE PAGO, haz clic en [[Solicitar este pago]] en cada hito. Si después hay que cambiar la orden: [[Crear nueva versión]]."
    ],
-   "expect": "Las solicitudes de pago van a Administración → Pagos a proveedores para verificación. Si la lista muestra «El requerimiento de compra tiene algo por resolver», ábrelo desde ahí: por ejemplo, la primera compra a un proveedor nuevo pide la autorización de otra persona."
+   "expect": "Las solicitudes de pago van a Administración → Pagos a proveedores para verificación. Si la lista dice «Falta: pedir la autorización de esta compra» (por ejemplo, primera compra a un proveedor nuevo), haz clic en esa línea y pídela en el requerimiento. Si dice «Falta: que otra persona autorice esta compra», la lista nombra quién puede hacerlo: esa persona entra con su usuario, abre el enlace y hace clic en «Autorizar». Quien la pide nunca la autoriza."
   },
   {
    "id": "logistica",
@@ -751,9 +751,9 @@
    "steps": [
     "En una orden, registra la primera cotización del proveedor.",
     "Registra su confirmación: SOLU la compara con la orden.",
-    "Si lograste un mejor precio, agrégalo en ahorros con la evidencia."
+    "Si lograste un mejor precio, baja al bloque AHORROS, abre «+ Registrar ahorro» y responde las cinco preguntas en orden: tipo de ahorro, lo que íbamos a pagar, lo que pagamos al final, cuánto se le rebajó al cliente y la prueba. SOLU calcula el ahorro mientras escribes. Haz clic en [[Registrar ahorro]]."
    ],
-   "expect": "Un ahorro sin evidencia no se guarda. Las diferencias entre lo pedido y lo confirmado quedan a la vista hasta resolverlas."
+   "expect": "El botón «Registrar ahorro» solo se activa cuando hay ahorro (lo pagado es menor que lo previsto) y se guarda con su prueba. En un ahorro con el proveedor, «lo que íbamos a pagar» es siempre su primera cotización. Registrar ahorros es opcional: no hace falta para liberar la orden. Las diferencias entre lo pedido y lo confirmado quedan a la vista hasta resolverlas."
   },
   {
    "id": "ops-compromisos",

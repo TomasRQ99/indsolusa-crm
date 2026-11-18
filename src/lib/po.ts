@@ -229,18 +229,18 @@ export function buildPo(po: PoFull, i: I, floorPct: number | null, ctx?: AcceptC
   const promiseDate = chosen?.state === "CONFIRMED" ? chosen.promiseDate : protectedDate ?? po.requiredBy ?? null;
 
   // ---- Preconditions of the Accept PO command ----
-  const pre = [
-    { ok: !!q && (q.status === "PRESENTED" || q.status === "ACCEPTED"), text: t("Responde a una cotización presentada y vigente", "Answers a presented, current quote") },
-    { ok: resolvedDate, text: dateMaterial ? t("La diferencia de fecha tiene una resolución confirmada", "The date difference has a confirmed resolution") : t("La fecha de la PO se puede proteger", "The PO date can be protected") },
-    { ok: otherMaterial.length === 0, text: otherMaterial.length ? t(`Otras diferencias materiales: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`, `Other material differences: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`) : t("Productos, cantidades, precios y condiciones coinciden", "Products, quantities, prices and terms match") },
-    { ok: !chosen || chosen.state !== "CONFIRMED" || !options.find((o) => o.option === chosen.option)?.belowFloor, text: t("La Eságara resultante respeta el umbral de la política (o tiene excepción aprobada)", "Resulting Eságara respects the policy threshold (or has an approved exception)") },
+  const pre: { ok: boolean; text: string; href?: string }[] = [
+    { ok: !!q && (q.status === "PRESENTED" || q.status === "ACCEPTED"), text: t("Responde a una cotización presentada y vigente", "Answers a presented, current quote"), href: q ? `/cotizaciones/${q.id}` : undefined },
+    { ok: resolvedDate, text: dateMaterial ? t("La diferencia de fecha tiene una resolución confirmada", "The date difference has a confirmed resolution") : t("La fecha de la PO se puede proteger", "The PO date can be protected"), href: dateMaterial ? "#opciones" : "#comparacion" },
+    { ok: otherMaterial.length === 0, text: otherMaterial.length ? t(`Otras diferencias materiales: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`, `Other material differences: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`) : t("Productos, cantidades, precios y condiciones coinciden", "Products, quantities, prices and terms match"), href: "#comparacion" },
+    { ok: !chosen || chosen.state !== "CONFIRMED" || !options.find((o) => o.option === chosen.option)?.belowFloor, text: t("La Eságara resultante respeta el umbral de la política (o tiene excepción aprobada)", "Resulting Eságara respects the policy threshold (or has an approved exception)"), href: dateMaterial ? "#opciones" : q ? `/cotizaciones/${q.id}` : undefined },
     // C6 §23 revalidation at the moment of accepting: stock/price (C-12), credit, import.
-    ...(ctx?.supply ? [{ ok: ctx.supply.ok, text: t(ctx.supply.text.es, ctx.supply.text.en) }] : []),
-    ...(ctx?.credit ? [{ ok: ctx.credit.ok, text: t(ctx.credit.text.es, ctx.credit.text.en) }] : []),
+    ...(ctx?.supply ? [{ ok: ctx.supply.ok, text: t(ctx.supply.text.es, ctx.supply.text.en), href: ctx.supply.ok ? undefined : "#reconfirmar" }] : []),
+    ...(ctx?.credit ? [{ ok: ctx.credit.ok, text: t(ctx.credit.text.es, ctx.credit.text.en), href: ctx.credit.ok ? "/administracion/cupos" : "#cupo" }] : []),
     ...(ctx?.importFeas ? [{ ok: ctx.importFeas.ok, text: t(ctx.importFeas.text.es, ctx.importFeas.text.en) }] : []),
     // Eságara Protection Gate before accepting the Deal (module 10 v1.1 §44): the protected economics of the quote.
     ...(q && q.protSale != null && q.protCost != null && Number(q.protSale) > 0 && floorPct != null
-      ? (() => { const p = Math.round(((Number(q.protSale) - Number(q.protCost)) / Number(q.protSale)) * 10000) / 100; return [{ ok: p >= floorPct, text: p >= floorPct ? t(`Eságara protegida ${i.pct2(p)}: dentro de la política`, `Protected Eságara ${i.pct2(p)}: within policy`) : t(`Eságara protegida ${i.pct2(p)} bajo el umbral: necesita una excepción aprobada en la cotización`, `Protected Eságara ${i.pct2(p)} below the threshold: needs an approved exception on the quote`) }]; })()
+      ? (() => { const p = Math.round(((Number(q.protSale) - Number(q.protCost)) / Number(q.protSale)) * 10000) / 100; return [{ ok: p >= floorPct, text: p >= floorPct ? t(`Eságara protegida ${i.pct2(p)}: dentro de la política`, `Protected Eságara ${i.pct2(p)}: within policy`) : t(`Eságara protegida ${i.pct2(p)} bajo el umbral: necesita una excepción aprobada en la cotización`, `Protected Eságara ${i.pct2(p)} below the threshold: needs an approved exception on the quote`), href: `/cotizaciones/${q.id}` }]; })()
       : []),
   ];
   const canAccept = !accepted && !rejected && pre.every((p) => p.ok);

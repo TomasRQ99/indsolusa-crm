@@ -313,7 +313,7 @@
    "On the presented quote, open [[Llegó la PO · registrarla]], type the PO number and click [[Registrar y comparar]].",
    "Review the comparison: each line, price, quantity, terms and validity.",
    "For each important difference, choose a solution with [[Elegir esta opción]] and record the customer's confirmation with [[Registrar confirmación]].",
-   "When nothing blocks, click [[Aceptar PO]]."
+   "In the right column, each precondition of “ACCEPT PO” is a link that takes you to where it is resolved. Once all show “✓”, click [[Aceptar PO]]."
   ],
   "expect": "Accept PO stays disabled while an important difference is open or a precondition shows “!”. If the customer is new and has no credit limit, request it right there with “Request a credit review”: Finance or Management decide. Once accepted, the record cannot be edited. The PO can only be recorded on a quote presented in SOLU: if the Need was marked as quoted without that document, the red box on the Need first asks for “Prepare quote” and “Present to customer”, and then shows the “Record the PO” button."
  },
@@ -468,10 +468,10 @@
   "steps": [
    "On the Need's [[Ejecución]] tab, pick from the “Which supplier do we buy from?” list (SOLU suggests one by name: confirm it) and click [[Preparar Supplier PO desde la cotización]].",
    "SOLU opens the order. Review it and save the changes with [[Guardar borrador]].",
-   "When the READY TO RELEASE list (right column) has nothing open, click [[Liberar Supplier PO]].",
+   "In the right column, RELEASE READINESS shows each point with “✓” or “!”. Each point is a link: click it and SOLU takes you to where it is resolved. Once nothing is open, click [[Liberar Supplier PO]].",
    "Under PAYMENT PLAN, click [[Solicitar este pago]] on each milestone. If the order must change later: [[Crear nueva versión]]."
   ],
-  "expect": "Payment requests go to Administration → Supplier payments for verification. If the list shows “The purchase requirement has something to resolve”, open it from there: for example, the first purchase from a new supplier needs another person's authorization."
+  "expect": "Payment requests go to Administration → Supplier payments for verification. If the list says “Missing: request the authorization of this purchase” (for example, a first purchase from a new supplier), click that line and request it on the requirement. If it says “Missing: another person must authorize this purchase”, the list names who can do it: that person signs in, opens the link and clicks “Approve”. Whoever requests it never authorizes it."
  },
  "logistica": {
   "t": "Supplier arrivals (shipments)",
@@ -547,9 +547,9 @@
   "steps": [
    "On an order, record the supplier's first quote.",
    "Record their confirmation: SOLU compares it with the order.",
-   "If you got a better price, add it under savings with the evidence."
+   "If you got a better price, go down to the SAVINGS block, open “+ Record saving” and answer the five questions in order: kind of saving, what we were going to pay, what we finally paid, how much was passed on to the customer, and the proof. SOLU works out the saving while you type. Click [[Registrar ahorro]]."
   ],
-  "expect": "A saving without evidence is not saved. Differences between what was ordered and what was confirmed stay visible until resolved."
+  "expect": "The “Record saving” button only turns on when there is a saving (what was paid is less than planned), and it is saved with its proof. For a supplier saving, “what we were going to pay” is always their first quote. Recording savings is optional: it is not needed to release the order. Differences between what was ordered and what was confirmed stay in view until resolved."
  },
  "ops-compromisos": {
   "t": "Supplier commitments",

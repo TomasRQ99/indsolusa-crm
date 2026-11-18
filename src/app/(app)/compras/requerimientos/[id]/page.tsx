@@ -35,6 +35,8 @@ export default async function PrPage({ params, searchParams }: { params: Promise
     db.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
   const locked = !!spo?.releasedAt || !!pr.cancelledAt;
+  // The people in SOLU who can decide a waiting authorization (never the one who asked for it).
+  const deciders = last?.status === "REQUESTED" ? await db.user.findMany({ where: { active: true, id: { not: last.requestedById }, role: { in: [...new Set([...F.policy.value.level2Roles, ...(last.level === 1 ? F.policy.value.level1Roles : [])])] as never } }, orderBy: { name: "asc" }, select: { name: true } }) : [];
   const tot = prTotals(pr.lines);
   const ex = exposureOf(pr);
   const money = (n: unknown) => `${pr.currency} ${i.n2(n)}`;
@@ -159,7 +161,14 @@ export default async function PrPage({ params, searchParams }: { params: Promise
                 {F.last.level === 1 && <button type="submit" name="action" value="ESCALATE" className="secondary">{t("Escalar a Gerencia", "Escalate to Management")}</button>}
               </div>
             </form>
-          ) : <p className="src">{user.id === F.last.requestedById ? t("La pediste tú: la decide otra persona.", "You requested it: someone else decides it.") : t(`La decide ${F.last.level === 2 ? "Gerencia" : "Finanzas, Administración o Gerencia"}.`, `Decided by ${F.last.level === 2 ? "Management" : "Finance, Administration or Management"}.`)}</p>)}
+          ) : (
+            <div className="note attn">
+              <b>{user.id === F.last.requestedById ? t("La pediste tú: la tiene que autorizar otra persona.", "You requested it: another person has to authorize it.") : t(`La decide ${F.last.level === 2 ? "Gerencia" : "Finanzas, Administración o Gerencia"}.`, `Decided by ${F.last.level === 2 ? "Management" : "Finance, Administration or Management"}.`)}</b>{" "}
+              {deciders.length > 0
+                ? t(`La puede autorizar: ${deciders.map((u) => u.name).join(", ")}. Esa persona entra a SOLU con su usuario, abre este requerimiento y aquí mismo hace clic en «Autorizar».`, `It can be authorized by: ${deciders.map((u) => u.name).join(", ")}. That person signs in to SOLU, opens this requirement and clicks “Approve” right here.`)
+                : t(`Hoy no hay en SOLU otra persona que pueda autorizarla: hace falta un segundo usuario de ${F.last.level === 2 ? "Gerencia" : "Finanzas, Administración o Gerencia"} (se crea en EQUIPO). Mientras tanto la orden no se puede liberar.`, `Today there is nobody else in SOLU who can authorize it: a second user is needed, ${F.last.level === 2 ? "Management" : "Finance, Administration or Management"} (created under TEAM). Until then the order cannot be released.`)}
+            </div>
+          ))}
         </section>
       )}
       {!locked && (
