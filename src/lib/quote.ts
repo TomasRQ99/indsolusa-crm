@@ -61,7 +61,8 @@ export function validUntil(q: { issuedAt: Date | null; presentedAt: Date | null;
   return addDays(d0, q.validityDays);
 }
 
-type Check = { ok: boolean; text: string; fix?: string; tab?: string };
+// href = where that point is filled in: every line of the lists is a link to its place.
+type Check = { ok: boolean; text: string; fix?: string; tab?: string; href?: string };
 
 export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null; floorPct: number | null; threshold?: number; approvedBy?: string | null }, scope?: { state: string; blocks: boolean; gaps: { es: string; en: string; severity: string }[] } | null) {
   const { t } = i;
@@ -96,28 +97,28 @@ export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null;
 
   // ---------- Ready to Present (blocks) and Ready If Customer Says Yes (doesn't block) ----------
   const ready: Check[] = [
-    { ok: !!d.desiredResult, text: t("El resultado deseado del cliente está escrito", "The customer's desired result is written"), fix: t("Escríbelo en la pestaña Necesidad", "Write it in the Need tab"), tab: "solution" },
-    { ok: !!q.solution, text: t("La solución está en una frase", "The solution is one sentence"), fix: t("Escribe qué logra el cliente", "Write what the customer achieves"), tab: "solution" },
+    { ok: !!d.desiredResult, text: t("El resultado deseado del cliente está escrito", "The customer's desired result is written"), fix: t("Escríbelo en la pestaña Necesidad", "Write it in the Need tab"), tab: "solution", href: `/deals/${d.id}?tab=need#resultado-deseado` },
+    { ok: !!q.solution, text: t("La solución está en una frase", "The solution is one sentence"), fix: t("Escribe qué logra el cliente", "Write what the customer achieves"), tab: "solution", href: "#solucion" },
     // C1 (AC02/AC03): a simple spare part with nothing ambiguous adds no check at all (AC18).
     ...(scope && scope.state !== "NOT_STARTED"
-      ? [(() => { const g = scope.gaps.filter((x) => x.severity !== "WARN"); return { ok: !scope.blocks, text: t("El alcance funcional está claro: lo cotizado hace que funcione", "Functional scope is clear: what's quoted makes it work"), fix: g.length ? t(`${g[0].es}${g.length > 1 ? ` (y ${g.length - 1} más)` : ""} · ver «Técnico y alcance»`, `${g[0].en}${g.length > 1 ? ` (and ${g.length - 1} more)` : ""} · see “Technical & scope”`) : undefined, tab: "scope" }; })()]
+      ? [(() => { const g = scope.gaps.filter((x) => x.severity !== "WARN"); return { ok: !scope.blocks, text: t("El alcance funcional está claro: lo cotizado hace que funcione", "Functional scope is clear: what's quoted makes it work"), fix: g.length ? t(`${g[0].es}${g.length > 1 ? ` (y ${g.length - 1} más)` : ""} · ver «Técnico y alcance»`, `${g[0].en}${g.length > 1 ? ` (and ${g.length - 1} more)` : ""} · see “Technical & scope”`) : undefined, tab: "scope", href: `/deals/${d.id}/alcance` }; })()]
       : []),
-    { ok: q.lines.length > 0 && q.lines.every((l) => Number(l.unitPrice) > 0), text: t("Todas las líneas tienen precio", "Every line has a price"), fix: t("Completa los precios", "Fill in the prices"), tab: "lines" },
-    { ok: Number(q.supplierCost) > 0 && !!q.supplierSrc, text: t("El costo del proveedor tiene fuente", "The supplier cost has a source"), fix: t("Indica de dónde sale (proforma, correo)", "Say where it comes from (proforma, email)"), tab: "costs" },
-    { ok: q.leadMinDays != null && q.leadMaxDays != null, text: t("El tiempo de entrega está definido", "Lead time is defined"), fix: t("Indica días después de la OC", "Set days after PO"), tab: "terms" },
-    { ok: !!q.promiseText, text: t("La promesa posible tiene su condición", "The possible promise has its condition"), fix: t("Escribe qué prometemos y bajo qué condición", "Write what we promise and under what condition"), tab: "solution" },
+    { ok: q.lines.length > 0 && q.lines.every((l) => Number(l.unitPrice) > 0), text: t("Todas las líneas tienen precio", "Every line has a price"), fix: t("Completa los precios", "Fill in the prices"), tab: "lines", href: "#lineas" },
+    { ok: Number(q.supplierCost) > 0 && !!q.supplierSrc, text: t("El costo del proveedor tiene fuente", "The supplier cost has a source"), fix: t("Indica de dónde sale (proforma, correo)", "Say where it comes from (proforma, email)"), tab: "costs", href: "#costos" },
+    { ok: q.leadMinDays != null && q.leadMaxDays != null, text: t("El tiempo de entrega está definido", "Lead time is defined"), fix: t("Indica días después de la OC", "Set days after PO"), tab: "terms", href: "#condiciones" },
+    { ok: !!q.promiseText, text: t("La promesa posible tiene su condición", "The possible promise has its condition"), fix: t("Escribe qué prometemos y bajo qué condición", "Write what we promise and under what condition"), tab: "solution", href: "#solucion" },
     belowFloor
-      ? { ok: false, text: t(`La Eságara (${i.pct2(pctR)}) está bajo el umbral de la política (${policy.threshold ?? policy.floorPct} %)`, `Eságara (${i.pct2(pctR)}) is below the policy threshold (${policy.threshold ?? policy.floorPct} %)`), fix: t("Revisa precio o costos, o pide una excepción con su razón", "Review price or costs, or request an exception with its reason"), tab: "costs" }
+      ? { ok: false, text: t(`La Eságara (${i.pct2(pctR)}) está bajo el umbral de la política (${policy.threshold ?? policy.floorPct} %)`, `Eságara (${i.pct2(pctR)}) is below the policy threshold (${policy.threshold ?? policy.floorPct} %)`), fix: t("Revisa precio o costos, o pide una excepción con su razón", "Review price or costs, or request an exception with its reason"), tab: "costs", href: "#costos" }
       : underThreshold
-        ? { ok: true, text: t(`Eságara ${i.pct2(pctR)} bajo el umbral, con excepción aprobada${policy.approvedBy ? ` por ${policy.approvedBy}` : ""}`, `Eságara ${i.pct2(pctR)} below the threshold, with an approved exception${policy.approvedBy ? ` by ${policy.approvedBy}` : ""}`) }
-        : { ok: true, text: t(`La Eságara (${i.pct(pct)}) no baja del umbral de la política v${policy.version} (${policy.threshold ?? policy.floorPct} %)`, `Eságara (${i.pct(pct)}) is not below policy v${policy.version} threshold (${policy.threshold ?? policy.floorPct} %)`) },
+        ? { ok: true, text: t(`Eságara ${i.pct2(pctR)} bajo el umbral, con excepción aprobada${policy.approvedBy ? ` por ${policy.approvedBy}` : ""}`, `Eságara ${i.pct2(pctR)} below the threshold, with an approved exception${policy.approvedBy ? ` by ${policy.approvedBy}` : ""}`), href: "#costos" }
+        : { ok: true, text: t(`La Eságara (${i.pct(pct)}) no baja del umbral de la política v${policy.version} (${policy.threshold ?? policy.floorPct} %)`, `Eságara (${i.pct(pct)}) is not below policy v${policy.version} threshold (${policy.threshold ?? policy.floorPct} %)`), href: "#costos" },
   ];
   const ifYes: Check[] = [
-    { ok: a.taxDataComplete, text: t("Datos tributarios del cliente completos", "Customer tax data complete"), fix: t("Si dice sí hoy, no se podría facturar", "If they say yes today, it couldn't be invoiced") },
-    { ok: !!q.supplierValidUntil && (!q.decisionAt || q.supplierValidUntil >= q.decisionAt), text: q.supplierValidUntil ? t(`La vigencia del proveedor (${i.day(q.supplierValidUntil)}) cubre la decisión del cliente`, `Supplier validity (${i.day(q.supplierValidUntil)}) covers the customer's decision`) : t("Vigencia del precio del proveedor registrada", "Supplier price validity recorded"), fix: t("Si el cliente decide después, el costo puede cambiar", "If the customer decides later, the cost may change") },
-    { ok: q.supplyConfirmed, text: t("El proveedor confirmó disponibilidad y plazo", "Supplier confirmed availability and lead time"), fix: t("Si dice sí, la promesa dependería de un plazo no confirmado", "If they say yes, the promise would rest on an unconfirmed lead time") },
-    ...(a.creditLimit != null ? [{ ok: true, text: t(`Cupo de crédito registrado (USD ${i.n(a.creditLimit)})`, `Credit limit on file (USD ${i.n(a.creditLimit)})`) }] : [{ ok: false, text: t("Cupo de crédito del cliente definido", "Customer credit limit defined"), fix: t("Administración tendría que aprobar el crédito antes de comprar", "Administration would need to approve credit before buying") }]),
-    ...(a.requiresPortal ? [{ ok: !!a.portalValidUntil && a.portalValidUntil >= now, text: t("Registro en el portal del cliente vigente", "Customer portal registration valid"), fix: t("Sin portal vigente la factura sería rechazada", "Without a valid portal the invoice would be rejected") }] : []),
+    { ok: a.taxDataComplete, text: t("Datos tributarios del cliente completos", "Customer tax data complete"), fix: t("Si dice sí hoy, no se podría facturar", "If they say yes today, it couldn't be invoiced"), href: `/accounts/${a.id}` },
+    { ok: !!q.supplierValidUntil && (!q.decisionAt || q.supplierValidUntil >= q.decisionAt), text: q.supplierValidUntil ? t(`La vigencia del proveedor (${i.day(q.supplierValidUntil)}) cubre la decisión del cliente`, `Supplier validity (${i.day(q.supplierValidUntil)}) covers the customer's decision`) : t("Vigencia del precio del proveedor registrada", "Supplier price validity recorded"), fix: t("Si el cliente decide después, el costo puede cambiar", "If the customer decides later, the cost may change"), href: "#condiciones" },
+    { ok: q.supplyConfirmed, text: t("El proveedor confirmó disponibilidad y plazo", "Supplier confirmed availability and lead time"), fix: t("Si dice sí, la promesa dependería de un plazo no confirmado", "If they say yes, the promise would rest on an unconfirmed lead time"), href: "#condiciones" },
+    ...(a.creditLimit != null ? [{ ok: true, text: t(`Cupo de crédito registrado (USD ${i.n(a.creditLimit)})`, `Credit limit on file (USD ${i.n(a.creditLimit)})`), href: "/administracion/cupos" }] : [{ ok: false, text: t("Cupo de crédito del cliente definido", "Customer credit limit defined"), fix: t("Administración tendría que aprobar el crédito antes de comprar", "Administration would need to approve credit before buying"), href: "/administracion/cupos" }]),
+    ...(a.requiresPortal ? [{ ok: !!a.portalValidUntil && a.portalValidUntil >= now, text: t("Registro en el portal del cliente vigente", "Customer portal registration valid"), fix: t("Sin portal vigente la factura sería rechazada", "Without a valid portal the invoice would be rejected"), href: `/accounts/${a.id}` }] : []),
   ];
   const blocking = ready.filter((c) => !c.ok);
 

@@ -317,7 +317,7 @@
    "why": "El único espacio de trabajo para una necesidad: qué pasa ahora, qué viene, y tres fechas lado a lado (ETA del transportista, fecha esperada por SOLU y promesa al cliente).",
    "steps": [
     "Lee la señal y su causa en la parte de arriba.",
-    "Mira la ruta de pasos y, justo debajo, el recuadro «PARA TERMINAR EL PASO…»: en rojo dice qué falta («Falta: …») y dónde se llena. Haz clic en el botón azul de esa línea: [[Ir a llenarlo]], o el nombre de la acción («Preparar cotización», «Abrir la cotización», «Registrar la OC», «Abrir la OC»). SOLU te lleva al lugar exacto, que queda marcado en rojo.",
+    "Mira la ruta de pasos y, justo debajo, el recuadro «PARA TERMINAR EL PASO…»: en rojo dice qué falta («Falta: …») y dónde se llena. Haz clic en el botón azul de esa línea: [[Ir a llenarlo]], o el nombre de la acción («Preparar cotización», «Completar la cotización», «Abrir la cotización», «Registrar la OC», «Abrir la OC»). SOLU te lleva al lugar exacto, que queda marcado en rojo.",
     "Define el siguiente movimiento y su fecha, y [[Guardar]]. Pospón con [[Mañana]] / [[3 días]] / [[1 semana]].",
     "Revisa qué cambió desde tu última visita y haz clic en [[Marcar como visto]].",
     "Usa las pestañas en orden: Resumen, Necesidad, Fuente, Cotización, Ejecución, Finanzas, Expediente, Resultado."
@@ -372,13 +372,13 @@
    "why": "Arma la solución, revisa la economía, define la promesa y presenta solo cuando esté completa.",
    "steps": [
     "En la Necesidad, abre la pestaña [[Cotización]] y haz clic en [[Preparar cotización]]. SOLU trae los productos y costos que ya tiene la Necesidad.",
-    "En el bloque «SOLUCIÓN», abre «Editar» y escribe en una frase qué logra el cliente y la promesa posible con su condición.",
+    "Arriba, en el recuadro rojo «COMPLETA PARA PRESENTAR», está todo lo que falta en un solo formulario: llena los campos en rojo (la «i» junto a cada nombre explica qué escribir, con un ejemplo) y haz clic en [[Guardar lo que llené]].",
     "En «PRODUCTOS EN EL DOCUMENTO», revisa cada línea y ponle precio con «Editar». Para sumar otra, abre [[Agregar producto]] y haz clic en [[Agregar]].",
     "En «ECONOMÍA», llena la hoja «Liquidación de costos» y haz clic en [[Guardar costos]]. Mira la Eságara en $ y %, antes y después del costo de financiar el plazo de pago.",
     "Opcional: ofrece alternativas con [[+ Escenario]] y [[Agregar escenario]], y marca una con [[Recomendar este]].",
-    "Resuelve cada punto con «!» de la lista «LISTA PARA PRESENTAR» (columna derecha): cada uno dice qué falta.",
+    "En la columna derecha, «LISTA PARA PRESENTAR» muestra cada punto con «✓» o «!». Cada punto es un enlace: haz clic y SOLU te lleva a donde se llena, con el formulario abierto.",
     "Revisa el documento con [[Ver PDF]] (arriba), en inglés o español.",
-    "Con la lista completa, haz clic en [[Presentar al cliente]] (debajo de la lista). Los precios quedan fijos."
+    "Cuando no falta nada, el recuadro de arriba se pone verde: haz clic en [[Presentar al cliente]] (columna derecha, debajo de la lista). Los precios quedan fijos."
    ],
    "expect": "Después de presentarla, los cambios requieren [[Crear revisión]] (Rev. 1, mismo número). La cotización pasa a Futuro comercial."
   },

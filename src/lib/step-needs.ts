@@ -35,15 +35,16 @@ export function stepNeeds(x: StepNeedsInput, t: (es: string, en: string) => stri
   const openQuote = t("Abrir la cotización", "Open the quote");
   // What a draft quote still needs before it can be presented (the same list the quote shows under LISTA PARA PRESENTAR).
   const draftItems = (q: StepNeedsInput["quotes"][number]): StepNeed[] => {
-    const qh = `/cotizaciones/${q.id}`;
-    return [
-      it(!!d.desiredResult, t("El resultado que busca el cliente", "The result the customer wants"), t("Pestaña Necesidad → «Resultado deseado»", "Need tab → “Desired result”"), `${self}?tab=need#resultado-deseado`),
-      it(!!q.solution, t("La solución en una frase", "The solution in one sentence"), t("En la cotización, bloque SOLUCIÓN → Editar", "On the quote, SOLUTION block → Edit"), `${qh}#solucion`, { go: openQuote }),
-      it(q.lines.length > 0 && q.lines.every((l) => Number(l.unitPrice) > 0), t("Todos los productos con precio", "Every product with a price"), t("En la cotización, PRODUCTOS EN EL DOCUMENTO → Editar cada línea", "On the quote, PRODUCTS ON THE DOCUMENT → Edit each line"), `${qh}#lineas`, { go: openQuote }),
-      it(Number(q.supplierCost) > 0 && !!q.supplierSrc, t("El costo del producto y de dónde sale", "The product's cost and where it comes from"), t("En la cotización, hoja «Liquidación de costos», fila Producto → Guardar costos", "On the quote, “Cost settlement” sheet, Product row → Save costs"), `${qh}#costos`, { go: openQuote }),
-      it(q.leadMinDays != null && q.leadMaxDays != null, t("El tiempo de entrega (días después de la OC)", "The lead time (days after the PO)"), t("En la cotización, CONDICIONES DEL DOCUMENTO → Editar condiciones", "On the quote, DOCUMENT TERMS → Edit terms"), `${qh}#condiciones`, { go: openQuote }),
-      it(!!q.promiseText, t("La promesa posible y su condición", "The possible promise and its condition"), t("En la cotización, bloque SOLUCIÓN → Editar", "On the quote, SOLUTION block → Edit"), `${qh}#solucion`, { go: openQuote }),
-    ];
+    const miss = [
+      !d.desiredResult && t("el resultado que busca el cliente", "the result the customer wants"),
+      !q.solution && t("la solución en una frase", "the solution in one sentence"),
+      q.lines.length === 0 && t("al menos un producto", "at least one product"),
+      q.lines.some((l) => !(Number(l.unitPrice) > 0)) && t("el precio de cada producto", "the price of every product"),
+      !(Number(q.supplierCost) > 0 && !!q.supplierSrc) && t("el costo del producto y de dónde sale", "the product's cost and where it comes from"),
+      !(q.leadMinDays != null && q.leadMaxDays != null) && t("el tiempo de entrega", "the lead time"),
+      !q.promiseText && t("la promesa de entrega", "the delivery promise"),
+    ].filter((v): v is string => !!v);
+    return [it(miss.length === 0, t("La cotización completa", "The quote complete"), t(`Falta escribir: ${miss.join(", ")}. Todo se llena en un solo formulario, arriba en la cotización: «COMPLETA PARA PRESENTAR».`, `Still to write: ${miss.join(", ")}. It is all filled in on one form, at the top of the quote: “COMPLETE TO PRESENT”.`), `/cotizaciones/${q.id}#completar`, { go: t("Completar la cotización", "Complete the quote") })];
   };
   const prepare = { go: t("Preparar cotización", "Prepare quote"), act: "createQuote" as const };
   const draft = x.quotes.find((q) => q.status === "DRAFT");
@@ -74,7 +75,7 @@ export function stepNeeds(x: StepNeedsInput, t: (es: string, en: string) => stri
       const noDoc = !shown && x.customerPos.length === 0 && !d.poAcceptedAt;
       if (noDoc) {
         if (!draft) list.push(it(false, t("La cotización preparada en SOLU", "The quote prepared in SOLU"), t("La OC del cliente se registra sobre la cotización. Esta Necesidad figura como cotizada, pero no tiene el documento: créalo con este botón.", "The customer's PO is recorded on the quote. This Need shows as quoted, but it has no quote document: create it with this button."), tabAt("quote", "cotizaciones"), d.items.length > 0 ? prepare : { go: t("Ir a prepararla", "Go prepare it") }));
-        else list.push(...draftItems(draft).filter((n) => !n.ok));
+        else list.push(...draftItems(draft));
         list.push(it(false, t("La cotización presentada al cliente en SOLU", "The quote presented to the customer in SOLU"), draft ? t("La cotización está en borrador. En ella, cuando «LISTA PARA PRESENTAR» no tenga «!» → Presentar al cliente", "The quote is a draft. On it, once “READY TO PRESENT” has no “!” → Present to customer") : t("Después de prepararla: «LISTA PARA PRESENTAR» → Presentar al cliente", "After preparing it: “READY TO PRESENT” → Present to customer"), draft ? `/cotizaciones/${draft.id}#presentar` : null, { go: openQuote }));
       }
       list.push(

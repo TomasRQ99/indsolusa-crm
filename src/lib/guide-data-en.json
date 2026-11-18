@@ -209,7 +209,7 @@
   "why": "The one workspace for a need: what is happening now, what is coming, and three dates side by side (carrier ETA, SOLU's expected date and the promise to the customer).",
   "steps": [
    "Read the signal and its cause at the top.",
-   "Look at the path of steps and, right below it, the box “TO FINISH THE … STEP”: in red it says what is missing (“Missing: …”) and where to fill it in. Click the blue button on that line: [[Ir a llenarlo]], or the name of the action (“Prepare quote”, “Open the quote”, “Record the PO”, “Open the PO”). SOLU takes you to the exact place, which is marked in red.",
+   "Look at the path of steps and, right below it, the box “TO FINISH THE … STEP”: in red it says what is missing (“Missing: …”) and where to fill it in. Click the blue button on that line: [[Ir a llenarlo]], or the name of the action (“Prepare quote”, “Complete the quote”, “Open the quote”, “Record the PO”, “Open the PO”). SOLU takes you to the exact place, which is marked in red.",
    "Set the next move and its date, and [[Guardar]]. Postpone with [[Mañana]] / [[3 días]] / [[1 semana]].",
    "Review what changed since your last visit and click [[Marcar como visto]].",
    "Use the tabs in order: Summary, Need, Source, Quote, Execute, Finance, Business File, Result."
@@ -252,13 +252,13 @@
   "why": "Build the solution, check the economics, define the promise and present only when it is complete.",
   "steps": [
    "On the Need, open the [[Cotización]] tab and click [[Preparar cotización]]. SOLU brings the products and costs the Need already has.",
-   "In the “SOLUTION” block, open “Edit” and write in one sentence what the customer achieves and the possible promise with its condition.",
+   "At the top, the red box “COMPLETE TO PRESENT” has everything that is missing on one form: fill in the red fields (the “i” next to each name explains what to write, with an example) and click [[Guardar lo que llené]].",
    "Under “PRODUCTS ON THE DOCUMENT”, check each line and give it a price with “Edit”. To add another, open [[Agregar producto]] and click [[Agregar]].",
    "Under “ECONOMICS”, fill in the “Cost settlement” sheet and click [[Guardar costos]]. Look at the Eságara in $ and %, before and after the cost of financing the payment terms.",
    "Optional: offer alternatives with [[+ Escenario]] and [[Agregar escenario]], and mark one with [[Recomendar este]].",
-   "Resolve each item with \"!\" in the “Ready to present” list (right column): each one says what is missing.",
+   "In the right column, “READY TO PRESENT” shows each point with “✓” or “!”. Each point is a link: click it and SOLU takes you to where it is filled in, with the form open.",
    "Check the document with [[Ver PDF]] (at the top), in English or Spanish.",
-   "With the list complete, click [[Presentar al cliente]] (under the list). The prices are then fixed."
+   "Once nothing is missing, the box at the top turns green: click [[Presentar al cliente]] (right column, under the list). Prices become fixed."
   ],
   "expect": "After presenting it, changes need [[Crear revisión]] (Rev. 1, same number). The quote moves to Commercial future."
  },

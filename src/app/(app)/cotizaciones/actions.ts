@@ -102,6 +102,32 @@ export async function saveSolution(id: string, fd: FormData) {
   back(id, "ok=solucion");
 }
 
+/** "Completa para presentar": the one form at the top of a draft with only what is still missing. Empty fields change nothing. */
+export async function completeQuote(id: string, fd: FormData) {
+  const { q } = await draftOnly(id);
+  const data: Record<string, string | number> = {};
+  for (const [k, max] of [["solution", 400], ["promiseText", 300], ["promiseCondition", 300], ["supplierSrc", 200]] as const) {
+    const v = txt(fd, k, max);
+    if (v) data[k] = v;
+  }
+  let lo = int(fd, "leadMinDays"), hi = int(fd, "leadMaxDays");
+  if (lo != null && hi != null && hi < lo) [lo, hi] = [hi, lo];
+  if (lo != null) data.leadMinDays = lo;
+  if (hi != null) data.leadMaxDays = hi;
+  // The cost is only typed here when the quote has none yet (a first value is never a silent drop) and it is in dollars.
+  const cost = num(fd, "supplierCost");
+  if (cost && cost > 0 && !(Number(q.supplierCost) > 0) && q.costCurrency === BASE_CURRENCY) data.supplierCost = money2(cost);
+  if (Object.keys(data).length) await db.quote.update({ where: { id }, data });
+  const lines = await db.quoteLine.findMany({ where: { quoteId: id }, select: { id: true, unitPrice: true } });
+  for (const l of lines) {
+    const p = num(fd, `price_${l.id}`);
+    if (p && p > 0 && !(Number(l.unitPrice) > 0)) await db.quoteLine.update({ where: { id: l.id }, data: { unitPrice: money2(p) } });
+  }
+  const result = txt(fd, "desiredResult", 300);
+  if (result) await db.deal.updateMany({ where: { id: q.deal.id, desiredResult: null }, data: { desiredResult: result } });
+  back(id, "ok=completa");
+}
+
 /** Landed cost: each component keeps its source; a change records why. */
 const costStatus = (fd: FormData, k: string) => { const v = String(fd.get(k) ?? ""); return COST_STATUS[v] ? v : null; };
 

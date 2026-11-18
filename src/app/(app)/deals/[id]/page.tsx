@@ -1107,7 +1107,7 @@ export default async function JourneyPage({
   const Body = { resumen: Summary, need: Need, source: Source, quote: Quote, execute: Execute, finance: Finance, file: BizFile, result: Result }[tab];
 
   return (
-    <div className="jw">
+    <div className="jw need">
       <Popovers />
       <OutlookNote code={sp.cal} t={t} />
       {sp.ok && okMsg[sp.ok] && <div className={`note${sp.ok.startsWith("sin-") ? " attn" : " okn"}`} role="status">{okMsg[sp.ok]}</div>}
