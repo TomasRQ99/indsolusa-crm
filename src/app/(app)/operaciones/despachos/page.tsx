@@ -32,7 +32,7 @@ export default async function DispatchListPage() {
     <>
       <div className="ph">
         <div>
-          <h1>{t("Despachos", "Dispatch")}</h1>
+          <h1>{t("Entregas al cliente", "Customer deliveries")}</h1>
           <p>{t("Cada entrega al cliente, según dónde está. Despachado, entregado y listo para facturar son tres cosas distintas.", "Every delivery to a customer, by where it is. Dispatched, delivered and invoice-ready are three different things.")}</p>
         </div>
       </div>

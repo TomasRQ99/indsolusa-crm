@@ -655,15 +655,15 @@
   {
    "id": "logistica",
    "m": "operaciones",
-   "t": "Envíos",
-   "path": "OPERACIONES → Mover y entregar → Envíos",
-   "why": "Dónde está la mercancía, cuándo llegará de verdad y si el resultado del cliente está en riesgo.",
+   "t": "Llegadas del proveedor (envíos)",
+   "path": "OPERACIONES → Mover y entregar → Llegadas del proveedor",
+   "why": "La mercancía que viene del proveedor: dónde está, cuándo llegará de verdad y si el resultado del cliente está en riesgo.",
    "steps": [
     "Abre un envío. Actualiza la fecha en [[Nueva ETA del transportista]].",
     "Si la aduana lo retiene: [[Retenido en aduana]], y luego [[✓ Liberado por la aduana]] cuando se libere.",
     "Al llegar: [[El transportista entregó]]. Si algo no cuadra: [[Registrar discrepancia]]."
    ],
-   "expect": "Si el envío llega a nuestra bodega, se recibe en la orden de compra (bloque RECEPCIÓN) y el envío queda recibido solo; la entrega al cliente se hace después, desde Despachos. Si va directo al cliente, confirmar su recibo crea la remisión. Las fechas de la Necesidad se actualizan desde el envío."
+   "expect": "Si el envío llega a nuestra bodega, se recibe en la orden de compra (bloque RECEPCIÓN) y el envío queda recibido solo; la entrega al cliente se hace después, desde «Entregas al cliente». Si va directo al cliente, confirmar su recibo crea la remisión. Las fechas de la Necesidad se actualizan desde el envío."
   },
   {
    "id": "sin-despachar",
@@ -811,8 +811,8 @@
   {
    "id": "ops-despachos",
    "m": "operaciones",
-   "t": "Despachos al cliente",
-   "path": "Necesidad → Despacho → Entrega física · OPERACIONES → Mover y entregar → Despachos",
+   "t": "Entregas al cliente (despachos)",
+   "path": "Necesidad → Despacho → Entrega física · OPERACIONES → Mover y entregar → Entregas al cliente",
    "why": "La entrega física al cliente: despachado, entregado y listo para facturar son tres hechos distintos.",
    "steps": [
     "En la Necesidad, abre Despacho, haz clic en [[+ Nuevo despacho]], elige las unidades y [[Crear despacho]]. Ábrelo desde la lista.",
@@ -827,7 +827,7 @@
    "id": "ops-auditoria",
    "m": "operaciones",
    "t": "Factura del transportador",
-   "path": "OPERACIONES → Mover y entregar → Envíos → un envío → Factura del transportador",
+   "path": "OPERACIONES → Mover y entregar → Llegadas del proveedor → un envío → Factura del transportador",
    "why": "Compara lo que cobró el transportador con lo cotizado, lo declarado y lo que medimos.",
    "steps": [
     "Haz clic en [[+ Registrar factura del transportador]] y completa número, total y peso cobrable.",
@@ -841,7 +841,7 @@
    "id": "ops-aduana",
    "m": "operaciones",
    "t": "Caso de aduana",
-   "path": "OPERACIONES → Mover y entregar → Envíos → un envío internacional → Caso de aduana",
+   "path": "OPERACIONES → Mover y entregar → Llegadas del proveedor → un envío internacional → Caso de aduana",
    "why": "Lo que falta para importar, la clasificación arancelaria con su fuente, tributos esperados frente a reales y retenciones.",
    "steps": [
     "Haz clic en [[+ Abrir caso de aduana]].",

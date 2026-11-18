@@ -105,7 +105,7 @@ export default async function ShipmentPage({ params, searchParams }: { params: P
 
       <header className="jh">
         <div className="jh-top">
-          <p className="crumb k"><Link href="/logistica">{t("Envíos", "Shipments")}</Link> · <Link href={`/deals/${d.id}?tab=execute`}>{d.code}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link>{s.supplierPo && <> · <Link href={`/compras/${s.supplierPo.id}`}>{s.supplierPo.code}</Link></>}</p>
+          <p className="crumb k"><Link href="/logistica">{t("Llegadas del proveedor", "Supplier arrivals")}</Link> · <Link href={`/deals/${d.id}?tab=execute`}>{d.code}</Link> · <Link href={`/accounts/${d.account.id}`}>{d.account.name}</Link>{s.supplierPo && <> · <Link href={`/compras/${s.supplierPo.id}`}>{s.supplierPo.code}</Link></>}</p>
           <span className="jid">{s.code}</span>
           <span className="grow" />
         </div>
@@ -294,7 +294,7 @@ export default async function ShipmentPage({ params, searchParams }: { params: P
               <div className="jbh"><b>{t("RECEPCIÓN EN NUESTRA BODEGA", "RECEIPT AT OUR WAREHOUSE")}</b></div>
               <p className="small">{t("Este envío llega a nuestra bodega, no al cliente. Registra qué llegó y en qué estado en la orden de compra:", "This shipment arrives at our warehouse, not at the customer. Record what arrived and in what condition on the supplier order:")}</p>
               <p><Link className="btn" href={`/compras/${s.supplierPoId}#recepcion`}>{t("Ir a Recepción de la orden", "Go to the order's Receiving")}</Link></p>
-              <span className="src">{t("Al recibir la orden completa, este envío queda recibido solo. La entrega al cliente se hace después, desde Despachos.", "Once the order is fully received, this shipment is marked received by itself. Delivery to the customer comes later, from Dispatch.")}</span>
+              <span className="src">{t("Al recibir la orden completa, este envío queda recibido solo. La entrega al cliente se hace después, desde «Entregas al cliente».", "Once the order is fully received, this shipment is marked received by itself. Delivery to the customer comes later, from Dispatch.")}</span>
             </div>
           )}
           {editable && open && (s.deliveredAt || s.receipt === "DISPUTED") && (s.toCustomer || !s.supplierPoId || s.receipt === "DISPUTED") && (

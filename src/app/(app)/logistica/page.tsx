@@ -29,7 +29,7 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
       <div className="ph">
         <div>
           <div className="crumb">{t("Operaciones", "Operations")}</div>
-          <h1>{t("Envíos", "Shipments")}</h1>
+          <h1>{t("Llegadas del proveedor", "Supplier arrivals")}</h1>
           <p>{t(`${rows.length} envíos · ${scans} lecturas normales del transportista resumidas · ${needs} necesitan una decisión.`, `${rows.length} shipments · ${scans} normal carrier checkpoints summarised · ${needs} need a decision.`)}</p>
         </div>
       </div>

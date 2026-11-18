@@ -473,14 +473,14 @@
   "expect": "Payment requests go to Administration → Supplier payments for verification. If the list shows “The purchase requirement has something to resolve”, open it from there: for example, the first purchase from a new supplier needs another person's authorization."
  },
  "logistica": {
-  "t": "Shipments",
-  "why": "Where the goods are, when they will really arrive and whether the customer's result is at risk.",
+  "t": "Supplier arrivals (shipments)",
+  "why": "The goods coming from the supplier: where they are, when they will really arrive and whether the customer's result is at risk.",
   "steps": [
    "Open a shipment. Update the date under [[Nueva ETA del transportista]].",
    "If customs holds it: [[Retenido en aduana]], and then [[✓ Liberado por la aduana]] when it is released.",
    "On arrival: [[El transportista entregó]]. If something does not match: [[Registrar discrepancia]]."
   ],
-  "expect": "If the shipment arrives at our warehouse, it is received on the supplier order (RECEIVING block) and the shipment is marked received by itself; delivery to the customer comes later, from Dispatch. If it goes straight to the customer, confirming their receipt creates the delivery note. The Need's dates are updated from the shipment."
+  "expect": "If the shipment arrives at our warehouse, it is received on the supplier order (RECEIVING block) and the shipment is marked received by itself; delivery to the customer comes later, from “Customer deliveries”. If it goes straight to the customer, confirming their receipt creates the delivery note. The Need's dates are updated from the shipment."
  },
  "sin-despachar": {
   "t": "Not dispatched",
@@ -593,7 +593,7 @@
   "expect": "Units in quarantine or damaged never go out to a customer."
  },
  "ops-despachos": {
-  "t": "Dispatches to the customer",
+  "t": "Customer deliveries (dispatches)",
   "why": "The physical delivery to the customer: dispatched, delivered and ready to invoice are three different facts.",
   "steps": [
    "On the Need, open Dispatch, click [[+ Nuevo despacho]], choose the units and [[Crear despacho]]. Open it from the list.",
