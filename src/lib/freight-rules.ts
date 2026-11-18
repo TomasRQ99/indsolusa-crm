@@ -19,23 +19,15 @@ const N = (key: string, what: [string, string], why: [string, string]): Missing 
 
 /** §25 Logistics Readiness: derived. Each missing item says why transport can't be booked without it. */
 export function logisticsReadiness(f: FreightIn, international: boolean): Missing[] {
+  // Owner's decision 2026-11-18: only what a carrier cannot quote without is required (five items). Contact, hours,
+  // dimensions, packaging, hazardous, incoterm, origin and the documents stay on the form as optional.
+  void international;
   const out: Missing[] = [];
   if (!f.pickupAddress?.trim()) out.push(N("pickup", ["Dirección de recogida", "Pickup address"], ["El transportador no sabe dónde recoger", "The carrier doesn't know where to collect"]));
-  if (!f.pickupContact?.trim()) out.push(N("contact", ["Contacto en origen", "Contact at origin"], ["Nadie responde por la entrega al transportador", "Nobody answers for handing over to the carrier"]));
-  if (!f.pickupHours?.trim()) out.push(N("hours", ["Horario de recogida", "Opening hours"], ["Una recogida fallida mueve la fecha", "A failed pickup moves the date"]));
   if (!f.destination?.trim()) out.push(N("destination", ["Destino", "Destination"], ["Sin destino no hay tarifa", "No destination, no rate"]));
   if (!f.readyDate) out.push(N("ready", ["Fecha de listo", "Ready date"], ["No se puede programar la recogida", "The pickup can't be scheduled"]));
   if (!f.packages || f.packages <= 0) out.push(N("packages", ["Número de bultos", "Number of packages"], ["La guía se crea por pieza", "The waybill is created per piece"]));
   if (!f.grossKg || f.grossKg <= 0) out.push(N("weight", ["Peso bruto", "Gross weight"], ["La tarifa depende del peso", "The rate depends on the weight"]));
-  if (!f.dims?.trim()) out.push(N("dims", ["Medidas por bulto", "Dimensions per package"], ["El peso volumétrico puede superar el real", "Volumetric weight can exceed the real one"]));
-  if (!f.packagingType?.trim()) out.push(N("packaging", ["Tipo de empaque", "Packaging type"], ["Define manejo y apilado", "It sets handling and stacking"]));
-  if (f.hazardous == null) out.push(N("hazardous", ["¿Es mercancía peligrosa?", "Is it hazardous?"], ["Cambia el servicio y los documentos", "It changes the service and the documents"]));
-  if (!f.incoterm?.trim()) out.push(N("incoterm", ["Incoterm", "Incoterm"], ["Define quién contrata y paga el transporte", "It sets who books and pays the transport"]));
-  if (international) {
-    if (!f.origin?.trim()) out.push(N("origin", ["País de origen", "Country of origin"], ["Lo exige la aduana", "Customs requires it"]));
-    if (!f.hasInvoice) out.push(N("invoice", ["Factura comercial", "Commercial invoice"], ["Sin ella no sale ni entra", "Without it nothing leaves or enters"]));
-    if (!f.hasPackingList) out.push(N("packing", ["Lista de empaque", "Packing list"], ["La aduana la contrasta con la carga", "Customs checks it against the cargo"]));
-  }
   return out;
 }
 

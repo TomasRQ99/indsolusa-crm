@@ -38,13 +38,10 @@ export function stepNeeds(x: StepNeedsInput, t: (es: string, en: string) => stri
   // What a draft quote still needs before it can be presented (the same list the quote shows under LISTA PARA PRESENTAR).
   const draftItems = (q: StepNeedsInput["quotes"][number]): StepNeed[] => {
     const miss = [
-      !d.desiredResult && t("el resultado que busca el cliente", "the result the customer wants"),
-      !q.solution && t("la solución en una frase", "the solution in one sentence"),
       q.lines.length === 0 && t("al menos un producto", "at least one product"),
       q.lines.some((l) => !(Number(l.unitPrice) > 0)) && t("el precio de cada producto", "the price of every product"),
-      !(Number(q.supplierCost) > 0 && !!q.supplierSrc) && t("el costo del producto y de dónde sale", "the product's cost and where it comes from"),
+      !(Number(q.supplierCost) > 0) && t("el costo del producto", "the product's cost"),
       !(q.leadMinDays != null && q.leadMaxDays != null) && t("el tiempo de entrega", "the lead time"),
-      !q.promiseText && t("la promesa de entrega", "the delivery promise"),
     ].filter((v): v is string => !!v);
     return [it(miss.length === 0, t("La cotización completa", "The quote complete"), t(`Falta escribir: ${miss.join(", ")}. Todo se llena en un solo formulario, arriba en la cotización: «COMPLETA PARA PRESENTAR».`, `Still to write: ${miss.join(", ")}. It is all filled in on one form, at the top of the quote: “COMPLETE TO PRESENT”.`), `/cotizaciones/${q.id}#completar`, { go: t("Completar la cotización", "Complete the quote") })];
   };
@@ -104,9 +101,8 @@ export function stepNeeds(x: StepNeedsInput, t: (es: string, en: string) => stri
         }
         if (o.confirmedAt) { list.push(it(true, t(`La orden ${name} liberada y confirmada por el proveedor`, `Order ${name} released and confirmed by the supplier`), null, null)); continue; }
         list.push(it(true, t(`La orden ${name} liberada`, `Order ${name} released`), null, null));
-        if (!o.sentAt) list.push(it(false, t(`La orden ${name} enviada al proveedor`, `Order ${name} sent to the supplier`), t("En la orden, bloque HECHOS DE LA ORDEN → escribe cómo se envió (correo a…, portal…) → Marcar enviada", "On the order, ORDER FACTS block → type how it was sent (email to…, portal…) → Mark sent"), `${oh}#hechos`, { go: t("Marcar enviada", "Mark sent") }));
         if ((x.openConfirmations ?? []).includes(o.id)) list.push(it(false, t(`Las diferencias de la confirmación de ${name} resueltas`, `The differences in the confirmation of ${name} resolved`), t("El proveedor confirmó algo distinto a la orden. En la orden, bloque CONFIRMACIÓN DEL PROVEEDOR → escribe cómo se resuelven → Resolver y dar por confirmada", "The supplier confirmed something different from the order. On the order, SUPPLIER CONFIRMATION block → type how they are resolved → Resolve and count as confirmed"), `${oh}#confirmacion`, { go: t("Resolver diferencias", "Resolve differences") }));
-        else list.push(it(false, t(`La confirmación del proveedor de ${name} registrada`, `The supplier's confirmation of ${name} recorded`), t("En la orden, bloque CONFIRMACIÓN DEL PROVEEDOR → «Registrar lo que confirmó el proveedor» → escribe de dónde sale (correo, proforma) → Comparar con la orden. Si coincide, queda confirmada sola.", "On the order, SUPPLIER CONFIRMATION block → “Record what the supplier confirmed” → type where it comes from (email, proforma) → Compare with the order. If it matches, it is confirmed by itself."), `${oh}#confirmacion`, { go: t("Registrar confirmación", "Record confirmation") }));
+        else list.push(it(false, t(`La orden ${name} confirmada por el proveedor`, `Order ${name} confirmed by the supplier`), t("Cuando el proveedor la acepte: en la orden, bloque CONFIRMACIÓN DEL PROVEEDOR → un clic en «El proveedor confirmó la orden tal cual». Si cambió algo, usa el formulario de ese mismo bloque.", "When the supplier accepts it: on the order, SUPPLIER CONFIRMATION block → one click on “The supplier confirmed the order as it is”. If they changed something, use the form in that same block."), `${oh}#confirmacion`, { go: t("Ir a confirmar", "Go confirm") }));
       }
       return list;
     }

@@ -324,10 +324,14 @@ export async function presentQuote(id: string, fd: FormData) {
   const sale = saleOf(q.lines);
   const cost = costOf(q);
   const how = txt(fd, "how", 200) ?? "Correo al cliente";
+  // No promise written: it is the lead time, in the document's language.
+  const autoPromise = !q.promiseText && q.leadMinDays != null && q.leadMaxDays != null
+    ? (q.lang === "ES" ? `Entrega en ${q.leadMinDays} a ${q.leadMaxDays} días después de recibir la orden de compra` : `Delivery ${q.leadMinDays} to ${q.leadMaxDays} days after receipt of the purchase order`)
+    : null;
   await db.$transaction(async (tx) => {
     await tx.quote.update({
       where: { id },
-      data: { status: "PRESENTED", issuedAt: on, presentedAt: on, protSale: sale, protCost: cost, protEsagra: sale - cost, protPolicy: policy.version, sellerSnap, ivaPct: effectiveIvaPct(seller.ivaPct, q.ivaExempt) },
+      data: { ...(autoPromise ? { promiseText: autoPromise } : {}), status: "PRESENTED", issuedAt: on, presentedAt: on, protSale: sale, protCost: cost, protEsagra: sale - cost, protPolicy: policy.version, sellerSnap, ivaPct: effectiveIvaPct(seller.ivaPct, q.ivaExempt) },
     });
     await tx.quote.updateMany({ where: { number: q.number, id: { not: id }, status: "PRESENTED" }, data: { status: "SUPERSEDED" } });
     await syncItemPrices(tx, q.dealId, q.lines, "fill");
@@ -343,7 +347,7 @@ export async function presentQuote(id: string, fd: FormData) {
         creditAmount: q.creditAmount, creditSrc: q.creditSrc, transitDays: q.transitDays,
         incoterm: q.incoterm,
         paymentTerms: q.paymentTerms,
-        promiseText: q.promiseText ?? q.deal.promiseText,
+        promiseText: q.promiseText ?? autoPromise ?? q.deal.promiseText,
         quoteSentAt: on,
         offerValidUntil: offerUntil,
         ...(q.decisionAt ? { closeDate: q.decisionAt } : {}),

@@ -3,7 +3,7 @@ import { today, dayInput } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
 import { DEFAULT_WINDOW, DIFF_LABEL, SAVING_KINDS, SCOPE_STATES, WINDOW_TEXT, materialDiffs, negotiationWindow, opportunities, readDiffs, readScope, savingOf } from "@/lib/buying-rules";
 import { SavingForm } from "./SavingForm";
-import { addSaving, markOrderFact, recordConfirmation, resolveConfirmation, setFirstQuote } from "@/app/(app)/compras/actions";
+import { addSaving, confirmAsOrdered, markOrderFact, recordConfirmation, resolveConfirmation, setFirstQuote } from "@/app/(app)/compras/actions";
 
 // Operaciones O3 · on the Supplier PO: opportunities before buying (with their evidence), the order's separate facts,
 // the supplier's confirmation compared with the order, and the savings ledger measured against the first quote.
@@ -100,8 +100,16 @@ export async function SpoBuying({ spoId, lang, editable }: { spoId: string; lang
               )}
             </>
           )}
+          {editable && !conf && (
+            <form action={confirmAsOrdered.bind(null, spo.id)} className="sv-form" style={{ marginTop: 4 }}>
+              <p className="sv-intro">{t("Lo normal: el proveedor acepta la orden sin cambiar nada. Un clic y queda enviada y confirmada.", "The usual case: the supplier accepts the order without changing anything. One click and it is sent and confirmed.")}</p>
+              <label>{t("Cómo lo confirmó (opcional)", "How they confirmed (optional)")}<input name="source" maxLength={200} placeholder={t("Ej.: correo de Ana, 18 de noviembre", "E.g.: Ana's email, 18 November")} /></label>
+              <button type="submit">{t("El proveedor confirmó la orden tal cual", "The supplier confirmed the order as it is")}</button>
+              <span className="src">{t("¿El proveedor cambió precio, cantidad, fecha o condiciones? Usa el formulario de abajo: SOLU compara y muestra las diferencias.", "Did the supplier change price, quantity, date or terms? Use the form below: SOLU compares and shows the differences.")}</span>
+            </form>
+          )}
           {editable && (!conf || conf.resolvedAt) && (
-            <details className="qa" open={!conf} style={{ marginTop: 8 }}><summary className="qa-btn">{conf ? t("Registrar una nueva confirmación", "Record a new confirmation") : t("Registrar lo que confirmó el proveedor", "Record what the supplier confirmed")}</summary>
+            <details className="qa" style={{ marginTop: 8 }}><summary className="qa-btn">{conf ? t("Registrar una nueva confirmación", "Record a new confirmation") : t("El proveedor cambió algo: registrar lo que confirmó", "The supplier changed something: record what they confirmed")}</summary>
               <form action={recordConfirmation.bind(null, spo.id)} className="qa-form" style={{ marginTop: 8 }}>
                 <div className="qa-row">
                   <label>{t("De dónde sale (correo, proforma, llamada con…)", "Where it comes from (email, proforma, call with…)")}<input name="source" required maxLength={200} /></label>

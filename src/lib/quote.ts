@@ -62,7 +62,9 @@ export function validUntil(q: { issuedAt: Date | null; presentedAt: Date | null;
 }
 
 // href = where that point is filled in: every line of the lists is a link to its place.
-type Check = { ok: boolean; text: string; fix?: string; tab?: string; href?: string };
+// optional = worth having, never stops presenting (owner's decision 2026-11-18: to present a quote only three things
+// are required: every product with its price, the product's cost, and the lead time).
+type Check = { ok: boolean; text: string; fix?: string; tab?: string; href?: string; optional?: boolean };
 
 export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null; floorPct: number | null; threshold?: number; approvedBy?: string | null }, scope?: { state: string; blocks: boolean; gaps: { es: string; en: string; severity: string }[] } | null) {
   const { t } = i;
@@ -97,16 +99,17 @@ export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null;
 
   // ---------- Ready to Present (blocks) and Ready If Customer Says Yes (doesn't block) ----------
   const ready: Check[] = [
-    { ok: !!d.desiredResult, text: t("El resultado deseado del cliente está escrito", "The customer's desired result is written"), fix: t("Escríbelo en la pestaña Necesidad", "Write it in the Need tab"), tab: "solution", href: `/deals/${d.id}?tab=need#resultado-deseado` },
-    { ok: !!q.solution, text: t("La solución está en una frase", "The solution is one sentence"), fix: t("Escribe qué logra el cliente", "Write what the customer achieves"), tab: "solution", href: "#solucion" },
+    { ok: !!d.desiredResult, text: t("El resultado deseado del cliente está escrito", "The customer's desired result is written"), fix: t("Opcional. Se escribe en la pestaña Necesidad", "Optional. It is written in the Need tab"), tab: "solution", href: `/deals/${d.id}?tab=need#resultado-deseado`, optional: true },
+    { ok: !!q.solution, text: t("La solución está en una frase", "The solution is one sentence"), fix: t("Opcional. Qué logra el cliente", "Optional. What the customer achieves"), tab: "solution", href: "#solucion", optional: true },
     // C1 (AC02/AC03): a simple spare part with nothing ambiguous adds no check at all (AC18).
     ...(scope && scope.state !== "NOT_STARTED"
       ? [(() => { const g = scope.gaps.filter((x) => x.severity !== "WARN"); return { ok: !scope.blocks, text: t("El alcance funcional está claro: lo cotizado hace que funcione", "Functional scope is clear: what's quoted makes it work"), fix: g.length ? t(`${g[0].es}${g.length > 1 ? ` (y ${g.length - 1} más)` : ""} · ver «Técnico y alcance»`, `${g[0].en}${g.length > 1 ? ` (and ${g.length - 1} more)` : ""} · see “Technical & scope”`) : undefined, tab: "scope", href: `/deals/${d.id}/alcance` }; })()]
       : []),
     { ok: q.lines.length > 0 && q.lines.every((l) => Number(l.unitPrice) > 0), text: t("Todas las líneas tienen precio", "Every line has a price"), fix: t("Completa los precios", "Fill in the prices"), tab: "lines", href: "#lineas" },
-    { ok: Number(q.supplierCost) > 0 && !!q.supplierSrc, text: t("El costo del proveedor tiene fuente", "The supplier cost has a source"), fix: t("Indica de dónde sale (proforma, correo)", "Say where it comes from (proforma, email)"), tab: "costs", href: "#costos" },
+    { ok: Number(q.supplierCost) > 0, text: t("El costo del producto está escrito", "The product's cost is written"), fix: t("Escribe cuánto nos cobra el proveedor", "Type what the supplier charges us"), tab: "costs", href: "#costos" },
+    { ok: !!q.supplierSrc, text: t("El costo dice de dónde sale", "The cost says where it comes from"), fix: t("Opcional. Proforma, correo…", "Optional. Proforma, email…"), tab: "costs", href: "#costos", optional: true },
     { ok: q.leadMinDays != null && q.leadMaxDays != null, text: t("El tiempo de entrega está definido", "Lead time is defined"), fix: t("Indica días después de la OC", "Set days after PO"), tab: "terms", href: "#condiciones" },
-    { ok: !!q.promiseText, text: t("La promesa posible tiene su condición", "The possible promise has its condition"), fix: t("Escribe qué prometemos y bajo qué condición", "Write what we promise and under what condition"), tab: "solution", href: "#solucion" },
+    { ok: !!q.promiseText, text: t("La promesa posible tiene su condición", "The possible promise has its condition"), fix: t("Opcional. Si no la escribes, SOLU la arma con el tiempo de entrega", "Optional. If you don't write it, SOLU builds it from the lead time"), tab: "solution", href: "#solucion", optional: true },
     belowFloor
       ? { ok: false, text: t(`La Eságara (${i.pct2(pctR)}) está bajo el umbral de la política (${policy.threshold ?? policy.floorPct} %)`, `Eságara (${i.pct2(pctR)}) is below the policy threshold (${policy.threshold ?? policy.floorPct} %)`), fix: t("Revisa precio o costos, o pide una excepción con su razón", "Review price or costs, or request an exception with its reason"), tab: "costs", href: "#costos" }
       : underThreshold
@@ -120,7 +123,7 @@ export function buildQuote(q: QuoteFull, i: I, policy: { version: number | null;
     ...(a.creditLimit != null ? [{ ok: true, text: t(`Cupo de crédito registrado (USD ${i.n(a.creditLimit)})`, `Credit limit on file (USD ${i.n(a.creditLimit)})`), href: "/administracion/cupos" }] : [{ ok: false, text: t("Cupo de crédito del cliente definido", "Customer credit limit defined"), fix: t("Administración tendría que aprobar el crédito antes de comprar", "Administration would need to approve credit before buying"), href: "/administracion/cupos" }]),
     ...(a.requiresPortal ? [{ ok: !!a.portalValidUntil && a.portalValidUntil >= now, text: t("Registro en el portal del cliente vigente", "Customer portal registration valid"), fix: t("Sin portal vigente la factura sería rechazada", "Without a valid portal the invoice would be rejected"), href: `/accounts/${a.id}` }] : []),
   ];
-  const blocking = ready.filter((c) => !c.ok);
+  const blocking = ready.filter((c) => !c.ok && !c.optional);
 
   // ---------- Customer Decision Future (after presenting) ----------
   const waiting = !!d.waitingFor && !!d.waitingUntil && d.waitingUntil >= now;

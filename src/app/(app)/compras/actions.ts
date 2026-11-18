@@ -240,6 +240,28 @@ export async function recordConfirmation(id: string, fd: FormData) {
   back(id, material ? "ok=conf-diferencias#confirmacion" : "ok=conf-coincide#confirmacion");
 }
 
+/** One click for the usual case (owner's decision 2026-11-18): the supplier accepted the order exactly as it is.
+ *  It records the order as sent (if nobody had) and as confirmed with no differences. When the supplier changed
+ *  something, the detailed form (recordConfirmation) is the way: it compares and keeps the differences. */
+export async function confirmAsOrdered(id: string, fd: FormData) {
+  const { user, spo } = await loadSpo(id);
+  if (!spo.releasedAt) back(id, "err=borrador#confirmacion");
+  if (spo.confirmedAt) back(id, "ok=conf-coincide#confirmacion");
+  const source = txt(fd, "source", 200) ?? "Confirmación del proveedor";
+  const at = today();
+  await db.$transaction(async (tx) => {
+    await tx.supplierConfirmation.create({ data: {
+      supplierPoId: id, poVersion: spo.version, receivedAt: at, source,
+      lines: spo.lines.map((l) => ({ position: l.position, qty: l.qty, unitPrice: money2(Number(l.unitCost)) })), scope: [], diffs: [],
+      currency: spo.currency, incoterm: spo.incoterm, paymentTerms: spo.terms, readyDate: spo.shipBy,
+      recordedByName: user.name, resolvedAt: new Date(), resolvedByName: user.name, resolution: "El proveedor confirmó la orden tal cual",
+    } });
+    await tx.supplierPO.update({ where: { id }, data: { confirmedAt: at, ...(spo.sentAt ? {} : { sentAt: at, sentHow: source, sentByName: user.name }) } });
+    await tx.activity.create({ data: { type: "NOTE", subject: `Confirmación del proveedor de ${spo.code}: confirmó la orden tal cual`.slice(0, 200), userId: user.id, accountId: spo.deal.accountId, dealId: spo.dealId, phase: "execute", source } });
+  });
+  back(id, "ok=conf-coincide#confirmacion");
+}
+
 /** Material differences are resolved in writing (accepted, renegotiated, new order version…) before it counts as confirmed. */
 export async function resolveConfirmation(confId: string, fd: FormData) {
   const c = await db.supplierConfirmation.findUnique({ where: { id: confId }, select: { id: true, supplierPoId: true, receivedAt: true, resolvedAt: true } });

@@ -2464,6 +2464,9 @@ label.req-miss { scroll-margin-top: 110px; }
 .cq-pair > .fname { grid-column: 1 / -1; }
 .cq-note { margin: 0; font-size: 13px; }
 .cq-foot { display: flex; justify-content: flex-end; }
+.cq.ready { border-color: #bfe3cd; border-left-color: #1d7a46; background: #f3faf6; }
+.cq-opt > summary { cursor: pointer; font-size: 13px; color: var(--ink-2); }
+.cq-opt[open] > summary { margin-bottom: 10px; }
 @media (max-width: 720px) { .cq-form { grid-template-columns: 1fr; } }
 /* Where an "Ir a llenarlo" button lands: the place is outlined in red so the eye finds it */
 .jtabs, .jblock, .land { scroll-margin-top: 96px; }

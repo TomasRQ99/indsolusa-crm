@@ -214,7 +214,7 @@
    "Review what changed since your last visit and click [[Marcar como visto]].",
    "Use the tabs in order: Summary, Need, Source, Quote, Execute, Finance, Business File, Result."
   ],
-  "expect": "SOLU's expected date is the carrier ETA plus 3 days plus 1 day. If the promise to the customer is earlier, it is flagged. Once nothing is missing in the box, the step turns green by itself and the next one appears. The first step, “Need”, only asks for the “Desired result”. In the “Purchase” and “Supplier payment” steps the box has one line per order and per payment, with its number, and it changes with every action: release, mark sent, record the supplier's confirmation, approve, record the execution and confirm the payment. When the work takes you out of the Need (to the quote, the supplier order, a payment, in other modules of the menu), the blue button “← Back to the Need” with its number stays in the bottom right corner: one click and you are back. The “×” removes it."
+  "expect": "SOLU's expected date is the carrier ETA plus 3 days plus 1 day. If the promise to the customer is earlier, it is flagged. Once nothing is missing in the box, the step turns green by itself and the next one appears. The first step, “Need”, only asks for the “Desired result”. In the “Purchase” and “Supplier payment” steps the box has one line per order and per payment, with its number, and it changes with every action: release, confirm with the supplier (one click), approve, record the execution and confirm the payment. When the work takes you out of the Need (to the quote, the supplier order, a payment, in other modules of the menu), the blue button “← Back to the Need” with its number stays in the bottom right corner: one click and you are back. The “×” removes it."
  },
  "journey-catchup": {
   "t": "What changed? and Catch me up",
@@ -252,15 +252,15 @@
   "why": "Build the solution, check the economics, define the promise and present only when it is complete.",
   "steps": [
    "On the Need, open the [[Cotización]] tab and click [[Preparar cotización]]. SOLU brings the products and costs the Need already has.",
-   "At the top, the red box “COMPLETE TO PRESENT” has everything that is missing on one form: fill in the red fields (the “i” next to each name explains what to write, with an example) and click [[Guardar lo que llené]].",
+   "At the top, the box “COMPLETE TO PRESENT” has on one form the only required things: the price of every product, the product's cost and the lead time. Fill in the red fields (the “i” next to each name explains what to write) and click [[Guardar lo que llené]]. The rest is under “Optional” and does not stop you.",
    "Under “PRODUCTS ON THE DOCUMENT”, check each line and give it a price with “Edit”. To add another, open [[Agregar producto]] and click [[Agregar]].",
    "Under “ECONOMICS”, fill in the “Cost settlement” sheet and click [[Guardar costos]]. Look at the Eságara in $ and %, before and after the cost of financing the payment terms.",
    "Optional: offer alternatives with [[+ Escenario]] and [[Agregar escenario]], and mark one with [[Recomendar este]].",
-   "In the right column, “READY TO PRESENT” shows each point with “✓” or “!”. Each point is a link: click it and SOLU takes you to where it is filled in, with the form open.",
+   "In the right column, “READY TO PRESENT” shows each point with “✓”, “!” (required and missing) or “·” (optional, not filled). Each point is a link: click it and SOLU takes you to where it is filled in, with the form open.",
    "Check the document with [[Ver PDF]] (at the top), in English or Spanish.",
-   "Once nothing is missing, the box at the top turns green: click [[Presentar al cliente]] (right column, under the list). Prices become fixed."
+   "Once nothing required is missing, the box at the top turns green: click [[Presentar al cliente]] (right column, under the list). Prices become fixed."
   ],
-  "expect": "After presenting it, changes need [[Crear revisión]] (Rev. 1, same number). The quote moves to Commercial future."
+  "expect": "After presenting it, changes need [[Crear revisión]] (Rev. 1, same number). The quote moves to Commercial future. If you did not write the promise, SOLU builds it from the lead time."
  },
  "liquidacion-costos": {
   "t": "Cost settlement of the quote",
@@ -546,7 +546,7 @@
   "why": "What the supplier confirmed versus what we ordered, and the real savings with their evidence.",
   "steps": [
    "On an order, record the supplier's first quote.",
-   "Record their confirmation: SOLU compares it with the order.",
+   "When the supplier accepts the order, in the SUPPLIER CONFIRMATION block click [[El proveedor confirmó la orden tal cual]]: it is sent and confirmed in one click. If they changed price, quantity, date or terms, open the form in that block: SOLU compares and shows the differences.",
    "If you got a better price, go down to the SAVINGS block, open “+ Record saving” and answer the five questions in order: kind of saving, what we were going to pay, what we finally paid, how much was passed on to the customer, and the proof. SOLU works out the saving while you type. Click [[Registrar ahorro]]."
   ],
   "expect": "The “Record saving” button only turns on when there is a saving (what was paid is less than planned), and it is saved with its proof. For a supplier saving, “what we were going to pay” is always their first quote. Recording savings is optional: it is not needed to release the order. Differences between what was ordered and what was confirmed stay in view until resolved."
@@ -570,7 +570,7 @@
    "For each transport quote you receive, open [[+ Agregar opción de transporte]], fill it in and click [[Agregar opción]].",
    "Choose one with [[Elegir]]. If it is not the cheapest, SOLU asks for the reason."
   ],
-  "expect": "Without weight and dimensions no freight can be chosen. The chosen option becomes the basis for checking the carrier's invoice later."
+  "expect": "To book transport only five items are required: pickup address, destination, ready date, number of packages and gross weight. The rest (contact, hours, dimensions, packaging, documents) is optional. The chosen option stays as the baseline to check the carrier's invoice later."
  },
  "ops-recepcion": {
   "t": "Receiving at the warehouse",

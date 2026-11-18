@@ -132,9 +132,9 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   const money = (v: number | null | undefined) => (v == null ? "—" : `USD ${i.n2(v)}`);
   const pdf = (lang: "EN" | "ES") => `/documentos/cotizacion/${q.id}?lang=${lang}`;
   // Every point is a link to the place where it is filled in (on a draft; a presented version no longer changes).
-  const Check = ({ ok, text, fix, href }: { ok: boolean; text: string; fix?: string; href?: string }) => (
-    <li className={ok ? "ok" : "no"}>
-      <span className="ic" aria-hidden>{ok ? "✓" : "!"}</span>
+  const Check = ({ ok, text, fix, href, optional }: { ok: boolean; text: string; fix?: string; href?: string; optional?: boolean }) => (
+    <li className={ok ? "ok" : optional ? "no info" : "no"}>
+      <span className="ic" aria-hidden>{ok ? "✓" : optional ? "·" : "!"}</span>
       <span>{href && (draft || !href.startsWith("#")) ? <a className="chk-a" href={href} title={t("Ir a donde se llena", "Go to where it is filled in")}>{text} <span aria-hidden>→</span></a> : text}{!ok && fix && <span className="src block">{fix}</span>}</span>
     </li>
   );
@@ -202,14 +202,15 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
       cost: !(Number(q.supplierCost) > 0), src: !q.supplierSrc,
       lead: q.leadMinDays == null || q.leadMaxDays == null,
     };
-    const count = [m.result, m.solution, m.promise, m.cost || m.src, m.lead, noPrice.length > 0].filter(Boolean).length;
+    const count = [m.cost, m.lead, noPrice.length > 0].filter(Boolean).length;
+    const optCount = [m.result, m.solution, m.src, m.promise].filter(Boolean).length;
     // Things a field cannot fix here: no products at all, unclear scope, Eságara under the policy threshold.
     const others = [
       ...(q.lines.length === 0 ? [{ text: t("Agregar al menos un producto", "Add at least one product"), how: t("Abajo, en PRODUCTOS EN EL DOCUMENTO → «Agregar producto»", "Below, under PRODUCTS ON THE DOCUMENT → “Add product”"), href: "#lineas" }] : []),
       ...B.blocking.filter((c) => c.tab === "scope").map((c) => ({ text: c.text, how: c.fix ?? "", href: `/deals/${d.id}/alcance` })),
-      ...B.blocking.filter((c) => c.tab === "costs" && !(m.cost || m.src)).map((c) => ({ text: c.text, how: c.fix ?? "", href: "#costos" })),
+      ...B.blocking.filter((c) => c.tab === "costs" && !m.cost).map((c) => ({ text: c.text, how: c.fix ?? "", href: "#costos" })),
     ];
-    if (count === 0 && others.length === 0) {
+    if (count === 0 && others.length === 0 && optCount === 0) {
       return (
         <section className="cq done" id="completar">
           <span className="ic" aria-hidden>✓</span>
@@ -220,20 +221,19 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     }
     const Req = () => <span className="req-tag">{t("Falta", "Missing")}</span>;
     return (
-      <section className="cq" id="completar">
+      <section className={`cq${count + others.length === 0 ? " ready" : ""}`} id="completar">
         <div className="cq-head">
-          <b>{t("COMPLETA PARA PRESENTAR", "COMPLETE TO PRESENT")}</b>
-          <span className="sig risk">{count + others.length === 1 ? t("Falta 1 cosa", "1 thing missing") : t(`Faltan ${count + others.length} cosas`, `${count + others.length} things missing`)}</span>
+          <b>{count + others.length === 0 ? t("LISTA PARA PRESENTAR", "READY TO PRESENT") : t("COMPLETA PARA PRESENTAR", "COMPLETE TO PRESENT")}</b>
+          {count + others.length === 0
+            ? <><span className="sig ok">{t("No falta nada obligatorio", "Nothing required is missing")}</span><span className="grow" /><a className="btn sm" href="#presentar">{t("Ir a «Presentar al cliente»", "Go to “Present to customer”")} →</a></>
+            : <span className="sig risk">{count + others.length === 1 ? t("Falta 1 cosa", "1 thing missing") : t(`Faltan ${count + others.length} cosas`, `${count + others.length} things missing`)}</span>}
         </div>
-        <p className="cq-sub">{t("Aquí está todo lo que falta, en un solo lugar. Llena lo que está en rojo y guarda; la «i» junto a cada nombre explica qué escribir. Lo que no sepas hoy, déjalo vacío y vuelve después.", "Everything that is missing is here, in one place. Fill in what is in red and save; the “i” next to each name explains what to write. Leave empty what you don't know today and come back later.")}</p>
-        {count > 0 && (
+        {count + others.length === 0 ? <p className="cq-sub">{t("Ya puedes presentarla. Abajo quedan datos opcionales por si quieres agregarlos.", "You can present it now. Optional items remain below in case you want to add them.")}</p> : <p className="cq-sub">{t("Para presentar solo hacen falta tres cosas: el precio de cada producto, el costo del producto y el tiempo de entrega. Llena lo que está en rojo y guarda; la «i» junto a cada nombre explica qué escribir.", "To present, only three things are needed: the price of every product, the product's cost and the lead time. Fill in what is in red and save; the “i” next to each name explains what to write.")}</p>}
+        {(count > 0 || optCount > 0) && (
           <form action={completeQuote.bind(null, q.id)} className="cq-form">
-            {m.result && <label className="req-miss wide"><span className="fname">{t("Resultado que busca el cliente", "Result the customer wants")} <Info lang={user.lang} {...HELP.desiredResult} /> <Req /></span><input name="desiredResult" maxLength={300} placeholder={HELP.desiredResult.example} /></label>}
-            {m.solution && <label className="req-miss wide"><span className="fname">{t("La solución en una frase", "The solution in one sentence")} <Info lang={user.lang} {...HELP.solution} /> <Req /></span><input name="solution" maxLength={400} placeholder={HELP.solution.example} /></label>}
             {noPrice.map((l) => <label key={l.id} className="req-miss"><span className="fname">{t("Precio de venta por unidad (USD)", "Selling price per unit (USD)")}: {l.description.slice(0, 60)} <Info lang={user.lang} {...HELP.price} /> <Req /></span><input name={`price_${l.id}`} type="number" min="0" step="0.01" placeholder={HELP.price.example} /></label>)}
             {m.cost && usd && <label className="req-miss"><span className="fname">{t("Costo del producto (USD)", "Product cost (USD)")} <Info lang={user.lang} {...HELP.supplierCost} /> <Req /></span><input name="supplierCost" type="number" min="0" step="0.01" placeholder={HELP.supplierCost.example} /></label>}
             {m.cost && !usd && <p className="cq-note wide">{t(`El costo del producto está en ${q.costCurrency}: escríbelo abajo, en «Liquidación de costos».`, `The product's cost is in ${q.costCurrency}: type it below, under “Cost settlement”.`)} <a href="#costos">{t("Ir a la hoja de costos", "Go to the cost sheet")} →</a></p>}
-            {m.src && <label className="req-miss"><span className="fname">{t("De dónde sale ese costo", "Where that cost comes from")} <Info lang={user.lang} {...HELP.supplierSrc} /> <Req /></span><input name="supplierSrc" maxLength={200} placeholder={HELP.supplierSrc.example} /></label>}
             {m.lead && (
               <div className="cq-pair">
                 <span className="fname">{t("Tiempo de entrega: días después de recibir la OC", "Lead time: days after receiving the PO")} <Info lang={user.lang} {...HELP.lead} /> <Req /></span>
@@ -241,8 +241,18 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
                 <label className="req-miss">{t("Máximo", "Maximum")}<input name="leadMaxDays" type="number" min="0" step="1" defaultValue={q.leadMaxDays ?? ""} placeholder="42" /></label>
               </div>
             )}
-            {m.promise && <label className="req-miss"><span className="fname">{t("Promesa posible: qué entrega le prometemos", "Possible promise: what delivery we promise")} <Info lang={user.lang} {...HELP.promiseText} /> <Req /></span><input name="promiseText" maxLength={300} placeholder={HELP.promiseText.example} /></label>}
-            {m.promise && <label><span className="fname">{t("Condición de la promesa (opcional)", "Promise condition (optional)")} <Info lang={user.lang} {...HELP.promiseCondition} /></span><input name="promiseCondition" maxLength={300} placeholder={HELP.promiseCondition.example} /></label>}
+            {optCount > 0 && (
+              <details className="cq-opt wide">
+                <summary>{t(`Opcional: ${optCount} dato(s) más que mejoran la cotización (no hacen falta para presentar)`, `Optional: ${optCount} more item(s) that improve the quote (not needed to present)`)}</summary>
+                <div className="cq-form">
+                  {m.result && <label className="wide"><span className="fname">{t("Resultado que busca el cliente", "Result the customer wants")} <Info lang={user.lang} {...HELP.desiredResult} /></span><input name="desiredResult" maxLength={300} placeholder={HELP.desiredResult.example} /></label>}
+                  {m.solution && <label className="wide"><span className="fname">{t("La solución en una frase", "The solution in one sentence")} <Info lang={user.lang} {...HELP.solution} /></span><input name="solution" maxLength={400} placeholder={HELP.solution.example} /></label>}
+                  {m.src && <label><span className="fname">{t("De dónde sale ese costo", "Where that cost comes from")} <Info lang={user.lang} {...HELP.supplierSrc} /></span><input name="supplierSrc" maxLength={200} placeholder={HELP.supplierSrc.example} /></label>}
+                  {m.promise && <label><span className="fname">{t("Promesa posible: qué entrega le prometemos", "Possible promise: what delivery we promise")} <Info lang={user.lang} {...HELP.promiseText} /></span><input name="promiseText" maxLength={300} placeholder={HELP.promiseText.example} /></label>}
+                  {m.promise && <label><span className="fname">{t("Condición de la promesa (opcional)", "Promise condition (optional)")} <Info lang={user.lang} {...HELP.promiseCondition} /></span><input name="promiseCondition" maxLength={300} placeholder={HELP.promiseCondition.example} /></label>}
+                </div>
+              </details>
+            )}
             <div className="cq-foot wide"><button type="submit">{t("Guardar lo que llené", "Save what I filled in")}</button></div>
           </form>
         )}
@@ -264,10 +274,10 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
         {editable && draft && (
           <QA label={t("Editar", "Edit")} wide right>
             <form action={saveSolution.bind(null, q.id)} className="qa-form">
-              <label className={!q.solution ? "req-miss" : undefined}><span className="fname">{t("La solución en una frase (qué logra el cliente)", "The solution in one sentence (what the customer achieves)")} <Info lang={user.lang} {...HELP.solution} /></span>{!q.solution && <span className="req-tag">{t("Obligatorio para presentar", "Required to present")}</span>}<textarea name="solution" rows={2} maxLength={400} defaultValue={q.solution ?? ""} placeholder={HELP.solution.example} /></label>
+              <label><span className="fname">{t("La solución en una frase (qué logra el cliente)", "The solution in one sentence (what the customer achieves)")} <Info lang={user.lang} {...HELP.solution} /></span><textarea name="solution" rows={2} maxLength={400} defaultValue={q.solution ?? ""} placeholder={HELP.solution.example} /></label>
               <label><span className="fname">{t("De dónde lo conseguimos: proveedor principal (opcional)", "Where we get it: main supplier (optional)")} <Info lang={user.lang} {...HELP.supplyPrimary} /></span><input name="supplyPrimary" maxLength={300} defaultValue={q.supplyPrimary ?? ""} placeholder={HELP.supplyPrimary.example} /></label>
               <label><span className="fname">{t("Proveedor alternativo (opcional)", "Alternative supplier (optional)")} <Info lang={user.lang} {...HELP.supplyAlt} /></span><input name="supplyAlt" maxLength={300} defaultValue={q.supplyAlt ?? ""} placeholder={HELP.supplyAlt.example} /></label>
-              <label className={!q.promiseText ? "req-miss" : undefined}><span className="fname">{t("Promesa posible: qué entrega le prometemos", "Possible promise: what delivery we promise")} <Info lang={user.lang} {...HELP.promiseText} /></span>{!q.promiseText && <span className="req-tag">{t("Obligatorio para presentar", "Required to present")}</span>}<input name="promiseText" maxLength={300} defaultValue={q.promiseText ?? ""} placeholder={HELP.promiseText.example} /></label>
+              <label><span className="fname">{t("Promesa posible: qué entrega le prometemos", "Possible promise: what delivery we promise")} <Info lang={user.lang} {...HELP.promiseText} /></span><input name="promiseText" maxLength={300} defaultValue={q.promiseText ?? ""} placeholder={HELP.promiseText.example} /></label>
               <label><span className="fname">{t("Condición de la promesa (opcional)", "Promise condition (optional)")} <Info lang={user.lang} {...HELP.promiseCondition} /></span><input name="promiseCondition" maxLength={300} defaultValue={q.promiseCondition ?? ""} placeholder={HELP.promiseCondition.example} /></label>
               <button type="submit">{t("Guardar", "Save")}</button>
             </form>
