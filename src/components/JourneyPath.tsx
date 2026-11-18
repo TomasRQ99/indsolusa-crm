@@ -41,7 +41,7 @@ export function JourneyPath({ path, self, es }: { path: Path; self: string; es: 
           <span className="jp-k">{W.risk} · {risk.label}</span>
           <b>{risk.what}</b>
           <span className="grow" />
-          {!same && <Link className="btn secondary" href={`${self}?tab=${risk.tab}`}>{es ? "Ver este paso" : "See this step"} →</Link>}
+          {!same && <Link className="btn secondary" href={`${self}?tab=${risk.tab}#fases`}>{es ? "Ver este paso" : "See this step"} →</Link>}
         </div>
       )}
       {cur ? (
@@ -49,7 +49,7 @@ export function JourneyPath({ path, self, es }: { path: Path; self: string; es: 
           <span className="jp-k">{W[cur.state]} · {cur.label}</span>
           <span className="jp-w"><b>{cur.what}</b>{cur.noted && <span className={`jp-n${cur.late ? " late" : ""}`}>{cur.noted}</span>}</span>
           <span className="grow" />
-          <Link className={`btn${cur.state === "wait" ? " secondary" : ""}`} href={`${self}?tab=${cur.tab}`}>{cur.state !== "wait" ? (es ? "Ir a este paso" : "Go to this step") : es ? "Ver este paso" : "See this step"} →</Link>
+          <Link className={`btn${cur.state === "wait" ? " secondary" : ""}`} href={`${self}?tab=${cur.tab}#fases`}>{cur.state !== "wait" ? (es ? "Ir a este paso" : "Go to this step") : es ? "Ver este paso" : "See this step"} →</Link>
         </div>
       ) : (
         <div className="jp-now" data-st="later">

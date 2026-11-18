@@ -706,7 +706,7 @@ export default async function JourneyPage({
   );
 
   const QuoteDocs = () => (
-    <section className="jblock">
+    <section className="jblock" id="cotizaciones">
       <div className="jbh"><b>{t("COTIZACIONES", "QUOTES")}</b><span className="grow" />
         {editable && !quotes.some((x) => x.status === "DRAFT") && (
           <form action={createQuote.bind(null, deal.id)}><button type="submit" className="btn sm">{quotes.length ? t("Nueva cotización", "New quote") : t("Preparar cotización", "Prepare quote")}</button></form>
@@ -745,7 +745,7 @@ export default async function JourneyPage({
         <div className="jbh"><b>{t("CASO DE SOLUCIÓN", "SOLUTION CASE")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/solucion`}>{t("Abrir", "Open")}</Link></div>
         <p className="quiet-p">{t("Por qué esta solución, rutas posibles, valor para el cliente con evidencia, si conviene presentarla y la propuesta para su comité (sin costos internos).", "Why this solution, possible routes, customer value with evidence, whether to present it, and the proposal for their committee (no internal costs).")}</p>
       </section>
-      <section className="jblock">
+      <section className="jblock" id="productos">
         <div className="jbh"><b>{t("PRODUCTOS", "PRODUCTS")}</b><span className="grow" /><span className="src">{t("Entregado", "Delivered")} {J.delivered} / {J.ordered}</span></div>
         {deal.items.length === 0 ? <p className="quiet-p">{t("Sin productos todavía.", "No products yet.")}</p> : (
           <div className="tscroll">
@@ -803,6 +803,7 @@ export default async function JourneyPage({
             <input name="sentOn" type="date" defaultValue={todayStr} aria-label={t("Fecha de envío", "Sent on")} />
             <input name="source" placeholder={t("Cómo se envió (opcional)", "How it was sent (optional)")} />
             <button type="submit" className="secondary">{t("Marcar como enviada", "Mark as sent")}</button>
+            <span className="src" style={{ flexBasis: "100%" }}>{t("Esto solo anota la fecha de envío. Para registrar después la OC del cliente, la cotización tiene que estar presentada en SOLU: arriba, en COTIZACIONES, «Preparar cotización» y en ella «Presentar al cliente».", "This only notes the date it was sent. To record the customer's PO later, the quote must be presented in SOLU: above, under QUOTES, “Prepare quote” and on it “Present to customer”.")}</span>
           </form>
         )}
       </section>
@@ -1180,7 +1181,9 @@ export default async function JourneyPage({
                   <li key={k} className={n.ok ? "ok" : "no"}>
                     <span className="ic" aria-hidden>{n.ok ? "✓" : "!"}</span>
                     <span className="sn-t"><b>{n.ok ? n.text : t(`Falta: ${n.text}`, `Missing: ${n.text}`)}</b>{n.how && <span className="sn-how">{n.how}</span>}</span>
-                    {n.href && <Link className="btn sm" href={n.href}>{t("Ir a llenarlo", "Go fill it in")} →</Link>}
+                    {n.act === "createQuote" && editable
+                      ? <form action={createQuote.bind(null, deal.id)}><button type="submit" className="btn sm">{n.go} →</button></form>
+                      : n.href && <a className="btn sm" href={n.href}>{n.go ?? t("Ir a llenarlo", "Go fill it in")} →</a>}
                   </li>
                 ))}
               </ul>
@@ -1210,7 +1213,7 @@ export default async function JourneyPage({
             <span className={`sig ${toneCls(J.promiseState.tone)}`}>{J.promiseState.text}</span>
           </div>
         </div>
-        <nav className="jtabs" aria-label={t("Fases de la Necesidad", "Need phases")}>
+        <nav className="jtabs" id="fases" aria-label={t("Fases de la Necesidad", "Need phases")}>
           {shown.map((k) => <Link key={k} href={k === "resumen" ? self : `${self}?tab=${k}`} className={`jtab${k === tab ? " on" : ""}`} aria-current={k === tab ? "page" : undefined}>{tabLabel[k]}</Link>)}
           {later.length > 0 && (
             <span className="later">{t("Más adelante:", "Later:")} {later.map((k, n) => <span key={k}>{n > 0 && " · "}<Link href={`${self}?tab=${k}`}>{tabLabel[k]}</Link></span>)}</span>

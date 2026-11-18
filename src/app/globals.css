@@ -2410,6 +2410,10 @@ details.card[open] > summary:not(.small) { font-size: 14px; font-weight: 600; ma
 .sn-how { font-size: 12px; color: var(--ink-2); }
 @media (max-width: 640px) { .sn-list li { grid-template-columns: 22px minmax(0, 1fr); } .sn-list li .btn { grid-column: 2; justify-self: start; } }
 label.req-miss { scroll-margin-top: 110px; }
+/* Where an "Ir a llenarlo" button lands: the place is outlined in red so the eye finds it */
+.jtabs, .jblock, .land { scroll-margin-top: 96px; }
+.jblock:target, .land:target, .liq-sheet:target { outline: 2px solid var(--risk); outline-offset: 8px; border-radius: 8px; background: #fff8f7; }
+.sn-list form { margin: 0; }
 label.req-miss > textarea, label.req-miss > input { border-color: var(--risk); box-shadow: 0 0 0 2px #f6d5d0; background: #fff8f7; }
 .req-tag { color: var(--risk); font-weight: 600; font-size: 12px; }
 /* New Need: the first step of an order, large and first on the Needs page */

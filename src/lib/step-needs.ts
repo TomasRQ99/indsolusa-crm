@@ -6,7 +6,8 @@
 
 import type { PathKey } from "./journey";
 
-export type StepNeed = { ok: boolean; text: string; how: string | null; href: string | null };
+// go = the words on the button (default "Ir a llenarlo"); act = the button does the thing itself instead of leading to it.
+export type StepNeed = { ok: boolean; text: string; how: string | null; href: string | null; go?: string; act?: "createQuote" };
 
 type Money = number | string | { toString(): string };
 export type StepNeedsInput = {
@@ -28,7 +29,23 @@ export type StepNeedsInput = {
 
 export function stepNeeds(x: StepNeedsInput, t: (es: string, en: string) => string): StepNeed[] {
   const { deal: d, self } = x;
-  const it = (ok: boolean, text: string, how: string | null, href: string | null): StepNeed => ({ ok, text, how: ok ? null : how, href: ok ? null : href });
+  const it = (ok: boolean, text: string, how: string | null, href: string | null, more: { go?: string; act?: "createQuote" } = {}): StepNeed => ({ ok, text, how: ok ? null : how, href: ok ? null : href, ...(ok ? {} : more) });
+  // Every link lands on the exact place: a tab of the Need scrolls down to it (#fases = the row of tabs, or the block itself).
+  const tabAt = (tab: string, at = "fases") => `${self}?tab=${tab}#${at}`;
+  const openQuote = t("Abrir la cotización", "Open the quote");
+  // What a draft quote still needs before it can be presented (the same list the quote shows under LISTA PARA PRESENTAR).
+  const draftItems = (q: StepNeedsInput["quotes"][number]): StepNeed[] => {
+    const qh = `/cotizaciones/${q.id}`;
+    return [
+      it(!!d.desiredResult, t("El resultado que busca el cliente", "The result the customer wants"), t("Pestaña Necesidad → «Resultado deseado»", "Need tab → “Desired result”"), `${self}?tab=need#resultado-deseado`),
+      it(!!q.solution, t("La solución en una frase", "The solution in one sentence"), t("En la cotización, bloque SOLUCIÓN → Editar", "On the quote, SOLUTION block → Edit"), `${qh}#solucion`, { go: openQuote }),
+      it(q.lines.length > 0 && q.lines.every((l) => Number(l.unitPrice) > 0), t("Todos los productos con precio", "Every product with a price"), t("En la cotización, PRODUCTOS EN EL DOCUMENTO → Editar cada línea", "On the quote, PRODUCTS ON THE DOCUMENT → Edit each line"), `${qh}#lineas`, { go: openQuote }),
+      it(Number(q.supplierCost) > 0 && !!q.supplierSrc, t("El costo del producto y de dónde sale", "The product's cost and where it comes from"), t("En la cotización, hoja «Liquidación de costos», fila Producto → Guardar costos", "On the quote, “Cost settlement” sheet, Product row → Save costs"), `${qh}#costos`, { go: openQuote }),
+      it(q.leadMinDays != null && q.leadMaxDays != null, t("El tiempo de entrega (días después de la OC)", "The lead time (days after the PO)"), t("En la cotización, CONDICIONES DEL DOCUMENTO → Editar condiciones", "On the quote, DOCUMENT TERMS → Edit terms"), `${qh}#condiciones`, { go: openQuote }),
+      it(!!q.promiseText, t("La promesa posible y su condición", "The possible promise and its condition"), t("En la cotización, bloque SOLUCIÓN → Editar", "On the quote, SOLUTION block → Edit"), `${qh}#solucion`, { go: openQuote }),
+    ];
+  };
+  const prepare = { go: t("Preparar cotización", "Prepare quote"), act: "createQuote" as const };
   const draft = x.quotes.find((q) => q.status === "DRAFT");
   const shown = x.quotes.find((q) => q.status === "PRESENTED") ?? x.quotes.find((q) => q.status === "ACCEPTED");
   const livePo = x.customerPos.find((p) => !p.rejectedAt && !p.accepted) ?? x.customerPos.find((p) => p.accepted);
@@ -39,36 +56,37 @@ export function stepNeeds(x: StepNeedsInput, t: (es: string, en: string) => stri
     case "need":
       return [it(!!d.desiredResult, t("El resultado que busca el cliente", "The result the customer wants"), t("Pestaña Necesidad → «Resultado deseado: qué quiere lograr el cliente» → Guardar necesidad", "Need tab → “Desired result: what the customer wants to achieve” → Save need"), `${self}?tab=need#resultado-deseado`)];
     case "source":
-      return [it(d.supplierPos.length > 0 || Number(d.supplierCost) > 0 || !!d.sourcingNote, t("De dónde lo vamos a conseguir, o el costo del producto", "Where we will get it, or the product's cost"), t("Pestaña Fuente → escribe la fuente o el costo en «Liquidación de costos» → Guardar fuente", "Source tab → type the source or the cost under “Cost settlement” → Save source"), `${self}?tab=source#fuente`)];
+      return [it(d.supplierPos.length > 0 || Number(d.supplierCost) > 0 || !!d.sourcingNote, t("De dónde lo vamos a conseguir, o el costo del producto", "Where we will get it, or the product's cost"), t("Pestaña Fuente → escribe la fuente o el costo en «Liquidación de costos» → Guardar fuente", "Source tab → type the source or the cost under “Cost settlement” → Save source"), tabAt("source", "fuente"))];
     case "quote": {
       const q = draft ?? shown ?? null;
       const list: StepNeed[] = [
-        it(d.items.length > 0 || x.quotes.length > 0, t("Al menos un producto en la Necesidad", "At least one product on the Need"), t("Pestaña Cotización → «Agregar producto» → Agregar", "Quote tab → “Add product” → Add"), `${self}?tab=quote`),
-        it(x.quotes.length > 0, t("La cotización preparada", "The quote prepared"), t("Pestaña Cotización → Preparar cotización", "Quote tab → Prepare quote"), `${self}?tab=quote`),
+        it(d.items.length > 0 || x.quotes.length > 0, t("Al menos un producto en la Necesidad", "At least one product on the Need"), t("Pestaña Cotización → bloque PRODUCTOS → «Agregar producto» → Agregar", "Quote tab → PRODUCTS block → “Add product” → Add"), tabAt("quote", "productos")),
+        it(x.quotes.length > 0, t("La cotización preparada", "The quote prepared"), d.items.length > 0 ? t("Haz clic en «Preparar cotización»: SOLU crea el documento con los productos y costos de la Necesidad", "Click “Prepare quote”: SOLU creates the document with the Need's products and costs") : t("Primero agrega un producto; después «Preparar cotización»", "Add a product first; then “Prepare quote”"), tabAt("quote", "cotizaciones"), d.items.length > 0 ? prepare : {}),
       ];
-      if (draft && !shown) {
-        const qh = `/cotizaciones/${draft.id}`;
-        list.push(
-          it(!!d.desiredResult, t("El resultado que busca el cliente", "The result the customer wants"), t("Pestaña Necesidad → «Resultado deseado»", "Need tab → “Desired result”"), `${self}?tab=need#resultado-deseado`),
-          it(!!draft.solution, t("La solución en una frase", "The solution in one sentence"), t("En la cotización, bloque SOLUCIÓN → Editar", "On the quote, SOLUTION block → Edit"), qh),
-          it(draft.lines.length > 0 && draft.lines.every((l) => Number(l.unitPrice) > 0), t("Todos los productos con precio", "Every product with a price"), t("En la cotización, PRODUCTOS EN EL DOCUMENTO → Editar cada línea", "On the quote, PRODUCTS ON THE DOCUMENT → Edit each line"), qh),
-          it(Number(draft.supplierCost) > 0 && !!draft.supplierSrc, t("El costo del producto y de dónde sale", "The product's cost and where it comes from"), t("En la cotización, hoja «Liquidación de costos», fila Producto → Guardar costos", "On the quote, “Cost settlement” sheet, Product row → Save costs"), `${qh}#costos`),
-          it(draft.leadMinDays != null && draft.leadMaxDays != null, t("El tiempo de entrega (días después de la OC)", "The lead time (days after the PO)"), t("En la cotización, CONDICIONES DEL DOCUMENTO → Editar condiciones", "On the quote, DOCUMENT TERMS → Edit terms"), qh),
-          it(!!draft.promiseText, t("La promesa posible y su condición", "The possible promise and its condition"), t("En la cotización, bloque SOLUCIÓN → Editar", "On the quote, SOLUTION block → Edit"), qh),
-        );
-      }
-      list.push(it(!!d.quoteSentAt || !!shown, t("La cotización presentada al cliente", "The quote presented to the customer"), q ? t("En la cotización, cuando «LISTA PARA PRESENTAR» no tenga «!» → Presentar al cliente", "On the quote, once “READY TO PRESENT” has no “!” → Present to customer") : t("Primero prepara la cotización", "Prepare the quote first"), q ? `/cotizaciones/${q.id}` : `${self}?tab=quote`));
+      if (draft && !shown) list.push(...draftItems(draft));
+      list.push(it(!!d.quoteSentAt || !!shown, t("La cotización presentada al cliente", "The quote presented to the customer"), q ? t("En la cotización, cuando «LISTA PARA PRESENTAR» no tenga «!» → Presentar al cliente", "On the quote, once “READY TO PRESENT” has no “!” → Present to customer") : t("Primero prepara la cotización", "Prepare the quote first"), q ? `/cotizaciones/${q.id}#presentar` : null, { go: openQuote }));
       return list;
     }
-    case "po":
-      return [
-        it(x.customerPos.length > 0 || !!d.poAcceptedAt, t("La OC del cliente registrada", "The customer's PO recorded"), t("En la cotización presentada → «Llegó la PO · registrarla» → Registrar y comparar", "On the presented quote → “PO arrived · record it” → Record and compare"), shown ? `/cotizaciones/${shown.id}` : `${self}?tab=quote`),
+    case "po": {
+      const list: StepNeed[] = [];
+      // The customer's PO is recorded on the presented quote. A Need can reach this step with the quote only "marked
+      // as sent" (or moved on the board) and no presented quote document: then that document is what is missing first.
+      const noDoc = !shown && x.customerPos.length === 0 && !d.poAcceptedAt;
+      if (noDoc) {
+        if (!draft) list.push(it(false, t("La cotización preparada en SOLU", "The quote prepared in SOLU"), t("La OC del cliente se registra sobre la cotización. Esta Necesidad figura como cotizada, pero no tiene el documento: créalo con este botón.", "The customer's PO is recorded on the quote. This Need shows as quoted, but it has no quote document: create it with this button."), tabAt("quote", "cotizaciones"), d.items.length > 0 ? prepare : { go: t("Ir a prepararla", "Go prepare it") }));
+        else list.push(...draftItems(draft).filter((n) => !n.ok));
+        list.push(it(false, t("La cotización presentada al cliente en SOLU", "The quote presented to the customer in SOLU"), draft ? t("La cotización está en borrador. En ella, cuando «LISTA PARA PRESENTAR» no tenga «!» → Presentar al cliente", "The quote is a draft. On it, once “READY TO PRESENT” has no “!” → Present to customer") : t("Después de prepararla: «LISTA PARA PRESENTAR» → Presentar al cliente", "After preparing it: “READY TO PRESENT” → Present to customer"), draft ? `/cotizaciones/${draft.id}#presentar` : null, { go: openQuote }));
+      }
+      list.push(
+        it(x.customerPos.length > 0 || !!d.poAcceptedAt, t("La OC del cliente registrada", "The customer's PO recorded"), shown ? t("En la cotización presentada, bloque «EL CLIENTE RESPONDIÓ» → «Llegó la PO · registrarla» → Registrar y comparar", "On the presented quote, block “THE CUSTOMER ANSWERED” → “PO arrived · record it” → Record and compare") : t("Se registra en la cotización, cuando ya esté presentada", "It is recorded on the quote, once it has been presented"), shown ? `/cotizaciones/${shown.id}?abrir=po#respuesta` : null, { go: t("Registrar la OC", "Record the PO") }),
         it(d.account.creditLimit != null || !!d.poAcceptedAt, t("El cliente con cupo de crédito aprobado", "The customer with an approved credit limit"), t("En la OC → «Pedir revisión de cupo» (lo deciden Finanzas o Gerencia)", "On the PO → “Request a credit review” (Finance or Management decide)"), livePo ? `/po/${livePo.id}` : `/administracion/cupos`),
-        it(!!d.poAcceptedAt, t("La OC aceptada", "The PO accepted"), t("En la OC, cuando todas las precondiciones estén en verde → Aceptar PO", "On the PO, once every precondition is green → Accept PO"), livePo ? `/po/${livePo.id}` : null),
-      ];
+        it(!!d.poAcceptedAt, t("La OC aceptada", "The PO accepted"), livePo ? t("En la OC, cuando todas las precondiciones estén en verde → Aceptar PO", "On the PO, once every precondition is green → Accept PO") : t("Después de registrar la OC: en ella, cuando todas las precondiciones estén en verde → Aceptar PO", "After recording the PO: on it, once every precondition is green → Accept PO"), livePo ? `/po/${livePo.id}` : null, { go: t("Abrir la OC", "Open the PO") }),
+      );
+      return list;
+    }
     case "purchase":
       return [
-        it(d.supplierPos.length > 0, t("La orden de compra al proveedor preparada", "The supplier purchase order prepared"), t("Pestaña Ejecución → elige el proveedor → Preparar Supplier PO desde la cotización", "Execute tab → pick the supplier → Prepare Supplier PO from the quote"), `${self}?tab=execute`),
+        it(d.supplierPos.length > 0, t("La orden de compra al proveedor preparada", "The supplier purchase order prepared"), t("Pestaña Ejecución → elige el proveedor → Preparar Supplier PO desde la cotización", "Execute tab → pick the supplier → Prepare Supplier PO from the quote"), tabAt("execute")),
         it(d.supplierPos.length > 0 && d.supplierPos.every((p) => !!p.releasedAt), t("La orden liberada", "The order released"), t("En la orden, cuando «LISTA PARA LIBERAR» no tenga pendientes → Liberar Supplier PO", "On the order, once “RELEASE READINESS” has nothing open → Release Supplier PO"), spo ? `/compras/${spo.id}` : null),
         it(d.supplierPos.length > 0 && d.supplierPos.every((p) => !!p.confirmedAt), t("La orden confirmada por el proveedor", "The order confirmed by the supplier"), t("En la orden → «Marcar enviada» y después «Registrar lo que confirmó el proveedor»; si hay diferencias, «Resolver y dar por confirmada»", "On the order → “Mark sent”, then “Record what the supplier confirmed”; if there are differences, “Resolve and confirm”"), spo ? `/compras/${spo.id}` : null),
       ];
@@ -79,7 +97,7 @@ export function stepNeeds(x: StepNeedsInput, t: (es: string, en: string) => stri
       ];
     case "ship":
       return [
-        it(d.shipments.length > 0 || x.done.ship, t("El envío del proveedor registrado", "The supplier's shipment recorded"), t("Pestaña Ejecución → «Registrar envío externo» (transportista, guía y fecha)", "Execute tab → “Record external shipment” (carrier, tracking and date)"), `${self}?tab=execute`),
+        it(d.shipments.length > 0 || x.done.ship, t("El envío del proveedor registrado", "The supplier's shipment recorded"), t("Pestaña Ejecución → «Registrar envío externo» (transportista, guía y fecha)", "Execute tab → “Record external shipment” (carrier, tracking and date)"), tabAt("execute")),
         it(x.done.ship, t("La mercancía recibida", "The goods received"), t("Si llega a nuestra bodega: en la orden de compra, bloque RECEPCIÓN → Registrar recepción. Si va directo al cliente: en el envío → Confirmar recibo", "If it arrives at our warehouse: on the supplier order, RECEIVING block → Record receipt. If it goes straight to the customer: on the shipment → Confirm receipt"), spo ? `/compras/${spo.id}#recepcion` : d.shipments[0] ? `/logistica/${d.shipments[0].id}` : null),
       ];
     case "deliver": {

@@ -209,7 +209,7 @@
   "why": "The one workspace for a need: what is happening now, what is coming, and three dates side by side (carrier ETA, SOLU's expected date and the promise to the customer).",
   "steps": [
    "Read the signal and its cause at the top.",
-   "Look at the path of steps and, right below it, the box “TO FINISH THE … STEP”: in red it says what is missing (“Missing: …”) and where to fill it in. Click [[Ir a llenarlo]] and SOLU takes you to the field, which is also marked in red.",
+   "Look at the path of steps and, right below it, the box “TO FINISH THE … STEP”: in red it says what is missing (“Missing: …”) and where to fill it in. Click the blue button on that line: [[Ir a llenarlo]], or the name of the action (“Prepare quote”, “Open the quote”, “Record the PO”, “Open the PO”). SOLU takes you to the exact place, which is marked in red.",
    "Set the next move and its date, and [[Guardar]]. Postpone with [[Mañana]] / [[3 días]] / [[1 semana]].",
    "Review what changed since your last visit and click [[Marcar como visto]].",
    "Use the tabs in order: Summary, Need, Source, Quote, Execute, Finance, Business File, Result."
@@ -315,7 +315,7 @@
    "For each important difference, choose a solution with [[Elegir esta opción]] and record the customer's confirmation with [[Registrar confirmación]].",
    "When nothing blocks, click [[Aceptar PO]]."
   ],
-  "expect": "Accept PO stays disabled while an important difference is open or a precondition shows “!”. If the customer is new and has no credit limit, request it right there with “Request a credit review”: Finance or Management decide. Once accepted, the record cannot be edited."
+  "expect": "Accept PO stays disabled while an important difference is open or a precondition shows “!”. If the customer is new and has no credit limit, request it right there with “Request a credit review”: Finance or Management decide. Once accepted, the record cannot be edited. The PO can only be recorded on a quote presented in SOLU: if the Need was marked as quoted without that document, the red box on the Need first asks for “Prepare quote” and “Present to customer”, and then shows the “Record the PO” button."
  },
  "promise": {
   "t": "Promise to the customer",

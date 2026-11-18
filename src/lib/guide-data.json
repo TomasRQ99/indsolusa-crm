@@ -317,7 +317,7 @@
    "why": "El único espacio de trabajo para una necesidad: qué pasa ahora, qué viene, y tres fechas lado a lado (ETA del transportista, fecha esperada por SOLU y promesa al cliente).",
    "steps": [
     "Lee la señal y su causa en la parte de arriba.",
-    "Mira la ruta de pasos y, justo debajo, el recuadro «PARA TERMINAR EL PASO…»: en rojo dice qué falta («Falta: …») y dónde se llena. Haz clic en [[Ir a llenarlo]] y SOLU te lleva al campo, que también queda marcado en rojo.",
+    "Mira la ruta de pasos y, justo debajo, el recuadro «PARA TERMINAR EL PASO…»: en rojo dice qué falta («Falta: …») y dónde se llena. Haz clic en el botón azul de esa línea: [[Ir a llenarlo]], o el nombre de la acción («Preparar cotización», «Abrir la cotización», «Registrar la OC», «Abrir la OC»). SOLU te lleva al lugar exacto, que queda marcado en rojo.",
     "Define el siguiente movimiento y su fecha, y [[Guardar]]. Pospón con [[Mañana]] / [[3 días]] / [[1 semana]].",
     "Revisa qué cambió desde tu última visita y haz clic en [[Marcar como visto]].",
     "Usa las pestañas en orden: Resumen, Necesidad, Fuente, Cotización, Ejecución, Finanzas, Expediente, Resultado."
@@ -450,7 +450,7 @@
     "Para cada diferencia importante, elige una solución con [[Elegir esta opción]] y registra la confirmación del cliente con [[Registrar confirmación]].",
     "Cuando nada bloquee, haz clic en [[Aceptar PO]]."
    ],
-   "expect": "Aceptar PO sigue desactivado mientras haya una diferencia importante abierta o una precondición en «!». Si el cliente es nuevo y no tiene cupo de crédito, pídelo ahí mismo con «Pedir revisión de cupo»: lo deciden Finanzas o Gerencia. Una vez aceptada, el registro no se puede editar."
+   "expect": "Aceptar PO sigue desactivado mientras haya una diferencia importante abierta o una precondición en «!». Si el cliente es nuevo y no tiene cupo de crédito, pídelo ahí mismo con «Pedir revisión de cupo»: lo deciden Finanzas o Gerencia. Una vez aceptada, el registro no se puede editar. La OC solo se puede registrar sobre una cotización presentada en SOLU: si la Necesidad se marcó como cotizada sin ese documento, el recuadro rojo de la Necesidad pide primero «Preparar cotización» y «Presentar al cliente», y después muestra el botón «Registrar la OC»."
   },
   {
    "id": "promise",

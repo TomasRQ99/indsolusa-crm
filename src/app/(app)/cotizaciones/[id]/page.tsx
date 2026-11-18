@@ -30,7 +30,7 @@ import { CostTotal } from "@/components/CostTotal";
 import { COST_LINES, costDetail } from "@/lib/cost-lines";
 import { COST_STATUS, costStatusOf, quoteDiff, weakest, type QV } from "@/lib/proposal-rules";
 
-export default async function QuotePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; cmp?: string }> }) {
+export default async function QuotePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; cmp?: string; abrir?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
@@ -119,8 +119,8 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     ...EXC_ERR(t),
   };
 
-  const QA = ({ label, children, wide, right, cls = "", popCls = "" }: { label: React.ReactNode; children: React.ReactNode; wide?: boolean; right?: boolean; cls?: string; popCls?: string }) => (
-    <details className={`qa ${cls}`}>
+  const QA = ({ label, children, wide, right, cls = "", popCls = "", open }: { label: React.ReactNode; children: React.ReactNode; wide?: boolean; right?: boolean; cls?: string; popCls?: string; open?: boolean }) => (
+    <details className={`qa ${cls}`} open={open || undefined}>
       <summary className="qa-btn">{label}</summary>
       <div className={`qa-pop${wide ? " wide" : ""}${right ? " right" : ""}${popCls ? ` ${popCls}` : ""}`}>{children}</div>
     </details>
@@ -175,7 +175,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
 
   // ---------- Solution ----------
   const Solution = () => (
-    <section className="jblock">
+    <section className="jblock" id="solucion">
       <div className="jbh"><b>{t("SOLUCIÓN", "SOLUTION")}</b><span className="grow" />
         {editable && draft && (
           <QA label={t("Editar", "Edit")} wide right>
@@ -464,7 +464,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
 
   // ---------- Lines ----------
   const Lines = () => (
-    <section className="jblock">
+    <section className="jblock" id="lineas">
       <div className="jbh"><b>{t("PRODUCTOS EN EL DOCUMENTO", "PRODUCTS ON THE DOCUMENT")}</b><span className="grow" /><span className="src">Total USD {i.n2(B.sale)}</span></div>
       <div className="tscroll">
         <table>
@@ -510,7 +510,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
 
   // ---------- Terms + decision ----------
   const Terms = () => (
-    <section className="jblock">
+    <section className="jblock" id="condiciones">
       <div className="jbh"><b>{t("CONDICIONES DEL DOCUMENTO", "DOCUMENT TERMS")}</b><span className="grow" /><span className="src">{t("Idioma del documento", "Document language")}: {q.lang}</span></div>
       <dl className="qv-dl">
         <dt>Lead Time</dt><dd>{B.leadText ?? <span className="attn-t">{t("Sin definir", "Not set")}</span>}<span className="src block">{t("Calculado desde los días después de la OC; no se escribe a mano.", "Calculated from days after PO; never typed by hand.")}</span></dd>
@@ -569,7 +569,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   // ---------- Rail before presenting ----------
   const ReadyRail = () => (
     <aside className="jrail">
-      <div>
+      <div id="presentar" className="land">
         <div className="jbh"><b>{t("LISTA PARA PRESENTAR", "READY TO PRESENT")}</b><span className="grow" />{B.blocking.length === 0 ? <span className="sig ok">{t("Lista", "Ready")}</span> : <span className="sig attn">{t(`${B.blocking.length} pendiente(s)`, `${B.blocking.length} open`)}</span>}</div>
         <ul className="qv-checks">{B.ready.map((c, n) => <Check key={n} {...c} />)}</ul>
         <p className="src" style={{ marginTop: 6 }}><Link href={`/deals/${d.id}/alcance`}>{t("Técnico y alcance", "Technical & scope")}</Link>{scope && scope.state === "NOT_STARTED" ? ` · ${t("caso simple, nada que aclarar", "simple case, nothing to clarify")}` : ""}</p>
@@ -674,10 +674,10 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
           </div>
         )}
         {q.status === "PRESENTED" && editable && (
-          <div>
+          <div id="respuesta" className="land">
             <div className="jbh"><b>{t("EL CLIENTE RESPONDIÓ", "THE CUSTOMER ANSWERED")}</b></div>
             <div className="qa-bar" style={{ borderTop: 0, paddingTop: 0 }}>
-              <QA label={t("Llegó la PO · registrarla", "PO arrived · record it")} wide>
+              <QA label={t("Llegó la PO · registrarla", "PO arrived · record it")} wide right open={sp.abrir === "po"}>
                 <form action={registerPo.bind(null, q.id)} className="qa-form">
                   <b>{t("Tal como viene en la PO del cliente", "Exactly as on the customer's PO")}</b>
                   {poCop && <span className="src block">{t("La cotización salió en pesos: escribe los precios de la PO en pesos, antes de IVA. SOLU los compara con la tasa fijada en la cotización.", "The quote went out in pesos: type the PO prices in pesos, before IVA. SOLU compares them at the rate fixed on the quote.")}</span>}
@@ -702,7 +702,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
                   <button type="submit">{t("Registrar y comparar", "Record and compare")}</button>
                 </form>
               </QA>
-              <QA label={t("No aceptó", "Declined")} wide>
+              <QA label={t("No aceptó", "Declined")} wide right>
                 <form action={markDeclined.bind(null, q.id)} className="qa-form">
                   <label>{t("¿Por qué? (lo que dijo el cliente)", "Why? (what the customer said)")}<input name="why" maxLength={300} required /></label>
                   <label>{t("Fuente", "Source")}<input name="source" maxLength={200} /></label>
