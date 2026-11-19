@@ -60,7 +60,7 @@ export default async function JourneyPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; ok?: string; err?: string; cal?: string; t?: string; d?: string }>;
+  searchParams: Promise<{ tab?: string; ok?: string; err?: string; cal?: string; t?: string; d?: string; prov?: string }>;
 }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
@@ -81,10 +81,11 @@ export default async function JourneyPage({
   // Localizar: the suppliers the company already worked with, ordered for THIS piece (only when that tab is open).
   const loc = tab === "locate" ? await locateOptions(id) : null;
   // What the current step still needs (the list under the path): quotes, customer POs and deliveries of this Need.
-  const [stepQuotes, stepPos, stepDispatch] = await Promise.all([
+  const [stepQuotes, stepPos, stepDispatch, stepInstruction] = await Promise.all([
     db.quote.findMany({ where: { dealId: id }, orderBy: { createdAt: "desc" }, select: { id: true, status: true, solution: true, supplierCost: true, supplierSrc: true, leadMinDays: true, leadMaxDays: true, promiseText: true, lines: { select: { unitPrice: true } } } }),
     db.customerPO.findMany({ where: { dealId: id }, orderBy: { createdAt: "desc" }, select: { id: true, rejectedAt: true, acceptance: { select: { id: true } } } }),
     db.dispatchOrder.findMany({ where: { dealId: id }, select: { id: true, deliveredAt: true, cancelledAt: true } }),
+    db.dispatchInstruction.findFirst({ where: { dealId: id, supersededAt: null }, select: { id: true } }),
   ]);
   const stepOpenConfs = (await db.supplierConfirmation.findMany({ where: { resolvedAt: null, supplierPo: { dealId: id } }, select: { supplierPoId: true } })).map((c) => c.supplierPoId);
   // What the quote says about where to buy: SOLU only suggests a supplier from it; the person chooses.
@@ -1019,17 +1020,19 @@ export default async function JourneyPage({
           </div>
         )}
         {editable && (
-          <div className="qa-bar" style={{ marginTop: 10 }}>
-            {suppliers.length === 0 ? <p className="small">{t("Primero crea el proveedor en ", "First create the supplier in ")}<Link href="/suppliers">{t("Proveedores", "Suppliers")}</Link>.</p> : (() => {
+          <div className="qa-bar land" id="comprar" style={{ marginTop: 10 }}>
+            {sp.ok === "proveedor" && <span className="ok-t small" role="status" style={{ flexBasis: "100%" }}>{t("Proveedor creado. Ya está elegido en la lista: revisa y prepara la orden.", "Supplier created. It is already picked in the list: check and prepare the order.")}</span>}
+            {suppliers.length === 0 ? <p className="small">{t("Todavía no hay proveedores. ", "There are no suppliers yet. ")}<Link className="qa-btn" href={`/suppliers?nuevo=1&volver=${encodeURIComponent(`/deals/${deal.id}`)}#nuevo-proveedor`}>{t("+ Crear proveedor nuevo", "+ Create a new supplier")}</Link></p> : (() => {
               const basis = spoBasis;
-              const suggested = matchSupplier(basis, suppliers);
+              const justMade = sp.prov ? suppliers.find((s) => s.id === sp.prov) : undefined;
+              const suggested = justMade ?? matchSupplier(basis, suppliers);
               return (
                 <form action={prepareSpo.bind(null, deal.id)} className="inline" style={{ alignItems: "flex-end" }}>
                   <label>{t("¿A qué proveedor se le compra?", "Which supplier do we buy from?")}
-                    <select name="supplierId" required defaultValue={suggested?.id ?? ""}><option value="" disabled>{t("Elegir…", "Choose…")}</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+                    <select name="supplierId" required defaultValue={suggested?.id ?? ""} key={suggested?.id ?? "none"}><option value="" disabled>{t("Elegir…", "Choose…")}</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
                   </label>
                   <button type="submit" className="btn sm">{t("Preparar Supplier PO desde la cotización", "Prepare Supplier PO from the quote")}</button>
-                  <span className="src" style={{ flexBasis: "100%" }}>{basis ? t(`La cotización dice: «${basis}».`, `The quote says: “${basis}”.`) : ""} {suggested ? t(`SOLU sugiere ${suggested.name} por el nombre: confírmalo o elige otro.`, `SOLU suggests ${suggested.name} by name: confirm it or pick another.`) : t("Elige el proveedor de la lista. Si no está, créalo primero en Mercado → Proveedores.", "Pick the supplier from the list. If it isn't there, create it first in Market → Suppliers.")}</span>
+                  <span className="src" style={{ flexBasis: "100%" }}>{basis ? t(`La cotización dice: «${basis}».`, `The quote says: “${basis}”.`) : ""} {justMade ? "" : suggested ? t(`SOLU sugiere ${suggested.name} por el nombre: confírmalo o elige otro.`, `SOLU suggests ${suggested.name} by name: confirm it or pick another.`) : t("Elige el proveedor de la lista.", "Pick the supplier from the list.")} {t("¿No está en la lista?", "Not in the list?")} <Link href={`/suppliers?nuevo=1&volver=${encodeURIComponent(`/deals/${deal.id}`)}#nuevo-proveedor`}>{t("+ Crear proveedor nuevo", "+ Create a new supplier")}</Link> {t("(al guardarlo vuelves aquí).", "(saving it brings you back here).")}</span>
                 </form>
               );
             })()}
@@ -1039,7 +1042,7 @@ export default async function JourneyPage({
         {editable && (
           <details style={{ marginTop: 10 }}>
             <summary className="small">{t("Crear manualmente (sin cotización)", "Create manually (no quote)")}</summary>
-            {suppliers.length === 0 ? <p className="small">{t("Primero crea el proveedor en ", "First create the supplier in ")}<Link href="/suppliers">{t("Proveedores", "Suppliers")}</Link>.</p> : (
+            {suppliers.length === 0 ? <p className="small">{t("Primero crea el proveedor con el botón de arriba.", "First create the supplier with the button above.")}</p> : (
               <form action={createSupplierPo.bind(null, deal.id)} className="inline">
                 <label>{t("Proveedor", "Supplier")}<select name="supplierId" required defaultValue=""><option value="" disabled>{t("Elegir…", "Choose…")}</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
                 <label>{t("Valor", "Amount")}<input name="amount" type="number" min="0" step="0.01" required style={{ width: 120 }} /></label>
@@ -1312,7 +1315,7 @@ export default async function JourneyPage({
         <JourneyPath path={J.path} self={self} es={i.es} />
         {J.path.current && (() => {
           const isDone = (k: string) => J.path.steps.find((s) => s.key === k)?.state === "done";
-          const needs = stepNeeds({ self, step: J.path.current.key, deal, quotes: stepQuotes, customerPos: stepPos.map((x) => ({ id: x.id, rejectedAt: x.rejectedAt, accepted: !!x.acceptance })), dispatchOrders: stepDispatch, openConfirmations: stepOpenConfs, done: { ship: isDone("ship"), deliver: isDone("deliver"), invoice: isDone("invoice"), cash: isDone("cash"), result: isDone("result") } }, t);
+          const needs = stepNeeds({ self, step: J.path.current.key, deal, quotes: stepQuotes, customerPos: stepPos.map((x) => ({ id: x.id, rejectedAt: x.rejectedAt, accepted: !!x.acceptance })), dispatchOrders: stepDispatch, dispatchIssued: !!stepInstruction, openConfirmations: stepOpenConfs, done: { ship: isDone("ship"), deliver: isDone("deliver"), invoice: isDone("invoice"), cash: isDone("cash"), result: isDone("result") } }, t);
           const missing = needs.filter((n) => !n.ok);
           if (!needs.length) return null;
           return (

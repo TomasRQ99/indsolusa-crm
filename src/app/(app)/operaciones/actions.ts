@@ -124,8 +124,12 @@ export async function createSupplier(formData: FormData) {
     z.object({ bankBeneficiary: optionalText, bankName: optionalText, bankAccount: optionalText, bankSwift: optionalText }),
     formData,
   );
-  await db.supplier.create({ data: { ...data, ...bank } });
+  const made = await db.supplier.create({ data: { ...data, ...bank }, select: { id: true } });
   refreshApp();
+  // Created from a Need ("+ Crear proveedor nuevo" under Ejecución): go back there with the new supplier already picked.
+  const back = String(formData.get("back") ?? "");
+  if (/^\/deals\/[a-z0-9]+$/i.test(back)) redirect(`${back}?tab=execute&ok=proveedor&prov=${made.id}#comprar`);
+  redirect(`/suppliers?ok=creado&prov=${made.id}#${made.id}`);
 }
 
 export async function updateSupplier(id: string, formData: FormData) {

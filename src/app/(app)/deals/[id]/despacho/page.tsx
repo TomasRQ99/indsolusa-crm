@@ -98,7 +98,7 @@ export default async function DispatchPage({ params, searchParams }: { params: P
           {pos.length > 1 && <p className="small">{t("PO", "PO")}: {pos.map((p) => <Link key={p.id} href={`/deals/${d.id}/despacho?po=${p.id}`} className={p.id === po.id ? "val" : ""} style={{ marginRight: 8 }}>{p.number}</Link>)}</p>}
           {current && <section className="jblock"><div className="jbh"><b>{t("VIGENTE PARA OPERACIONES", "CURRENT FOR OPERATIONS")}</b></div><Show x={current} /></section>}
           {editable && prefill && (
-            <section className="jblock">
+            <section className="jblock land" id="emitir">
               <div className="jbh"><b>{current ? t("EMITIR UNA NUEVA VERSIÓN", "ISSUE A NEW VERSION") : t("EMITIR A OPERACIONES", "ISSUE TO OPERATIONS")}</b><span className="grow" /><span className="src">{t("Prellenada con la PO, la cotización y el cliente", "Prefilled from the PO, the quote and the customer")}</span></div>
               <form action={issueDispatch.bind(null, d.id)} className="qa-form">
                 <input type="hidden" name="poId" value={po.id} />

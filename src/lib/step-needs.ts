@@ -25,6 +25,8 @@ export type StepNeedsInput = {
   quotes: { id: string; status: string; solution: string | null; supplierCost: Money; supplierSrc: string | null; leadMinDays: number | null; leadMaxDays: number | null; promiseText: string | null; lines: { unitPrice: Money }[] }[];
   customerPos: { id: string; rejectedAt: Date | null; accepted: boolean }[];
   dispatchOrders: { id: string; deliveredAt: Date | null; cancelledAt: Date | null }[];
+  /** the dispatch instruction (what was promised to the customer about delivery) is issued; without it nothing leaves */
+  dispatchIssued?: boolean;
   /** ids of supplier orders whose confirmation has differences still to resolve */
   openConfirmations?: string[];
   done: { ship: boolean; deliver: boolean; invoice: boolean; cash: boolean; result: boolean };
@@ -89,7 +91,7 @@ export function stepNeeds(x: StepNeedsInput, t: (es: string, en: string) => stri
       }
       list.push(
         it(x.customerPos.length > 0 || !!d.poAcceptedAt, t("La OC del cliente registrada", "The customer's PO recorded"), shown ? t("En la cotización presentada, bloque «EL CLIENTE RESPONDIÓ» → «Llegó la PO · registrarla» → Registrar y comparar", "On the presented quote, block “THE CUSTOMER ANSWERED” → “PO arrived · record it” → Record and compare") : t("Se registra en la cotización, cuando ya esté presentada", "It is recorded on the quote, once it has been presented"), shown ? `/cotizaciones/${shown.id}?abrir=po#respuesta` : null, { go: t("Registrar la OC", "Record the PO") }),
-        it(d.account.creditLimit != null || !!d.poAcceptedAt, t("El cliente con cupo de crédito aprobado", "The customer with an approved credit limit"), t("En la OC → «Pedir revisión de cupo» (lo deciden Finanzas o Gerencia)", "On the PO → “Request a credit review” (Finance or Management decide)"), livePo ? `/po/${livePo.id}` : `/administracion/cupos`),
+        it(d.account.creditLimit != null || !!d.poAcceptedAt, t("El cliente con cupo de crédito aprobado", "The customer with an approved credit limit"), t("En la OC, recuadro rojo «FALTA: CUPO DE CRÉDITO DEL CLIENTE». Finanzas o Gerencia escriben el cupo → «Guardar cupo». Los demás → «Pedir revisión de cupo».", "On the PO, red box “MISSING: THE CUSTOMER'S CREDIT LIMIT”. Finance or Management type the limit → “Save limit”. Everyone else → “Request a credit review”."), livePo ? `/po/${livePo.id}#cupo` : `/administracion/cupos#${d.accountId}`, { go: t("Ir al cupo", "Go to the limit") }),
         it(!!d.poAcceptedAt, t("La OC aceptada", "The PO accepted"), livePo ? t("En la OC, cuando todas las precondiciones estén en verde → Aceptar PO", "On the PO, once every precondition is green → Accept PO") : t("Después de registrar la OC: en ella, cuando todas las precondiciones estén en verde → Aceptar PO", "After recording the PO: on it, once every precondition is green → Accept PO"), livePo ? `/po/${livePo.id}` : null, { go: t("Abrir la OC", "Open the PO") }),
       );
       return list;
@@ -137,6 +139,8 @@ export function stepNeeds(x: StepNeedsInput, t: (es: string, en: string) => stri
     case "deliver": {
       const open = x.dispatchOrders.find((o) => !o.cancelledAt && !o.deliveredAt);
       return [
+        // Asked for first: a dispatch cannot leave without it, and before this line people only found out at the greyed-out button.
+        it(x.dispatchIssued !== false || x.done.deliver, t("La instrucción de despacho emitida a Operaciones", "The dispatch instruction issued to Operations"), t("En la Necesidad → Despacho → revisa el destino, quién recibe y la promesa al cliente (ya vienen prellenados) → «Emitir a Operaciones». Sin ella, el despacho no puede salir.", "On the Need → Dispatch → check the destination, who receives and the customer promise (they come prefilled) → “Issue to Operations”. Without it, the dispatch cannot leave."), `${self}/despacho#emitir`, { go: t("Emitir la instrucción", "Issue the instruction") }),
         it(x.dispatchOrders.some((o) => !o.cancelledAt) || d.deliveries.length > 0, t("La entrega al cliente creada", "The delivery to the customer created"), t("En la Necesidad → Despacho → «+ Nuevo despacho» → Crear despacho", "On the Need → Dispatch → “+ New dispatch” → Create dispatch"), `${self}/despacho`),
         it(x.done.deliver, t("Entregado al cliente, con su remisión", "Delivered to the customer, with its delivery note"), t("En la entrega → «Salió hacia el cliente» y después «Entregado: crear remisión»", "On the delivery → “Left for the customer”, then “Delivered: create delivery note”"), open ? `/operaciones/despachos/${open.id}` : `${self}/despacho`),
       ];

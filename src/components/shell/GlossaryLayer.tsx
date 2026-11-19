@@ -16,7 +16,9 @@ type Bubble = { k: string; x: number; y: number; n: number };
 type Open = { term: GlossTerm; ctx: GlossCtx | null; x: number; y: number };
 
 const KEY = "solu.glosario.off";
-const SKIP = "script,style,textarea,select,input,code,.mono,.gl-layer,.guide,.guide-rings,.guide-panel,.guide-min,.search-sug,[data-noglossary]";
+// Words inside something you click (a link, a button, the title of a fold) get no bubble: the bubble sat over the
+// middle of the button and took the click, so the glossary opened instead of the form (found in "master test 2").
+const SKIP = "script,style,textarea,select,input,code,.mono,.gl-layer,.guide,.guide-rings,.guide-panel,.guide-min,.search-sug,[data-noglossary],a,button,summary,[role=tab],[role=button]";
 const BLOCK = "section,article,table,details,form,.card,.ph,.sum,.mblock,.modhead";
 const NO_TEXT_CLICK = "a,button,input,select,textarea,summary,label,[role=tab],.gl-layer,.guide,.guide-panel";
 const MAX = 700;

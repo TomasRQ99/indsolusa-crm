@@ -421,6 +421,8 @@ export async function setCreditLimit(accountId: string, formData: FormData) {
   const creditLimit = raw === "" ? null : money.parse(raw);
   await db.account.update({ where: { id: accountId }, data: { creditLimit } });
   refreshApp();
+  // From the Cupos page: come back to that customer's row with a confirmation (the PO screen shows its own "✓").
+  if (formData.get("back") === "cupos") redirect(`/administracion/cupos?ok=limite&c=${accountId}#${accountId}`);
 }
 
 export async function grantCreditException(dealId: string, formData: FormData) {

@@ -12,7 +12,7 @@ import { getFinanceRate, FIN_COST_FORMULA } from "@/lib/financing";
 import { paymentBehaviors } from "@/lib/pay-behavior";
 import { DEFAULT_PAY_RULES } from "@/lib/pay-rules";
 
-export default async function CreditLimitsPage({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string }> }) {
+export default async function CreditLimitsPage({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string; c?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
@@ -21,11 +21,15 @@ export default async function CreditLimitsPage({ searchParams }: { searchParams:
   // Módulo 14 §16: someone lent the credit authority may decide requests (not change limits directly).
   const reviewDecider = decider || (await delegationsTo(user.id)).some((d) => d.domain === "CREDIT");
   const sp = await searchParams;
-  const [rows, others, reviews] = await Promise.all([
+  const [rows, noLimit, reviews] = await Promise.all([
     loadCredit(),
     db.account.findMany({ where: { creditLimit: null }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.creditReviewRequest.findMany({ orderBy: { createdAt: "desc" }, take: 40, include: { account: { select: { id: true, name: true, creditLimit: true, paymentTermsDays: true } }, deal: { select: { id: true, code: true } }, requestedBy: { select: { name: true } }, decidedBy: { select: { name: true } } } }),
   ]);
+  // Customers with no limit that are not already a row of the table (a link "#<customer>" must land on exactly one place).
+  const inTable = new Set(rows.map((r) => r.id));
+  const others = noLimit.filter((a) => !inTable.has(a.id));
+  const savedName = sp.ok === "limite" ? rows.find((r) => r.id === sp.c)?.name ?? noLimit.find((a) => a.id === sp.c)?.name ?? null : null;
   const openReviews = reviews.filter((r) => r.status === "OPEN");
   const [rate, rateHistory] = await Promise.all([getFinanceRate(), db.marketSetting.findMany({ where: { key: "financeRate" }, orderBy: { version: "desc" }, take: 6 })]);
   const pb = await paymentBehaviors(rows.map((r) => r.id));
@@ -41,6 +45,7 @@ export default async function CreditLimitsPage({ searchParams }: { searchParams:
           <p>{t("Usado = facturas sin conciliar + OC aceptadas sin facturar. Se calcula solo; el cupo lo fijan Finanzas o Gerencia.", "Used = unreconciled invoices + accepted POs not yet invoiced. Calculated automatically; Finance or Management set the limit.")}</p>
         </div>
       </div>
+      {sp.ok === "limite" && <p className="small ok-t" role="status">{savedName ? t(`Cupo guardado para ${savedName}. Ya cuenta para sus órdenes.`, `Limit saved for ${savedName}. It already counts for their orders.`) : t("Cupo guardado.", "Limit saved.")}</p>}
       <section className="sum">
         <div><span className="k">{t("Clientes con cupo", "Customers with a limit")}</span><span className="v">{rows.filter((r) => r.limit != null).length}</span></div>
         <div><span className="k">{t("Por encima del cupo", "Over the limit")}</span><span className="v">{over.length}</span><span className="s">{t("necesitan decisión", "need a decision")}</span></div>
@@ -92,6 +97,7 @@ export default async function CreditLimitsPage({ searchParams }: { searchParams:
                       <details>
                         <summary className="small">{t("Cambiar cupo", "Change limit")}</summary>
                         <form action={setCreditLimit.bind(null, r.id)} className="inline">
+                          <input type="hidden" name="back" value="cupos" />
                           <input name="creditLimit" type="number" min="0" step="500" defaultValue={r.limit ?? ""} style={{ width: 110 }} />
                           <button className="secondary sm" type="submit">{t("Guardar", "Save")}</button>
                         </form>
@@ -141,10 +147,11 @@ export default async function CreditLimitsPage({ searchParams }: { searchParams:
       </div>
       {decider && others.length > 0 && (
         <details className="card" style={{ marginTop: 16 }}>
-          <summary>{t("Definir cupo a otro cliente", "Set a limit for another customer")}</summary>
+          <summary>{t("Definir cupo a otro cliente", "Set a limit for another customer")} <span className="src">{t(`${others.length} sin cupo`, `${others.length} without a limit`)}</span></summary>
           <div className="stack-lg" style={{ gap: 6 }}>
             {others.map((a) => (
-              <form key={a.id} action={setCreditLimit.bind(null, a.id)} className="inline">
+              <form key={a.id} id={a.id} action={setCreditLimit.bind(null, a.id)} className="inline land">
+                <input type="hidden" name="back" value="cupos" />
                 <span style={{ width: 240 }}>{a.name}</span>
                 <input name="creditLimit" type="number" min="0" step="500" required style={{ width: 120 }} />
                 <button className="secondary sm" type="submit">{t("Guardar", "Save")}</button>

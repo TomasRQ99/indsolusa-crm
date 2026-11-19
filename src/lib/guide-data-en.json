@@ -153,7 +153,8 @@
   "t": "Suppliers and Supplier 360",
   "why": "How each supplier really delivers: real lead times, what was quoted versus what was bought.",
   "steps": [
-   "Create a supplier with [[Crear proveedor]].",
+   "Create a supplier: open “New supplier”, type the name (the only required field) and click [[Crear proveedor]]. SOLU confirms “Supplier created” and leaves it in the list.",
+   "From a Need there is no need to come all the way here: on its Execute tab, [[+ Crear proveedor nuevo]] opens this form and, on saving, you return to the Need with the supplier already picked.",
    "Open a supplier: review the real times to dispatch and what was quoted versus what was bought.",
    "Start a need for one of their products with [[Crear y abrir]]."
   ],
@@ -458,15 +459,16 @@
   "why": "After accepting the customer's PO, it says exactly what to dispatch, where to and with which documents.",
   "steps": [
    "Accept a PO with [[Aceptar PO]].",
-   "Open the Need's Dispatch tab and review the instruction."
+   "Open Dispatch on the Need. The destination, who receives and the customer promise come prefilled from the PO, the quote and the customer: check them.",
+   "Click [[Emitir a Operaciones]]."
   ],
-  "expect": "It comes from the accepted commitment (the frozen PO), not from the editable quote."
+  "expect": "It comes from the accepted commitment (the frozen PO), not from the editable quote. Without the instruction the delivery cannot leave: that is why, when the Need reaches the delivery step, the red box asks for it first, with the button “Issue the instruction” that leads straight to the form. If it must change later, a new version is issued with the reason."
  },
  "compras": {
   "t": "Supplier purchase orders",
   "why": "Buy exactly what was quoted, keep versions and schedule the supplier payments.",
   "steps": [
-   "On the Need's [[Ejecución]] tab, pick from the “Which supplier do we buy from?” list (SOLU suggests one by name: confirm it) and click [[Preparar Supplier PO desde la cotización]].",
+   "On the Need's [[Ejecución]] tab, pick from the “Which supplier do we buy from?” list (SOLU suggests one by name: confirm it) and click [[Preparar Supplier PO desde la cotización]]. If the supplier is not in the list, click [[+ Crear proveedor nuevo]]: saving it brings you back here with it already picked.",
    "SOLU opens the order. Review it and save the changes with [[Guardar borrador]].",
    "In the right column, RELEASE READINESS shows each point with “✓” or “!”. Each point is a link: click it and SOLU takes you to where it is resolved. Once nothing is open, click [[Liberar Supplier PO]].",
    "Under PAYMENT PLAN, click [[Solicitar este pago]] on each milestone. If the order must change later: [[Crear nueva versión]]."
@@ -603,7 +605,7 @@
    "On delivery: who received it and [[Entregado: crear remisión]]. If it could not be done: [[No se pudo entregar]].",
    "If the customer gives a goods-receipt number (MIGO or other), save it."
   ],
-  "expect": "It does not leave without Commercial's instruction or with requirements pending. A failed attempt stays in the history, returns the goods to stock and the dispatch is scheduled again."
+  "expect": "It does not leave without Commercial's instruction or with requirements pending. A failed attempt stays in the history, returns the goods to stock and the dispatch is scheduled again. If the instruction is missing, the dispatch says so and carries the link “Issue the instruction now →”."
  },
  "ops-auditoria": {
   "t": "Carrier invoice",
@@ -727,10 +729,11 @@
   "t": "Credit limits",
   "why": "How much credit each customer has, and the approved exceptions.",
   "steps": [
-   "Set a customer's limit and [[Guardar]].",
+   "For a customer already in the table: on its row, open “Change limit”, type the value and [[Guardar]].",
+   "For a customer not shown yet: open “Set a limit for another customer”, type the value next to its name and [[Guardar]].",
    "When an order exceeds it, a manager can click [[Aprobar excepción]]."
   ],
-  "expect": "Customers above their limit are flagged."
+  "expect": "On saving, SOLU confirms “Limit saved for…” and leaves you on that customer's row. Customers above their limit are flagged. From a customer's PO there is no need to come here: its red box “MISSING: THE CUSTOMER'S CREDIT LIMIT” has “Save limit” (Finance or Management) or “Request a credit review” (everyone else)."
  },
  "adm-banco": {
   "t": "Bank: upload the statement and explain movements",
@@ -1467,7 +1470,7 @@
    "To see every term: at the top right, open the menu under your name and click [[Glosario de términos]].",
    "To remove the bubbles: on the Glossary page, [[Ocultar los globos en las pantallas]]. Show them again in the same place with [[Mostrar los globos en las pantallas]]."
   ],
-  "expect": "The same term explains different things depending on where you are: \"Need\" in the title of the board's first column is the stage; in Market it is when a signal becomes a Need. There is one bubble per term in each block of the screen, not on every mention. Hiding them applies to that browser, not to the person. On a phone or tablet, where there is no cursor, the \"i\" bubbles always show."
+  "expect": "The same term explains different things depending on where you are: \"Need\" in the title of the board's first column is the stage; in Market it is when a signal becomes a Need. There is one bubble per term in each block of the screen, not on every mention. Hiding them applies to that browser, not to the person. On a phone or tablet, where there is no cursor, the \"i\" bubbles always show. Words inside a button, a link or the title of a folding section carry no bubble, so the click always does what the button says."
  },
  "pendientes-aprobar": {
   "t": "Pending approvals",

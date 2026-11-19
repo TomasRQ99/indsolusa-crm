@@ -246,7 +246,8 @@
    "path": "MERCADO → Clientes y proveedores → Proveedores → un proveedor",
    "why": "Cómo cumple realmente cada proveedor: plazos reales, lo cotizado frente a lo comprado.",
    "steps": [
-    "Crea un proveedor con [[Crear proveedor]].",
+    "Crea un proveedor: abre «Nuevo proveedor», escribe el nombre (es lo único obligatorio) y haz clic en [[Crear proveedor]]. SOLU confirma «Proveedor creado» y lo deja en la lista.",
+    "Desde una Necesidad no hace falta venir hasta aquí: en su pestaña Ejecución, [[+ Crear proveedor nuevo]] abre este formulario y, al guardar, vuelves a la Necesidad con el proveedor ya elegido.",
     "Abre un proveedor: revisa los tiempos reales hasta despacho y lo cotizado frente a lo comprado.",
     "Inicia una necesidad para uno de sus productos con [[Crear y abrir]]."
    ],
@@ -651,9 +652,10 @@
    "why": "Después de aceptar la OC del cliente, dice exactamente qué despachar, a dónde y con qué documentos.",
    "steps": [
     "Acepta una OC con [[Aceptar PO]].",
-    "Abre la pestaña Despacho de la Necesidad y revisa la instrucción."
+    "Abre Despacho en la Necesidad. El destino, quién recibe y la promesa al cliente vienen prellenados con la OC, la cotización y el cliente: revísalos.",
+    "Haz clic en [[Emitir a Operaciones]]."
    ],
-   "expect": "Sale del compromiso aceptado (la OC congelada), no de la cotización editable."
+   "expect": "Sale del compromiso aceptado (la OC congelada), no de la cotización editable. Sin la instrucción, la entrega no puede salir: por eso, cuando la Necesidad llega al paso de entrega, el recuadro rojo la pide primero, con el botón «Emitir la instrucción» que lleva directo al formulario. Si hay que cambiarla después, se emite una nueva versión con el porqué."
   },
   {
    "id": "compras",
@@ -662,7 +664,7 @@
    "path": "Necesidad → Ejecución → Preparar Supplier PO desde la cotización",
    "why": "Compra exactamente lo cotizado, guarda versiones y programa los pagos al proveedor.",
    "steps": [
-    "En la pestaña [[Ejecución]] de la Necesidad, elige en la lista «¿A qué proveedor se le compra?» (SOLU sugiere uno por el nombre: confírmalo) y haz clic en [[Preparar Supplier PO desde la cotización]].",
+    "En la pestaña [[Ejecución]] de la Necesidad, elige en la lista «¿A qué proveedor se le compra?» (SOLU sugiere uno por el nombre: confírmalo) y haz clic en [[Preparar Supplier PO desde la cotización]]. Si el proveedor no está en la lista, haz clic en [[+ Crear proveedor nuevo]]: al guardarlo vuelves aquí con él ya elegido.",
     "SOLU abre la orden. Revísala y guarda los cambios con [[Guardar borrador]].",
     "En la columna derecha, LISTA PARA LIBERAR muestra cada punto con «✓» o «!». Cada punto es un enlace: haz clic y SOLU te lleva a donde se resuelve. Cuando no tenga pendientes, haz clic en [[Liberar Supplier PO]].",
     "En PLAN DE PAGO, haz clic en [[Solicitar este pago]] en cada hito. Si después hay que cambiar la orden: [[Crear nueva versión]]."
@@ -854,7 +856,7 @@
     "Al entregar: quién recibió y [[Entregado: crear remisión]]. Si no se pudo: [[No se pudo entregar]].",
     "Si el cliente da número de entrada (MIGO u otro), guárdalo."
    ],
-   "expect": "No sale sin la instrucción de Comercial ni con requisitos pendientes. Un intento fallido queda en la historia, devuelve la mercancía al inventario y el despacho vuelve a programarse."
+   "expect": "No sale sin la instrucción de Comercial ni con requisitos pendientes. Un intento fallido queda en la historia, devuelve la mercancía al inventario y el despacho vuelve a programarse. Si falta la instrucción, el despacho lo dice y trae el enlace «Emitir la instrucción ahora →»."
   },
   {
    "id": "ops-auditoria",
@@ -1017,10 +1019,11 @@
    "path": "ADMINISTRACIÓN → Cupos de crédito",
    "why": "Cuánto crédito tiene cada cliente, y las excepciones aprobadas.",
    "steps": [
-    "Define el cupo de un cliente y [[Guardar]].",
+    "Para un cliente que ya está en la tabla: en su fila, abre «Cambiar cupo», escribe el valor y [[Guardar]].",
+    "Para un cliente que todavía no aparece: abre «Definir cupo a otro cliente», escribe el valor junto a su nombre y [[Guardar]].",
     "Cuando un pedido lo supere, un gerente puede hacer clic en [[Aprobar excepción]]."
    ],
-   "expect": "Los clientes por encima de su cupo quedan marcados."
+   "expect": "Al guardar, SOLU confirma «Cupo guardado para…» y te deja en la fila de ese cliente. Los clientes por encima de su cupo quedan marcados. Desde la OC de un cliente no hace falta venir aquí: su recuadro rojo «FALTA: CUPO DE CRÉDITO DEL CLIENTE» tiene «Guardar cupo» (Finanzas o Gerencia) o «Pedir revisión de cupo» (los demás)."
   },
   {
    "id": "adm-banco",
@@ -1981,7 +1984,7 @@
     "Para ver todos los términos: arriba a la derecha, abre el menú de tu nombre y haz clic en [[Glosario de términos]].",
     "Para quitar los globos: en la página Glosario, [[Ocultar los globos en las pantallas]]. Se vuelven a mostrar ahí mismo con [[Mostrar los globos en las pantallas]]."
    ],
-   "expect": "El mismo término explica cosas distintas según dónde estés: «Necesidad» en el título de la primera columna del tablero es la etapa; en Mercado es cuándo una señal se vuelve Necesidad. Hay un globo por término en cada bloque de la pantalla, no en cada mención. Ocultarlos vale para ese navegador, no para la persona. En un teléfono o una tableta, donde no hay cursor, los globos «i» se ven siempre."
+   "expect": "El mismo término explica cosas distintas según dónde estés: «Necesidad» en el título de la primera columna del tablero es la etapa; en Mercado es cuándo una señal se vuelve Necesidad. Hay un globo por término en cada bloque de la pantalla, no en cada mención. Ocultarlos vale para ese navegador, no para la persona. En un teléfono o una tableta, donde no hay cursor, los globos «i» se ven siempre. Las palabras que están dentro de un botón, de un enlace o del título de una sección plegable no llevan globo, para que el clic siempre haga lo que dice el botón."
   },
   {
    "id": "ruta-pedido",

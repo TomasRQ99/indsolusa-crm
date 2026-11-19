@@ -4,8 +4,11 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { createSupplier, updateSupplier } from "../operaciones/actions";
 
-export default async function SuppliersPage() {
+export default async function SuppliersPage({ searchParams }: { searchParams: Promise<{ nuevo?: string; volver?: string; ok?: string; prov?: string }> }) {
   const user = await requireUser();
+  const sp = await searchParams;
+  // Arriving from a Need: the form is open and saving returns to that Need.
+  const back = sp.volver && /^\/deals\/[a-z0-9]+$/i.test(sp.volver) ? sp.volver : null;
   const i = makeI18n(user.lang);
   const { t } = i;
   const suppliers = await db.supplier.findMany({
@@ -22,9 +25,12 @@ export default async function SuppliersPage() {
           <p>{t("El perfil bancario solo cambia mediante una verificación independiente al preparar un pago. Nunca por un correo.", "The bank profile only changes through an independent verification when preparing a payment. Never by email.")}</p>
         </div>
       </div>
-      <details className="card">
+      {sp.ok === "creado" && <p className="small ok-t" role="status">{t(`Proveedor creado: ${suppliers.find((s) => s.id === sp.prov)?.name ?? ""}. Está en la lista de abajo.`, `Supplier created: ${suppliers.find((s) => s.id === sp.prov)?.name ?? ""}. It is in the list below.`)}</p>}
+      <details className="card" id="nuevo-proveedor" open={sp.nuevo === "1"}>
         <summary>{t("Nuevo proveedor", "New supplier")}</summary>
+        {back && <p className="small">{t("Solo el nombre es obligatorio. Al guardar vuelves a la Necesidad, con este proveedor ya elegido.", "Only the name is required. Saving takes you back to the Need, with this supplier already picked.")} <Link href={`${back}?tab=execute#comprar`}>{t("Volver sin crear", "Go back without creating")}</Link></p>}
         <form action={createSupplier} className="stack" style={{ maxWidth: 640 }}>
+          {back && <input type="hidden" name="back" value={back} />}
           <div className="row">
             <label style={{ flex: 1 }}>{t("Nombre", "Name")}<input name="name" required /></label>
             <label>{t("País", "Country")}<input name="country" /></label>
