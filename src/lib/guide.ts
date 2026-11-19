@@ -188,9 +188,16 @@ export function starterGuides(user: U): GuideMatch[] {
   return DAILY.flatMap((id) => { const f = BY_ID.get(id); const m = f && matchOf(f, user); return m ? [m] : []; });
 }
 
+/** English tab names (normalised) -> the Spanish name the guides are indexed by; longest first. Only names of two words or more. */
+const TAB_EN_ES: [string, string][] = MODULES.flatMap((m) => m.tabs.map((t) => [norm(t.en), norm(t.es)] as [string, string]))
+  .filter(([en, es]) => en.includes(" ") && en !== es).sort((a, b) => b[0].length - a[0].length);
+
 export function searchGuides(q: string, user: U, max = 4): GuideMatch[] {
   if (looksLikeRecord(q)) return [];
-  const words = norm(q).split(" ").filter((w) => w.length > 1 && !STOP.has(w)).map((w) => ES_ES[w] ?? EN_ES[w] ?? w);
+  // A person working in English types the tab name as the menu shows it ("High-value deals"): read it as that tab.
+  let asks = norm(q);
+  for (const [en, es] of TAB_EN_ES) if (asks.includes(en)) { asks = asks.replace(en, es); break; }
+  const words = asks.split(" ").filter((w) => w.length > 1 && !STOP.has(w)).map((w) => ES_ES[w] ?? EN_ES[w] ?? w);
   if (!words.length) return [];
   const want = [...new Set(words.map(stem))];
 
