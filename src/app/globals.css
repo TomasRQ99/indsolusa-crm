@@ -2601,8 +2601,22 @@ a.sig:hover { text-decoration: underline; }
 /* ───────────── Forms that respect the person (FormKeeper + required marks) ─────────────
    A red asterisk on what is required, a clear mark on a field that is wrong, and the note shown
    when SOLU brings back what the person had typed after an error. */
-#contenido label:has(> input:required, > select:required, > textarea:required)::before { content: "* "; color: var(--risk, #b4321f); font-weight: 700; }
+/* The mark sits at the right end of the label line, outside the flow: labels are columns, so an in-flow mark would take a line of its own. Forms that write their own mark are left alone. */
+#contenido label:has(> input:required, > select:required, > textarea:required):not(:has(.req-tag)):not(.check) { position: relative; }
+#contenido label:has(> input:required, > select:required, > textarea:required):not(:has(.req-tag)):not(.check)::before { content: "*"; position: absolute; top: -2px; right: 2px; color: var(--risk, #b4321f); font-weight: 700; font-size: 14px; line-height: 1; }
+#contenido .nn-form label::before { content: none !important; }
 #contenido input:user-invalid, #contenido select:user-invalid, #contenido textarea:user-invalid { border-color: var(--risk, #b4321f); box-shadow: 0 0 0 3px color-mix(in srgb, var(--risk, #b4321f) 16%, transparent); background: color-mix(in srgb, var(--risk, #b4321f) 5%, var(--surface, #fff)); }
 .fk-note { position: fixed; z-index: 45; max-width: 330px; display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; font-size: 13px; line-height: 1.4; color: var(--ink, #14202e); background: var(--surface, #fff); border: 1px solid var(--brand-line); border-left: 4px solid var(--brand); border-radius: 8px; box-shadow: 0 10px 28px rgba(15, 40, 80, .18); }
 .fk-note button { border: 0; background: none; min-height: 0; padding: 0 2px; font-size: 18px; line-height: 1; color: var(--muted, #5b6b7c); cursor: pointer; }
 @media print { .fk-note { display: none; } }
+/* ───────────── Frame extras: "+ Nuevo" menu, TRM chip, counts on the order route ───────────── */
+.newmenu { position: relative; margin-left: 8px; }
+.newmenu > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 8px; background: var(--brand); color: #fff; font-weight: 600; font-size: 14px; white-space: nowrap; }
+.newmenu > summary::-webkit-details-marker { display: none; }
+.newmenu > summary:hover, .newmenu[open] > summary { background: var(--brand-strong); }
+.newmenu > .menu-pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; min-width: 240px; }
+.trm-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 5px 10px; margin-right: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface, #fff); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.trm-chip small { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--muted, #5b6b7c); }
+.oroute a .oroute-n { margin-left: 2px; min-width: 18px; padding: 0 5px; height: 18px; line-height: 18px; border-radius: 9px; background: var(--brand-soft); color: var(--brand-strong); font-size: 11px; font-weight: 700; text-align: center; }
+.oroute a.on .oroute-n { background: rgba(255, 255, 255, .25); color: #fff; }
+@media (max-width: 900px) { .trm-chip { display: none; } .newmenu > summary { padding: 0 10px; } }

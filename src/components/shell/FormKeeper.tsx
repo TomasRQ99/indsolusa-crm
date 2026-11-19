@@ -97,6 +97,8 @@ export function FormKeeper({ lang, path }: { lang: "es" | "en"; path: string }) 
       const first = href.current === "";
       href.current = window.location.href;
       tries.forEach((t) => window.clearTimeout(t)); tries.length = 0;
+      // a link that ends in #something opens the closed section that holds it, so "+ Nuevo" lands on the form itself
+      if (window.location.hash.length > 1) window.setTimeout(() => { try { const el = document.getElementById(decodeURIComponent(window.location.hash.slice(1))); if (!el) return; const d = el instanceof HTMLDetailsElement ? el : el.querySelector("details"); for (let p: Element | null = el; p; p = p.parentElement) if (p instanceof HTMLDetailsElement && !p.open) p.open = true; if (d && !d.open) d.open = true; el.scrollIntoView({ block: "start", behavior: "smooth" }); } catch { /* no such place */ } }, 350);
       let sent: { key: string; path: string; at: number } | null = null;
       try { sent = JSON.parse(store.get(SENT) ?? "null"); } catch { sent = null; }
       if (first || !sent || Date.now() - sent.at > SENT_AGE) return;

@@ -52,6 +52,18 @@ const RAIL = [
   { href: "/administracion/cobrar", es: "Cobros", en: "Collections" },
 ];
 
+const NEW_ITEMS = [
+  { href: "/deals", es: "Necesidad de un cliente", en: "Customer need" },
+  { href: "/accounts", es: "Cliente", en: "Customer" },
+  { href: "/contacts", es: "Contacto", en: "Contact" },
+  { href: "/suppliers", es: "Proveedor", en: "Supplier" },
+  { href: "/tasks", es: "Pendiente", en: "To-do" },
+  { href: "/visitas", es: "Visita", en: "Visit" },
+  { href: "/compras/requerimientos#nuevo", es: "Requerimiento de compra", en: "Purchase requirement" },
+  { href: "/compras/internas#nueva", es: "Compra interna", en: "Internal purchase" },
+  { href: "/gerencia/decisiones#pedir", es: "Decisión de Gerencia", en: "Management decision" },
+];
+
 export function ShellClient({ lang, guideOn, user, modules: baseModules, children }: ShellProps) {
   const [att, setAtt] = useState<{ counters: Partial<Record<ModuleKey, Counter>>; alerts: Alert[] }>({ counters: {}, alerts: [] });
   const path = usePathname() ?? "/";
@@ -69,11 +81,24 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
     }, 50);
     return () => { live = false; clearTimeout(id); ctl.abort(); };
   }, [children]);
+  // The frame: how much waits at each station of the order route, and today's TRM. Refreshed with the page, at most once a minute.
+  const [frame, setFrame] = useState<{ counts: Record<string, number>; trm: { rate: number; validFrom: string; source: string } | null }>({ counts: {}, trm: null });
+  const frameAt = useRef(0);
+  useEffect(() => {
+    if (Date.now() - frameAt.current < 60_000) return;
+    frameAt.current = Date.now();
+    let live = true;
+    const id = setTimeout(() => { fetch("/shell-frame", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((a) => { if (live && a?.counts) setFrame(a); }).catch(() => {}); }, 400);
+    return () => { live = false; clearTimeout(id); };
+  }, [children]);
+  const newMenu = useRef<HTMLDetailsElement>(null);
   const alerts = att.alerts;
   const modules = baseModules.map((m) => ({ ...m, counter: att.counters[m.key] }));
   const es = lang === "ES";
   const t = (a: string, b: string) => (es ? a : b);
 
+  // "+ Nuevo": the things people create most, each going straight to its form. Only what this person can open.
+  const newItems = NEW_ITEMS.filter((x) => modules.some((m) => m.tabs.some((tab) => tab.href === x.href.split("#")[0])));
   const current = modules.find((m) => m.match.some((p) => path === p || path.startsWith(p + "/")));
   const activeTab = current?.tabs
     .filter((tab) => path === tab.href || path.startsWith(tab.href + "/"))
@@ -298,7 +323,23 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
           <span>{t("Pregúntale a SOLU", "Ask SOLU")}</span>
         </button>
 
+        {newItems.length > 0 && (
+          <details className="newmenu" ref={newMenu}>
+            <summary>{t("+ Nuevo", "+ New")}</summary>
+            <div className="menu-pop">
+              <div className="menu-head"><b>{t("¿Qué quieres crear?", "What do you want to create?")}</b></div>
+              {newItems.map((x) => <Link key={x.href} href={x.href} onClick={() => { if (newMenu.current) newMenu.current.open = false; }}>{t(x.es, x.en)}</Link>)}
+            </div>
+          </details>
+        )}
+
         <div className="grow" />
+
+        {frame.trm && (
+          <span className="trm-chip" title={t(`${frame.trm.source} · vigente desde ${frame.trm.validFrom}`, `${frame.trm.source} · valid from ${frame.trm.validFrom}`)}>
+            <small>TRM</small> ${frame.trm.rate.toLocaleString(es ? "es-CO" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        )}
 
         <div className="bell-wrap">
           <button type="button" className="ibtn bell" onClick={() => { setAsk(false); setBell((v) => !v); }} aria-expanded={bell} aria-label={t(`Alertas: ${alerts.length}`, `Alerts: ${alerts.length}`)}>
@@ -374,7 +415,7 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
                 <span className="oroute-t">{t("Ruta del pedido", "Order route")}</span>
                 {RAIL.map((s, n) => {
                   const on = path === s.href || path.startsWith(s.href + "/");
-                  return <Link key={s.href} href={s.href} className={on ? "on" : undefined} aria-current={on ? "step" : undefined}><i>{n + 1}</i>{t(s.es, s.en)}</Link>;
+                  return <Link key={s.href} href={s.href} className={on ? "on" : undefined} aria-current={on ? "step" : undefined}><i>{n + 1}</i>{t(s.es, s.en)}{frame.counts[s.href] != null && <b className="oroute-n" title={t("Abiertos ahora", "Open now")}>{frame.counts[s.href]}</b>}</Link>;
                 })}
               </nav>
             )}
