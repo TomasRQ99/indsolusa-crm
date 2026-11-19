@@ -206,7 +206,7 @@
    "why": "Todo sobre un cliente: Necesidades abiertas, historia, cómo paga y qué equipos tiene.",
    "steps": [
     "Abre \"Nuevo cliente\". En \"Documentos del cliente\" elige el RUT (PDF descargado de la DIAN) y, si quieres, el certificado de Cámara de Comercio.",
-    "SOLU llena razón social, RUT/NIT, dirección, teléfono y correo para facturas, marcados \"del RUT\". Revísalos (si el dígito de verificación no cuadra, lo avisa) y haz clic en [[Crear cliente]].",
+    "SOLU llena razón social, RUT/NIT con su dígito de verificación (casilla DV, opcional), departamento, ciudad, dirección, teléfono y correo para facturas, marcados \"del RUT\" o \"del Cámara\". Revísalos (si el dígito no cuadra, lo avisa). Solo la razón social es obligatoria: elige el país (cambia el indicativo del teléfono), escribe el sitio web como lo conozcas y, si quieres, el contacto para promociones con la casilla de autorización. Haz clic en [[Crear cliente]].",
     "Haz clic en el nombre del cliente para abrir su vista 360. En \"Documentos\" puedes abrir el RUT, ver lo que SOLU leyó o subir más archivos con [[Subir]].",
     "Revisa la historia, el patrón de facturación y los equipos instalados.",
     "Inicia una necesidad nueva desde aquí con [[Crear y abrir]]. Se abre una Necesidad.",
@@ -221,7 +221,7 @@
    "path": "MERCADO → Clientes y proveedores → Contactos",
    "why": "Las personas en cada cliente.",
    "steps": [
-    "Completa nombre, cliente, correo y teléfono, y haz clic en [[Crear]].",
+    "Abre \"Nuevo contacto\". Elige primero el cliente; después nombre, apellido, cargo, correo y, si lo tienes, el teléfono con su indicativo de país. Marca la casilla de autorización solo si la persona aceptó recibir promociones. Haz clic en [[Crear contacto]].",
     "Usa [[Buscar]] para encontrar a alguien."
    ],
    "expect": "El contacto aparece en el 360 del cliente y en la lista de contactos de la Necesidad. Eliminar pide confirmación."

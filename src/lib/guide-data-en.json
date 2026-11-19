@@ -122,7 +122,7 @@
   "why": "Everything about a customer: open Needs, history, how they pay and what equipment they have.",
   "steps": [
    "Open \"New customer\". Under \"Customer documents\" choose the RUT (PDF downloaded from the DIAN) and, if you want, the Chamber of Commerce certificate.",
-   "SOLU fills in legal name, tax ID, address, phone and invoice email, marked \"from the RUT\". Check them (if the check digit does not match, it says so) and click [[Crear cliente]].",
+   "SOLU fills in legal name, tax ID with its check digit (DV box, optional), state, city, address, phone and invoice email, marked \"from RUT\" or \"from Chamber\". Check them (if the check digit does not match, it says so). Only the legal name is required: choose the country (it changes the phone code), type the website as you know it and, if you want, the contact for promotions with the permission box. Click [[Crear cliente]].",
    "Click the customer's name to open their 360 view. Under \"Documents\" you can open the RUT, see what SOLU read or upload more files with [[Subir]].",
    "Review the history, the billing pattern and the installed equipment.",
    "Start a new need from here with [[Crear y abrir]]. A Need opens.",
@@ -134,7 +134,7 @@
   "t": "Contacts",
   "why": "The people at each customer.",
   "steps": [
-   "Fill in name, customer, email and phone, and click [[Crear]].",
+   "Open \"New contact\". Choose the customer first; then first name, last name, title, email and, if you have it, the phone with its country code. Tick the permission box only if the person agreed to receive promotions. Click [[Crear contacto]].",
    "Use [[Buscar]] to find someone."
   ],
   "expect": "The contact shows in the customer's 360 and in the Need's contact list. Deleting asks for confirmation."
