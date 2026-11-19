@@ -4412,11 +4412,33 @@ model InternalPurchase {
   cancelNote      String?
   createdAt       DateTime  @default(now())
 
+  /// PRODUCT | SERVICE: what the company bought for itself (2026-11-19)
+  kind            String    @default("PRODUCT")
+  /// spending category for the monthly report (see internal-expenses.ts)
+  category        String?
+
   invoices SupplierInvoice[]
   asset    Asset?
+  files    InternalPurchaseFile[]
 
   @@index([status])
   @@index([budgetId])
+  @@index([boughtAt])
+}
+
+/// A receipt or invoice attached to an internal purchase (photo or PDF), kept with the request.
+model InternalPurchaseFile {
+  id             String           @id @default(cuid())
+  purchaseId     String
+  purchase       InternalPurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  name           String
+  mime           String
+  size           Int
+  data           Bytes
+  uploadedByName String?
+  createdAt      DateTime         @default(now())
+
+  @@index([purchaseId])
 }
 
 /// A14 §2H · Something the company owns and someone looks after. Who has it and where is never overwritten:

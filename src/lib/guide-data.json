@@ -654,6 +654,22 @@
    "expect": "Las solicitudes de pago van a Administración → Pagos a proveedores para verificación. Si la lista dice «Falta: pedir la autorización de esta compra» (por ejemplo, primera compra a un proveedor nuevo), haz clic en esa línea y pídela en el requerimiento. Si dice «Falta: que se autorice esta compra», la lista nombra quién puede hacerlo: esa persona entra con su usuario, abre el enlace y hace clic en «Autorizar». Quien la pide no la autoriza, salvo Gerencia: si la pidió Gerencia, ella misma puede autorizarla y queda registrado así. Si una Necesidad quedó con una orden de más en borrador (un duplicado), ábrela y, debajo del botón de liberar, usa «Descartar este borrador»: mientras exista, el paso «Compra» la espera. Preparar otra vez la misma orden ya no crea un duplicado: SOLU abre la que existe."
   },
   {
+   "id": "ops-compras-internas",
+   "m": "operaciones",
+   "t": "Compras internas: lo que la empresa compra para sí misma",
+   "path": "OPERACIONES → Comprar → Compras internas",
+   "why": "Un mouse, un portátil, grapas, una capacitación, un mantenimiento: no es para vender ni para un cliente. Se registra con su recibo, se aprueba y entra al reporte de gastos del mes.",
+   "steps": [
+    "En OPERACIONES → Comprar → Requerimientos, arriba, haz clic en [[+ Compra interna]]. También puedes entrar por la pestaña «Compras internas».",
+    "Llena las tres preguntas obligatorias: «¿Qué se compró?», si es «Producto» o «Servicio», y «¿Cuánto costó?» con su moneda. La «i» junto a cada nombre explica qué escribir.",
+    "Opcional: categoría, dónde se compró y para qué es. Si ya se compró, deja marcada «Ya se compró» con su fecha; si es una solicitud, desmárcala.",
+    "En «Recibo o factura» sube la foto o el PDF del recibo y haz clic en [[Enviar compra interna]]. Queda en «Mis compras internas» como «Esperando decisión».",
+    "Quien aprueba la ve en «Esperan tu aprobación» (y en Pendientes por aprobar): hace clic en [[Revisar y aprobar]], mira el recibo en el bloque RECIBOS y hace clic en [[Aprobar]].",
+    "Para el cierre de mes, baja a «REPORTE DE GASTOS INTERNOS»: total, productos y servicios, la gráfica de 6 meses, en qué se fue y quién compró. [[Descargar para Excel]] baja el detalle del mes."
+   ],
+   "expect": "Solo las compras aprobadas y ya compradas cuentan en el reporte, en el mes de la compra y en dólares (otra moneda se convierte con la tasa del día). Si falta el recibo, la lista lo marca en rojo y se sube después con «Subir recibo». Aprueban Finanzas, Administración o Gerencia; quien la registró no la aprueba, salvo Gerencia. El reporte lo ven Finanzas, Administración, Dirección y Gerencia."
+  },
+  {
    "id": "logistica",
    "m": "operaciones",
    "t": "Llegadas del proveedor (envíos)",

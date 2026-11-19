@@ -61,7 +61,10 @@ export async function decideInternalPurchase(id: string, fd: FormData) {
   if (!a.ok) one(id, "err=autoridad");
   const action = String(fd.get("action") ?? ""), note = fText(fd, "note", 500);
   if (!["APPROVE", "RETURN", "REJECT"].includes(action)) one(id, "err=estado");
-  if ((action !== "APPROVE" || a.check.exception) && !note) one(id, a.check.exception && action === "APPROVE" ? "err=razon" : "err=nota");
+  // A written reason: always to return or reject; to approve, only when it goes over the budget it was given
+  // (having no budget assigned is the normal case for small purchases and asks for nothing more).
+  const overBudget = a.check.exception && a.check.over != null;
+  if ((action !== "APPROVE" || overBudget) && !note) one(id, overBudget && action === "APPROVE" ? "err=razon" : "err=nota");
   const who = a.fromName ? `${user.name} (autoridad prestada por ${a.fromName})` : user.name;
   await db.internalPurchase.updateMany({ where: { id, status: "REQUESTED" }, data: {
     status: action === "APPROVE" ? "APPROVED" : action === "RETURN" ? "RETURNED" : "REJECTED", decidedById: user.id, decidedByName: who, decidedAt: new Date(), decisionNote: note, delegationId: a.delegationId,

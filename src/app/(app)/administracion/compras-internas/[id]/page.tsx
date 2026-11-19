@@ -9,6 +9,8 @@ import type { Role } from "@prisma/client";
 import { IP_STATUS, PURPOSES, tcoOf } from "@/lib/admin-rules";
 import { ipAuthority } from "@/lib/internal-purchase";
 import { cancelInternalPurchase, decideInternalPurchase, markBought, resubmitInternalPurchase } from "../actions";
+import { addReceipts } from "../../../compras/internas/actions";
+import { CATEGORIES, KINDS, RECEIPT_MAX_FILES } from "@/lib/internal-expenses";
 
 // Módulo 14 §2G · one internal purchase: the need, the budget it uses, who must decide and why, and what happened.
 
@@ -18,7 +20,7 @@ export default async function InternalPurchasePage({ params, searchParams }: { p
   const { t } = i;
   const { id } = await params;
   const sp = await searchParams;
-  const p = await db.internalPurchase.findUnique({ where: { id }, include: { requester: { select: { name: true } }, budget: { select: { id: true, name: true } }, supplier: { select: { id: true, name: true } }, invoices: { select: { id: true, number: true, amount: true, currency: true, paidAt: true } }, asset: { select: { id: true, code: true, name: true } } } });
+  const p = await db.internalPurchase.findUnique({ where: { id }, include: { requester: { select: { name: true } }, budget: { select: { id: true, name: true } }, supplier: { select: { id: true, name: true } }, invoices: { select: { id: true, number: true, amount: true, currency: true, paidAt: true } }, asset: { select: { id: true, code: true, name: true } }, files: { orderBy: { createdAt: "asc" }, select: { id: true, name: true, size: true, uploadedByName: true, createdAt: true } } } });
   if (!p) notFound();
   const mine = p.requesterId === user.id;
   if (!mine && !canFinance(user) && !(await ipAuthority(user, p)).ok) return <div className="note risk">{t("Esta compra la ven quien la pidió, quien la decide, Administración, Finanzas y Gerencia.", "This purchase is seen by the requester, whoever decides it, Administration, Finance and Management.")}</div>;
@@ -28,15 +30,15 @@ export default async function InternalPurchasePage({ params, searchParams }: { p
   const tco = tcoRaw?.years ? tcoOf(Number(p.amount), { years: tcoRaw.years, yearlyCost: tcoRaw.yearlyCost ?? 0, endValue: tcoRaw.endValue ?? 0 }) : null;
   const names = a.roles.map((r) => ROLE_LABEL[r as Role]?.[i.es ? "es" : "en"] ?? r).join(", ");
   const T = today();
-  const okMsg: Record<string, string> = { pedida: t("Compra pedida. La decide alguien distinto de ti.", "Purchase requested. Someone other than you decides it."), aprobada: t("Aprobada: desde ahora ocupa su presupuesto.", "Approved: from now on it uses its budget."), devuelta: t("Devuelta con una pregunta.", "Returned with a question."), rechazada: t("No aprobada.", "Not approved."), reenviada: t("Enviada de nuevo a decisión.", "Sent again for decision."), comprada: t("Marcada como comprada: el presupuesto la cuenta como gasto.", "Marked as bought: the budget counts it as spend."), cancelada: t("Cancelada.", "Cancelled.") };
+  const okMsg: Record<string, string> = { pedida: t("Compra pedida. La decide alguien distinto de ti.", "Purchase requested. Someone other than you decides it."), aprobada: t("Aprobada. Si ya está comprada, entra al reporte de gastos del mes de la compra.", "Approved. If it is already bought, it enters the spending report of the month it was bought."), devuelta: t("Devuelta con una pregunta.", "Returned with a question."), rechazada: t("No aprobada.", "Not approved."), reenviada: t("Enviada de nuevo a decisión.", "Sent again for decision."), comprada: t("Marcada como comprada: el presupuesto la cuenta como gasto.", "Marked as bought: the budget counts it as spend."), cancelada: t("Cancelada.", "Cancelled."), recibo: t("Recibo guardado.", "Receipt saved."), "recibo-no": t("No se guardó: el archivo pasa de 5 MB, o no es foto ni PDF.", "Not saved: the file is over 5 MB, or it is not a photo or PDF.") };
   const errMsg: Record<string, string> = { estado: t("Esta compra ya no está en ese estado.", "This purchase is no longer in that state."), autoridad: t("No puedes decidir esta compra: la pediste tú, o por su valor o por estar fuera de presupuesto le corresponde a otro nivel.", "You can't decide this purchase: you requested it, or by its amount or by being outside its budget it belongs to another level."), razon: t("Está fuera de presupuesto: aprobarla necesita la razón escrita.", "It is outside its budget: approving it needs a written reason."), nota: t("Para devolver o rechazar hay que escribir por qué.", "Returning or rejecting needs a written reason."), permiso: t("No tienes permiso para esto.", "You don't have permission for this."), cancelar: t("Para cancelar hay que escribir por qué, y no puede estar ya comprada.", "Cancelling needs a reason, and it can't already be bought."), datos: t("Faltan datos. No se guardó nada.", "Missing data. Nothing was saved.") };
 
   return (
     <>
       <div className="ph"><div>
-        <div className="crumb"><Link href="/administracion/compras-internas">{t("Compras internas", "Internal purchases")}</Link></div>
+        <div className="crumb"><Link href="/compras/internas">{t("Operaciones · Compras internas", "Operations · Internal purchases")}</Link> · <Link href="/administracion/compras-internas">{t("Administración", "Administration")}</Link></div>
         <h1>{p.code} · {p.description}</h1>
-        <p>{PURPOSES[p.purpose] ? t(PURPOSES[p.purpose].es, PURPOSES[p.purpose].en) : p.purpose} · {t("pidió", "requested by")} {p.requester.name} · {i.date(p.createdAt)} <span className={`sig ${p.boughtAt ? "ok" : st?.tone ?? "wait"}`}>{p.boughtAt ? t("Comprada", "Bought") : st ? t(st.es, st.en) : p.status}</span></p>
+        <p>{t(KINDS[p.kind]?.es ?? p.kind, KINDS[p.kind]?.en ?? p.kind)}{p.category && CATEGORIES[p.category] ? ` · ${t(CATEGORIES[p.category].es, CATEGORIES[p.category].en)}` : ""} · {PURPOSES[p.purpose] ? t(PURPOSES[p.purpose].es, PURPOSES[p.purpose].en) : p.purpose} · {t("pidió", "requested by")} {p.requester.name} · {i.date(p.createdAt)} <span className={`sig ${p.boughtAt ? "ok" : st?.tone ?? "wait"}`}>{p.boughtAt ? t("Comprada", "Bought") : st ? t(st.es, st.en) : p.status}</span></p>
       </div></div>
       {sp.ok && okMsg[sp.ok] && <div className="note okn">{okMsg[sp.ok]}</div>}
       {sp.err && errMsg[sp.err] && <div className="note risk">{errMsg[sp.err]}</div>}
@@ -51,11 +53,23 @@ export default async function InternalPurchasePage({ params, searchParams }: { p
         </dl>
       </section>
 
+      <section className="card" id="recibos"><b>{t("RECIBOS", "RECEIPTS")}</b>
+        {p.files.length === 0 ? <p className="small"><b className="risk-t">{t("Falta: el recibo o la factura de esta compra.", "Missing: the receipt or invoice of this purchase.")}</b> {t("Una foto con el celular sirve.", "A phone photo is fine.")}</p> : (
+          <ul className="plain">{p.files.map((f) => <li key={f.id}><a href={`/compras/internas/recibo/${f.id}`} target="_blank" rel="noopener"><b>{f.name}</b></a> <span className="src">· {Math.max(1, Math.round(f.size / 1024))} KB · {f.uploadedByName} · {i.day(f.createdAt)}</span></li>)}</ul>
+        )}
+        {(mine || canFinance(user)) && p.files.length < RECEIPT_MAX_FILES && (
+          <form action={addReceipts.bind(null, p.id)} className="inline" style={{ marginTop: 8, alignItems: "flex-end" }}>
+            <label>{t("Agregar recibo (foto o PDF, hasta 5 MB)", "Add receipt (photo or PDF, up to 5 MB)")}<input name="files" type="file" multiple required accept="image/*,application/pdf" /></label>
+            <button type="submit" className="secondary">{t("Subir recibo", "Upload receipt")}</button>
+          </form>
+        )}
+      </section>
+
       <section className="card" id="autoridad"><b>{t("PRESUPUESTO Y AUTORIDAD", "BUDGET AND AUTHORITY")}</b>
         <dl className="qv-dl">
-          <dt>{t("Presupuesto", "Budget")}</dt><dd>{p.budget ? <Link href={`/administracion/presupuesto#b-${p.budget.id}`}>{p.budget.name}</Link> : <span className="sig attn">{t("sin presupuesto asignado", "no budget assigned")}</span>}{p.status === "REQUESTED" && a.available != null ? <> · {t("le queda", "it has left")} <span className={`mono ${a.check.exception ? "risk-t" : ""}`}>{i.n2(a.available)}</span></> : null}</dd>
-          {p.status === "REQUESTED" && <><dt>{t("Quién decide", "Who decides")}</dt><dd>{names} <span className="muted">· {t(`nivel ${a.level}`, `level ${a.level}`)} · {t("nunca quien la pidió", "never the requester")}</span>
-            {a.check.exception && <span className="src block risk-t">{t(a.check.why!.es, a.check.why!.en)}{a.check.over != null ? ` (+${i.n2(a.check.over)})` : ""}: {t("es una excepción y necesita la razón escrita.", "it is an exception and needs a written reason.")}</span>}</dd></>}
+          <dt>{t("Presupuesto", "Budget")}</dt><dd>{p.budget ? <Link href={`/administracion/presupuesto#b-${p.budget.id}`}>{p.budget.name}</Link> : <span className="muted">{t("sin presupuesto asignado (no hace falta para aprobarla)", "no budget assigned (not needed to approve it)")}</span>}{p.status === "REQUESTED" && a.available != null ? <> · {t("le queda", "it has left")} <span className={`mono ${a.check.exception ? "risk-t" : ""}`}>{i.n2(a.available)}</span></> : null}</dd>
+          {p.status === "REQUESTED" && <><dt>{t("Quién decide", "Who decides")}</dt><dd>{names} <span className="muted">· {t(`nivel ${a.level}`, `level ${a.level}`)} · {t("nunca quien la pidió, salvo Gerencia", "never the requester, except Management")}</span>
+            {a.check.exception && a.check.over != null && <span className="src block risk-t">{t(a.check.why!.es, a.check.why!.en)}{a.check.over != null ? ` (+${i.n2(a.check.over)})` : ""}: {t("es una excepción y necesita la razón escrita.", "it is an exception and needs a written reason.")}</span>}</dd></>}
           {p.decidedAt && <><dt>{t("Decisión", "Decision")}</dt><dd>{p.decidedByName} · {i.date(p.decidedAt)}{p.decisionNote ? ` · ${p.decisionNote}` : ""}<span className="src block">{t(`política de compras v${p.policyVersion}`, `purchase policy v${p.policyVersion}`)}{p.overBudget != null ? ` · ${t("aprobada fuera de presupuesto por", "approved outside its budget by")} ${i.n2(p.overBudget)}` : ""}</span></dd></>}
           {p.boughtAt && <><dt>{t("Comprada", "Bought")}</dt><dd>{i.date(p.boughtAt)}{p.boughtNote ? ` · ${p.boughtNote}` : ""}</dd></>}
           {p.cancelledAt && <><dt>{t("Cancelada", "Cancelled")}</dt><dd>{i.date(p.cancelledAt)} · {p.cancelNote}</dd></>}
@@ -63,7 +77,8 @@ export default async function InternalPurchasePage({ params, searchParams }: { p
         {p.status === "REQUESTED" && a.ok && (
           <form action={decideInternalPurchase.bind(null, p.id)} className="qa-form">
             {a.fromName && <p className="small"><span className="sig wait">{t(`Decides con autoridad prestada por ${a.fromName}`, `You decide with authority lent by ${a.fromName}`)}</span></p>}
-            <label>{a.check.exception ? t("Razón (obligatoria: está fuera de presupuesto)", "Reason (required: it is outside its budget)") : t("Nota (obligatoria para devolver o rechazar)", "Note (required to return or reject)")}<textarea name="note" rows={2} maxLength={500} /></label>
+            {p.files.length === 0 && <p className="note attn" style={{ margin: 0 }}>{t("Esta compra no tiene recibo. Puedes aprobarla, o devolverla pidiendo el recibo.", "This purchase has no receipt. You can approve it, or return it asking for the receipt.")}</p>}
+            <label>{a.check.exception && a.check.over != null ? t("Razón (obligatoria: está fuera de presupuesto)", "Reason (required: it is outside its budget)") : t("Nota (obligatoria para devolver o rechazar)", "Note (required to return or reject)")}<textarea name="note" rows={2} maxLength={500} /></label>
             <div className="qa-row"><button type="submit" name="action" value="APPROVE">{t("Aprobar", "Approve")}</button><button type="submit" name="action" value="RETURN" className="secondary">{t("Devolver con una pregunta", "Return with a question")}</button><button type="submit" name="action" value="REJECT" className="secondary">{t("No aprobar", "Don't approve")}</button></div>
           </form>
         )}

@@ -89,6 +89,7 @@ export const MODULES: NavModule[] = [
       { href: "/operaciones/compromisos", es: "Alto valor", en: "High value", group: "hoy" },
       { href: "/compras/requerimientos", es: "Requerimientos", en: "Requirements", group: "comprar" },
       { href: "/compras", es: "Compras", en: "Purchasing", group: "comprar" },
+      { href: "/compras/internas", es: "Compras internas", en: "Internal purchases", group: "comprar" },
       { href: "/logistica", es: "Llegadas del proveedor", en: "Supplier arrivals", group: "mover" },
       { href: "/operaciones/inventario", es: "Inventario", en: "Stock", group: "mover" },
       { href: "/operaciones/despachos", es: "Entregas al cliente", en: "Customer deliveries", group: "mover" },

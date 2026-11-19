@@ -11,6 +11,7 @@ import { getPurchasePolicy } from "./pr-auth";
 import { canApprovePurchase, mayApproveOwn } from "./purchase-auth";
 import { loadSupplierPayments } from "./queries";
 import { neededItems } from "./gerencia-store";
+import { ipAuthority } from "./internal-purchase";
 
 type Txt = { es: string; en: string };
 export type PendingRow = { key: string; kind: Txt; title: Txt; detail: Txt | null; amount: string | null; since: Date | null; href: string; cta: Txt; waitsFor?: Txt };
@@ -75,6 +76,19 @@ export async function pendingFor(user: SessionUser): Promise<{ mine: PendingRow[
     else if (manager) mine.push(row);
   }
 
+  // 4b · Internal purchases (what the company buys for itself): approve so they enter the month's report.
+  const internal = await db.internalPurchase.findMany({ where: { status: "REQUESTED" }, orderBy: { createdAt: "asc" }, take: 80, include: { requester: { select: { name: true } }, _count: { select: { files: true } } } });
+  for (const p of internal) {
+    const can = (await ipAuthority(user, p)).ok;
+    const row: PendingRow = {
+      key: `ip-${p.id}`, kind: t("Aprobar una compra interna", "Approve an internal purchase"), title: t(`Aprobar la compra interna: ${p.description}`, `Approve the internal purchase: ${p.description}`),
+      detail: t(`La registró ${p.requester.name}${p.requesterId === user.id ? " (tú)" : ""} · ${p._count.files ? `${p._count.files} recibo(s)` : "sin recibo"}. Aprobada, entra al reporte de gastos del mes.`, `Recorded by ${p.requester.name}${p.requesterId === user.id ? " (you)" : ""} · ${p._count.files ? `${p._count.files} receipt(s)` : "no receipt"}. Once approved, it enters the month's spending report.`),
+      amount: money(p.currency, p.amount), since: p.createdAt, href: `/administracion/compras-internas/${p.id}#autoridad`, cta: t("Revisar y aprobar", "Review and approve"),
+    };
+    if (can) mine.push(row);
+    else if (p.requesterId === user.id) waiting.push({ ...row, cta: t("Ver la compra", "See the purchase"), waitsFor: t("La registraste tú: la aprueba otra persona", "You recorded it: another person approves it") });
+  }
+
   // 5 · Everything else that waits for this person's authority (credit, Eságara exceptions, internal purchases,
   // policy changes, questions asked of Gerencia). Purchases and payments are already listed above.
   const KIND: Record<string, Txt> = {
@@ -83,7 +97,7 @@ export async function pendingFor(user: SessionUser): Promise<{ mine: PendingRow[
     CREDIT_LIMIT: t("Cliente sobre su cupo", "Customer above its limit"), POLICY: t("Cambio de política", "Policy change"),
   };
   for (const n of needed) {
-    if (n.source === "PURCHASE" || n.source === "PAYMENT") continue;
+    if (n.source === "PURCHASE" || n.source === "PAYMENT" || n.source === "INTERNAL") continue;
     mine.push({ key: `n-${n.key}`, kind: KIND[n.source] ?? t("Decisión", "Decision"), title: n.question, detail: n.whyNow, amount: n.impact, since: null, href: n.href, cta: t("Abrir y decidir", "Open and decide") });
   }
   return { mine, waiting };

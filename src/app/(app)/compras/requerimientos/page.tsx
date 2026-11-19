@@ -59,6 +59,13 @@ export default async function PrListPage({ searchParams }: { searchParams: Promi
         </section>
       )}
 
+      <section className="card ie-door" id="internas">
+        <span className="grow"><b>{t("Compras internas (para la empresa)", "Internal purchases (for the company)")}</b>
+          <span className="src block">{t("Un mouse, un portátil, grapas, una capacitación, un mantenimiento: lo que se compra para uso de la empresa, no para un cliente ni para vender. Regístrala con su recibo; aprobada, entra al reporte de gastos del mes.", "A mouse, a laptop, staples, a training session, maintenance: what is bought for the company's own use, not for a customer or to sell. Record it with its receipt; once approved, it enters the month's spending report.")}</span></span>
+        <a className="btn" href="/compras/internas#nueva">{t("+ Compra interna", "+ Internal purchase")}</a>
+        <a className="btn secondary" href="/compras/internas#reporte">{t("Ver gastos del mes", "See the month's spending")}</a>
+      </section>
+
       <section className="card">
         <div className="jbh"><b>{t("Requerimientos", "Requirements")}</b><span className="grow" />
           <details className="qa" id="nuevo" open={sp.err === "justificacion" || sp.err === "lineas"}><summary className="qa-btn">{t("+ Compra para stock", "+ Stock purchase")}</summary>
