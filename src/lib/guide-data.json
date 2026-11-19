@@ -212,7 +212,7 @@
     "Inicia una necesidad nueva desde aquí con [[Crear y abrir]]. Se abre una Necesidad.",
     "Perfil de facturación: indica si acepta facturas parciales y quién recibe las facturas, y [[Guardar]]."
    ],
-   "expect": "Si ya existe un cliente con ese RUT/NIT, SOLU no crea otro y te lleva al existente. Los RUT escaneados o en foto se guardan, pero las casillas se llenan a mano. Las gráficas solo aparecen con al menos 3 datos."
+   "expect": "Si ya existe un cliente con ese RUT/NIT, SOLU no crea otro y te lleva al existente. Los RUT escaneados o en foto se guardan, pero las casillas se llenan a mano. Del certificado de Cámara, SOLU toma el correo de la empresa y nunca el de la Cámara; si no lo encuentra, deja la casilla vacía. Un correo incompleto o un sitio web escrito a tu manera no impiden crear el cliente. Las gráficas solo aparecen con al menos 3 datos."
   },
   {
    "id": "contacts",
@@ -224,7 +224,7 @@
     "Abre \"Nuevo contacto\". Elige primero el cliente; después nombre, apellido, cargo, correo y, si lo tienes, el teléfono con su indicativo de país. Marca la casilla de autorización solo si la persona aceptó recibir promociones. Haz clic en [[Crear contacto]].",
     "Usa [[Buscar]] para encontrar a alguien."
    ],
-   "expect": "El contacto aparece en el 360 del cliente y en la lista de contactos de la Necesidad. Eliminar pide confirmación."
+   "expect": "El contacto aparece en el 360 del cliente y en la lista de contactos de la Necesidad. Solo el nombre es obligatorio. La columna «Promociones» dice quién autorizó recibir promociones y se cambia ahí mismo. Eliminar pide confirmación."
   },
   {
    "id": "relacion",
