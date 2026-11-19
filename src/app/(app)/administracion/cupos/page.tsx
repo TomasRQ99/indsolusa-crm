@@ -7,12 +7,12 @@ import { ALT_LABEL, kindLabel } from "@/components/CashBags";
 import { makeI18n } from "@/lib/i18n";
 import { loadCredit } from "@/lib/queries";
 import { delegationsTo } from "@/lib/admin-store";
-import { grantCreditException, saveFinanceRate, savePayRules, setCreditLimit } from "../actions";
+import { grantCreditException, saveFinanceRate, savePayRules, setCreditLimit, widenLimitsForTesting } from "../actions";
 import { getFinanceRate, FIN_COST_FORMULA } from "@/lib/financing";
 import { paymentBehaviors } from "@/lib/pay-behavior";
 import { DEFAULT_PAY_RULES } from "@/lib/pay-rules";
 
-export default async function CreditLimitsPage({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string; c?: string }> }) {
+export default async function CreditLimitsPage({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string; c?: string; n?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
@@ -46,6 +46,18 @@ export default async function CreditLimitsPage({ searchParams }: { searchParams:
         </div>
       </div>
       {sp.ok === "limite" && <p className="small ok-t" role="status">{savedName ? t(`Cupo guardado para ${savedName}. Ya cuenta para sus órdenes.`, `Limit saved for ${savedName}. It already counts for their orders.`) : t("Cupo guardado.", "Limit saved.")}</p>}
+      {user.role === "GERENCIA" && (
+        <details className="card" id="pruebas" open={sp.ok === "pruebas"} style={{ marginBottom: 12 }}>
+          <summary><b>{t("Cupos para pruebas", "Limits for testing")}</b> <span className="src">{t("mientras se prueba SOLU a mano, que el cupo no frene una orden", "while SOLU is tested by hand, so a limit does not stop an order")}</span></summary>
+          {sp.ok === "pruebas" && <p className="small ok-t" role="status">{t(`Listo: ${Number(sp.n) || 0} cliente(s) quedaron con cupo de USD 1.000.000.`, `Done: ${Number(sp.n) || 0} customer(s) now have a limit of USD 1,000,000.`)}</p>}
+          <p className="small">{t("Sube a USD 1.000.000 el cupo de los clientes que tienen menos o no tienen cupo. No baja ningún cupo. Sirve cuando creas un cliente nuevo para probar y la orden se frena por crédito.", "It raises to USD 1,000,000 the limit of customers that have less or none. It lowers no limit. Useful when you create a new customer to test and the order stops on credit.")}</p>
+          <div className="qa-row" style={{ flexWrap: "wrap", alignItems: "center" }}>
+            <form action={widenLimitsForTesting}><input type="hidden" name="scope" value="ejemplo" /><button type="submit" style={{ flex: "0 0 auto" }}>{t("Ampliar cupos de ejemplo y de prueba", "Widen sample and test limits")}</button></form>
+            <form action={widenLimitsForTesting}><input type="hidden" name="scope" value="todos" /><button type="submit" className="secondary" style={{ flex: "0 0 auto" }} data-confirm={t("¿Subir a USD 1.000.000 el cupo de TODOS los clientes, también los reales?", "Raise the limit of EVERY customer, real ones too, to USD 1,000,000?")}>{t("Ampliar el cupo de todos los clientes", "Widen every customer's limit")}</button></form>
+          </div>
+          <span className="src">{t("El primer botón toca solo los clientes cuyo nombre termina en «(ejemplo)» o empieza por «Prueba». Antes de trabajar con clientes reales, fija el cupo de cada uno en esta misma página.", "The first button only touches customers whose name ends in “(ejemplo)” or starts with “Prueba”. Before working with real customers, set each one's limit on this same page.")}</span>
+        </details>
+      )}
       <section className="sum">
         <div><span className="k">{t("Clientes con cupo", "Customers with a limit")}</span><span className="v">{rows.filter((r) => r.limit != null).length}</span></div>
         <div><span className="k">{t("Por encima del cupo", "Over the limit")}</span><span className="v">{over.length}</span><span className="s">{t("necesitan decisión", "need a decision")}</span></div>

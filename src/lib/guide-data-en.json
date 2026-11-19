@@ -733,7 +733,7 @@
    "For a customer not shown yet: open “Set a limit for another customer”, type the value next to its name and [[Guardar]].",
    "When an order exceeds it, a manager can click [[Aprobar excepción]]."
   ],
-  "expect": "On saving, SOLU confirms “Limit saved for…” and leaves you on that customer's row. Customers above their limit are flagged. From a customer's PO there is no need to come here: its red box “MISSING: THE CUSTOMER'S CREDIT LIMIT” has “Save limit” (Finance or Management) or “Request a credit review” (everyone else)."
+  "expect": "On saving, SOLU confirms “Limit saved for…” and leaves you on that customer's row. Customers above their limit are flagged. From a customer's PO there is no need to come here: its red box “MISSING: THE CUSTOMER'S CREDIT LIMIT” has “Save limit” (Finance or Management) or “Request a credit review” (everyone else). To test SOLU by hand without credit stopping an order, Management has the “Limits for testing” block at the top: it raises to USD 1,000,000 the limit of sample and test customers (or of all). It lowers no limit."
  },
  "adm-banco": {
   "t": "Bank: upload the statement and explain movements",

@@ -1023,7 +1023,7 @@
     "Para un cliente que todavía no aparece: abre «Definir cupo a otro cliente», escribe el valor junto a su nombre y [[Guardar]].",
     "Cuando un pedido lo supere, un gerente puede hacer clic en [[Aprobar excepción]]."
    ],
-   "expect": "Al guardar, SOLU confirma «Cupo guardado para…» y te deja en la fila de ese cliente. Los clientes por encima de su cupo quedan marcados. Desde la OC de un cliente no hace falta venir aquí: su recuadro rojo «FALTA: CUPO DE CRÉDITO DEL CLIENTE» tiene «Guardar cupo» (Finanzas o Gerencia) o «Pedir revisión de cupo» (los demás)."
+   "expect": "Al guardar, SOLU confirma «Cupo guardado para…» y te deja en la fila de ese cliente. Los clientes por encima de su cupo quedan marcados. Desde la OC de un cliente no hace falta venir aquí: su recuadro rojo «FALTA: CUPO DE CRÉDITO DEL CLIENTE» tiene «Guardar cupo» (Finanzas o Gerencia) o «Pedir revisión de cupo» (los demás). Para probar SOLU a mano sin que el crédito frene una orden, Gerencia tiene arriba el bloque «Cupos para pruebas»: sube a USD 1.000.000 el cupo de los clientes de ejemplo y de prueba (o de todos). No baja ningún cupo."
   },
   {
    "id": "adm-banco",

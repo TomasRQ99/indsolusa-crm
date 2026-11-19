@@ -425,6 +425,22 @@ export async function setCreditLimit(accountId: string, formData: FormData) {
   if (formData.get("back") === "cupos") redirect(`/administracion/cupos?ok=limite&c=${accountId}#${accountId}`);
 }
 
+/** While the company is testing SOLU by hand, credit limits must not stop an order (owner, 2026-11-19).
+ *  Gerencia raises to USD 1,000,000 the limit of the sample and test customers, or of every customer; a limit that
+ *  is already higher is left alone. Written in the change history like any other limit. */
+const TEST_CREDIT_LIMIT = 1000000;
+export async function widenLimitsForTesting(formData: FormData) {
+  const user = await requireCreditAuthority();
+  if (user.role !== "GERENCIA") throw new Error("Solo Gerencia amplía los cupos para pruebas / Only Management widens limits for testing.");
+  const all = formData.get("scope") === "todos";
+  const r = await db.account.updateMany({
+    where: { internal: false, AND: [{ OR: [{ creditLimit: null }, { creditLimit: { lt: TEST_CREDIT_LIMIT } }] }, ...(all ? [] : [{ OR: [{ name: { endsWith: "(ejemplo)" } }, { name: { startsWith: "prueba", mode: "insensitive" as const } }] }])] },
+    data: { creditLimit: TEST_CREDIT_LIMIT },
+  });
+  refreshApp();
+  redirect(`/administracion/cupos?ok=pruebas&n=${r.count}#pruebas`);
+}
+
 export async function grantCreditException(dealId: string, formData: FormData) {
   const user = await requireCreditAuthority();
   const { note } = parseForm(z.object({ note: requiredText }), formData);
