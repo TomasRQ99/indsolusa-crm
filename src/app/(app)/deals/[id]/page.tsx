@@ -46,6 +46,7 @@ import { lineAmount, linesTotal, subMoney } from "@/lib/money";
 import { CostTotal } from "@/components/CostTotal";
 import { stepNeeds } from "@/lib/step-needs";
 import { COST_LINES, costDetail, esagaraPctOf } from "@/lib/cost-lines";
+import { quoteAdjustPending } from "@/lib/quote-reminder";
 import type { NeedContext } from "@/lib/need-handoff";
 import MarketContext from "@/components/MarketContext";
 
@@ -80,6 +81,8 @@ export default async function JourneyPage({
   if (!deal) notFound();
   // Localizar: the suppliers the company already worked with, ordered for THIS piece (only when that tab is open).
   const loc = tab === "locate" ? await locateOptions(id) : null;
+  // Fuente: the reminder that a draft quote still has to follow what changed here.
+  const adjustQuote = tab === "source" ? await quoteAdjustPending(id) : null;
   // What the current step still needs (the list under the path): quotes, customer POs and deliveries of this Need.
   const [stepQuotes, stepPos, stepDispatch, stepInstruction] = await Promise.all([
     db.quote.findMany({ where: { dealId: id }, orderBy: { createdAt: "desc" }, select: { id: true, status: true, solution: true, supplierCost: true, supplierSrc: true, leadMinDays: true, leadMaxDays: true, promiseText: true, lines: { select: { unitPrice: true } } } }),
@@ -790,6 +793,13 @@ export default async function JourneyPage({
             <H />
             <label id="fuente" className={!deal.sourcingNote && !(Number(deal.supplierCost) > 0) && deal.supplierPos.length === 0 ? "req-miss" : undefined}>{t("Fuente: marca, proveedor candidato, origen, alternativas", "Source: brand, candidate supplier, origin, alternatives")}{!deal.sourcingNote && !(Number(deal.supplierCost) > 0) && deal.supplierPos.length === 0 && <span className="req-tag">{t("Obligatorio para pasar al siguiente paso: escribe la fuente aquí, o el costo del producto abajo", "Required to move to the next step: type the source here, or the product's cost below")}</span>}<textarea name="sourcingNote" rows={3} defaultValue={deal.sourcingNote ?? ""} placeholder={t("Ej.: Grundfos vía distribuidor en Miami; alternativa ProMinent desde Alemania", "E.g.: Grundfos via Miami distributor; alternative ProMinent from Germany")} /></label>
             {sp.err === "credito-fuente" && <p className="note risk">{t("Escribiste un crédito a favor: di de dónde sale (nota crédito, saldo con el transportador). No se guardó nada todavía.", "You typed a credit in our favor: say where it comes from (credit note, balance with the carrier). Nothing was saved yet.")}</p>}
+            {adjustQuote && (
+              <p className="note attn" role="status" id="ajustar-cotizacion" style={{ margin: 0 }}>
+                <b>{t(`Recuerda ajustar la cotización ${adjustQuote.number}.`, `Remember to adjust quote ${adjustQuote.number}.`)}</b>{" "}
+                {t("La Eságara o los costos cambiaron aquí, en la Necesidad, y esa cotización ya estaba abierta en borrador: no cambia sola. Ábrela, escribe allá la Eságara y los costos, y guarda.", "The Eságara or the costs changed here, on the Need, and that quote was already open as a draft: it does not change by itself. Open it, type the Eságara and the costs there, and save.")}{" "}
+                <Link className="btn sm" href={`/cotizaciones/${adjustQuote.id}#costos`}>{t("Abrir la cotización", "Open the quote")} →</Link>
+              </p>
+            )}
             <div className="liq-sheet in-form" id="costos">
               <div className="liq-head">
                 <b>{t("Liquidación de costos", "Cost settlement")}</b>

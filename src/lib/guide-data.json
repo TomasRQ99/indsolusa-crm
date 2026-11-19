@@ -379,7 +379,7 @@
     "Pestaña [[Fuente]]: escribe de dónde lo vamos a conseguir y, en la hoja «Liquidación de costos», la primera cuenta de lo que cuesta traerlo: producto, envío, impuestos, aduana, empaque, giro y crédito a favor, en USD. Lo que no sepas todavía se deja en 0. En el recuadro azul, en «Eságara que quieres ganar», escribe el porcentaje que quieres: SOLU calcula el «Precio de venta» (costo total ÷ (1 − Eságara)). Haz clic en [[Guardar fuente]].",
     "Anota en el registro de búsqueda las cotizaciones de proveedores y por qué elegiste uno."
    ],
-   "expect": "La Eságara calculada aparece debajo de la fuente, y el recuadro azul muestra el costo total mientras escribes. Al preparar la cotización, la hoja pasa completa y allá se afina (moneda del proveedor y de dónde sale cada valor)."
+   "expect": "La Eságara calculada aparece debajo de la fuente, y el recuadro azul muestra el costo total mientras escribes. Al preparar la cotización, la hoja pasa completa y allá se afina (moneda del proveedor y de dónde sale cada valor). Si ya hay una cotización abierta en borrador y cambias aquí la Eságara o un costo, esa cotización no cambia sola: SOLU te deja el aviso «Recuerda ajustar la cotización…» con el botón «Abrir la cotización», y un pendiente en MI DÍA → Pendientes. Los dos se quitan solos cuando guardas los costos en la cotización."
   },
   {
    "id": "quote",

@@ -11,6 +11,7 @@ import { nextCode, today } from "@/lib/domain";
 import { CAUSE_KEYS } from "@/lib/causes";
 import { esagaraPctOf, otherTotal, priceForEsagara, repriceLines } from "@/lib/cost-lines";
 import { linesTotal, sumMoney } from "@/lib/money";
+import { remindQuoteAdjust } from "@/lib/quote-reminder";
 import { partKey } from "@/lib/parts";
 import { addWorkingDays } from "@/lib/holidays";
 
@@ -270,7 +271,7 @@ export async function savePromise(id: string, fd: FormData) {
 
 /** Source: how we will get it (candidates, brand, origin) and the cost structure. */
 export async function saveSourcing(id: string, fd: FormData) {
-  await editableDeal(id);
+  const { user } = await editableDeal(id);
   // Cost settlement sheet (same lines as the quote): the other costs are typed one by one; otherCosts is their total.
   const parts = { tax: num(fd, "taxCost") ?? 0, customs: num(fd, "customsCost") ?? 0, packing: num(fd, "packingCost") ?? 0, wire: num(fd, "wireCost") ?? 0, misc: num(fd, "miscCost") ?? 0, credit: num(fd, "creditAmount") ?? 0 };
   const creditSrc = txt(fd, "creditSrc", 200);
@@ -304,6 +305,8 @@ export async function saveSourcing(id: string, fd: FormData) {
         : num(fd, "otherCosts") !== undefined ? { otherCosts: num(fd, "otherCosts") } : {}),
     },
   });
+  // A quote already open as a draft does not follow the Need: leave the person a reminder to adjust it there.
+  if (reprice || newCost !== sumMoney([cur.supplierCost, cur.freightCost, cur.otherCosts])) await remindQuoteAdjust(id, user.lang === "EN" ? "EN" : "ES");
   jback(id, fd, "source");
 }
 

@@ -15,6 +15,7 @@ import { makeI18n } from "@/lib/i18n";
 import { money2, mulMoney, sumMoney } from "@/lib/money";
 import { esagaraPctOf, otherTotal, priceForEsagara, repriceLines } from "@/lib/cost-lines";
 import { syncItemPrices } from "@/lib/item-prices";
+import { clearQuoteAdjust } from "@/lib/quote-reminder";
 import { COST_STATUS } from "@/lib/proposal-rules";
 import { sellerMissing, sellerOf } from "@/lib/sellers";
 import { RATE_MAX, RATE_MIN, docBlockers, effectiveIvaPct, type SellerSnap } from "@/lib/quote-doc";
@@ -228,6 +229,8 @@ export async function saveCosts(id: string, fd: FormData) {
       changeNote: txt(fd, "changeNote", 300),
     },
   });
+  // The reminder "adjust this quote: the Need changed" is answered by saving this sheet.
+  await clearQuoteAdjust(q.deal.id);
   back(id, reprice ? "ok=costos-precio" : "ok=costos");
 }
 
@@ -369,6 +372,7 @@ export async function presentQuote(id: string, fd: FormData) {
       data: { type: "NOTE", subject: `Cotización ${quoteNo(q)} presentada · USD ${sale.toFixed(2)}`, userId: user.id, accountId: q.deal.accountId, dealId: q.dealId, phase: "quote", source: how, occurredAt: on },
     });
   });
+  await clearQuoteAdjust(q.dealId);
   back(id, "ok=presentada");
 }
 
