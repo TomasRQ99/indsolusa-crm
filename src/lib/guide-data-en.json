@@ -312,10 +312,10 @@
   "steps": [
    "On the presented quote, open [[Llegó la PO · registrarla]], type the PO number and click [[Registrar y comparar]].",
    "Review the comparison: each line, price, quantity, terms and validity.",
-   "For each important difference, choose a solution with [[Elegir esta opción]] and record the customer's confirmation with [[Registrar confirmación]].",
+   "If the date cannot be met, pick a way out under “OPTIONS TO RESOLVE THE DATE” with [[Elegir esta opción]] and record the customer's confirmation with [[Registrar confirmación]]. For the other differences (price, quantity, incoterm, payment), go down to the red box “HOW TO RESOLVE EACH DIFFERENCE”: each one states its ways out. If it was typed wrong, [[Corregir la OC]]; if the company accepts it, write why and click [[Aceptar esta diferencia]].",
    "In the right column, each precondition of “ACCEPT PO” is a link that takes you to where it is resolved. Once all show “✓”, click [[Aceptar PO]]."
   ],
-  "expect": "Accept PO stays disabled while an important difference is open or a precondition shows “!”. If the customer is new and has no credit limit, request it right there with “Request a credit review”: Finance or Management decide. Once accepted, the record cannot be edited. The PO can only be recorded on a quote presented in SOLU: if the Need was marked as quoted without that document, the red box on the Need first asks for “Prepare quote” and “Present to customer”, and then shows the “Record the PO” button."
+  "expect": "Accept PO stays disabled while an important difference is open or a precondition shows “!”. If the customer is new and has no credit limit, request it right there with “Request a credit review”: Finance or Management decide. Once accepted, the record cannot be edited. The PO can only be recorded on a quote presented in SOLU: if the Need was marked as quoted without that document, the red box on the Need first asks for “Prepare quote” and “Present to customer”, and then shows the “Record the PO” button. If the customer has no credit limit, the red box “MISSING: THE CUSTOMER'S CREDIT LIMIT” appears on the right: Finance or Management set it there with “Save limit”; others request it with “Request a credit review”. A PO price accepted with a note becomes the sale, and SOLU checks Eságara again at that price: if it falls below the threshold, the PO cannot be accepted. The total resolves itself once the lines are resolved."
  },
  "promise": {
   "t": "Promise to the customer",

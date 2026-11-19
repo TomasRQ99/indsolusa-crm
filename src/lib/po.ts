@@ -36,7 +36,11 @@ export type AcceptCtx = {
   accountName: string;
 };
 export type Ack = Record<string, { by: string; at: string; note: string }>;
-export const ACKABLE = new Set(["iva", "warranty", "documents", "penalties", "other", "entity-name"]);
+export const ACKABLE = new Set(["iva", "warranty", "documents", "penalties", "other", "entity-name", "incoterm", "payment", "ref", "validity"]);
+/** A difference a person may accept with a written note (owner, 2026-11-19: a price, quantity or term that differs
+ *  left the PO stuck with no way out). A product that was never quoted, or one missing from the PO, is not accepted
+ *  with a note: the PO is corrected or the quote is revised. */
+export const isAckable = (key: string) => ACKABLE.has(key) || /^(price|qty)-\d+$/.test(key);
 const IMPACT: Record<string, DiffImpact> = { date: "OPERATIONAL", total: "ECONOMIC", incoterm: "COMMERCIAL", payment: "ECONOMIC", shipto: "OPERATIONAL", ref: "COMMERCIAL", validity: "COMMERCIAL", "entity-tax": "LEGAL", "entity-name": "LEGAL", iva: "ECONOMIC", warranty: "COMMERCIAL", documents: "OPERATIONAL", penalties: "LEGAL", other: "COMMERCIAL" };
 const impactOf = (key: string): DiffImpact => IMPACT[key] ?? (key.startsWith("price") ? "ECONOMIC" : key.startsWith("qty") ? "COMMERCIAL" : "TECHNICAL");
 const digits = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "").replace(/^0+/, "");
@@ -157,10 +161,21 @@ export function buildPo(po: PoFull, i: I, floorPct: number | null, ctx?: AcceptC
     const cost = Math.round(poTotal * (ctx.annualPct / 100) * (extra / 365) * 100) / 100;
     pay.note = `${pay.note ?? ""} · ${t(`financiar ${extra} días más cuesta ${money(cost)} (${i.pct2(ctx.annualPct)} anual)`, `financing ${extra} more days costs ${money(cost)} (${i.pct2(ctx.annualPct)} a year)`)}`;
   }
+  // A difference accepted with a note stops blocking (it stays in view, with who accepted it and why).
+  const ackAll = (po.conditionsAck ?? {}) as Ack;
+  for (const d of diffs) {
+    const a = ackAll[d.key];
+    if (a && d.state === "material" && isAckable(d.key)) { d.state = "minor"; d.note = t(`Aceptada por ${a.by}: ${a.note}`, `Accepted by ${a.by}: ${a.note}`); }
+  }
+  // The total is only the sum of the lines: once every line difference is settled, it does not block by itself.
+  const lineOpen = diffs.some((d) => d.state === "material" && /^(price|qty|line|miss)-/.test(d.key));
+  const totalDiff = diffs.find((d) => d.key === "total");
+  if (totalDiff && totalDiff.state === "material" && !lineOpen) { totalDiff.state = "minor"; totalDiff.note = t("Explicada por las diferencias de línea ya aceptadas: la venta queda en el total de la OC", "Explained by the line differences already accepted: the sale stays at the PO's total"); }
+  const priceAccepted = Object.keys(ackAll).some((k) => /^(price|qty)-\d+$/.test(k));
   for (const d of diffs) {
     d.impact = impactOf(d.key);
     d.kind = d.kind ?? (d.state === "match" ? "MATCH" : /^(No indica|Not stated|No viene en la PO|Not in the PO|No cita|Not cited)$/.test(d.po) ? "MISSING" : "DIFFERENCE");
-    d.ackable = ACKABLE.has(d.key) && d.state === "material";
+    d.ackable = isAckable(d.key) && d.state === "material";
   }
   const material = diffs.filter((d) => d.state === "material");
   const dateMaterial = material.some((d) => d.key === "date");
@@ -232,7 +247,11 @@ export function buildPo(po: PoFull, i: I, floorPct: number | null, ctx?: AcceptC
   const pre: { ok: boolean; text: string; href?: string }[] = [
     { ok: !!q && (q.status === "PRESENTED" || q.status === "ACCEPTED"), text: t("Responde a una cotización presentada y vigente", "Answers a presented, current quote"), href: q ? `/cotizaciones/${q.id}` : undefined },
     { ok: resolvedDate, text: dateMaterial ? t("La diferencia de fecha tiene una resolución confirmada", "The date difference has a confirmed resolution") : t("La fecha de la PO se puede proteger", "The PO date can be protected"), href: dateMaterial ? "#opciones" : "#comparacion" },
-    { ok: otherMaterial.length === 0, text: otherMaterial.length ? t(`Otras diferencias materiales: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`, `Other material differences: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`) : t("Productos, cantidades, precios y condiciones coinciden", "Products, quantities, prices and terms match"), href: "#comparacion" },
+    { ok: otherMaterial.length === 0, text: otherMaterial.length ? t(`Otras diferencias materiales: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`, `Other material differences: ${otherMaterial.map((d) => d.label.toLowerCase()).join(", ")}`) : t("Productos, cantidades, precios y condiciones coinciden", "Products, quantities, prices and terms match"), href: otherMaterial.length ? "#resolver" : "#comparacion" },
+    // A PO price accepted with a note becomes the sale: the Eságara is checked again with it.
+    ...(priceAccepted && q && q.protCost != null && poTotal > 0 && floorPct != null
+      ? (() => { const p = Math.round(((poTotal - Number(q.protCost)) / poTotal) * 10000) / 100; return [{ ok: p >= floorPct, text: p >= floorPct ? t(`Con el precio de la OC (${money(poTotal)}) la Eságara queda en ${i.pct2(p)}: dentro de la política`, `At the PO's price (${money(poTotal)}) Eságara is ${i.pct2(p)}: within policy`) : t(`Con el precio de la OC (${money(poTotal)}) la Eságara baja a ${i.pct2(p)}, bajo el umbral: corrige el precio, o pide una OC corregida`, `At the PO's price (${money(poTotal)}) Eságara drops to ${i.pct2(p)}, below the threshold: fix the price, or ask for a corrected PO`), href: "#resolver" }]; })()
+      : []),
     { ok: !chosen || chosen.state !== "CONFIRMED" || !options.find((o) => o.option === chosen.option)?.belowFloor, text: t("La Eságara resultante respeta el umbral de la política (o tiene excepción aprobada)", "Resulting Eságara respects the policy threshold (or has an approved exception)"), href: dateMaterial ? "#opciones" : q ? `/cotizaciones/${q.id}` : undefined },
     // C6 §23 revalidation at the moment of accepting: stock/price (C-12), credit, import.
     ...(ctx?.supply ? [{ ok: ctx.supply.ok, text: t(ctx.supply.text.es, ctx.supply.text.en), href: ctx.supply.ok ? undefined : "#reconfirmar" }] : []),
@@ -245,5 +264,5 @@ export function buildPo(po: PoFull, i: I, floorPct: number | null, ctx?: AcceptC
   ];
   const canAccept = !accepted && !rejected && pre.every((p) => p.ok);
 
-  return { diffs, material, dateMaterial, dateGap, protectedDate, options, chosen, pre, canAccept, accepted, rejected, promiseDate, quoteTotal, poTotal, base, now };
+  return { diffs, material, otherMaterial, priceAccepted, dateMaterial, dateGap, protectedDate, options, chosen, pre, canAccept, accepted, rejected, promiseDate, quoteTotal, poTotal, base, now };
 }

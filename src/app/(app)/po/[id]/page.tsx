@@ -2,6 +2,8 @@ import { MarkNeed } from "@/components/WorkingNeed";
 import Link from "next/link";
 import { GuideWhy } from "@/components/GuideWhy";
 import { OpenOnLand } from "@/components/OpenOnLand";
+import { setCreditLimit } from "../../administracion/actions";
+import { dayInput } from "@/lib/domain";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -13,7 +15,7 @@ import { quoteNo } from "@/lib/quote";
 import { quoteFloor } from "@/lib/esagara-gate";
 import { buildPo, poInclude } from "@/lib/po";
 import { Popovers } from "@/components/Popovers";
-import { acceptPo, ackCondition, addAllocation, chooseResolution, confirmResolution, rejectPo, removeAllocation, revalidateSupply, savePoTerms, withdrawResolution } from "../actions";
+import { acceptPo, ackCondition, fixPoData, addAllocation, chooseResolution, confirmResolution, rejectPo, removeAllocation, revalidateSupply, savePoTerms, withdrawResolution } from "../actions";
 import { acceptCtx } from "@/lib/po-accept";
 import { saleOf } from "@/lib/quote";
 import { lineAmount } from "@/lib/money";
@@ -61,6 +63,7 @@ export default async function PoPage({ params, searchParams }: { params: Promise
     revalidado: t("Stock y precio revalidados con su evidencia (válido 7 días).", "Stock and price re-confirmed with evidence (valid 7 days)."),
     asignada: t("Asignaciones actualizadas.", "Allocations updated."),
     rechazada: t("Registrado: esta PO no se acepta.", "Recorded: this PO is not accepted."),
+    corregida: t("PO corregida. SOLU volvió a comparar con la cotización.", "PO corrected. SOLU compared it with the quote again."),
   };
   const errMsg: Record<string, string> = {
     "motivo-cupo": t("Escribe por qué pides el cupo.", "Write why you request the limit."),
@@ -70,12 +73,25 @@ export default async function PoPage({ params, searchParams }: { params: Promise
     precondicion: t("El command no se ejecutó: hay precondiciones sin cumplir.", "The command did not run: preconditions are not met."),
     evidencia: t("Escribe la evidencia: quién confirmó qué y dónde.", "Write the evidence: who confirmed what, and where."),
     motivo: t("Escribe el motivo.", "Write the reason."),
+    "motivo-correccion": t("Para corregir la PO, escribe por qué (se escribió mal, o el cliente envió una PO corregida).", "To correct the PO, write why (it was typed wrong, or the customer sent a corrected PO)."),
     cerrada: t("Esta PO ya fue decidida.", "This PO was already decided."),
     opcion: t("Esa opción ya no aplica.", "That option no longer applies."),
     nota: t("Escribe por qué se acepta esa condición.", "Write why that condition is accepted."),
     asignacion: t("Elige otra Necesidad del mismo cliente y un monto mayor que cero.", "Pick another Need of the same customer and an amount above zero."),
     excede: t("Las asignaciones superarían el total de la PO.", "Allocations would exceed the PO total."),
   };
+
+  // What can be done about each material difference, in plain words.
+  const wayOut = (key: string): string =>
+    /^price-/.test(key) ? t("Tres salidas. Si el precio se escribió mal al registrar la OC: corrígela. Si el cliente de verdad compra a ese precio y lo aceptas: acéptalo con una nota, y la venta queda en el precio de la OC. Si no lo aceptas: pide al cliente una OC corregida.", "Three ways out. If the price was typed wrong when the PO was recorded: correct it. If the customer really buys at that price and you accept it: accept it with a note, and the sale stays at the PO's price. If you don't: ask the customer for a corrected PO.")
+    : /^qty-/.test(key) ? t("Si la cantidad se escribió mal: corrige la OC. Si el cliente pide otra cantidad y se puede cumplir: acéptala con una nota. Si cambia costo o plazo: crea una revisión de la cotización.", "If the quantity was typed wrong: correct the PO. If the customer asks for another quantity and it can be met: accept it with a note. If it changes cost or lead time: create a quote revision.")
+    : key === "total" ? t("El total es la suma de las líneas: se resuelve solo al resolver las diferencias de precio o cantidad de arriba.", "The total is the sum of the lines: it resolves itself once the price or quantity differences above are resolved.")
+    : key === "incoterm" ? t("El incoterm dice quién paga flete y riesgo. Si se escribió mal: corrige la OC. Si aceptas entregar con el incoterm de la OC: acéptalo con una nota.", "The incoterm says who pays freight and risk. If it was typed wrong: correct the PO. If you accept delivering under the PO's incoterm: accept it with a note.")
+    : key === "payment" ? t("El cliente pagaría más tarde de lo cotizado. Si se escribió mal: corrige la OC. Si aceptas ese plazo: acéptalo con una nota.", "The customer would pay later than quoted. If it was typed wrong: correct the PO. If you accept those terms: accept it with a note.")
+    : key === "ref" ? t("La OC cita otra cotización u otra versión. Si se escribió mal: corrige la OC. Si es la misma oferta: acéptala con una nota.", "The PO cites another quote or version. If it was typed wrong: correct the PO. If it is the same offer: accept it with a note.")
+    : key === "validity" ? t("La oferta ya había vencido cuando llegó la OC. Si costos y plazos siguen iguales: acéptala con una nota. Si cambiaron: crea una revisión de la cotización.", "The offer had expired when the PO arrived. If costs and lead times are unchanged: accept it with a note. If they changed: create a quote revision.")
+    : /^(line|miss)-/.test(key) ? t("La OC y la cotización no traen los mismos productos. Corrige la OC si se escribió mal, o crea una revisión de la cotización con los productos correctos.", "The PO and the quote don't carry the same products. Correct the PO if it was typed wrong, or create a quote revision with the right products.")
+    : t("Corrige la OC si se escribió mal, o acéptala con una nota si la empresa está de acuerdo.", "Correct the PO if it was typed wrong, or accept it with a note if the company agrees.");
 
   const QA = ({ label, children, wide, right }: { label: React.ReactNode; children: React.ReactNode; wide?: boolean; right?: boolean }) => (
     <details className="qa">
@@ -172,14 +188,8 @@ export default async function PoPage({ params, searchParams }: { params: Promise
                       <td>{x.quote}</td>
                       <td className="pov">{x.po}</td>
                       <td>{stateSig(x.state)}{x.kind && x.kind !== "MATCH" && <span className="src block">{t(KIND[x.kind][0], KIND[x.kind][1])}</span>}
-                        {open && editable && x.ackable && (
-                          <QA label={t("Aceptar con nota", "Accept with note")} wide right>
-                            <form action={ackCondition.bind(null, po.id, x.key)} className="qa-form">
-                              <label>{t("Por qué se acepta (queda en el registro)", "Why it's accepted (stays on record)")}<input name="note" required maxLength={300} placeholder={t("Ej.: certificado de origen lo emite el proveedor sin costo", "E.g.: the supplier issues the certificate of origin at no cost")} /></label>
-                              <button type="submit">{t("Aceptar condición", "Accept condition")}</button>
-                            </form>
-                          </QA>
-                        )}
+                        {open && x.state === "material" && x.key !== "date" && <a className="chk-a small block" href="#resolver">{t("Cómo se resuelve", "How to resolve it")} <span aria-hidden>→</span></a>}
+                        {open && x.state === "material" && x.key === "date" && <a className="chk-a small block" href="#opciones">{t("Ver opciones", "See options")} <span aria-hidden>→</span></a>}
                       </td>
                       <td className="small">{x.impact ? t(IMPACT[x.impact][0], IMPACT[x.impact][1]) : ""}</td>
                     </tr>
@@ -188,6 +198,36 @@ export default async function PoPage({ params, searchParams }: { params: Promise
               </table>
             </div>
           </section>
+
+          {/* How to resolve each difference that is not the date: every one has its way out and its buttons */}
+          {open && B.otherMaterial.length > 0 && (
+            <section className="sn miss" id="resolver" style={{ scrollMarginTop: 96 }}>
+              <div className="sn-head"><b>{t("CÓMO RESOLVER CADA DIFERENCIA", "HOW TO RESOLVE EACH DIFFERENCE")}</b><span className="sig risk">{B.otherMaterial.length === 1 ? t("Falta 1", "1 left") : t(`Faltan ${B.otherMaterial.length}`, `${B.otherMaterial.length} left`)}</span></div>
+              <ul className="sn-list po-fix">
+                {B.otherMaterial.map((x) => (
+                  <li key={x.key} className="no">
+                    <span className="ic" aria-hidden>!</span>
+                    <span className="sn-t">
+                      <b>{t(`Falta resolver: ${x.label}`, `To resolve: ${x.label}`)}</b>
+                      <span className="sn-how">{t("Cotización", "Quote")}: <b>{x.quote}</b> · {t("OC", "PO")}: <b>{x.po}</b></span>
+                      <span className="sn-how">{wayOut(x.key)}</span>
+                      {editable && x.ackable && (
+                        <form action={ackCondition.bind(null, po.id, x.key)} className="qa-row po-ack">
+                          <input name="note" required maxLength={300} aria-label={t("Por qué se acepta", "Why it is accepted")} placeholder={t("Por qué se acepta (queda en el registro)", "Why it is accepted (stays on record)")} />
+                          <button type="submit" className="secondary" style={{ flex: "0 0 auto" }}>{t("Aceptar esta diferencia", "Accept this difference")}</button>
+                        </form>
+                      )}
+                    </span>
+                    <span className="po-fix-btns">
+                      {editable && x.key !== "total" && <a className="btn sm" href="#corregir">{t("Corregir la OC", "Correct the PO")} →</a>}
+                      {q && /^(line|miss|qty)-|validity/.test(x.key) && <Link className="btn secondary sm" href={`/cotizaciones/${q.id}`}>{t("Ir a la cotización", "Go to the quote")}</Link>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <span className="src">{t("Cada diferencia resuelta desaparece de esta lista. Cuando no quede ninguna, y las demás condiciones de la derecha estén en «✓», se habilita «Aceptar PO». Si no se puede resolver, a la derecha está «No aceptar esta PO».", "Each resolved difference leaves this list. Once none is left, and the other conditions on the right show “✓”, “Accept PO” is enabled. If it cannot be resolved, “Don't accept this PO” is on the right.")}</span>
+            </section>
+          )}
 
           {/* Resolution options */}
           {open && B.options.length > 0 && (
@@ -260,6 +300,32 @@ export default async function PoPage({ params, searchParams }: { params: Promise
               {po.otherConditions && <><dt>{t("Otras condiciones", "Other conditions")}</dt><dd>{po.otherConditions}</dd></>}
             </dl>
             {open && editable && (
+              <div id="corregir" className="land" data-open-on-land style={{ marginBottom: 8 }}>
+                <details className="scp-add"><summary className="qa-btn">{t("Corregir lo que dice la PO (precio, cantidad, incoterm, pago, fecha)", "Correct what the PO says (price, quantity, incoterm, payment, date)")}</summary>
+                  <form action={fixPoData.bind(null, po.id)} className="qa-form">
+                    <span className="src">{t("Úsalo cuando la OC se escribió mal al registrarla, o cuando el cliente envió una OC corregida. Escribe aquí lo que dice la OC del cliente, no lo que quisieras que dijera.", "Use it when the PO was typed wrong on recording, or when the customer sent a corrected PO. Type here what the customer's PO says, not what you wish it said.")}</span>
+                    {[...po.lines].sort((x, y) => x.position - y.position).map((ln, n) => (
+                      <div key={ln.id} className="qa-row">
+                        <label style={{ flex: "0 0 90px" }}>{t("Cant.", "Qty")}<input name={`qty_${n}`} type="number" min="0" defaultValue={ln.qty} /></label>
+                        <label style={{ flex: "0 0 170px" }}>{t("Precio unitario", "Unit price")} {po.currency === "COP" ? "COP" : "USD"}<input name={`price_${n}`} type="number" min="0" step={po.currency === "COP" ? "1" : "0.01"} defaultValue={po.currency === "COP" ? Number(ln.docUnitPrice ?? 0) : Number(ln.unitPrice)} /></label>
+                        <span className="small" style={{ flex: "1 1 180px", alignSelf: "flex-end" }}>{ln.code ?? ""} {ln.description}</span>
+                      </div>
+                    ))}
+                    <div className="qa-row">
+                      <label>Incoterm<input name="incoterm" maxLength={80} defaultValue={po.incoterm ?? ""} placeholder={q?.incoterm ? t(`La cotización dice ${q.incoterm}`, `The quote says ${q.incoterm}`) : t("Vacío = la OC no lo indica", "Empty = the PO doesn't state it")} /></label>
+                      <label>{t("Condiciones de pago", "Payment terms")}<input name="paymentTerms" maxLength={120} defaultValue={po.paymentTerms ?? ""} /></label>
+                    </div>
+                    <div className="qa-row">
+                      <label>{t("Fecha de entrega que exige", "Delivery date it demands")}<input name="requiredBy" type="date" defaultValue={dayInput(po.requiredBy)} /></label>
+                      <label>{t("Cotización que cita", "Quote it cites")}<input name="quoteRef" maxLength={80} defaultValue={po.quoteRef ?? ""} /></label>
+                    </div>
+                    <label>{t("Por qué se corrige (queda en el registro) *", "Why it is corrected (stays on record) *")}<input name="reason" required maxLength={300} placeholder={t("Ej.: escribí 700 en vez de 1.000 al registrarla", "E.g.: I typed 700 instead of 1,000 when recording it")} /></label>
+                    <button type="submit">{t("Guardar corrección y comparar", "Save correction and compare")}</button>
+                  </form>
+                </details>
+              </div>
+            )}
+            {open && editable && (
               <details className="scp-add"><summary className="qa-btn">{t("Completar lo que dice la PO", "Complete what the PO says")}</summary>
                 <form action={savePoTerms.bind(null, po.id)} className="qa-form">
                   <div className="qa-row"><label>{t("Razón social en la PO", "Legal entity on PO")}<input name="legalEntity" maxLength={160} defaultValue={po.legalEntity ?? ""} /></label><label>{t("NIT / Tax ID en la PO", "Tax ID on PO")}<input name="taxIdOnPo" maxLength={40} defaultValue={po.taxIdOnPo ?? ""} /></label></div>
@@ -317,19 +383,26 @@ export default async function PoPage({ params, searchParams }: { params: Promise
             )}
             {/* Credit is what blocks: ask for the review right here (a new customer has no limit and is not on the credit list yet). */}
             {open && ctx.credit && !ctx.credit.ok && (
-              <div style={{ marginTop: 8 }} id="cupo" className="land" data-open-on-land>
-                <details className="scp-add" open={sp.err === "motivo-cupo" || sp.err === "monto-cupo"}><summary className="qa-btn">{t("Pedir revisión de cupo", "Request a credit review")}</summary>
+              <div id="cupo" className="sn miss land" style={{ marginTop: 10 }}>
+                <div className="sn-head"><b>{t("FALTA: CUPO DE CRÉDITO DEL CLIENTE", "MISSING: THE CUSTOMER'S CREDIT LIMIT")}</b></div>
+                <span className="sn-how">{t(`${d.account.name.replace(/ \(ejemplo\)$/, "")} todavía no tiene un cupo de crédito aprobado que cubra esta orden. El cupo es hasta cuánto se le puede vender a crédito.`, `${d.account.name.replace(/ \(ejemplo\)$/, "")} has no approved credit limit yet that covers this order. The limit is how much can be sold to them on credit.`)}</span>
+                {canDecideCredit(user) ? (
+                  <form action={setCreditLimit.bind(null, d.account.id)} className="qa-form">
+                    <label>{t("Cupo de crédito para este cliente (USD)", "Credit limit for this customer (USD)")}<input name="creditLimit" inputMode="decimal" required defaultValue={Math.ceil(Math.max(Number(d.amount) || 0, poTotal)) || ""} /></label>
+                    <button type="submit">{t("Guardar cupo", "Save limit")}</button>
+                    <span className="src">{t("Tú puedes decidirlo (Finanzas o Gerencia). Al guardar, esta condición queda en «✓» aquí mismo.", "You can decide it (Finance or Management). On saving, this condition turns “✓” right here.")} <Link href="/administracion/cupos">{t("Ver todos los cupos", "See all limits")}</Link></span>
+                  </form>
+                ) : (
                   <form action={requestCreditReview.bind(null, d.account.id)} className="qa-form">
                     <input type="hidden" name="back" value={`/po/${po.id}`} />
                     <input type="hidden" name="kind" value="INCREASE" />
                     <input type="hidden" name="dealId" value={d.id} />
-                    <label>{t("Cupo que propones (USD)", "Limit you propose (USD)")}<input name="requestedLimit" inputMode="decimal" required defaultValue={Math.ceil(Number(d.amount) || 0) || ""} /></label>
+                    <label>{t("Cupo que propones (USD)", "Limit you propose (USD)")}<input name="requestedLimit" inputMode="decimal" required defaultValue={Math.ceil(Math.max(Number(d.amount) || 0, poTotal)) || ""} /></label>
                     <label>{t("Por qué (qué sabes del cliente y de esta orden)", "Why (what you know about the customer and this order)")}<textarea name="reason" rows={2} required maxLength={1200} /></label>
-                    <button type="submit">{t("Enviar solicitud", "Send request")}</button>
-                    <span className="src">{t("La deciden Finanzas o Gerencia, nunca quien la pide. Cuando la aprueben, vuelve aquí: «Aceptar PO» se habilita.", "Finance or Management decide, never the requester. Once approved, come back here: “Accept PO” becomes available.")}</span>
+                    <button type="submit">{t("Pedir revisión de cupo", "Request a credit review")}</button>
+                    <span className="src">{t("La deciden Finanzas o Gerencia. Cuando la aprueben, vuelve aquí: la condición queda en «✓».", "Finance or Management decide. Once approved, come back here: the condition turns “✓”.")}</span>
                   </form>
-                </details>
-                {canDecideCredit(user) && <p className="src" style={{ marginTop: 6 }}><Link href="/administracion/cupos">{t("Tú puedes decidirlo: ir a Cupos de crédito", "You can decide it: go to Credit limits")}</Link> · {t("define el cupo de este cliente o decide la solicitud", "set this customer's limit or decide the request")}</p>}
+                )}
               </div>
             )}
             {B.accepted && (

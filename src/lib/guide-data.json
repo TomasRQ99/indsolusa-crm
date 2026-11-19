@@ -463,10 +463,10 @@
    "steps": [
     "En la cotización presentada, abre [[Llegó la PO · registrarla]], escribe el número de la OC y haz clic en [[Registrar y comparar]].",
     "Revisa la comparación: cada línea, precio, cantidad, condiciones y vigencia.",
-    "Para cada diferencia importante, elige una solución con [[Elegir esta opción]] y registra la confirmación del cliente con [[Registrar confirmación]].",
+    "Si la fecha no se puede cumplir, elige una salida en «OPCIONES PARA RESOLVER LA FECHA» con [[Elegir esta opción]] y registra la confirmación del cliente con [[Registrar confirmación]]. Para las demás diferencias (precio, cantidad, incoterm, pago), baja al recuadro rojo «CÓMO RESOLVER CADA DIFERENCIA»: cada una dice sus salidas. Si se escribió mal, [[Corregir la OC]]; si la empresa la acepta, escribe por qué y haz clic en [[Aceptar esta diferencia]].",
     "En la columna derecha, cada precondición de «ACEPTAR PO» es un enlace que te lleva a donde se resuelve. Cuando todas estén en «✓», haz clic en [[Aceptar PO]]."
    ],
-   "expect": "Aceptar PO sigue desactivado mientras haya una diferencia importante abierta o una precondición en «!». Si el cliente es nuevo y no tiene cupo de crédito, pídelo ahí mismo con «Pedir revisión de cupo»: lo deciden Finanzas o Gerencia. Una vez aceptada, el registro no se puede editar. La OC solo se puede registrar sobre una cotización presentada en SOLU: si la Necesidad se marcó como cotizada sin ese documento, el recuadro rojo de la Necesidad pide primero «Preparar cotización» y «Presentar al cliente», y después muestra el botón «Registrar la OC»."
+   "expect": "Aceptar PO sigue desactivado mientras haya una diferencia importante abierta o una precondición en «!». Si el cliente no tiene cupo de crédito, a la derecha aparece el recuadro rojo «FALTA: CUPO DE CRÉDITO DEL CLIENTE»: Finanzas o Gerencia lo definen ahí mismo con «Guardar cupo»; los demás lo piden con «Pedir revisión de cupo». Una vez aceptada, el registro no se puede editar. La OC solo se puede registrar sobre una cotización presentada en SOLU: si la Necesidad se marcó como cotizada sin ese documento, el recuadro rojo de la Necesidad pide primero «Preparar cotización» y «Presentar al cliente», y después muestra el botón «Registrar la OC». Un precio de la OC aceptado con nota pasa a ser la venta, y SOLU vuelve a revisar la Eságara con ese precio: si queda bajo el umbral, no deja aceptar. El total se resuelve solo cuando se resuelven las líneas."
   },
   {
    "id": "promise",

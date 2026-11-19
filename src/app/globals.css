@@ -2637,3 +2637,11 @@ a.sig:hover { text-decoration: underline; }
 .loc-opts li.on { background: var(--brand-soft, #e7f0fd); box-shadow: -8px 0 0 var(--brand-soft, #e7f0fd), 8px 0 0 var(--brand-soft, #e7f0fd); }
 .loc-pending { border-left: 4px solid var(--risk); }
 input.need-in { border-color: var(--risk); box-shadow: 0 0 0 2px #f6d5d0; background: #fff8f7; }
+
+/* Customer PO: how to resolve each difference */
+.po-fix li { grid-template-columns: 22px minmax(0, 1fr) auto; align-items: start; padding: 8px 0; border-top: 1px solid #f1c4bd; }
+.po-fix li:first-child { border-top: 0; }
+.po-fix-btns { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.po-ack { margin-top: 6px; align-items: center; }
+.po-ack input { flex: 1 1 220px; }
+@media (max-width: 640px) { .po-fix li { grid-template-columns: 22px minmax(0, 1fr); } .po-fix-btns { grid-column: 2; align-items: flex-start; } }

@@ -12,7 +12,7 @@ import { makeI18n } from "@/lib/i18n";
 import { money2, mulMoney, sumMoney } from "@/lib/money";
 import { quoteNo } from "@/lib/quote";
 import { quoteFloor } from "@/lib/esagara-gate";
-import { ACKABLE, buildPo, poInclude, type Ack } from "@/lib/po";
+import { ACKABLE, isAckable, buildPo, poInclude, type Ack } from "@/lib/po";
 import { acceptCtx } from "@/lib/po-accept";
 import { saleOf } from "@/lib/quote";
 import { canEdit } from "@/lib/permissions";
@@ -94,12 +94,45 @@ export async function savePoTerms(id: string, fd: FormData) {
   back(id, "ok=terminos");
 }
 
+/** Correct what was recorded of the PO while it is open: it was typed wrong, or the customer sent a corrected PO.
+ *  The reason is written down. Notes that accepted the old values of what changed are dropped. */
+export async function fixPoData(id: string, fd: FormData) {
+  const { user, po } = await loadPo(id);
+  if (po.acceptance || po.rejectedAt) back(id, "err=cerrada");
+  const reason = txt(fd, "reason", 300);
+  if (!reason) back(id, "err=motivo-correccion#corregir");
+  const rate = po.currency === "COP" && Number(po.docFxRate ?? 0) > 0 ? Number(po.docFxRate) : null;
+  const lines = [...po.lines].sort((x, y) => x.position - y.position);
+  const changed: string[] = [];
+  await db.$transaction(async (tx) => {
+    for (let n = 0; n < lines.length; n++) {
+      const ln = lines[n];
+      const rawQ = fd.get(`qty_${n}`), rawP = fd.get(`price_${n}`);
+      const qty = rawQ == null || String(rawQ).trim() === "" ? ln.qty : Math.max(0, Math.round(Number(String(rawQ).replace(",", ".")) || 0));
+      const typed = rawP == null || String(rawP).trim() === "" ? null : Math.max(0, Number(String(rawP).trim().replace(",", ".")) || 0);
+      const unitPrice = typed == null ? Number(ln.unitPrice) : rate ? mulMoney(typed, 1 / rate) : money2(typed);
+      if (qty !== ln.qty) changed.push(`qty-${n}`);
+      if (Math.abs(unitPrice - Number(ln.unitPrice)) > 0.004) changed.push(`price-${n}`);
+      if (qty !== ln.qty || Math.abs(unitPrice - Number(ln.unitPrice)) > 0.004) await tx.customerPOLine.update({ where: { id: ln.id }, data: { qty, unitPrice, ...(rate && typed != null ? { docUnitPrice: Math.round(typed) } : {}) } });
+    }
+    const head = { incoterm: txt(fd, "incoterm", 80), paymentTerms: txt(fd, "paymentTerms", 120), quoteRef: txt(fd, "quoteRef", 80), requiredBy: dayOf(fd.get("requiredBy")) };
+    if ((head.incoterm ?? "") !== (po.incoterm ?? "")) changed.push("incoterm");
+    if ((head.paymentTerms ?? "") !== (po.paymentTerms ?? "")) changed.push("payment");
+    if ((head.quoteRef ?? "") !== (po.quoteRef ?? "")) changed.push("ref");
+    const ack = { ...((po.conditionsAck ?? {}) as Ack) };
+    for (const k of changed) delete ack[k];
+    await tx.customerPO.update({ where: { id }, data: { ...head, conditionsAck: ack } });
+    await tx.activity.create({ data: { type: "NOTE", subject: `PO ${po.number} corregida: ${reason}`.slice(0, 200), userId: user.id, accountId: po.deal.accountId, dealId: po.dealId, phase: "quote", source: "Comparación PO vs cotización" } });
+  });
+  back(id, "ok=corregida");
+}
+
 /** A new condition (documents, penalties, warranty, IVA, entity name) is accepted only with a note of who and why. */
 export async function ackCondition(id: string, key: string, fd: FormData) {
   const { user, po } = await loadPo(id);
   if (po.acceptance || po.rejectedAt) back(id, "err=cerrada");
   const note = txt(fd, "note", 300);
-  if (!note || !ACKABLE.has(key)) back(id, "err=nota");
+  if (!note || !isAckable(key)) back(id, "err=nota");
   const ack = { ...((po.conditionsAck ?? {}) as Ack), [key]: { by: user.name, at: new Date().toISOString(), note: note! } };
   await db.customerPO.update({ where: { id }, data: { conditionsAck: ack } });
   await db.activity.create({ data: { type: "NOTE", subject: `PO ${po.number}: condición «${key}» revisada y aceptada · ${note}`.slice(0, 200), userId: user.id, accountId: po.deal.accountId, dealId: po.dealId, phase: "quote", source: "Comparación PO vs cotización" } });
@@ -247,7 +280,7 @@ export async function acceptPo(id: string) {
           nextMove: `Colocar la compra al proveedor${r?.scenarioLabel ? ` (${r.scenarioLabel})` : ""} para cumplir el ${i.date(B.promiseDate)}`.slice(0, 200),
           nextMoveDate: today(),
           ...(costDelta ? { freightCost: sumMoney([deal.freightCost, costDelta]) } : {}),
-          ...(priceDelta ? { amount: sumMoney([deal.amount, priceDelta]) } : {}),
+          ...(B.priceAccepted ? { amount: sumMoney([saleOf(po.lines), priceDelta]) } : priceDelta ? { amount: sumMoney([deal.amount, priceDelta]) } : {}),
         },
       });
       await tx.activity.create({ data: { type: "NOTE", subject: `PO ${po.number} aceptada · promesa ${i.date(B.promiseDate)}`.slice(0, 200), body: effects.join("\n"), userId: user.id, accountId: deal.accountId, dealId: deal.id, phase: "execute", source: r?.evidence ?? "Comparación PO vs cotización sin diferencias materiales" } });
