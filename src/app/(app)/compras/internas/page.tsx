@@ -6,7 +6,7 @@ import { canFinance } from "@/lib/permissions";
 import { dayInput, today } from "@/lib/domain";
 import { IP_STATUS } from "@/lib/admin-rules";
 import { ipAuthority } from "@/lib/internal-purchase";
-import { CATEGORIES, KINDS, isMonthKey, monthKey, monthReport, monthSeries, monthStart } from "@/lib/internal-expenses";
+import { CATEGORIES, KINDS, categoryOptions, isMonthKey, monthKey, monthReport, monthSeries, monthStart, pastPurchases } from "@/lib/internal-expenses";
 import { InternalExpenseForm } from "@/components/InternalExpenseForm";
 import { submitInternalExpense } from "./actions";
 
@@ -20,9 +20,10 @@ export default async function InternalExpensesPage({ searchParams }: { searchPar
   const sp = await searchParams;
   const finance = canFinance(user);
   const key = isMonthKey(sp.mes) ? sp.mes : monthKey(today());
-  const [mineRows, waiting] = await Promise.all([
+  const [mineRows, waiting, pastRows] = await Promise.all([
     db.internalPurchase.findMany({ where: { requesterId: user.id }, orderBy: { createdAt: "desc" }, take: 30, select: { id: true, code: true, description: true, amount: true, currency: true, status: true, boughtAt: true, createdAt: true, decisionNote: true, _count: { select: { files: true } } } }),
     db.internalPurchase.findMany({ where: { status: "REQUESTED" }, orderBy: { createdAt: "asc" }, take: 60, include: { requester: { select: { name: true } }, _count: { select: { files: true } } } }),
+    pastPurchases(user.id, finance),
   ]);
   const toDecide = (await Promise.all(waiting.map(async (p) => ((await ipAuthority(user, p)).ok ? p : null)))).filter((p): p is (typeof waiting)[number] => !!p);
   const [rep, series] = finance ? await Promise.all([monthReport(key), monthSeries(key, 6)]) : [null, []];
@@ -73,7 +74,7 @@ export default async function InternalExpensesPage({ searchParams }: { searchPar
         <h2>{t("Registrar una compra interna", "Record an internal purchase")}</h2>
         <InternalExpenseForm lang={user.lang} action={submitInternalExpense} todayStr={dayInput(today())}
           kinds={[{ key: "PRODUCT", label: t("Producto", "Product"), hint: t("mouse, portátil, grapas", "mouse, laptop, staples") }, { key: "SERVICE", label: t("Servicio", "Service"), hint: t("capacitación, mantenimiento, cursos", "training, maintenance, courses") }]}
-          categories={Object.entries(CATEGORIES).map(([k, c]) => ({ key: k, label: t(c.es, c.en), hint: t(c.hint.es, c.hint.en) }))} />
+          categories={categoryOptions(i.es)} past={pastRows.map((p) => ({ ...p, lastLabel: i.date(new Date(`${p.last}T12:00:00Z`)) }))} />
       </section>
 
       <section className="card" id="mias">

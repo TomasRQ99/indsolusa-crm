@@ -679,13 +679,13 @@
    "why": "Un mouse, un portátil, grapas, una capacitación, un mantenimiento: no es para vender ni para un cliente. Se registra con su recibo, se aprueba y entra al reporte de gastos del mes.",
    "steps": [
     "En OPERACIONES → Comprar → Requerimientos, arriba, haz clic en [[+ Compra interna]]. También puedes entrar por la pestaña «Compras internas».",
-    "Llena las tres preguntas obligatorias: «¿Qué se compró?», si es «Producto» o «Servicio», y «¿Cuánto costó?» con su moneda. La «i» junto a cada nombre explica qué escribir.",
-    "Opcional: categoría, dónde se compró y para qué es. Si ya se compró, deja marcada «Ya se compró» con su fecha; si es una solicitud, desmárcala.",
-    "En «Recibo o factura» sube la foto o el PDF del recibo y haz clic en [[Enviar compra interna]]. Queda en «Mis compras internas» como «Esperando decisión».",
+    "Responde en el orden de la pantalla: «1 · ¿Es un producto o un servicio?», «2 · Categoría (opcional)» con «¿Dónde o a quién se le compró? (opcional)», y «3 · ¿Qué se compró?». Al hacer clic en esa casilla se abre la lista «COMPRAS ANTERIORES»: si esa compra ya se registró antes, elígela y SOLU llena el formulario; si es nueva, escríbela.",
+    "En «4 · ¿Cuánto costó?» escribe el valor y revisa la «Moneda»; si elegiste una compra anterior, confirma que el valor sea el de este recibo. «5 · ¿Para qué es? (opcional)» ayuda a quien aprueba. En «6 · Ya se compró» deja la marca con su fecha; si es una solicitud, desmárcala.",
+    "En «7 · Recibo o factura» sube la foto o el PDF del recibo y haz clic en [[Enviar compra interna]]. Queda en «Mis compras internas» como «Esperando decisión».",
     "Quien aprueba la ve en «Esperan tu aprobación» (y en Pendientes por aprobar): hace clic en [[Revisar y aprobar]], mira el recibo en el bloque RECIBOS y hace clic en [[Aprobar]].",
     "Para el cierre de mes, baja a «REPORTE DE GASTOS INTERNOS»: total, productos y servicios, la gráfica de 6 meses, en qué se fue y quién compró. [[Descargar para Excel]] baja el detalle del mes."
    ],
-   "expect": "Solo las compras aprobadas y ya compradas cuentan en el reporte, en el mes de la compra y en dólares (otra moneda se convierte con la tasa del día). Si falta el recibo, la lista lo marca en rojo y se sube después con «Subir recibo». Aprueban Finanzas, Administración o Gerencia; quien la registró no la aprueba, salvo Gerencia. El reporte lo ven Finanzas, Administración, Dirección y Gerencia. El total también aparece en INFORMES → Administración y en GERENCIA → Cierre ejecutivo."
+   "expect": "Solo las compras aprobadas y ya compradas cuentan en el reporte, en el mes de la compra y en dólares (otra moneda se convierte con la tasa del día). Si falta el recibo, la lista lo marca en rojo y se sube después con «Subir recibo». Aprueban Finanzas, Administración o Gerencia; quien la registró no la aprueba, salvo Gerencia. El reporte lo ven Finanzas, Administración, Dirección y Gerencia. El total también aparece en INFORMES → Administración y en GERENCIA → Cierre ejecutivo. Cada compra enviada queda guardada en «COMPRAS ANTERIORES» para todo el equipo, así nadie la escribe dos veces; el valor solo se copia de tus propias compras (Finanzas, Administración, Dirección y Gerencia ven el de todas). «Empezar en blanco» borra lo copiado. La lista de categorías está en orden alfabético y «Otro» va al final."
   },
   {
    "id": "logistica",

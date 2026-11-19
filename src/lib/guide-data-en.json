@@ -1488,13 +1488,13 @@
   "why": "A mouse, a laptop, staples, a training session, maintenance: not for sale and not for a customer. It is recorded with its receipt, approved, and enters the month's spending report.",
   "steps": [
    "Under OPERATIONS → Buy → Requirements, at the top, click [[+ Compra interna]]. You can also use the “Internal purchases” tab.",
-   "Answer the three required questions: “What was bought?”, whether it is a “Product” or a “Service”, and “How much did it cost?” with its currency. The “i” next to each name explains what to write.",
-   "Optional: category, where it was bought and what it is for. If it was already bought, leave “It was already bought” ticked with its date; if it is a request, untick it.",
-   "Under “Receipt or invoice” upload the photo or PDF of the receipt and click [[Enviar compra interna]]. It shows under “My internal purchases” as “Awaiting decision”.",
+   "Answer in the order on screen: “1 · Is it a product or a service?”, “2 · Category (optional)” with “Where or from whom? (optional)”, and “3 · What was bought?”. Clicking that box opens the “EARLIER PURCHASES” list: if this purchase was recorded before, choose it and SOLU fills in the form; if it is new, type it.",
+   "Under “4 · How much did it cost?” type the amount and check the “Currency”; if you chose an earlier purchase, confirm the amount is the one on this receipt. “5 · What is it for? (optional)” helps the approver. Under “6 · It was already bought” leave the tick with its date; if it is a request, untick it.",
+   "Under “7 · Receipt or invoice” upload the photo or PDF of the receipt and click [[Enviar compra interna]]. It shows under “My internal purchases” as “Awaiting decision”.",
    "The approver sees it under “Waiting for your approval” (and in Pending approvals): they click [[Revisar y aprobar]], look at the receipt in the RECEIPTS block and click [[Aprobar]].",
    "For month end, go down to “INTERNAL SPENDING REPORT”: total, products and services, the 6-month chart, where it went and who bought. [[Descargar para Excel]] downloads the month's detail."
   ],
-  "expect": "Only approved purchases that were already bought count in the report, in the month of the purchase and in dollars (another currency is converted at the day's rate). If the receipt is missing, the list marks it in red and it is uploaded later with “Upload receipt”. Finance, Administration or Management approve; whoever recorded it does not approve it, except Management. The report is seen by Finance, Administration, Direction and Management. The total also shows under REPORTS → Administration and MANAGEMENT → Executive close."
+  "expect": "Only approved purchases that were already bought count in the report, in the month of the purchase and in dollars (another currency is converted at the day's rate). If the receipt is missing, the list marks it in red and it is uploaded later with “Upload receipt”. Finance, Administration or Management approve; whoever recorded it does not approve it, except Management. The report is seen by Finance, Administration, Direction and Management. The total also shows under REPORTS → Administration and MANAGEMENT → Executive close. Every purchase sent is saved under “EARLIER PURCHASES” for the whole team, so nobody types it twice; the amount is only copied from your own purchases (Finance, Administration, Direction and Management see everyone's). “Start blank” clears what was copied. The category list is in alphabetical order, with “Other” last."
  },
  "ruta-pedido": {
   "t": "Order route: the process as a menu",
