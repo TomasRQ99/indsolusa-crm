@@ -125,7 +125,7 @@
     "Elige una plantilla (cotización a proveedor, seguimiento, negociación, entrega, oferta o cobro) y el idioma.",
     "Elige el contacto, revisa el texto y envía. Si el tono suena brusco, SOLU te avisa, pero no te bloquea."
    ],
-   "expect": "El correo llega desde sales@indsolusa.com. Pruébalo primero con tu propia dirección. La revisión del dominio (SPF, DKIM y DMARC) debe verse en orden. En cada correo de plantilla puedes escribir varios destinatarios en «Para», y copias en «CC» y «CCO», separados por coma."
+   "expect": "El correo llega desde sales@indsolusa.com. Pruébalo primero con tu propia dirección. La revisión del dominio (SPF, DKIM y DMARC) debe verse en orden. En cada correo de plantilla puedes escribir varios destinatarios en «Para», y copias en «CC» y «CCO», separados por coma. El correo que envía una cotización lleva marcado el PDF de la cotización como adjunto (se puede desmarcar). En los correos «Avance de su solicitud» y «Oferta al cliente» hay un bloque «REDACTAR CON IA»: cuando la IA está conectada, escribe un borrador personalizado con los datos de la Necesidad, sin nombrar al proveedor ni mencionar costos, y tú lo revisas antes de enviar."
   },
   {
    "id": "respuestas",
@@ -320,9 +320,25 @@
     "Mira la ruta de pasos y, justo debajo, el recuadro «PARA TERMINAR EL PASO…»: en rojo dice qué falta («Falta: …») y dónde se llena. Haz clic en el botón azul de esa línea: [[Ir a llenarlo]], o el nombre de la acción («Preparar cotización», «Completar la cotización», «Abrir la cotización», «Registrar la OC», «Abrir la OC»). SOLU te lleva al lugar exacto, que queda marcado en rojo.",
     "Define el siguiente movimiento y su fecha, y [[Guardar]]. Pospón con [[Mañana]] / [[3 días]] / [[1 semana]].",
     "Revisa qué cambió desde tu última visita y haz clic en [[Marcar como visto]].",
-    "Usa las pestañas en orden: Resumen, Necesidad, Fuente, Cotización, Ejecución, Finanzas, Expediente, Resultado."
+    "Usa las pestañas en orden: Resumen, Necesidad, Localizar, Fuente, Cotización, Ejecución, Finanzas, Expediente, Resultado."
    ],
    "expect": "La fecha esperada por SOLU es la ETA del transportista más 3 días más 1 día. Si la promesa al cliente es anterior, se marca. Cuando ya no falta nada en el recuadro, el paso se pone verde solo y aparece el siguiente. El primer paso, «Necesidad», solo pide el «Resultado deseado». En los pasos «Compra» y «Pago al proveedor» el recuadro tiene una línea por cada orden y por cada pago, con su número, y cambia con cada acción: liberar, confirmar con el proveedor (un clic), aprobar, registrar la ejecución y confirmar el pago. Cuando el trabajo te saca de la Necesidad (a la cotización, la orden al proveedor, un pago, en otros módulos del menú), en la esquina inferior derecha queda el botón azul «← Volver a la Necesidad» con su número: un clic y regresas a ella. La «×» lo quita."
+  },
+  {
+   "id": "need-localizar",
+   "m": "comercial",
+   "t": "Localizar la pieza (antes de la Fuente)",
+   "path": "COMERCIAL → Necesidades → una tarjeta → Localizar",
+   "why": "Saber exactamente qué pieza es y dónde buscarla antes de pedir precios: con fotos, número de parte y los proveedores con los que la empresa ya ha trabajado.",
+   "steps": [
+    "En la Necesidad, abre la pestaña [[Localizar]]. Es el paso 2 de la ruta, entre Necesidad y Fuente.",
+    "En «1 · LA PIEZA», escribe el número de parte de cada producto y haz clic en [[Guardar]]. Si falta un producto, abre «Agregar producto» y haz clic en [[Agregar]].",
+    "En «2 · FOTOS», sube la foto de la placa o de la pieza y haz clic en [[Subir fotos]]. Con el número de parte o una foto basta; las dos es mejor.",
+    "En «3 · DÓNDE BUSCARLA», lee la lista: son los proveedores con los que ya trabajamos, ordenados para esta pieza, cada uno con su razón (ya nos la vendió, nos la cotizó, maneja la marca, compras recibidas).",
+    "En «4 · ¿YA ESTÁ LOCALIZADA?», escribe cuál es exactamente la pieza, elige el proveedor si ya lo sabes y haz clic en [[La pieza está localizada]].",
+    "Para avisarle al cliente cómo va, haz clic en [[Escribir al cliente: avance de su solicitud]]: el correo ya viene escrito con lo que SOLU sabe de la Necesidad."
+   ],
+   "expect": "Al marcarla localizada, el paso «Localizar» queda en verde y sigue «Fuente». Sin número de parte, la lista de proveedores solo puede ordenarse por su historia general. Las fotos quedan en la Necesidad y se pueden adjuntar a los correos del cliente. Si la pieza no era esa, «No era esa pieza» la devuelve a sin localizar."
   },
   {
    "id": "journey-catchup",

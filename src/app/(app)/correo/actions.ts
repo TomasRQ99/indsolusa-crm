@@ -9,8 +9,9 @@ import { composeFrom } from "@/lib/email-compose";
 import { sendTracked, syncReplies } from "@/lib/mail-replies";
 import { domainReport, linkIssues, stripTracking } from "@/lib/mail-health";
 import { TEMPLATES, textToHtml, type MailLang, type TemplateKey } from "@/lib/email-templates";
+import { quotePdf } from "@/lib/quote-pdf";
 
-const PHASE: Record<TemplateKey, string> = { RFQ: "source", FOLLOWUP: "source", NEGOTIATE: "source", DELIVERY: "execute", OFFER: "quote", PAYMENT: "finance", ACK: "need" };
+const PHASE: Record<TemplateKey, string> = { RFQ: "source", FOLLOWUP: "source", NEGOTIATE: "source", DELIVERY: "execute", OFFER: "quote", PAYMENT: "finance", ACK: "need", PROGRESS: "source" };
 const emailOk = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
 
 /** Sends a template email from the company mailbox (sales@). The template is rebuilt here from the record;
@@ -57,6 +58,12 @@ export async function sendComposed(fd: FormData) {
     const rows = await db.needFile.findMany({ where: { dealId: c.dealId, id: { in: want } }, select: { name: true, mime: true, size: true, data: true } });
     if (rows.reduce((s, r) => s + r.size, 0) > MAX_ATTACH_BYTES) redirect(qs("err=adjuntos"));
     attachments = rows.map((r) => ({ name: r.name, mime: r.mime, data: r.data }));
+  }
+  // The email that sends a quote carries the quote itself as a PDF (ticked by default on the screen).
+  if (tpl === "OFFER" && fd.get("attachQuote") === "1") {
+    const pdf = await quotePdf(id, lang);
+    if (pdf) attachments = [{ name: pdf.name, mime: "application/pdf", data: pdf.data }, ...attachments];
+    if (attachments.reduce((s2, x) => s2 + x.data.length, 0) > MAX_ATTACH_BYTES) redirect(qs("err=adjuntos"));
   }
 
   // One key per compose screen: a double click or a browser resubmit never sends twice.

@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { templateHints } from "@/lib/comm-policy";
 
-export default function MailBodyHints({ original, tpl, ui }: { original: string; tpl: string; ui: "ES" | "EN" }) {
-  const [text, setText] = useState(original);
+export default function MailBodyHints({ original, tpl, ui, initial }: { original: string; tpl: string; ui: "ES" | "EN"; initial?: string | null }) {
+  const [text, setText] = useState(initial ?? original);
   const hints = useMemo(() => (text === original ? [] : templateHints(text, original, tpl)), [text, original, tpl]);
   return (
     <>

@@ -9,7 +9,7 @@ import { COMPANY } from "./company";
 export type MailLang = "EN" | "ES";
 export type ItemRow = { qty: number; code: string; brand?: string | null; description: string; unitPrice?: number | null };
 export type Mail = { subjects: string[]; text: string; html: string };
-export type TemplateKey = "RFQ" | "FOLLOWUP" | "NEGOTIATE" | "DELIVERY" | "OFFER" | "PAYMENT" | "ACK";
+export type TemplateKey = "RFQ" | "FOLLOWUP" | "NEGOTIATE" | "DELIVERY" | "OFFER" | "PAYMENT" | "ACK" | "PROGRESS";
 
 export const TEMPLATES: Record<TemplateKey, { es: string; en: string; to: "SUPPLIER" | "CUSTOMER"; help: { es: string; en: string } }> = {
   RFQ: { es: "Solicitud de cotización", en: "Request for quotation", to: "SUPPLIER", help: { es: "Plantilla de la empresa para pedir precio a proveedores.", en: "Company template to ask suppliers for a price." } },
@@ -18,6 +18,7 @@ export const TEMPLATES: Record<TemplateKey, { es: string; en: string; to: "SUPPL
   DELIVERY: { es: "Problema de entrega", en: "Delivery issue", to: "SUPPLIER", help: { es: "Pedir fecha confirmada de despacho y guía de una orden.", en: "Ask for a confirmed ship date and tracking for an order." } },
   OFFER: { es: "Oferta al cliente", en: "Customer offer", to: "CUSTOMER", help: { es: "Enviar la cotización al cliente con un solo paso siguiente: la orden de compra.", en: "Send the quote to the customer with one next step: the purchase order." } },
   ACK: { es: "Recibimos su solicitud", en: "We received your request", to: "CUSTOMER", help: { es: "El primer correo de una Necesidad: confirma al cliente que recibimos su solicitud, con su número, y cuándo volvemos a escribirle.", en: "The first email of a Need: confirms to the customer that we received their request, with its number, and when we will write again." } },
+  PROGRESS: { es: "Avance de su solicitud", en: "Progress on your request", to: "CUSTOMER", help: { es: "Seguimiento al cliente con lo que SOLU ya sabe de su Necesidad: qué pidió, qué busca lograr, la pieza localizada, en qué vamos y cuándo le volvemos a escribir.", en: "Follow-up to the customer from what SOLU already knows about their Need: what they asked for, what they want to achieve, the located piece, where we are and when we write again." } },
   PAYMENT: { es: "Recordatorio de pago", en: "Payment reminder", to: "CUSTOMER", help: { es: "Recordar con respeto una factura por vencer o vencida.", en: "Respectfully remind about an invoice coming due or overdue." } },
 };
 
@@ -237,24 +238,74 @@ export function ackMail(o: { lang: MailLang; code: string | null; contactName: s
   return { subjects, ...sigFix(render(blocks, o.lang)) };
 }
 
-export function offerMail(o: { lang: MailLang; quoteNumber: string; contactName: string | null; items: ItemRow[]; currency: string; total: number; leadText: string | null; validUntil: Date | null; incoterm: string | null; paymentTerms: string | null; condition: string | null; sender: string; from: string }): Mail {
+/** Follow-up of a Need: what we understood, the piece, where we are, what we need from them, when we write again. */
+export function progressMail(o: { lang: MailLang; code: string | null; contactName: string | null; customer: string; need: string; desiredResult: string | null; items: ItemRow[]; machine: string | null; located: string | null; isLocated: boolean; stage: "LOCATING" | "SOURCING" | "PRICING" | "QUOTED"; ask: { partNumber: boolean; photo: boolean }; followUp: Date | null; sender: string; from: string }): Mail {
   const en = o.lang === "EN";
+  const ref = o.code ?? "";
+  const stageText = en
+    ? { LOCATING: "We are identifying the exact piece so that what we quote is the one that fits.", SOURCING: "We are checking availability, price and lead time with our suppliers.", PRICING: "We already have a source identified and are confirming price and lead time to send you the quotation.", QUOTED: "Your quotation is ready; we are sending it to you in a separate email." }[o.stage]
+    : { LOCATING: "Estamos identificando la pieza exacta, para cotizarle justo la que le sirve.", SOURCING: "Estamos consultando disponibilidad, precio y tiempo de entrega con nuestros proveedores.", PRICING: "Ya tenemos la fuente identificada y estamos confirmando precio y tiempo de entrega para enviarle la cotización.", QUOTED: "Su cotización está lista; se la enviamos en un correo aparte." }[o.stage];
+  const asks = en
+    ? [o.ask.photo && "a photo of the equipment's nameplate or of the piece", o.ask.partNumber && "the part number, if you have it"].filter(Boolean) as string[]
+    : [o.ask.photo && "una foto de la placa del equipo o de la pieza", o.ask.partNumber && "el número de parte, si lo tiene"].filter(Boolean) as string[];
+  const blocks: Block[] = en ? [
+    { p: o.contactName ? `Good day ${o.contactName},` : "Good day," },
+    { p: `I am writing with the progress on your request${ref ? ` ${ref}` : ""}: ${o.need}.` },
+    ...(o.desiredResult ? [{ p: `We understand that what you are looking for is: ${o.desiredResult}.` } as Block] : []),
+    ...(o.items.length ? [{ items: o.items } as Block] : []),
+    ...(o.machine ? [{ p: `Equipment: ${o.machine}.` } as Block] : []),
+    ...(o.isLocated ? [{ p: o.located ? `We have identified the piece: ${o.located}.` : "We have identified the piece." } as Block] : []),
+    { p: stageText },
+    ...(asks.length ? [{ p: `To move faster it would help us to have ${asks.join(" and ")}. You can simply reply to this email with them.` } as Block] : []),
+    { p: o.followUp ? `We will write to you again no later than ${longDay(o.followUp, "EN")}.` : "We will write to you again within the next 24 to 48 business hours.", strong: true },
+    ...signature("EN", o.sender, o.from),
+  ] : [
+    { p: o.contactName ? `Buen día ${o.contactName}:` : "Buen día:" },
+    { p: `Le escribo con el avance de su solicitud${ref ? ` ${ref}` : ""}: ${o.need}.` },
+    ...(o.desiredResult ? [{ p: `Entendemos que lo que busca es: ${o.desiredResult}.` } as Block] : []),
+    ...(o.items.length ? [{ items: o.items } as Block] : []),
+    ...(o.machine ? [{ p: `Equipo: ${o.machine}.` } as Block] : []),
+    ...(o.isLocated ? [{ p: o.located ? `Ya identificamos la pieza: ${o.located}.` : "Ya identificamos la pieza." } as Block] : []),
+    { p: stageText },
+    ...(asks.length ? [{ p: `Para avanzar más rápido nos ayudaría tener ${asks.join(" y ")}. Puede responder este mismo correo con ello.` } as Block] : []),
+    { p: o.followUp ? `Le volveremos a escribir a más tardar el ${longDay(o.followUp, "ES")}.` : "Le volveremos a escribir dentro de las próximas 24 a 48 horas hábiles.", strong: true },
+    ...signature("ES", o.sender, o.from),
+  ];
+  const what = o.items.length ? `${first(o.items)}${more(o.items)}` : o.need.slice(0, 70);
+  const subjects = en
+    ? [`Progress on your request${ref ? ` ${ref}` : ""} – ${what}`, `Your request${ref ? ` ${ref}` : ""}: where we are – ${COMPANY.shortName}`, `${o.customer}: update on ${what}`]
+    : [`Avance de su solicitud${ref ? ` ${ref}` : ""} – ${what}`, `Su solicitud${ref ? ` ${ref}` : ""}: en qué vamos – ${COMPANY.shortName}`, `${o.customer}: avance de ${what}`];
+  return { subjects, ...sigFix(render(blocks, o.lang)) };
+}
+
+export function offerMail(o: { lang: MailLang; quoteNumber: string; contactName: string | null; items: ItemRow[]; currency: string; total: number; leadText: string | null; validUntil: Date | null; incoterm: string | null; paymentTerms: string | null; condition: string | null; sender: string; from: string; desiredResult?: string | null; located?: string | null; promise?: string | null; pdfAttached?: boolean }): Mail {
+  const en = o.lang === "EN";
+  const personal: Block[] = [
+    ...(o.desiredResult ? [{ p: en ? `We prepared it with your goal in mind: ${o.desiredResult}.` : `La preparamos pensando en lo que usted busca: ${o.desiredResult}.` } as Block] : []),
+    ...(o.located ? [{ p: en ? `The piece we quoted: ${o.located}.` : `La pieza que cotizamos: ${o.located}.` } as Block] : []),
+  ];
+  const attached: Block[] = o.pdfAttached ? [{ p: en ? "The formal quotation is attached as a PDF." : "Adjunto encontrará la cotización formal en PDF." } as Block] : [];
+  const promise: Block[] = o.promise ? [{ p: en ? `Our commitment: ${o.promise}.` : `Nuestro compromiso: ${o.promise}.` } as Block] : [];
   const terms = en
     ? [`Total: ${o.currency} ${money(o.total, "EN")}`, o.leadText && `Lead time: ${o.leadText}`, o.incoterm && `Shipping terms: ${o.incoterm}`, o.paymentTerms && `Payment: ${o.paymentTerms}`, o.condition && `Condition: ${o.condition}`, o.validUntil && `Valid until: ${longDay(o.validUntil, "EN")}`].filter(Boolean) as string[]
     : [`Total: ${o.currency} ${money(o.total, "ES")}`, o.leadText && `Plazo de entrega: ${o.leadText}`, o.incoterm && `Términos de envío: ${o.incoterm}`, o.paymentTerms && `Pago: ${o.paymentTerms}`, o.condition && `Condición: ${o.condition}`, o.validUntil && `Válida hasta: ${longDay(o.validUntil, "ES")}`].filter(Boolean) as string[];
   const blocks: Block[] = en ? [
     { p: o.contactName ? `Dear ${o.contactName},` : "Dear Sirs," },
     { p: `Thank you for your request. Here is our quotation ${o.quoteNumber}:` },
+    ...personal,
     { items: o.items, prices: o.currency },
     { bullets: terms },
+    ...promise, ...attached,
     { p: `To reserve this price and start the order, please send us your purchase order${o.validUntil ? ` before ${longDay(o.validUntil, "EN")}` : ""}.`, strong: true },
     { p: "If anything needs to change (quantity, model or date), just reply to this email and we will adjust it the same day." },
     ...signature("EN", o.sender, o.from),
   ] : [
     { p: o.contactName ? `Estimado(a) ${o.contactName}:` : "Estimados señores:" },
     { p: `Gracias por su solicitud. Esta es nuestra cotización ${o.quoteNumber}:` },
+    ...personal,
     { items: o.items, prices: o.currency },
     { bullets: terms },
+    ...promise, ...attached,
     { p: `Para reservar este precio e iniciar el pedido, por favor envíenos su orden de compra${o.validUntil ? ` antes del ${longDay(o.validUntil, "ES")}` : ""}.`, strong: true },
     { p: "Si algo debe cambiar (cantidad, modelo o fecha), responda este correo y lo ajustamos el mismo día." },
     ...signature("ES", o.sender, o.from),

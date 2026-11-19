@@ -16,6 +16,8 @@ import { buildJourney, journeyInclude, typeLabel, type TabKey, type Tone } from 
 import { OutlookNote } from "@/components/OutlookNote";
 import { JourneyPath } from "@/components/JourneyPath";
 import { Popovers } from "@/components/Popovers";
+import { locateOptions } from "@/lib/locate";
+import { addLocateItem, markLocated, setItemCode, unmarkLocated } from "../actions";
 import { addNeedFiles, removeNeedFile,
   acceptCustomerPo,
   addItem,
@@ -47,7 +49,7 @@ import { COST_LINES, costDetail } from "@/lib/cost-lines";
 import type { NeedContext } from "@/lib/need-handoff";
 import MarketContext from "@/components/MarketContext";
 
-const TAB_ORDER: TabKey[] = ["resumen", "need", "source", "quote", "execute", "finance", "file", "result"];
+const TAB_ORDER: TabKey[] = ["resumen", "need", "locate", "source", "quote", "execute", "finance", "file", "result"];
 
 const Spark = ({ s = 12 }: { s?: number }) => (
   <svg width={s} height={s} viewBox="0 0 24 24" aria-hidden><path fill="currentColor" d="M12 2.5c.6 4.6 2.9 6.9 7.5 7.5-4.6.6-6.9 2.9-7.5 7.5-.6-4.6-2.9-6.9-7.5-7.5 4.6-.6 6.9-2.9 7.5-7.5z" /></svg>
@@ -76,6 +78,8 @@ export default async function JourneyPage({
     tab === "quote" ? db.quote.findMany({ where: { dealId: id }, orderBy: [{ number: "desc" }, { rev: "desc" }], select: { id: true, number: true, rev: true, status: true, lines: { select: { qty: true, unitPrice: true } } } }) : Promise.resolve([]),
   ]);
   if (!deal) notFound();
+  // Localizar: the suppliers the company already worked with, ordered for THIS piece (only when that tab is open).
+  const loc = tab === "locate" ? await locateOptions(id) : null;
   // What the current step still needs (the list under the path): quotes, customer POs and deliveries of this Need.
   const [stepQuotes, stepPos, stepDispatch] = await Promise.all([
     db.quote.findMany({ where: { dealId: id }, orderBy: { createdAt: "desc" }, select: { id: true, status: true, solution: true, supplierCost: true, supplierSrc: true, leadMinDays: true, leadMaxDays: true, promiseText: true, lines: { select: { unitPrice: true } } } }),
@@ -110,6 +114,7 @@ export default async function JourneyPage({
   const tabLabel: Record<TabKey, string> = {
     resumen: t("Resumen", "Summary"),
     need: t("Necesidad", "Need"),
+    locate: t("Localizar", "Locate"),
     source: t("Fuente", "Source"),
     quote: t("Cotización", "Quote"),
     execute: t("Ejecución", "Execute"),
@@ -127,6 +132,10 @@ export default async function JourneyPage({
     permiso: t("No tienes permiso para cambiar esta Necesidad.", "You don't have permission to change this Need."),
   };
   const okMsg: Record<string, string> = {
+    localizada: t("Pieza localizada. Lo que sigue es la Fuente: de dónde sale y cuánto cuesta.", "Piece located. Next is the Source: where it comes from and what it costs."),
+    pieza: t("Guardado.", "Saved."),
+    "sin-pieza": t("Para marcarla localizada hace falta el producto, y su número de parte o una foto.", "To mark it located it needs the product, and its part number or a photo."),
+    "sin-localizar": t("La pieza volvió a quedar sin localizar.", "The piece is back to not located."),
     "orden-descartada": t("Borrador de orden al proveedor descartado. Quedó anotado en esta Necesidad.", "Draft supplier order discarded. It was noted on this Need."),
     creada: t("Necesidad creada. Completa el resultado deseado y, cuando sepas de dónde conseguirlo, sigue con la pestaña Fuente.", "Need created. Complete the desired result and, once you know where to get it, continue with the Source tab."),
     correo: t("Correo enviado al cliente desde la cuenta de la empresa. Quedó registrado en la Necesidad.", "Email sent to the customer from the company account. It's logged on the Need."),
@@ -642,6 +651,131 @@ export default async function JourneyPage({
     </>
   );
 
+  // ---------- Localizar: which exact piece it is, its photos, and where to look for it ----------
+  const Locate = () => {
+    const hasCode = deal.items.some((x) => !!x.code?.trim()), hasPhoto = deal.files.length > 0;
+    const picked = loc?.options.find((o) => o.supplierId === deal.locatedSupplierId) ?? null;
+    return (
+      <>
+        <section className="jblock" id="pieza">
+          <div className="jbh"><b>{t("1 · LA PIEZA", "1 · THE PIECE")}</b><span className="grow" /><span className="src">{t("qué pide el cliente, con su número de parte", "what the customer asks for, with its part number")}</span></div>
+          {deal.items.length === 0 ? <p className="small"><b className="risk-t">{t("Falta: el producto o repuesto que pide el cliente.", "Missing: the product or spare part the customer asks for.")}</b></p> : (
+            <div className="tscroll"><table>
+              <thead><tr><th>{t("Cant.", "Qty")}</th><th>{t("Descripción", "Description")}</th><th>{t("Número de parte", "Part number")}</th><th /></tr></thead>
+              <tbody>{deal.items.map((it) => (
+                <tr key={it.id}>
+                  <td className="val">{it.qty}</td><td>{it.description}</td>
+                  <td>{editable ? (
+                    <form action={setItemCode.bind(null, deal.id, it.id)} className="qa-row" style={{ alignItems: "center" }}>
+                      <input name="code" defaultValue={it.code ?? ""} maxLength={60} placeholder={t("Aún no se sabe", "Not known yet")} aria-label={t("Número de parte", "Part number")} className={it.code ? undefined : "need-in"} style={{ maxWidth: 200 }} />
+                      <button type="submit" className="secondary sm" style={{ flex: "0 0 auto" }}>{t("Guardar", "Save")}</button>
+                    </form>
+                  ) : <span className="mono">{it.code ?? "—"}</span>}</td>
+                  <td>{it.code && <Link className="link small" href={`/localizar?q=${encodeURIComponent(it.code)}&deal=${deal.id}`}>{t("Ver en el catálogo", "See in the catalogue")}</Link>}</td>
+                </tr>
+              ))}</tbody>
+            </table></div>
+          )}
+          {deal.machine && <p className="small">{t("Máquina o equipo del cliente", "Customer's machine or equipment")}: <b>{deal.machine}</b></p>}
+          {editable && (
+            <details style={{ marginTop: 8 }} open={deal.items.length === 0}>
+              <summary>{t("Agregar producto", "Add product")}</summary>
+              <form action={addLocateItem.bind(null, deal.id)} className="inline">
+                <label>{t("Cant.", "Qty")}<input name="qty" type="number" min="1" defaultValue="1" style={{ width: 70 }} /></label>
+                <label>{t("Número de parte (si se sabe)", "Part number (if known)")}<input name="code" maxLength={60} style={{ width: 170 }} /></label>
+                <label style={{ flex: 1 }}>{t("Descripción", "Description")}<input name="description" required maxLength={300} placeholder={t("Ej.: bomba dosificadora 50 L/h", "E.g.: dosing pump 50 L/h")} /></label>
+                <button type="submit">{t("Agregar", "Add")}</button>
+              </form>
+            </details>
+          )}
+          <p className="src" style={{ marginTop: 8 }}>{t("¿No sabes el número de parte? Tómale una foto a la placa: en Localizar repuestos, «Leer placa desde foto» lee los números impresos.", "Don't know the part number? Take a photo of the nameplate: in Find parts, “Read nameplate from photo” reads the printed numbers.")} <Link href={`/localizar?deal=${deal.id}`}>{t("Abrir Localizar repuestos", "Open Find parts")} →</Link></p>
+        </section>
+
+        <section className="jblock" id="fotos">
+          <div className="jbh"><b>{t("2 · FOTOS", "2 · PHOTOS")}</b><span className="grow" />{hasPhoto ? <span className="sig ok">{deal.files.length}</span> : <span className={`sig ${hasCode ? "wait" : "risk"}`}>{hasCode ? t("Recomendado", "Recommended") : t("Falta: foto o número de parte", "Missing: photo or part number")}</span>}</div>
+          <p className="small muted">{t("La placa del equipo, la pieza por varios lados, el plano o el manual. Sirven para confirmar con el proveedor que es exactamente la misma, y se pueden adjuntar al correo del cliente.", "The equipment's nameplate, the piece from several sides, the drawing or the manual. They confirm with the supplier that it is exactly the same one, and can be attached to the customer's email.")}</p>
+          {deal.files.length > 0 && (
+            <ul className="loc-photos">
+              {deal.files.map((f) => (
+                <li key={f.id}>
+                  <a href={`/deals/${deal.id}/archivo/${f.id}`} target="_blank" rel="noopener">
+                    {f.mime.startsWith("image/") ? <img src={`/deals/${deal.id}/archivo/${f.id}`} alt={f.name} loading="lazy" /> : <span className="loc-pdf">PDF</span>}
+                    <span>{f.name}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+          {editable && (
+            <form action={addNeedFiles.bind(null, deal.id)} className="inline" style={{ marginTop: 8, alignItems: "flex-end" }}>
+              <input type="hidden" name="back" value="locate" />
+              <label>{t("Subir fotos o PDF (hasta 5 MB cada uno)", "Upload photos or PDFs (up to 5 MB each)")}<input name="files" type="file" multiple required accept="image/*,application/pdf" /></label>
+              <button type="submit" className="secondary">{t("Subir fotos", "Upload photos")}</button>
+            </form>
+          )}
+        </section>
+
+        <section className="jblock" id="donde">
+          <div className="jbh"><b>{t("3 · DÓNDE BUSCARLA", "3 · WHERE TO LOOK")}</b><span className="grow" /><span className="src">{t("proveedores con los que ya trabajamos, ordenados para esta pieza", "suppliers we already work with, ordered for this piece")}</span></div>
+          {!loc || loc.options.length === 0 ? (
+            <p className="small muted">{t(`Todavía no hay historia con ningún proveedor para ordenar (${loc?.totalSuppliers ?? 0} proveedores registrados). Cuando haya compras recibidas u ofertas guardadas, SOLU los ordena aquí.`, `There is no history with any supplier to order yet (${loc?.totalSuppliers ?? 0} suppliers on file). Once there are received purchases or saved offers, SOLU orders them here.`)}</p>
+          ) : (
+            <>
+              {loc.codes.length === 0 && <p className="note attn">{t("Sin número de parte, SOLU solo puede ordenar por la historia general de cada proveedor. Escríbelo arriba y la lista se afina con quién ya vendió o cotizó esa referencia.", "With no part number, SOLU can only order by each supplier's general history. Type it above and the list narrows to who already sold or quoted that part.")}</p>}
+              <ol className="loc-opts">
+                {loc.options.slice(0, 8).map((o, n) => (
+                  <li key={o.supplierId} className={o.supplierId === deal.locatedSupplierId ? "on" : undefined}>
+                    <span className="pd-n" aria-hidden>{n + 1}</span>
+                    <span className="pd-t">
+                      <b><Link href={`/suppliers/${o.supplierId}`}>{o.name}</Link>{o.country ? <span className="src"> · {o.country}</span> : null}{n === 0 && <span className="sig ok" style={{ marginLeft: 8 }}>{t("Mejor opción con lo que sabemos", "Best option from what we know")}</span>}</b>
+                      {o.reasons.map((r, k) => <span key={k} className="pd-d">{t(r.es, r.en)}</span>)}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              {loc.options.length > 8 && <p className="src">{t(`y ${loc.options.length - 8} proveedor(es) más con historia`, `and ${loc.options.length - 8} more supplier(s) with history`)} · <Link href="/suppliers">{t("ver todos", "see all")}</Link></p>}
+            </>
+          )}
+          <p className="small" style={{ marginTop: 8 }}>
+            <Link className="qa-btn" href={`/localizar/rfq/nueva?deal=${deal.id}`}>{t("Pedir cotización a varios proveedores", "Request a quote from several suppliers")}</Link>{" "}
+            <span className="src">{t("un correo por proveedor, ya escrito con las piezas de esta Necesidad", "one email per supplier, already written with this Need's pieces")}</span>
+          </p>
+        </section>
+
+        <section className={`jblock${deal.locatedAt ? "" : " loc-pending"}`} id="localizada">
+          <div className="jbh"><b>{t("4 · ¿YA ESTÁ LOCALIZADA?", "4 · IS IT LOCATED?")}</b><span className="grow" />{deal.locatedAt ? <span className="sig ok">{t(`Localizada · ${i.day(deal.locatedAt)}`, `Located · ${i.day(deal.locatedAt)}`)}</span> : <span className="sig attn">{t("Sin localizar", "Not located")}</span>}</div>
+          {deal.locatedAt ? (
+            <>
+              <dl className="qv-dl">
+                <dt>{t("La pieza exacta", "The exact piece")}</dt><dd>{deal.locatedNote ?? <span className="muted">{t("sin nota", "no note")}</span>}</dd>
+                <dt>{t("Se buscará con", "It will be looked for with")}</dt><dd>{picked ? <Link href={`/suppliers/${picked.supplierId}`}>{picked.name}</Link> : deal.locatedSupplierId ? <Link href={`/suppliers/${deal.locatedSupplierId}`}>{t("el proveedor elegido", "the chosen supplier")}</Link> : <span className="muted">{t("por definir en Fuente", "to be defined under Source")}</span>}</dd>
+                <dt>{t("Quién", "Who")}</dt><dd>{deal.locatedByName}</dd>
+              </dl>
+              <p className="small" style={{ marginTop: 8 }}>
+                <a className="btn" href={`${self}?tab=source#fuente`}>{t("Seguir con la Fuente", "Continue with the Source")} →</a>{" "}
+                <Link className="btn secondary" href={`/correo/nuevo?tpl=PROGRESS&id=${deal.id}`}>{t("Escribir al cliente: avance de su solicitud", "Write to the customer: progress on your request")}</Link>
+              </p>
+              {editable && <form action={unmarkLocated.bind(null, deal.id)} style={{ marginTop: 8 }}><button type="submit" className="link small">{t("No era esa pieza: volver a «sin localizar»", "It was not that piece: back to “not located”")}</button></form>}
+            </>
+          ) : editable ? (
+            <form action={markLocated.bind(null, deal.id)} className="stack jform" style={{ maxWidth: 680 }}>
+              <label>{t("¿Cuál es exactamente la pieza? (marca, modelo, número de parte confirmado)", "Which exact piece is it? (brand, model, confirmed part number)")}<input name="locatedNote" maxLength={500} defaultValue={deal.locatedNote ?? ""} placeholder={t("Ej.: Grundfos DDA 7.5-16, ref. 97722156, la misma de la placa", "E.g.: Grundfos DDA 7.5-16, ref. 97722156, same as the nameplate")} /></label>
+              <label>{t("¿Con qué proveedor la vamos a buscar? (opcional)", "Which supplier will we look for it with? (optional)")}
+                <select name="supplierId" defaultValue={deal.locatedSupplierId ?? loc?.options[0]?.supplierId ?? ""}>
+                  <option value="">{t("Todavía no sé", "I don't know yet")}</option>
+                  {(loc?.options ?? []).map((o) => <option key={o.supplierId} value={o.supplierId}>{o.name}</option>)}
+                </select>
+              </label>
+              {!(deal.items.length > 0 && (hasCode || hasPhoto)) && <p className="note attn" style={{ margin: 0 }}>{t("Antes de marcarla: falta el producto, y su número de parte o una foto (bloques 1 y 2).", "Before marking it: the product is missing, and its part number or a photo (blocks 1 and 2).")}</p>}
+              <div><button type="submit" disabled={!(deal.items.length > 0 && (hasCode || hasPhoto))}>{t("La pieza está localizada", "The piece is located")}</button></div>
+              <span className="src">{t("Con esto el paso «Localizar» queda hecho y sigue «Fuente»: de dónde sale y cuánto cuesta.", "With this the “Locate” step is done and “Source” comes next: where it comes from and what it costs.")}</span>
+            </form>
+          ) : null}
+        </section>
+      </>
+    );
+  };
+
   const Source = () => (
     <>
       <section className="jblock">
@@ -704,6 +838,13 @@ export default async function JourneyPage({
           <button className="secondary" type="submit">{t("Buscar en Localizar repuestos", "Search in Find parts")}</button>
         </form>
       </section>
+      {editable && (
+        <section className="jblock" id="avance-cliente">
+          <div className="jbh"><b>{t("AVISAR AL CLIENTE CÓMO VA", "TELL THE CUSTOMER HOW IT IS GOING")}</b></div>
+          <p className="small muted">{t("Un correo ya escrito con lo que SOLU sabe de esta Necesidad: qué pidió, qué busca lograr, la pieza localizada, en qué vamos y cuándo le volvemos a escribir. Lo revisas antes de enviar; si la IA está conectada, puede redactarlo por ti.", "An email already written from what SOLU knows about this Need: what was asked, what they want to achieve, the located piece, where we are and when we write again. You review it before sending; if AI is connected, it can draft it for you.")}</p>
+          <Link className="btn secondary" href={`/correo/nuevo?tpl=PROGRESS&id=${deal.id}`}>{t("Escribir al cliente: avance de su solicitud", "Write to the customer: progress on your request")}</Link>
+        </section>
+      )}
       <PhaseLog phase="source" title={t("REGISTRO DE BÚSQUEDA", "SOURCING RECORD")} empty={t("Registra cotizaciones de proveedores, plazos que te dieron y por qué eliges uno.", "Record supplier quotes, lead times they gave, and why you choose one.")} />
     </>
   );
@@ -1107,7 +1248,7 @@ export default async function JourneyPage({
       </div>
     );
 
-  const Body = { resumen: Summary, need: Need, source: Source, quote: Quote, execute: Execute, finance: Finance, file: BizFile, result: Result }[tab];
+  const Body = { resumen: Summary, need: Need, locate: Locate, source: Source, quote: Quote, execute: Execute, finance: Finance, file: BizFile, result: Result }[tab];
 
   return (
     <div className="jw need">

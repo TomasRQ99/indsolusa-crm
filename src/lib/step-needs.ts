@@ -14,9 +14,10 @@ export type StepNeedsInput = {
   self: string; // /deals/<id>
   step: PathKey;
   deal: {
+    locatedAt: Date | null; files: { id: string }[];
     desiredResult: string | null; sourcingNote: string | null; supplierCost: Money; quoteSentAt: Date | null; poAcceptedAt: Date | null;
     accountId: string; account: { creditLimit: Money | null };
-    items: { qty: number }[];
+    items: { qty: number; code: string | null }[];
     supplierPos: { id: string; code: string; releasedAt: Date | null; sentAt: Date | null; confirmedAt: Date | null; receivedAt: Date | null; supplier: { name: string }; payments: { id: string; amount: Money; currency: string; verifiedAt: Date | null; approvedAt: Date | null; executedAt: Date | null; executions: { id: string }[] }[] }[];
     shipments: { id: string }[];
     deliveries: { id: string }[];
@@ -56,6 +57,14 @@ export function stepNeeds(x: StepNeedsInput, t: (es: string, en: string) => stri
   switch (x.step) {
     case "need":
       return [it(!!d.desiredResult, t("El resultado que busca el cliente", "The result the customer wants"), t("Pestaña Necesidad → «Resultado deseado: qué quiere lograr el cliente» → Guardar necesidad", "Need tab → “Desired result: what the customer wants to achieve” → Save need"), `${self}?tab=need#resultado-deseado`)];
+    case "locate": {
+      const hasCode = d.items.some((x) => !!x.code?.trim()), hasPhoto = d.files.length > 0;
+      return [
+        it(d.items.length > 0, t("El producto o repuesto que pide el cliente", "The product or spare part the customer asks for"), t("Pestaña Localizar → bloque LA PIEZA → «Agregar producto»", "Locate tab → THE PIECE block → “Add product”"), tabAt("locate", "pieza"), { go: t("Agregar la pieza", "Add the piece") }),
+        it(hasCode || hasPhoto, t("El número de parte, o una foto de la pieza o de su placa", "The part number, or a photo of the piece or its nameplate"), t("Pestaña Localizar → escribe el número de parte en LA PIEZA, o sube la foto en FOTOS. Con cualquiera de las dos basta; las dos es mejor.", "Locate tab → type the part number under THE PIECE, or upload the photo under PHOTOS. Either one is enough; both is better."), tabAt("locate", hasCode ? "fotos" : "pieza"), { go: t("Ir a completarlo", "Go complete it") }),
+        it(!!d.locatedAt, t("La pieza marcada como localizada", "The piece marked as located"), t("Pestaña Localizar → revisa DÓNDE BUSCARLA (proveedores con los que ya trabajamos) → escribe cuál es la pieza exacta → «La pieza está localizada»", "Locate tab → check WHERE TO LOOK (suppliers we already work with) → type which exact piece it is → “The piece is located”"), tabAt("locate", "localizada"), { go: t("Marcar localizada", "Mark located") }),
+      ];
+    }
     case "source":
       return [it(d.supplierPos.length > 0 || Number(d.supplierCost) > 0 || !!d.sourcingNote, t("De dónde lo vamos a conseguir, o el costo del producto", "Where we will get it, or the product's cost"), t("Pestaña Fuente → escribe la fuente o el costo en «Liquidación de costos» → Guardar fuente", "Source tab → type the source or the cost under “Cost settlement” → Save source"), tabAt("source", "fuente"))];
     case "quote": {

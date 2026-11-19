@@ -6,7 +6,7 @@
 //  3) The six SOLU templates rendered with sample data: size, links, subject length, capitals.
 import { Resolver } from "node:dns/promises";
 import { mailConfig } from "./mail";
-import { ackMail, deliveryMail, followUpMail, negotiateMail, offerMail, paymentMail, rfqMail, TEMPLATES, type Mail, type TemplateKey } from "./email-templates";
+import { ackMail, progressMail, deliveryMail, followUpMail, negotiateMail, offerMail, paymentMail, rfqMail, TEMPLATES, type Mail, type TemplateKey } from "./email-templates";
 
 export type Level = "ok" | "warn" | "fail" | "info";
 export type Check = { key: string; level: Level; title: { es: string; en: string }; found: string | null; meaning: { es: string; en: string }; fix: { es: string; en: string } | null };
@@ -173,6 +173,7 @@ export function templateReview(sender: string, from: string) {
     DELIVERY: deliveryMail({ lang: "EN", poCode: "SPO-2611-0001", proformaRef: "PF-1182", items, promised: day, issue: null, replyBy: day, sender, from }),
     OFFER: offerMail({ lang: "EN", quoteNumber: "000112228", contactName: "Ana", items, currency: "USD", total: 2557, leadText: "12–15 days after your P.O.", validUntil: day, incoterm: "FCA Miami", paymentTerms: "50% advance", condition: "New", sender, from }),
     PAYMENT: paymentMail({ lang: "EN", invoiceNumber: "000112221", contactName: null, amountDue: 2557, currency: "USD", dueAt: day, customerPo: "SN-77120", sender, from }),
+    PROGRESS: progressMail({ lang: "EN", code: "J-2611-0001", contactName: "Ana", customer: "ABC Foods", need: "Drive for the mixing line", desiredResult: "the mixing line back at full speed", items: items.map(({ unitPrice: _p, ...x }) => x), machine: null, located: null, isLocated: false, stage: "SOURCING", ask: { partNumber: false, photo: true }, followUp: day, sender, from }),
     ACK: ackMail({ lang: "EN", code: "J-2611-0001", contactName: "Ana", customer: "ABC Foods", need: "Drive for the mixing line", items: items.map(({ unitPrice: _p, ...x }) => x), machine: null, followUp: day, sender, from }),
   };
   return (Object.keys(samples) as TemplateKey[]).map((k) => {

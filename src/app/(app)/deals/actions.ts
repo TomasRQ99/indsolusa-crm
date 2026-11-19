@@ -156,7 +156,7 @@ export async function removeItem(dealId: string, itemId: string) {
 
 // ---------- Journey Workspace: feed information into each phase ----------
 
-const TABS = ["resumen", "need", "source", "quote", "execute", "finance", "file", "result"] as const;
+const TABS = ["resumen", "need", "locate", "source", "quote", "execute", "finance", "file", "result"] as const;
 const PHASES = ["need", "source", "quote", "execute", "finance", "file", "result", "promise"] as const;
 const fmtDay = (d: Date | null | undefined) => (d ? new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(d) : "—");
 const dayOf = (s: FormDataEntryValue | null) => (s && String(s) ? new Date(`${String(s)}T00:00:00Z`) : null);
@@ -181,6 +181,47 @@ function jback(id: string, fd: FormData, ok: string): never {
 
 async function logFact(userId: string, dealId: string, accountId: string, phase: string, subject: string, source: string | null) {
   await db.activity.create({ data: { type: "NOTE", subject: subject.slice(0, 200), userId, accountId, dealId, phase, source } });
+}
+
+/** Localizar: the exact piece is identified. It needs a product, and its part number or a photo; the note says which
+ *  piece it is, and the supplier (one the company already worked with) where it will be looked for is optional. */
+export async function markLocated(id: string, fd: FormData) {
+  const { user } = await editableDeal(id);
+  const d = await db.deal.findUniqueOrThrow({ where: { id }, select: { accountId: true, items: { select: { code: true } }, _count: { select: { files: true } } } });
+  if (d.items.length === 0 || !(d.items.some((x) => !!x.code?.trim()) || d._count.files > 0)) { refreshApp(); redirect(`/deals/${id}?tab=locate&ok=sin-pieza#pieza`); }
+  const supplierId = txt(fd, "supplierId", 40);
+  const supplier = supplierId ? await db.supplier.findUnique({ where: { id: supplierId }, select: { id: true, name: true } }) : null;
+  const note = txt(fd, "locatedNote", 500);
+  await db.deal.update({ where: { id }, data: { locatedAt: new Date(), locatedByName: user.name, locatedNote: note, locatedSupplierId: supplier?.id ?? null } });
+  await logFact(user.id, id, d.accountId, "source", `Pieza localizada${note ? `: ${note}` : ""}${supplier ? ` · se buscará con ${supplier.name}` : ""}`, "Localizar");
+  refreshApp();
+  redirect(`/deals/${id}?tab=locate&ok=localizada#localizada`);
+}
+
+/** Back to "not located yet" (the piece turned out to be another one). */
+export async function unmarkLocated(id: string) {
+  await editableDeal(id);
+  await db.deal.update({ where: { id }, data: { locatedAt: null, locatedByName: null } });
+  refreshApp();
+  redirect(`/deals/${id}?tab=locate&ok=sin-localizar#localizada`);
+}
+
+/** A product added from the Localizar tab: what the customer asks for, with no price yet (the quote sets it). */
+export async function addLocateItem(id: string, fd: FormData) {
+  await editableDeal(id);
+  const description = txt(fd, "description", 300), code = txt(fd, "code", 60);
+  const qty = Math.max(1, Math.round(Number(fd.get("qty") ?? 1)) || 1);
+  if (description || code) await db.dealItem.create({ data: { dealId: id, qty, code, description: description ?? code!, unitPrice: 0 } });
+  refreshApp();
+  redirect(`/deals/${id}?tab=locate&ok=${description || code ? "pieza" : "sin-pieza"}#pieza`);
+}
+
+/** The part number of a product, typed once it is known. */
+export async function setItemCode(id: string, itemId: string, fd: FormData) {
+  await editableDeal(id);
+  await db.dealItem.updateMany({ where: { id: itemId, dealId: id }, data: { code: txt(fd, "code", 60) } });
+  refreshApp();
+  redirect(`/deals/${id}?tab=locate&ok=pieza#pieza`);
 }
 
 /** Need: what the customer wants to achieve, specs, by when, how it will be measured, cost of not solving it. */
@@ -417,7 +458,8 @@ export async function addNeedFiles(id: string, fd: FormData) {
   const have = await db.needFile.count({ where: { dealId: id } });
   const r = await storeFiles(id, fd, user.name, 20 - have);
   refreshApp();
-  redirect(`/deals/${id}?tab=need&ok=${r.saved ? (r.skipped ? "archivos-parte" : "archivos") : "archivos-nada"}#archivos`);
+  const where = fd.get("back") === "locate" ? "tab=locate" : "tab=need";
+  redirect(`/deals/${id}?${where}&ok=${r.saved ? (r.skipped ? "archivos-parte" : "archivos") : "archivos-nada"}#${where === "tab=locate" ? "fotos" : "archivos"}`);
 }
 
 export async function removeNeedFile(id: string, fileId: string) {

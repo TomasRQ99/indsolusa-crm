@@ -379,6 +379,12 @@ model Deal {
   activities            Activity[]
   items                 DealItem[]
   files                 NeedFile[]
+  /// "Localizar" step: when the exact piece was identified, by whom, what it is, and the supplier picked to look for it.
+  locatedAt             DateTime?
+  locatedByName         String?
+  locatedNote           String?
+  locatedSupplierId     String?
+  aiDrafts              AiDraft[]
   supplierPos           SupplierPO[]
   rfqs                  Rfq[]
   shipments             Shipment[]
@@ -756,6 +762,23 @@ model NeedFile {
   data           Bytes
   uploadedByName String?
   createdAt      DateTime @default(now())
+
+  @@index([dealId])
+}
+
+/// A customer email drafted with AI from a Need's own data. Kept so every AI text has an author, a date and a model.
+model AiDraft {
+  id            String   @id @default(cuid())
+  dealId        String
+  deal          Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  kind          String
+  lang          String
+  subject       String
+  body          String
+  model         String?
+  createdById   String
+  createdByName String
+  createdAt     DateTime @default(now())
 
   @@index([dealId])
 }

@@ -2620,3 +2620,14 @@ a.sig:hover { text-decoration: underline; }
 .oroute a .oroute-n { margin-left: 2px; min-width: 18px; padding: 0 5px; height: 18px; line-height: 18px; border-radius: 9px; background: var(--brand-soft); color: var(--brand-strong); font-size: 11px; font-weight: 700; text-align: center; }
 .oroute a.on .oroute-n { background: rgba(255, 255, 255, .25); color: #fff; }
 @media (max-width: 900px) { .trm-chip { display: none; } .newmenu > summary { padding: 0 10px; } }
+/* Need → Localizar: photos, and the suppliers ordered for this piece */
+.loc-photos { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.loc-photos a { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); text-decoration: none; overflow: hidden; }
+.loc-photos img, .loc-pdf { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-sunken, #f2f4f8); }
+.loc-pdf { display: grid; place-items: center; font-weight: 700; color: var(--ink-2); }
+.loc-photos span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.loc-opts { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; }
+.loc-opts li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line); }
+.loc-opts li.on { background: var(--brand-soft, #e7f0fd); box-shadow: -8px 0 0 var(--brand-soft, #e7f0fd), 8px 0 0 var(--brand-soft, #e7f0fd); }
+.loc-pending { border-left: 4px solid var(--risk); }
+input.need-in { border-color: var(--risk); box-shadow: 0 0 0 2px #f6d5d0; background: #fff8f7; }

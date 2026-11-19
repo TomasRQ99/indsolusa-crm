@@ -40,8 +40,8 @@ export const journeyInclude = {
 export type JourneyDeal = Prisma.DealGetPayload<{ include: typeof journeyInclude }>;
 
 export type Tone = "risk" | "move" | "clarity" | "ok" | "wait";
-export type TabKey = "resumen" | "need" | "source" | "quote" | "execute" | "finance" | "file" | "result";
-export type PathKey = "need" | "source" | "quote" | "po" | "purchase" | "pay" | "ship" | "deliver" | "invoice" | "cash" | "result";
+export type TabKey = "resumen" | "need" | "locate" | "source" | "quote" | "execute" | "finance" | "file" | "result";
+export type PathKey = "need" | "locate" | "source" | "quote" | "po" | "purchase" | "pay" | "ship" | "deliver" | "invoice" | "cash" | "result";
 export type PathState = "done" | "now" | "late" | "wait" | "risk" | "later" | "gap";
 export type PathStep = { key: PathKey; label: string; tab: TabKey; state: PathState };
 /** What a Journey asks of the person looking at a list, from the few fields a list already has. */
@@ -346,6 +346,7 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
   // ---------- Progressive tabs ----------
   const has: Record<Exclude<TabKey, "resumen">, boolean> = {
     need: true,
+    locate: true,
     source: deal.supplierPos.length > 0 || !!deal.sourcingNote || Number(deal.supplierCost) > 0 || ["PROPOSAL", "NEGOTIATION", "WON"].includes(deal.stage),
     quote: deal.items.length > 0 || Number(deal.amount) > 0 || !!deal.quoteSentAt || ["PROPOSAL", "NEGOTIATION", "WON"].includes(deal.stage),
     execute: !!deal.customerPo || deal.supplierPos.length > 0 || deal.deliveries.length > 0,
@@ -456,6 +457,9 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
   const pays = deal.supplierPos.flatMap((p) => p.payments);
   const rawSteps: { key: PathKey; es: string; en: string; tab: TabKey; done: boolean; soft?: boolean }[] = [
     { key: "need", es: "Necesidad", en: "Need", tab: "need", done: !!deal.desiredResult, soft: true },
+    // Localizar (2026-11-19): the exact piece identified before looking for its source. A Need that already has its
+    // source written (older Needs, or a piece everybody knows) does not go back to this step.
+    { key: "locate", es: "Localizar", en: "Locate", tab: "locate", done: !!deal.locatedAt || deal.supplierPos.length > 0 || Number(deal.supplierCost) > 0 || !!deal.sourcingNote, soft: true },
     { key: "source", es: "Fuente", en: "Source", tab: "source", done: deal.supplierPos.length > 0 || Number(deal.supplierCost) > 0 || !!deal.sourcingNote, soft: true },
     { key: "quote", es: "Cotización", en: "Quote", tab: "quote", done: !!deal.quoteSentAt || deal.stage === "NEGOTIATION" || won, soft: true },
     { key: "po", es: "OC del cliente", en: "Customer PO", tab: "quote", done: !!deal.poAcceptedAt || won },
@@ -479,6 +483,7 @@ export function buildJourney(deal: JourneyDeal, i: I, viewerId: string, since: D
   // What each step needs to be done, in plain words: this is what the blue box says.
   const NEEDS: Record<PathKey, [string, string]> = {
     need: ["Escribir el resultado que busca el cliente", "Write down the result the customer wants"],
+    locate: ["Localizar la pieza exacta: fotos, número de parte y dónde buscarla", "Locate the exact piece: photos, part number and where to look for it"],
     source: ["Registrar la fuente y su costo", "Record the source and its cost"],
     quote: ["Enviar la cotización al cliente", "Send the quote to the customer"],
     po: ["Recibir y aceptar la OC del cliente", "Receive and accept the customer PO"],
