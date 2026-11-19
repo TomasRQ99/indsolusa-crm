@@ -46,3 +46,10 @@ export async function monthSeries(endKey: string, n = 6) {
   for (const r of rows) { const m = out.find((o) => o.key === monthKey(r.boughtAt!)); if (m) m[r.kind === "SERVICE" ? "services" : "products"] += Number(r.amountUsd); }
   return out.map((o) => ({ ...o, products: Math.round(o.products * 100) / 100, services: Math.round(o.services * 100) / 100 }));
 }
+
+/** Internal spending inside any period (start inclusive, end exclusive): approved purchases by the day they were bought. */
+export async function rangeSpend(start: Date, end: Date) {
+  const rows = await db.internalPurchase.findMany({ where: { status: "APPROVED", boughtAt: { gte: start, lt: end } }, select: { kind: true, amountUsd: true } });
+  const sum = (xs: typeof rows) => Math.round(xs.reduce((s, x) => s + Number(x.amountUsd), 0) * 100) / 100;
+  return { n: rows.length, total: sum(rows), products: sum(rows.filter((x) => x.kind !== "SERVICE")), services: sum(rows.filter((x) => x.kind === "SERVICE")) };
+}

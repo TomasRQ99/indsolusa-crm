@@ -10,6 +10,7 @@ import { closeReport } from "@/lib/closes";
 import { interventionQueue } from "@/lib/future-pulse";
 import { peopleCapacity } from "@/lib/gerencia-people";
 import { decisionsNeeded } from "@/lib/gerencia-store";
+import { monthKey, rangeSpend } from "@/lib/internal-expenses";
 
 // Módulo 15 §19 · Executive close of a day, a week or a month. It counts what happened inside the period (event
 // dates), and it starts with the future: what Gerencia must decide and what is coming, then result, value, risks,
@@ -40,6 +41,10 @@ export default async function ExecutiveClosePage({ searchParams }: { searchParam
     db.delivery.findMany({ where: { deliveredAt: { gte: start, lt: end }, deal: { internal: false } }, select: { deliveredAt: true, deal: { select: { promisedDate: true } } } }),
     ger ? peopleCapacity(T) : null,
   ]);
+  // What the company spent on itself in the period, and in the period just before it (same kind of period).
+  const prevB = boundsOf(kind, shift(kind, ref, -1));
+  const [spend, spendPrev] = await Promise.all([rangeSpend(start, end), rangeSpend(prevB.start, prevB.end)]);
+  const spendDiff = Math.round((spend.total - spendPrev.total) * 100) / 100;
   const state = kind === "quarter" ? (new Date() >= end ? "FINAL" as const : new Date() < start ? "FUTURE" as const : "OPEN" as const) : closeState(kind, ref, new Date(), fpol.value.closeTime);
   const priorities = kind === "quarter" ? await db.strategicPriority.findMany({ where: { OR: [{ status: "ACTIVE" }, { closedAt: { gte: start, lt: end } }] }, orderBy: { createdAt: "asc" }, select: { id: true, title: true, status: true, narrative: true, narrativeAt: true, nextReviewOn: true, closedNote: true, owner: { select: { name: true } }, _count: { select: { links: true } } } }) : [];
   const withPromise = deliveries.filter((d) => d.deal.promisedDate), onTime = withPromise.filter((d) => +d.deliveredAt <= +d.deal.promisedDate! + 864e5 - 1);
@@ -92,6 +97,8 @@ export default async function ExecutiveClosePage({ searchParams }: { searchParam
         <dl className="qv-dl">
           <dt>{t("Facturado", "Invoiced")}</dt><dd className="mono">{i.money(rep.happened.invoiced)}</dd>
           <dt>{t("Cobrado", "Collected")}</dt><dd className="mono">{i.money(rep.happened.collected)} <span className="src">{t("pagos recibidos en el periodo", "payments received in the period")}</span></dd>
+          <dt>{t("Gastos internos", "Internal spending")}</dt><dd className="mono"><Link href={`/compras/internas?mes=${monthKey(start)}#reporte`}><b>{i.money(spend.total)}</b></Link> <span className="src">{t(`${spend.n} compra(s) aprobada(s) · productos ${i.money(spend.products)} · servicios ${i.money(spend.services)}`, `${spend.n} approved purchase(s) · products ${i.money(spend.products)} · services ${i.money(spend.services)}`)}</span>
+            <span className="src block">{spendPrev.total === 0 && spend.total === 0 ? t("Sin gastos internos en este periodo ni en el anterior.", "No internal spending in this period or the one before.") : <>{t("Periodo anterior", "Previous period")}: {i.money(spendPrev.total)} · <b className={spendDiff > 0 ? "attn-t" : ""}>{spendDiff === 0 ? t("igual", "the same") : spendDiff > 0 ? t(`${i.money(spendDiff)} más`, `${i.money(spendDiff)} more`) : t(`${i.money(-spendDiff)} menos`, `${i.money(-spendDiff)} less`)}</b></>} · {t("lo que la empresa compró para sí misma, no para clientes", "what the company bought for itself, not for customers")}</span></dd>
           <dt>{t("Entregas al cliente", "Customer deliveries")}</dt><dd>{deliveries.length}{withPromise.length ? ` · ${t(`${onTime.length} de ${withPromise.length} dentro de la promesa`, `${onTime.length} of ${withPromise.length} within the promise`)}` : ""}</dd>
         </dl>
       </section>

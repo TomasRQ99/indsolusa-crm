@@ -1131,7 +1131,7 @@
    "Review receivables by age: not due, 1 to 30, 31 to 60 and over 60 days.",
    "Click each block's link to go where the work is done."
   ],
-  "expect": "The receivable total is the same as in Receivables. It is today's snapshot. The bank balance, projected cash and budget are in Administration."
+  "expect": "The receivable total is the same as in Receivables. It is today's snapshot. The bank balance, projected cash and budget are in Administration. The “INTERNAL SPENDING” block shows what the company bought for itself this month (total, products, services and purchases without a receipt) and the chart of the last 6 months; click a month to open its detail under Operations → Internal purchases."
  },
  "inf-constructor": {
   "t": "Report builder and saved views",
@@ -1186,7 +1186,7 @@
    "Use [[anterior]] and \"next\" to move between periods.",
    "In Quarter, also read “QUARTERLY REVIEW: DIRECTION AND RESOURCES”: each priority and whether it was reviewed, and the resource-allocation decisions."
   ],
-  "expect": "The future, result, value and cash blocks count what happened within the period. Decisions, risks and capacity show how things stand today. They are company totals, with no list of people."
+  "expect": "The future, result, value and cash blocks count what happened within the period. Decisions, risks and capacity show how things stand today. They are company totals, with no list of people. In block 6, “Internal spending” adds up the approved internal purchases of the period and compares them with the period before; the amount is a link to the month's report."
  },
  "ger-puente": {
   "t": "Future bridge",
@@ -1491,6 +1491,6 @@
    "The approver sees it under “Waiting for your approval” (and in Pending approvals): they click [[Revisar y aprobar]], look at the receipt in the RECEIPTS block and click [[Aprobar]].",
    "For month end, go down to “INTERNAL SPENDING REPORT”: total, products and services, the 6-month chart, where it went and who bought. [[Descargar para Excel]] downloads the month's detail."
   ],
-  "expect": "Only approved purchases that were already bought count in the report, in the month of the purchase and in dollars (another currency is converted at the day's rate). If the receipt is missing, the list marks it in red and it is uploaded later with “Upload receipt”. Finance, Administration or Management approve; whoever recorded it does not approve it, except Management. The report is seen by Finance, Administration, Direction and Management."
+  "expect": "Only approved purchases that were already bought count in the report, in the month of the purchase and in dollars (another currency is converted at the day's rate). If the receipt is missing, the list marks it in red and it is uploaded later with “Upload receipt”. Finance, Administration or Management approve; whoever recorded it does not approve it, except Management. The report is seen by Finance, Administration, Direction and Management. The total also shows under REPORTS → Administration and MANAGEMENT → Executive close."
  }
 }

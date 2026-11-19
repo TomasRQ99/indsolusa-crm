@@ -10,6 +10,7 @@ import { HORIZONS, HORIZON_TEXT, futurePulse } from "@/lib/future-pulse";
 import { profitSummary } from "@/lib/profit-summary";
 import { HowCalc } from "@/components/HowCalc";
 import { CellBar, Split } from "@/components/Viz";
+import { CATEGORIES, monthKey, monthReport, monthSeries, monthStart } from "@/lib/internal-expenses";
 
 // Módulo 13 §4.5 · Administración: receivables by age, what is due in and out, credit exposure, what the bank shows
 // that nobody has explained, Eságara and commissions. A snapshot of today; each block links to where it is worked.
@@ -37,11 +38,17 @@ export default async function AdminReportPage() {
   const over = accounts.map((a) => ({ ...a, owed: Math.round((byAcc.get(a.id) ?? 0) * 100) / 100 })).filter((a) => a.owed > Number(a.creditLimit) + 0.005).sort((a, b) => b.owed - a.owed);
   const unexplained = txs.map((x) => matchState(Number(x.amount), sumMoney(x.matches.map((m) => m.amount)), x.classifiedAs)).filter((m) => m.state === "UNMATCHED" || m.state === "PARTIAL");
   const usd = (n: number) => `USD ${i.n2(n)}`;
+  // Internal spending: this month so far, and the last six months.
+  const mk = monthKey(T);
+  const [spend, series] = await Promise.all([monthReport(mk), monthSeries(mk, 6)]);
+  const spendMax = Math.max(1, ...series.map((m) => m.products + m.services));
+  const shortMonth = (k: string) => monthStart(k).toLocaleDateString(i.es ? "es-CO" : "en-US", { month: "short", timeZone: "UTC" });
+  const longMonth = (k: string) => monthStart(k).toLocaleDateString(i.es ? "es-CO" : "en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   const calMax = Math.max(0, ...HORIZONS.flatMap((h) => [f.cashIn[h].usd, f.cashOut[h].usd, f.contracted.toInvoice[h].usd]));
 
   return (
     <>
-      <div className="ph"><div><h1>{t("Administración: recursos y exposición", "Administration: resources and exposure")}</h1><p>{t("La cartera por edad, lo que debe entrar y salir, el crédito, lo que el banco muestra sin explicar, la Eságara y las comisiones.", "Receivables by age, what is due in and out, credit, what the bank shows unexplained, Eságara and commissions.")}</p>
+      <div className="ph"><div><h1>{t("Administración: recursos y exposición", "Administration: resources and exposure")}</h1><p>{t("La cartera por edad, lo que debe entrar y salir, el crédito, lo que el banco muestra sin explicar, los gastos internos, la Eságara y las comisiones.", "Receivables by age, what is due in and out, credit, what the bank shows unexplained, internal spending, Eságara and commissions.")}</p>
         <p className="small">{t("calculado", "as of")} {i.day(new Date())} · <span className="sig wait">{t("foto de hoy", "today's snapshot")}</span></p></div></div>
 
       <section className="card" id="cartera">
@@ -79,6 +86,28 @@ export default async function AdminReportPage() {
       <section className="card" id="banco">
         <b>{t("BANCO", "BANK")}</b>
         <p className="small">{txs.length === 0 ? <span className="muted">{t("Aún no se ha subido ningún extracto.", "No statement has been uploaded yet.")}</span> : <>{t("Movimientos sin explicar", "Movements not explained")}: <b className={`mono ${unexplained.length ? "risk-t" : ""}`}>{unexplained.length}</b> {t("por", "for")} <span className="mono">{usd(sumMoney(unexplained.map((m) => m.open)))}</span> <span className="muted">· {t(`de ${txs.length} cargados`, `of ${txs.length} loaded`)}</span></>} · <Link href="/administracion/banco">{t("Abrir banco", "Open bank")}</Link></p>
+      </section>
+
+      <section className="card" id="gastos-internos">
+        <b>{t("GASTOS INTERNOS", "INTERNAL SPENDING")}</b> <span className="small muted">{t(`lo que la empresa compra para sí misma · ${longMonth(mk)}, hasta hoy`, `what the company buys for itself · ${longMonth(mk)}, to date`)}</span>
+        <div className="goal-grid">
+          <div className="goal-card"><span className="small muted">{t("Total del mes", "Month total")}</span><b className="tv">{usd(spend.total)}</b><span className="src">{t(`${spend.rows.length} compra(s) aprobada(s)`, `${spend.rows.length} approved purchase(s)`)}</span></div>
+          <div className="goal-card"><span className="small muted">{t("Productos", "Products")}</span><b className="tv">{usd(spend.products)}</b></div>
+          <div className="goal-card"><span className="small muted">{t("Servicios", "Services")}</span><b className="tv">{usd(spend.services)}</b></div>
+          <div className="goal-card"><span className="small muted">{t("Sin recibo", "Without receipt")}</span><b className={`tv${spend.noReceipt ? " risk-t" : ""}`}>{spend.noReceipt}</b></div>
+        </div>
+        <div className="ie-chart" role="img" aria-label={t("Gasto interno por mes, productos y servicios", "Internal spending by month, products and services")}>
+          {series.map((m) => (
+            <Link key={m.key} className={`ie-bar${m.key === mk ? " on" : ""}`} href={`/compras/internas?mes=${m.key}#reporte`} title={`${longMonth(m.key)} · ${usd(m.products + m.services)}`}>
+              <span className="ie-val">{m.products + m.services > 0 ? i.n(m.products + m.services) : "—"}</span>
+              <span className="ie-col"><span className="s" style={{ height: `${(m.services / spendMax) * 100}%` }} /><span className="p" style={{ height: `${(m.products / spendMax) * 100}%` }} /></span>
+              <span className="ie-m">{shortMonth(m.key)}</span>
+            </Link>
+          ))}
+        </div>
+        <p className="src"><span className="ie-key p" /> {t("Productos", "Products")} · <span className="ie-key s" /> {t("Servicios", "Services")} · USD · {t("clic en un mes para ver su detalle", "click a month to see its detail")}</p>
+        {spend.byCategory.length > 0 && <p className="small">{t("En qué se fue este mes", "Where it went this month")}: {spend.byCategory.slice(0, 4).map((x, k) => <span key={x.key}>{k ? " · " : ""}{t(CATEGORIES[x.key]?.es ?? x.key, CATEGORIES[x.key]?.en ?? x.key)} <span className="mono">{usd(x.usd)}</span></span>)}</p>}
+        <p className="src">{t("Solo compras aprobadas y ya compradas, por el mes de la compra.", "Only approved purchases already bought, by the month of the purchase.")} <Link href="/compras/internas#reporte">{t("Abrir el reporte completo y descargarlo", "Open the full report and download it")}</Link> · <Link href="/compras/internas#nueva">{t("Registrar una compra interna", "Record an internal purchase")}</Link></p>
       </section>
 
       <section className="card" id="rentabilidad">

@@ -667,7 +667,7 @@
     "Quien aprueba la ve en «Esperan tu aprobación» (y en Pendientes por aprobar): hace clic en [[Revisar y aprobar]], mira el recibo en el bloque RECIBOS y hace clic en [[Aprobar]].",
     "Para el cierre de mes, baja a «REPORTE DE GASTOS INTERNOS»: total, productos y servicios, la gráfica de 6 meses, en qué se fue y quién compró. [[Descargar para Excel]] baja el detalle del mes."
    ],
-   "expect": "Solo las compras aprobadas y ya compradas cuentan en el reporte, en el mes de la compra y en dólares (otra moneda se convierte con la tasa del día). Si falta el recibo, la lista lo marca en rojo y se sube después con «Subir recibo». Aprueban Finanzas, Administración o Gerencia; quien la registró no la aprueba, salvo Gerencia. El reporte lo ven Finanzas, Administración, Dirección y Gerencia."
+   "expect": "Solo las compras aprobadas y ya compradas cuentan en el reporte, en el mes de la compra y en dólares (otra moneda se convierte con la tasa del día). Si falta el recibo, la lista lo marca en rojo y se sube después con «Subir recibo». Aprueban Finanzas, Administración o Gerencia; quien la registró no la aprueba, salvo Gerencia. El reporte lo ven Finanzas, Administración, Dirección y Gerencia. El total también aparece en INFORMES → Administración y en GERENCIA → Cierre ejecutivo."
   },
   {
    "id": "logistica",
@@ -1519,7 +1519,7 @@
     "Revisa la cartera por edad: sin vencer, 1 a 30, 31 a 60 y más de 60 días.",
     "Haz clic en el enlace de cada bloque para ir a donde se trabaja."
    ],
-   "expect": "El total por cobrar es el mismo que en Cuentas por cobrar. Es una foto de hoy. El saldo en bancos, la caja proyectada y el presupuesto están en Administración."
+   "expect": "El total por cobrar es el mismo que en Cuentas por cobrar. Es una foto de hoy. El saldo en bancos, la caja proyectada y el presupuesto están en Administración. El bloque «GASTOS INTERNOS» muestra lo que la empresa compró para sí misma este mes (total, productos, servicios y compras sin recibo) y la gráfica de los últimos 6 meses; haz clic en un mes para abrir su detalle en Operaciones → Compras internas."
   },
   {
    "id": "inf-constructor",
@@ -1589,7 +1589,7 @@
     "Usa [[anterior]] y «siguiente» para moverte entre periodos.",
     "En Trimestre, lee además «Revisión del trimestre: dirección y recursos»: cada prioridad y si se revisó, y las decisiones de asignación de recursos."
    ],
-   "expect": "Los bloques de futuro, resultado, valor y caja cuentan lo que ocurrió dentro del periodo. Decisiones, riesgos y capacidad muestran cómo están las cosas hoy. Son totales de la empresa, sin lista de personas."
+   "expect": "Los bloques de futuro, resultado, valor y caja cuentan lo que ocurrió dentro del periodo. Decisiones, riesgos y capacidad muestran cómo están las cosas hoy. Son totales de la empresa, sin lista de personas. En el bloque 6, «Gastos internos» suma las compras internas aprobadas del periodo y las compara con el periodo anterior; el valor es un enlace al reporte del mes."
   },
   {
    "id": "ger-puente",
