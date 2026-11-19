@@ -238,7 +238,7 @@ export default async function ResultClosurePage({ params, searchParams }: { para
                   <label>{t("Qué aprendimos (una línea)", "What we learned (one line)")}<input name="learning" required maxLength={300} placeholder={t("Ej.: pedir foto de la placa de la base antes de cotizar motores", "E.g.: ask for a photo of the base nameplate before quoting motors")} /></label>
                   {deal.continuity.length
                     ? <p className="small">{t("Señal futura", "Future signal")}: {deal.continuity.map((c) => c.what).join(" · ")}</p>
-                    : <label>{t("¿Por qué no hay una señal futura legítima?", "Why is there no legitimate future signal?")}<input name="noSignalReason" placeholder={t("Ej.: compra única; el cliente no tiene más equipos de este tipo", "E.g.: one-off purchase; the customer has no more equipment of this type")} /></label>}
+                    : <label>{t("¿Por qué no hay una señal futura legítima?", "Why is there no legitimate future signal?")}<input name="noSignalReason" required maxLength={300} placeholder={t("Ej.: compra única; el cliente no tiene más equipos de este tipo", "E.g.: one-off purchase; the customer has no more equipment of this type")} /></label>}
                   <span className="src">{t("Sin encuesta y sin seguimientos automáticos. Si hay una razón real para volver, regístrala como señal de continuidad.", "No survey and no automatic follow-ups. If there's a real reason to come back, record it as a continuity signal.")}</span>
                   <button type="submit">{t("Cerrar Necesidad", "Close Need")}</button>
                 </form>

@@ -113,8 +113,14 @@ export default async function TreasuryPaymentPage({ params, searchParams }: { pa
           <ol className="tre-route">
             <li><b>{t("No uses ningún dato del mensaje", "Don't use any contact data from the message")}</b>{t(" (teléfono, correo, enlace).", " (phone, email, link).")}</li>
             <li><b>{t("Llama al teléfono registrado", "Call the registered phone")}</b> <span className="mono">{s.phone ?? t("— no hay teléfono registrado: pide a Gerencia", "— no registered phone: ask Management")}</span>{t(" y confirma beneficiario, banco, cuenta y SWIFT.", " and confirm beneficiary, bank, account and SWIFT.")}</li>
-            <li><b>{t("Lo verifica otra persona", "Someone else verifies")}</b>{t(` distinta de quien solicitó (${p.requestedBy.name}).`, ` other than the requester (${p.requestedBy.name}).`)}</li>
-            <li><b>{t("Aprueba una tercera persona", "A third person approves")}</b>{t(" con autoridad para el monto. Solo entonces se envía.", " with authority for the amount. Only then is it sent.")}</li>
+            {user.role === "GERENCIA" && p.requestedById === user.id ? (
+              <li><b>{t("Como Gerencia puedes verificar y aprobar tu propia solicitud", "As Management you can verify and approve your own request")}</b>{t(": registra la llamada abajo, en SIGUIENTE PASO, y después aprueba. Queda registrado quién lo hizo. Solo entonces se envía.", ": record the call below, under NEXT STEP, and then approve. Who did it stays on record. Only then is it sent.")}</li>
+            ) : (
+              <>
+                <li><b>{t("Lo verifica otra persona", "Someone else verifies")}</b>{t(` distinta de quien solicitó (${p.requestedBy.name}).`, ` other than the requester (${p.requestedBy.name}).`)}</li>
+                <li><b>{t("Aprueba una tercera persona", "A third person approves")}</b>{t(" con autoridad para el monto. Solo entonces se envía.", " with authority for the amount. Only then is it sent.")}</li>
+              </>
+            )}
           </ol>
         </section>
       )}

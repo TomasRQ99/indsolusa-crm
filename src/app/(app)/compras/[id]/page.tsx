@@ -265,7 +265,7 @@ export default async function SupplierPoPage({ params, searchParams }: { params:
                     )}
                     {prNeedsAsk && (
                       <li className="no"><span className="ic" aria-hidden>!</span><span><a className="chk-a" href={`${prHref}#autorizacion`}>{t("Falta: pedir la autorización de esta compra", "Missing: request the authorization of this purchase")} <span aria-hidden>→</span></a>
-                        <span className="src block">{t("No es una compra de rutina (por ejemplo, primera compra a un proveedor nuevo). En el requerimiento, bloque AUTORIZACIÓN DE LA COMPRA → «Pedir autorización». La decide otra persona.", "It is not a routine purchase (for example, a first purchase from a new supplier). On the requirement, block PURCHASE AUTHORIZATION → “Request authorization”. Someone else decides it.")}</span>
+                        <span className="src block">{t("No es una compra de rutina (por ejemplo, primera compra a un proveedor nuevo). En el requerimiento, bloque AUTORIZACIÓN DE LA COMPRA → «Pedir autorización».", "It is not a routine purchase (for example, a first purchase from a new supplier). On the requirement, block PURCHASE AUTHORIZATION → “Request authorization”.")} {user.role === "GERENCIA" ? t("Como Gerencia, después de pedirla la puedes autorizar tú en ese mismo bloque («Autorizar») y volver aquí a liberar la orden.", "As Management, after requesting it you can authorize it yourself in that same block (“Approve”) and come back here to release the order.") : t("La decide otra persona.", "Someone else decides it.")}</span>
                       </span></li>
                     )}
                     {!prWait && !prNeedsAsk && prRead.readiness.blockers.map((bl) => (

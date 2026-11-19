@@ -83,7 +83,7 @@ export default async function DispatchOrderPage({ params, searchParams }: { para
         </dl>
         {o.customerHoldSince && <p className="note attn">{t("Espera del cliente desde", "Customer wait since")} {i.day(o.customerHoldSince)}: {o.customerHoldReason}</p>}
         {o.cancelledAt && <p className="note">{t("Cancelado", "Cancelled")} {i.day(o.cancelledAt)}: {o.cancelReason}</p>}
-        {st.key === "INSTRUCTION_PENDING" && <p className="note attn">{t("Comercial aún no ha emitido la instrucción de despacho de esta Necesidad. Sin ella no sale.", "Sales hasn't issued this Need's dispatch instruction yet. Without it, nothing leaves.")}</p>}
+        {st.key === "INSTRUCTION_PENDING" && <p className="note attn">{t("Comercial aún no ha emitido la instrucción de despacho de esta Necesidad. Sin ella no sale.", "Sales hasn't issued this Need's dispatch instruction yet. Without it, nothing leaves.")} <Link href={`/deals/${d.id}/despacho`}>{t("Emitir la instrucción ahora →", "Issue the instruction now →")}</Link></p>}
         {st.key === "WAITING_CUSTOMER_ENTRY" && <p className="note attn">{t("Entregado, pero falta la entrada de mercancía del cliente. Quien lleva la relación la pide; mientras tanto no se factura.", "Delivered, but the customer's goods entry is missing. The relationship owner asks for it; meanwhile there is no invoice.")}</p>}
       </section>
 

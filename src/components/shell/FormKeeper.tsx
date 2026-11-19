@@ -13,10 +13,15 @@ const PRE = "solu.form:", SENT = "solu.form.sent", MAX_AGE = 2 * 60 * 60 * 1000,
 const SKIP_TYPES = new Set(["password", "file", "hidden", "submit", "button", "reset", "image"]);
 const SECRET = /pass|token|secret|clave|contrase/i;
 
-const fields = (form: HTMLFormElement) =>
-  ([...form.elements] as Field[]).filter((el) => el.name && !SKIP_TYPES.has((el as HTMLInputElement).type) && !SECRET.test(el.name) && !el.disabled);
-/** The same form gives the same signature on every render: its field names, in order. */
-const signature = (form: HTMLFormElement) => { const n = [...new Set(fields(form).map((f) => f.name))]; return n.length ? n.join("|") : ""; };
+const fields = (form: HTMLFormElement, withDisabled = false) =>
+  ([...form.elements] as Field[]).filter((el) => el.name && !SKIP_TYPES.has((el as HTMLInputElement).type) && !SECRET.test(el.name) && (withDisabled || !el.disabled));
+/** The same form gives the same signature on every render: its field names, in order. A field that is switched off
+ *  for now (a box that only wakes up once another one is filled) still counts, or the form would not be recognised
+ *  when it comes back empty. */
+const signature = (form: HTMLFormElement) => { const n = [...new Set(fields(form, true).map((f) => f.name))]; return n.length ? n.join("|") : ""; };
+/** A form that saves something. Once React has drawn the page in the browser, a form tied to a server action has no
+ *  method="post": its action is a "javascript:" placeholder, and the browser reports method "get". Both count. */
+const saves = (form: HTMLFormElement) => form.method !== "get" || (form.getAttribute("action") ?? "").startsWith("javascript:");
 const keyOf = (path: string, sig: string) => PRE + path + "::" + sig;
 const store = { get: (k: string) => { try { return sessionStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { sessionStorage.setItem(k, v); } catch { /* full or blocked: the form still works */ } }, del: (k: string) => { try { sessionStorage.removeItem(k); } catch { /* same */ } } };
 
@@ -73,7 +78,7 @@ export function FormKeeper({ lang, path }: { lang: "es" | "en"; path: string }) 
       const d: Draft = { path, at: Date.now(), v: read(form) };
       store.set(keyOf(path, sig), JSON.stringify(d));
     };
-    const usable = (form: HTMLFormElement | null | undefined): form is HTMLFormElement => !!form && !!form.closest("#contenido") && form.method !== "get" && !form.hasAttribute("data-nokeep");
+    const usable = (form: HTMLFormElement | null | undefined): form is HTMLFormElement => !!form && !!form.closest("#contenido") && saves(form) && !form.hasAttribute("data-nokeep");
     const onInput = (e: Event) => {
       const form = (e.target as Field | null)?.form;
       if (!e.isTrusted || !usable(form)) return;
