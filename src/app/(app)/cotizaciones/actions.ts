@@ -1,5 +1,6 @@
 "use server";
 
+import { fullAddress } from "@/lib/customer-fields";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -77,8 +78,8 @@ export async function createQuote(dealId: string) {
         creditAmount: deal.creditAmount, creditSrc: deal.creditSrc, transitDays: deal.transitDays,
         incoterm: deal.incoterm,
         paymentTerms: deal.paymentTerms ?? `Net ${deal.account.paymentTermsDays}`,
-        billTo: [deal.account.name, deal.account.address].filter(Boolean).join("\n"),
-        shipTo: [deal.account.name, deal.account.address].filter(Boolean).join("\n"),
+        billTo: [deal.account.name, fullAddress(deal.account, deal.account.docLang !== "EN")].filter(Boolean).join("\n"),
+        shipTo: [deal.account.name, fullAddress(deal.account, deal.account.docLang !== "EN")].filter(Boolean).join("\n"),
         promiseText: deal.promiseText,
         lines: { create: deal.items.map((it, n) => ({ position: n, qty: it.qty, code: it.code, description: it.description, unitPrice: it.unitPrice })) },
       },

@@ -1,3 +1,4 @@
+import { fullAddress } from "@/lib/customer-fields";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { invoiceCash } from "@/lib/domain";
@@ -14,7 +15,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     where: { id },
     include: {
       applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } },
-      account: { select: { name: true, address: true, docLang: true } },
+      account: { select: { name: true, address: true, city: true, region: true, postalCode: true, country: true, docLang: true } },
       delivery: { include: { lines: { include: { dealItem: true } } } },
       quote: { include: { lines: { orderBy: { position: "asc" } } } },
       deal: { select: { customerPo: true, owner: { select: { name: true } }, items: true } },
@@ -36,7 +37,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const fromLines = linesTotal(lines, (l) => l.qty, (l) => l.unitPrice);
   if (!sameMoney(fromLines, inv.amount)) lines = [{ qty: 1, code: null, description: lang === "EN" ? "Partial invoice per customer P.O." : "Factura parcial según orden de compra", unitPrice: money2(inv.amount) }];
 
-  const addr = [inv.account.name, inv.account.address].filter(Boolean).join("\n");
+  const addr = [inv.account.name, fullAddress(inv.account, inv.account.docLang !== "EN")].filter(Boolean).join("\n");
   const cash = invoiceCash(inv);
   const pdf = await renderDoc({
     kind: "invoice",

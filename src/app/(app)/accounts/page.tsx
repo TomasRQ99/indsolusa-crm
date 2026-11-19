@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { createAccount } from "./actions";
 import { NewAccountForm } from "@/components/NewAccountForm";
+import { countryName } from "@/lib/customer-fields";
 
 export default async function AccountsPage({ searchParams }: { searchParams: Promise<{ q?: string; err?: string }> }) {
   const user = await requireUser();
@@ -40,18 +41,19 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
       </details>
       <div className="card flush">
         <table>
-          <thead><tr><th>{t("Nombre", "Name")}</th><th>{t("Industria", "Industry")}</th><th>{t("Responsable", "Owner")}</th><th className="n">{t("Contactos", "Contacts")}</th><th className="n">{t("Necesidades", "Needs")}</th></tr></thead>
+          <thead><tr><th>{t("Nombre", "Name")}</th><th>{t("Industria", "Industry")}</th><th>{t("Ciudad y país", "City and country")}</th><th>{t("Responsable", "Owner")}</th><th className="n">{t("Contactos", "Contacts")}</th><th className="n">{t("Necesidades", "Needs")}</th></tr></thead>
           <tbody>
             {accounts.map((a) => (
               <tr key={a.id}>
                 <td><Link href={`/accounts/${a.id}`}><b>{a.name}</b></Link></td>
                 <td>{a.industry ?? "—"}</td>
+                <td>{[a.city, countryName(a.country, user.lang !== "EN")].filter(Boolean).join(", ") || "—"}</td>
                 <td>{a.owner.name}</td>
                 <td className="n val">{a._count.contacts}</td>
                 <td className="n val">{a._count.deals}</td>
               </tr>
             ))}
-            {accounts.length === 0 && <tr><td colSpan={5} className="empty"><b>{t("No hay clientes", "No customers found")}</b></td></tr>}
+            {accounts.length === 0 && <tr><td colSpan={6} className="empty"><b>{t("No hay clientes", "No customers found")}</b></td></tr>}
           </tbody>
         </table>
       </div>

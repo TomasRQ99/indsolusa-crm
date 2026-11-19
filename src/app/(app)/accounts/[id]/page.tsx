@@ -19,6 +19,8 @@ import { mailConfig } from "@/lib/mail";
 import { getPayRules } from "@/lib/pay-behavior";
 import { EmailComposer } from "@/components/EmailComposer";
 import { Popovers } from "@/components/Popovers";
+import { COUNTRIES, DIAL_CODES, countryOf, placeLine } from "@/lib/customer-fields";
+import { setPromoOptIn } from "../../contacts/actions";
 
 export default async function Customer360({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -81,7 +83,7 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
           <F f={freshness(i, lastInteraction, 90, now)} src={t("última interacción", "last interaction")} />
         </div>
         <div className="jh-title"><h1>{a.name}</h1></div>
-        <p className="jh-sub">{a.industry ?? t("Sin industria", "No industry")} · {t("Responsable", "Owner")}: {a.owner.name} · {t(`cliente desde ${i.day(a.createdAt)}`, `customer since ${i.day(a.createdAt)}`)} · <Link href={`/mercado/empresas/${a.id}`}>{t("Cómo funciona esta empresa (Mercado)", "How this company works (Market)")}</Link> · <Link href={`/comercial/perfiles/${a.id}`}>{t("Perfil y diario", "Profile and diary")}</Link></p>
+        <p className="jh-sub">{a.industry ?? t("Sin industria", "No industry")}{placeLine(a, i.es) ? ` · ${placeLine(a, i.es)}` : ""}{a.phone ? ` · ${a.phone}` : ""} · {t("Responsable", "Owner")}: {a.owner.name} · {t(`cliente desde ${i.day(a.createdAt)}`, `customer since ${i.day(a.createdAt)}`)} · <Link href={`/mercado/empresas/${a.id}`}>{t("Cómo funciona esta empresa (Mercado)", "How this company works (Market)")}</Link> · <Link href={`/comercial/perfiles/${a.id}`}>{t("Perfil y diario", "Profile and diary")}</Link></p>
       </header>
 
       {isNew && (
@@ -233,7 +235,13 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
             <div className="jbh"><b>{t("RELACIONES", "RELATIONSHIPS")}</b></div>
             {a.contacts.length === 0 ? <p className="quiet-p small">{t("Sin contactos.", "No contacts.")}</p> : (
               <ul className="plain small">{a.contacts.map((c) => (
-                <li key={c.id}><b><Link href={`/mercado/personas/${c.id}`}>{c.firstName} {c.lastName}</Link></b>{c.title ? ` · ${c.title}` : ""}<span className="src block">{c.email ?? "—"} · <F f={freshness(i, lastTouch(c.id), 120, now)} src={t("último contacto", "last contact")} /></span></li>
+                <li key={c.id}><b><Link href={`/mercado/personas/${c.id}`}>{c.firstName} {c.lastName}</Link></b>{c.title ? ` · ${c.title}` : ""}<span className="src block">{c.email ?? "—"}{c.phone ? ` · ${c.phone}` : ""} · <F f={freshness(i, lastTouch(c.id), 120, now)} src={t("último contacto", "last contact")} /></span>
+                  {c.email && (
+                    <form action={setPromoOptIn.bind(null, c.id, !c.promoOptIn)} className="src block">
+                      {c.promoOptIn ? t(`Promociones: autorizó${c.promoOptInAt ? ` el ${i.day(c.promoOptInAt)}` : ""}`, `Promotions: agreed${c.promoOptInAt ? ` on ${i.day(c.promoOptInAt)}` : ""}`) : t("Promociones: sin autorización", "Promotions: no permission")}
+                      {editable && <> · <button type="submit" className="link small">{c.promoOptIn ? t("Quitar autorización", "Remove permission") : t("Marcar que autorizó", "Mark as agreed")}</button></>}
+                    </form>
+                  )}</li>
               ))}</ul>
             )}
           </div>
@@ -278,9 +286,17 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
                 <form action={createContact} className="stack">
                   <input type="hidden" name="accountId" value={a.id} />
                   <label>{t("Nombre", "First name")}<input name="firstName" required /></label>
-                  <label>{t("Apellido", "Last name")}<input name="lastName" required /></label>
-                  <label>{t("Correo", "Email")}<input name="email" type="email" /></label>
+                  <label>{t("Apellido", "Last name")}<input name="lastName" /></label>
                   <label>{t("Cargo", "Title")}<input name="title" /></label>
+                  <label>{t("Correo", "Email")}<input name="email" type="email" placeholder="nombre@empresa.com" /></label>
+                  <div className="nac-f">
+                    <span>{t("Teléfono (opcional)", "Phone (optional)")}</span>
+                    <div className="nac-pair">
+                      <select name="phoneCode" aria-label={t("Indicativo del país", "Country code")} defaultValue={countryOf(a.country)?.dial ?? "+57"}>{DIAL_CODES.map((d) => <option key={d} value={d}>{d}</option>)}</select>
+                      <input name="phone" type="tel" aria-label={t("Número de teléfono", "Phone number")} />
+                    </div>
+                  </div>
+                  <label className="check"><input type="checkbox" name="promoOptIn" /> {t("Autorizó recibir información y promociones por correo", "Agreed to receive information and promotions by email")}</label>
                   <button type="submit">{t("Agregar", "Add")}</button>
                 </form>
               </details>
@@ -327,8 +343,12 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
                 <form action={updateAccount.bind(null, a.id)} className="stack">
                   <label>{t("Nombre", "Name")}<input name="name" defaultValue={a.name} required /></label>
                   <label>{t("Industria", "Industry")}<input name="industry" defaultValue={a.industry ?? ""} /></label>
-                  <label>{t("Sitio web", "Website")}<input name="website" type="url" defaultValue={a.website ?? ""} /></label>
-                  <label>{t("Teléfono", "Phone")}<input name="phone" defaultValue={a.phone ?? ""} /></label>
+                  <label>{t("Sitio web", "Website")}<input name="website" inputMode="url" placeholder="www.empresa.com" defaultValue={a.website ?? ""} /></label>
+                  <label>{t("Teléfono (con indicativo, p. ej. +57 601…)", "Phone (with country code, e.g. +57 601…)")}<input name="phone" type="tel" defaultValue={a.phone ?? ""} /></label>
+                  <label>{t("País", "Country")}<select name="country" defaultValue={a.country ?? ""}><option value="">{t("— sin definir —", "— not set —")}</option>{COUNTRIES.map((c) => <option key={c.code} value={c.code}>{i.es ? c.es : c.en}</option>)}</select></label>
+                  <label>{t("Departamento / Estado", "State / Department")}<input name="region" defaultValue={a.region ?? ""} /></label>
+                  <label>{t("Ciudad", "City")}<input name="city" defaultValue={a.city ?? ""} /></label>
+                  <label>{t("Código postal", "Postal code")}<input name="postalCode" maxLength={12} defaultValue={a.postalCode ?? ""} /></label>
                   <label>{t("Dirección", "Address")}<textarea name="address" defaultValue={a.address ?? ""} /></label>
                   {users.length > 0 && <label>{t("Responsable", "Owner")}<select name="ownerId" defaultValue={a.ownerId}>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</select></label>}
                   <button type="submit">{t("Guardar", "Save")}</button>

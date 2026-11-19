@@ -1,3 +1,4 @@
+import { fullAddress } from "@/lib/customer-fields";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -55,7 +56,7 @@ export default async function NewDeliveryPage({ searchParams }: { searchParams: 
           <h2>{t("Entrega", "Delivery")}</h2>
           <div className="stack" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <label>{t("Fecha de entrega", "Delivery date")}<input name="deliveredAt" type="date" required defaultValue={dayInput(today())} /></label>
-            <label>{t("Lugar", "Place")}<input name="place" defaultValue={deal.account.address ?? ""} /></label>
+            <label>{t("Lugar", "Place")}<input name="place" defaultValue={fullAddress(deal.account, true, ", ")} /></label>
             <label>{t("Entrega", "Delivered by")}<input name="deliveredBy" placeholder={t("Transportadora o persona", "Carrier or person")} /></label>
             <label>{t("Recibe (nombre)", "Received by (name)")}<input name="receivedByName" /></label>
             {deal.account.requiresReceptionCode && <label>{t("Código de recepción de mercancía", "Goods-receipt code")}<input name="receptionCode" /></label>}

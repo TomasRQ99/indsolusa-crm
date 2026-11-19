@@ -156,18 +156,23 @@ model User {
 }
 
 model Account {
-  id        String   @id @default(cuid())
-  name      String
+  id         String   @id @default(cuid())
+  name       String
   /// Our own company as the holder of stock purchases; never a customer.
-  internal  Boolean  @default(false)
-  industry  String?
-  website   String?
-  phone     String?
-  address   String?
-  ownerId   String
-  owner     User     @relation(fields: [ownerId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  internal   Boolean  @default(false)
+  industry   String?
+  website    String?
+  phone      String?
+  address    String?
+  // Where the company is. country = ISO code ("CO", "US"); region = departamento / state.
+  country    String?
+  region     String?
+  city       String?
+  postalCode String?
+  ownerId    String
+  owner      User     @relation(fields: [ownerId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Commercial and billing terms
   taxId                 String?
@@ -244,6 +249,10 @@ model Contact {
   email        String?
   phone        String?
   title        String?
+  // The person agreed to receive promotional material by email (needed before any campaign is sent to them).
+  promoOptIn   Boolean            @default(false)
+  promoOptInAt DateTime?
+  promoOptInBy String?
   accountId    String?
   account      Account?           @relation(fields: [accountId], references: [id], onDelete: SetNull)
   createdAt    DateTime           @default(now())
@@ -4413,9 +4422,9 @@ model InternalPurchase {
   createdAt       DateTime  @default(now())
 
   /// PRODUCT | SERVICE: what the company bought for itself (2026-11-19)
-  kind            String    @default("PRODUCT")
+  kind     String  @default("PRODUCT")
   /// spending category for the monthly report (see internal-expenses.ts)
-  category        String?
+  category String?
 
   invoices SupplierInvoice[]
   asset    Asset?

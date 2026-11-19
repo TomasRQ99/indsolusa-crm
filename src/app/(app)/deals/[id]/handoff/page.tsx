@@ -1,3 +1,4 @@
+import { fullAddress } from "@/lib/customer-fields";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
@@ -44,7 +45,7 @@ export default async function HandoffPage({ params }: { params: Promise<{ id: st
           <dt>{t("PO del cliente", "Customer PO")}</dt><dd>{po ? <><Link href={`/po/${po.id}`}>{po.number}</Link> · {t("aceptada", "accepted")} {i.day(po.acceptance!.acceptedAt)} · {po.acceptance!.acceptedByName}</> : none}</dd>
           <dt>{t("Empresa que vende", "Selling company")}</dt><dd>{seller.legalName || seller.key}</dd>
           <dt>{t("Cliente", "Customer")}</dt><dd>{po?.legalEntity ?? d.account.name}{d.account.taxId ? ` · ${d.account.taxId}` : ""}</dd>
-          <dt>{t("Dónde y a quién se entrega", "Where and to whom")}</dt><dd className="pre">{dispatch?.destination ?? po?.shipTo ?? quote?.shipTo ?? d.account.address ?? "—"}{(dispatch?.contactName || d.contact) && <span className="block">{dispatch?.contactName ?? `${d.contact!.firstName} ${d.contact!.lastName}`}{(dispatch?.contactPhone ?? d.contact?.phone) ? ` · ${dispatch?.contactPhone ?? d.contact?.phone}` : ""}</span>}</dd>
+          <dt>{t("Dónde y a quién se entrega", "Where and to whom")}</dt><dd className="pre">{dispatch?.destination ?? po?.shipTo ?? quote?.shipTo ?? (fullAddress(d.account, i.es) || "—")}{(dispatch?.contactName || d.contact) && <span className="block">{dispatch?.contactName ?? `${d.contact!.firstName} ${d.contact!.lastName}`}{(dispatch?.contactPhone ?? d.contact?.phone) ? ` · ${dispatch?.contactPhone ?? d.contact?.phone}` : ""}</span>}</dd>
           <dt>{t("Instrucción de despacho", "Dispatch instruction")}</dt><dd>{dispatch ? <><Link href={`/deals/${d.id}/despacho`}>v{dispatch.version}</Link>{dispatch.documents ? ` · ${dispatch.documents}` : ""}{dispatch.entryRequirement ? ` · ${dispatch.entryRequirement}` : ""}</> : <Link href={`/deals/${d.id}/despacho`}>{t("Sin emitir", "Not issued")}</Link>}</dd>
         </dl>
       </section>

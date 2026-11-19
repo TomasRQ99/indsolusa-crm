@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { assertCanEdit, canManageAll } from "@/lib/permissions";
 import { optionalDate, optionalId, optionalText, parseForm, requiredText } from "@/lib/forms";
 import { refreshApp } from "@/lib/revalidate";
+import { cleanCountry, composeTaxId, joinPhone, looksLikeEmail, tidyWebsite } from "@/lib/customer-fields";
 import { DOC_MIMES, MAX_DOC_BYTES, extractDocument, type ExtractedFields } from "@/lib/doc-extract";
 
 const accountSchema = z.object({
@@ -15,6 +16,9 @@ const accountSchema = z.object({
   website: optionalText,
   phone: optionalText,
   address: optionalText,
+  region: optionalText,
+  city: optionalText,
+  postalCode: optionalText,
   ownerId: optionalId,
 });
 
@@ -44,15 +48,33 @@ async function saveDocuments(accountId: string, userId: string, formData: FormDa
 export async function createAccount(formData: FormData) {
   const user = await requireUser();
   const { ownerId: _ignored, ...data } = parseForm(accountSchema, formData);
-  const taxId = String(formData.get("taxId") ?? "").trim() || null;
+  // The check digit is optional and travels with the number ("900123456-7"); the phone is stored with its country code.
+  const taxId = composeTaxId(formData.get("taxId"), formData.get("taxDv"));
   const billingContact = String(formData.get("billingContact") ?? "").trim() || null;
+  const country = cleanCountry(formData.get("country"));
+  const phone = joinPhone(formData.get("phoneCode"), formData.get("phone"));
   if (taxId && nitKey(taxId).length >= 6) {
     const key = nitKey(taxId);
     const same = (await db.account.findMany({ where: { taxId: { not: null } }, select: { id: true, name: true, taxId: true } }))
       .find((a) => a.taxId && nitKey(a.taxId) === key);
     if (same) redirect(`/accounts?err=${encodeURIComponent(same.id)}`);
   }
-  const account = await db.account.create({ data: { ...data, taxId, billingContact, ownerId: user.id } });
+  const account = await db.account.create({ data: { ...data, website: tidyWebsite(data.website), phone, country, taxId, billingContact, ownerId: user.id } });
+  // Optional: the person who receives our news and promotions, with their permission on record.
+  const txt = (k: string, max = 120) => String(formData.get(k) ?? "").trim().slice(0, max);
+  // Nothing typed here stops the registration: an incomplete email is kept as written, and only a complete one can carry the permission.
+  const cEmail = txt("contactEmail", 200).replace(/\s+/g, "").toLowerCase() || null;
+  const cFirst = txt("contactFirstName") || txt("contactLastName") || (cEmail ? cEmail.split("@")[0] : "");
+  if (cFirst) {
+    const optIn = formData.get("promoOptIn") === "on" && !!cEmail && looksLikeEmail(cEmail);
+    await db.contact.create({
+      data: {
+        accountId: account.id, firstName: cFirst, lastName: txt("contactLastName"), title: txt("contactTitle") || null, email: cEmail,
+        phone: joinPhone(formData.get("contactPhoneCode"), formData.get("contactPhone")),
+        promoOptIn: optIn, promoOptInAt: optIn ? new Date() : null, promoOptInBy: optIn ? user.name : null,
+      },
+    });
+  }
   await saveDocuments(account.id, user.id, formData);
   refreshApp();
   redirect(`/accounts/${account.id}`);
@@ -60,14 +82,18 @@ export async function createAccount(formData: FormData) {
 
 export async function addAccountDocuments(id: string, formData: FormData) {
   const user = await requireUser();
-  const existing = await db.account.findUniqueOrThrow({ where: { id }, select: { ownerId: true, taxId: true, address: true, phone: true, billingContact: true } });
+  const existing = await db.account.findUniqueOrThrow({ where: { id }, select: { ownerId: true, taxId: true, address: true, city: true, region: true, country: true, phone: true, billingContact: true } });
   assertCanEdit(user, existing.ownerId);
   const f = await saveDocuments(id, user.id, formData);
   // Fill only the customer's empty boxes; never overwrite what a person already entered.
-  const address = [f.address, f.city, f.department && f.department !== f.city ? f.department : undefined].filter(Boolean).join(", ");
   const fill = {
     ...(!existing.taxId && f.taxId ? { taxId: f.taxId } : {}),
-    ...(!existing.address && address ? { address } : {}),
+    ...(!existing.address && f.address ? { address: f.address } : {}),
+    // An address typed before may already name the city: only fill city and department when the address is new too.
+    ...(!existing.address && !existing.city && f.city ? { city: f.city } : {}),
+    ...(!existing.address && !existing.region && f.department ? { region: f.department } : {}),
+    // A RUT or a Cámara de Comercio certificate only exists for companies registered in Colombia.
+    ...(!existing.country && f.taxId ? { country: "CO" } : {}),
     ...(!existing.phone && f.phone ? { phone: f.phone } : {}),
     ...(!existing.billingContact && f.email ? { billingContact: f.email } : {}),
   };
@@ -91,7 +117,7 @@ export async function updateAccount(id: string, formData: FormData) {
   const { ownerId, ...data } = parseForm(accountSchema, formData);
   // Only managers and admins may reassign ownership.
   const newOwner = canManageAll(user) && ownerId ? ownerId : existing.ownerId;
-  await db.account.update({ where: { id }, data: { ...data, ownerId: newOwner } });
+  await db.account.update({ where: { id }, data: { ...data, website: tidyWebsite(data.website), country: cleanCountry(formData.get("country")), ownerId: newOwner } });
   refreshApp();
 }
 

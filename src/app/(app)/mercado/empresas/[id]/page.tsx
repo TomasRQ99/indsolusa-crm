@@ -1,3 +1,4 @@
+import { fullAddress } from "@/lib/customer-fields";
 import Link from "next/link";
 import NeedSuggestions from "../../NeedSuggestions";
 import { notFound } from "next/navigation";
@@ -99,7 +100,7 @@ export default async function CompanyExplorationPage({ params, searchParams }: {
       <div className="grid cols-2">
         <section className="card">
           <b>{t("Quiénes son", "Who they are")}</b>
-          <p className="small">{a.industry ?? t("Sector sin definir", "Sector not set")}{a.taxId ? ` · NIT ${a.taxId}` : ""}{a.address ? ` · ${a.address}` : ""}{a.website ? ` · ${a.website.replace(/^https?:\/\//, "")}` : ""}</p>
+          <p className="small">{a.industry ?? t("Sector sin definir", "Sector not set")}{a.taxId ? ` · NIT ${a.taxId}` : ""}{fullAddress(a, i.es, ", ") ? ` · ${fullAddress(a, i.es, ", ")}` : ""}{a.website ? ` · ${a.website.replace(/^https?:\/\//, "")}` : ""}</p>
           <span className="src block">{t("Responsable de la relación", "Relationship owner")}: {a.owner.name}</span>
           {data.alsoSupplier.map((s) => <Link key={s.id} href={`/suppliers/${s.id}`} className="sig info">{t("También proveedor", "Also a supplier")}: {s.name}</Link>)}
           <div className="mk-head" style={{ marginTop: 8 }}>

@@ -7,6 +7,9 @@
 export const MAX_DOC_BYTES = 5 * 1024 * 1024;
 export const DOC_MIMES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 
+import { nitCheckDigit } from "./customer-fields";
+export { nitCheckDigit };
+
 export type DocKind ="RUT" | "CAMARA" | "OTHER";
 export type ExtractedFields = {
   name?: string;
@@ -74,11 +77,63 @@ function rutBox(ls: Item[][], label: RegExp): string | undefined {
   return undefined;
 }
 
-/** "Label: value" lines, as printed on Cámara de Comercio certificates. */
-function labelled(text: string, label: RegExp): string | undefined {
-  const re = new RegExp(`(?:^|\\n)\\s*(?:${label.source})\\s*[:\\-]\\s*([^\\n]+)`, "i");
-  const m = text.match(re);
-  return m ? clean(m[1]) : undefined;
+/** A line of the document as printed, and the same line without accents, in lower case and single-spaced, to find labels however they were typed. */
+type Line = { text: string; key: string };
+const plain = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+function textLines(full: string): Line[] {
+  return full.split("\n").map((l) => clean(l.normalize("NFC"))).filter(Boolean).map((text) => ({ text, key: plain(text) }));
+}
+
+/**
+ * "Label: value" lines, as printed on Cámara de Comercio certificates. The label is matched without accents
+ * or capitals; when the value was printed on the line below, that line is taken.
+ */
+function labelled(ls: Line[], label: RegExp): string | undefined {
+  const re = new RegExp(`^(?:${label.source})\\s*[:\\-]\\s*(.*)$`);
+  for (let i = 0; i < ls.length; i++) {
+    const m = ls[i].key.match(re);
+    if (!m) continue;
+    const v = clean(ls[i].text.slice(ls[i].text.length - m[1].length));
+    if (v) return v;
+    const next = ls[i + 1];
+    if (next && !/^[a-z0-9 .()]{3,60}:/.test(next.key)) return next.text;
+  }
+  return undefined;
+}
+
+// Addresses that belong to whoever issued the document (the Chamber, DIAN, other registries), never to the company.
+const ISSUER_MAIL = /camara|(^|\.)cc[a-z]{1,3}\.org\.co$|\.gov\.co$|(^|\.)rues\.org\.co$|confecamaras|certicamara/;
+// Words of a company name that say nothing about who it is.
+const NAME_NOISE = new Set(["sas", "ltda", "limitada", "sociedad", "anonima", "simplificada", "acciones", "por", "cia", "compania", "comercializadora", "colombia", "grupo", "empresa", "liquidacion", "sucursal", "inversiones"]);
+const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
+
+/**
+ * The company's own email among every address printed in the document. Uses the context: which label the address
+ * sits under, whether its domain looks like the company's name, and who else writes addresses on these documents.
+ * An address with nothing that ties it to the company is not taken: an empty box is better than a wrong one.
+ */
+export function pickCompanyEmail(ls: Line[], name?: string): string | undefined {
+  const words = plain(name ?? "").split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !NAME_NOISE.has(w));
+  let best: { mail: string; score: number } | undefined;
+  ls.forEach((l, i) => {
+    for (const raw of l.text.match(EMAIL) ?? []) {
+      const mail = raw.replace(/[.,;]+$/, "").toLowerCase();
+      const domain = mail.split("@")[1] ?? "";
+      if (ISSUER_MAIL.test(domain)) continue;
+      // The label can be on the same line or, when the value wrapped, on the one above.
+      const ctx = l.key.startsWith(plain(raw)) && i > 0 && /[:\-]$/.test(ls[i - 1].key) ? `${ls[i - 1].key} ${l.key}` : l.key;
+      let score = 0;
+      if (/correo electronico comercial|e-?mail comercial/.test(ctx)) score += 6;
+      else if (/(correo electronico|e-?mail)[^:]{0,40}notificaci/.test(ctx)) score += 3;
+      else if (/(correo electronico|e-?mail)\s*:/.test(ctx)) score += 5;
+      const core = domain.replace(/\.[a-z]{2,3}(\.[a-z]{2})?$/, "").replace(/[^a-z0-9]/g, "");
+      if (words.some((w) => core.includes(w) || (core.length >= 4 && w.includes(core)))) score += 4;
+      // Notices printed by the issuer ("para más información escriba a…").
+      if (/informacion|comuniquese|escriba|eleccion|renueve|consulte|peticiones|pqr|denuncie|verifi/.test(ctx)) score -= 4;
+      if (score >= 3 && (!best || score > best.score)) best = { mail, score };
+    }
+  });
+  return best?.mail;
 }
 
 export function formatNit(raw: string, dv?: string) {
@@ -88,20 +143,13 @@ export function formatNit(raw: string, dv?: string) {
   return check ? `${d}-${check}` : d;
 }
 
-/** DIAN check digit for a NIT, used to validate what was read. */
-export function nitCheckDigit(nit: string) {
-  const w = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
-  const d = digits(nit).split("").reverse();
-  const sum = d.reduce((acc, n, i) => acc + Number(n) * (w[i] ?? 0), 0);
-  const r = sum % 11;
-  return r > 1 ? 11 - r : r;
-}
-
 export function extractFromText(items: Item[], full: string): Extraction {
   const ls = lines(items);
+  const tl = textLines(full);
+  const key = tl.map((l) => l.key).join("\n");
   // A real RUT carries its numbered boxes, not just the words (DIAN brochures mention them too).
-  const isRut = /Registro [ÚU]nico Tributario|Formulario del Registro/i.test(full) && /35\.\s*Raz[oó]n social/i.test(full) && /5\.\s*N[uú]mero de Identificaci[oó]n Tributaria/i.test(full);
-  const isCamara = /C[aá]mara de Comercio/i.test(full) && /(Certificado|Matr[ií]cula)/i.test(full);
+  const isRut = /registro unico tributario|formulario del registro/.test(key) && /35\.\s*razon social/.test(key) && /5\.\s*numero de identificacion tributaria/.test(key);
+  const isCamara = /camara de comercio/.test(key) && /(certificado|matricula)/.test(key);
   const f: ExtractedFields = {};
 
   if (isRut) {
@@ -122,7 +170,8 @@ export function extractFromText(items: Item[], full: string): Extraction {
     f.department = stripCodes(rutBox(ls, /^39\.\s*Departamento/i));
     f.city = stripCodes(rutBox(ls, /^40\.\s*Ciudad/i));
     f.address = rutBox(ls, /^41\.\s*Direcci[oó]n/i);
-    f.email = rutBox(ls, /^42\.\s*Correo/i)?.replace(/\s+/g, "");
+    const mail = rutBox(ls, /^42\.\s*Correo/i)?.replace(/\s+/g, "").toLowerCase();
+    if (mail && !ISSUER_MAIL.test(mail.split("@")[1] ?? "")) f.email = mail;
     const tel = rutBox(ls, /^44\.\s*Tel[eé]fono/i);
     if (tel && digits(tel).length >= 7) f.phone = digits(tel);
     const ciiu = rutBox(ls, /^46\.\s*C[oó]digo/i);
@@ -130,21 +179,20 @@ export function extractFromText(items: Item[], full: string): Extraction {
   }
 
   if (isCamara || !isRut) {
-    f.name ??= labelled(full, /Raz[oó]n social|Nombre o raz[oó]n social|Nombre/);
-    const nit = labelled(full, /N\.?I\.?T\.?|Nit/);
+    f.name ??= labelled(tl, /razon social|nombre o razon social|nombre/);
+    const nit = labelled(tl, /n\.?i\.?t\.?/);
     if (nit && !f.taxId) {
       const m = nit.match(/(\d[\d.]{5,})\s*-?\s*(\d)?/);
       if (m) f.taxId = formatNit(m[1], m[2]);
     }
-    f.address ??= labelled(full, /Direcci[oó]n del domicilio principal|Direcci[oó]n comercial|Direcci[oó]n/);
-    f.city ??= labelled(full, /Municipio|Ciudad/);
-    f.email ??= labelled(full, /Correo electr[oó]nico(?: comercial)?/)?.replace(/\s+/g, "");
-    const tel = labelled(full, /Tel[eé]fono comercial 1|Tel[eé]fono(?: comercial)?/);
+    f.address ??= labelled(tl, /direccion del domicilio principal|direccion comercial|direccion/);
+    f.city ??= labelled(tl, /municipio|ciudad/);
+    const tel = labelled(tl, /telefono comercial 1|telefono(?: comercial)?/);
     if (tel && !f.phone && digits(tel).length >= 7) f.phone = digits(tel).slice(0, 12);
   }
 
-  // Last resort for any document: an email and a NIT-shaped number.
-  if (!f.email) f.email = full.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/)?.[0];
+  // Email: never the first address found. The one that belongs to the company, by its label and its name.
+  if (!f.email) f.email = pickCompanyEmail(tl, f.name ?? f.tradeName);
   if (!f.taxId) {
     const m = full.match(/NIT[^\d]{0,12}(\d{3}[.\s]?\d{3}[.\s]?\d{3})\s*-\s*(\d)/i);
     if (m) f.taxId = formatNit(m[1], m[2]);
