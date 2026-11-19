@@ -37,7 +37,7 @@ export default async function ClosesPage({ searchParams }: { searchParams: Promi
       <div className="ph">
         <div>
           <div className="crumb"><Link href="/deals">{t("Comercial", "Commercial")}</Link></div>
-          <h1>{t("Cierres de gestión", "Management closes")}</h1>
+          <h1>{t("Resumen del día, semana y mes", "Day, week and month summary")}</h1>
           <p>{t(`Lo que pasó dentro del periodo, no una foto del último día. El cierre diario de gestión es a las ${pol.value.closeTime} (Bogotá); el corte técnico final queda al terminar el día.`, `What happened inside the period, not a snapshot of the last day. The daily management close is at ${pol.value.closeTime} (Bogotá); the final technical cut is when the day ends.`)}</p>
         </div>
       </div>

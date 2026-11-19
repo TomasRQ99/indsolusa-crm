@@ -81,7 +81,7 @@ export default async function MyPerformancePage({ searchParams }: { searchParams
           <dt>{t("Ventas del mes con Eságara bajo el umbral", "This month's sales with Eságara under the threshold")}</dt><dd><b className="mono">{r.risks.lowEsagara}</b></dd>
           <dt>{t("Decisiones que vienen", "Decisions coming")}</dt><dd>{r.future.decisionsComing.length === 0 ? <span className="muted">{t("Ninguna con fecha", "None with a date")}</span> : r.future.decisionsComing.map((x) => <span key={x.dealId} className="small block"><span className="mono">{i.day(x.nextDecision!)}</span> · <Link href={`/deals/${x.dealId}`}>{x.code ?? x.solution}</Link> · {x.account}{x.esagara != null ? ` · Eságara ${i.n2(x.esagara)}` : ""}</span>)}</dd>
         </dl>
-        <p className="src"><Link href="/comercial/foco">{t("Foco de alto valor", "High-value focus")}</Link> · <Link href="/comercial/dinero">{t("Dinero por mover", "Money to move")}</Link> · <Link href="/comercial/mejora">{t("Mi mejora", "My improvement")}</Link></p>
+        <p className="src"><Link href="/comercial/foco">{t("Negocios de alto valor", "High-value deals")}</Link> · <Link href="/comercial/dinero">{t("Por entregar, facturar y cobrar", "To deliver, invoice and collect")}</Link> · <Link href="/comercial/mejora">{t("Mi mejora", "My improvement")}</Link></p>
       </section>
 
       {showComm && (

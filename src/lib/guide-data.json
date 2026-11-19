@@ -183,12 +183,12 @@
     "Filtra por sector o tamaño.",
     "Abre una empresa y compárala con otra."
    ],
-   "expect": "Los datos vienen de la última carga de Supersociedades hecha en Fuentes."
+   "expect": "Los datos vienen de la última carga de Supersociedades hecha en «Cargar datos del mercado»."
   },
   {
    "id": "fuentes",
    "m": "mercado",
-   "t": "Fuentes: cargar datos del mercado",
+   "t": "Cargar datos del mercado",
    "path": "MERCADO → Explorar el mercado → Cargar datos del mercado (Gerencia, Director Comercial, Mercadeo)",
    "why": "Carga archivos de datos (Excel o CSV) y revísalos antes de guardarlos.",
    "steps": [
@@ -380,7 +380,7 @@
     "Revisa el documento con [[Ver PDF]] (arriba), en inglés o español.",
     "Cuando no falta nada obligatorio, el recuadro de arriba se pone verde: haz clic en [[Presentar al cliente]] (columna derecha, debajo de la lista). Los precios quedan fijos."
    ],
-   "expect": "Después de presentarla, los cambios requieren [[Crear revisión]] (Rev. 1, mismo número). La cotización pasa a Futuro comercial. Si no escribiste la promesa, SOLU la arma sola con el tiempo de entrega."
+   "expect": "Después de presentarla, los cambios requieren [[Crear revisión]] (Rev. 1, mismo número). La cotización pasa a «Cotizaciones presentadas». Si no escribiste la promesa, SOLU la arma sola con el tiempo de entrega."
   },
   {
    "id": "liquidacion-costos",
@@ -428,7 +428,7 @@
   {
    "id": "futuro",
    "m": "comercial",
-   "t": "Futuro comercial",
+   "t": "Cotizaciones presentadas",
    "path": "COMERCIAL → Cotizaciones presentadas",
    "why": "Todas las cotizaciones presentadas que esperan una decisión del cliente, agrupadas según lo que hace falta.",
    "steps": [
@@ -481,7 +481,7 @@
   {
    "id": "dinero",
    "m": "comercial",
-   "t": "Dinero por mover",
+   "t": "Por entregar, facturar y cobrar",
    "path": "COMERCIAL → Por entregar, facturar y cobrar",
    "why": "Todo el dinero bloqueado, en cuatro bolsas, con la causa y quién lo resuelve.",
    "steps": [
@@ -494,7 +494,7 @@
   {
    "id": "fugas",
    "m": "comercial",
-   "t": "Fugas de caja",
+   "t": "Demoras del dinero",
    "path": "COMERCIAL → Demoras del dinero",
    "why": "Dónde se demora el dinero, por etapa y por causa.",
    "steps": [
@@ -519,7 +519,7 @@
   {
    "id": "foco",
    "m": "comercial",
-   "t": "Foco de alto valor",
+   "t": "Negocios de alto valor",
    "path": "COMERCIAL → Negocios de alto valor",
    "why": "Top 5 por Eságara, decisiones del mes, negocios a proteger, dinero a mover y lo grande que lleva días quieto.",
    "steps": [
@@ -546,7 +546,7 @@
   {
    "id": "linea-comunicaciones",
    "m": "comercial",
-   "t": "Línea de comunicaciones",
+   "t": "Último contacto por cliente",
    "path": "COMERCIAL → Último contacto por cliente",
    "why": "Cada empresa según la última vez que hablamos, para que ningún cliente pase meses sin saber de nosotros.",
    "steps": [
@@ -561,7 +561,7 @@
   {
    "id": "perfiles",
    "m": "comercial",
-   "t": "Perfiles: el diario de cada cliente",
+   "t": "Diario de clientes",
    "path": "COMERCIAL → Diario de clientes",
    "why": "Qué le duele a cada cliente, con qué lucha y cómo lo vive cada persona en su trabajo, escrito después de cada conversación, para presentar nuestro servicio como la solución a esa lucha.",
    "steps": [
@@ -572,7 +572,7 @@
     "En Personas, usa [[+ Anotar algo de esta persona]]: qué quiere lograr, qué le complica el día, qué le preocupa, cómo decide. Siempre con cómo lo sabemos.",
     "Abajo, guarda lo que conviene tener a la mano con [[+ Agregar documento]], [[+ Agregar producto]] o [[+ Agregar marca]]: una foto o PDF, un enlace, o los dos."
    ],
-   "expect": "El seguimiento queda como un pendiente tuyo con su fecha en MI DÍA → Pendientes. Una llamada, videollamada o visita nueva queda también en la historia del cliente y cuenta en la Línea de comunicaciones. Lo que se anota de una persona es sobre su trabajo: SOLU no guarda datos de salud, religión, política ni vida familiar, ni calificativos, y explica por qué. Esa parte la ve solo el equipo comercial; Finanzas y Administración ven el diario."
+   "expect": "El seguimiento queda como un pendiente tuyo con su fecha en MI DÍA → Pendientes. Una llamada, videollamada o visita nueva queda también en la historia del cliente y cuenta en «Último contacto por cliente». Lo que se anota de una persona es sobre su trabajo: SOLU no guarda datos de salud, religión, política ni vida familiar, ni calificativos, y explica por qué. Esa parte la ve solo el equipo comercial; Finanzas y Administración ven el diario."
   },
   {
    "id": "metas",
@@ -617,7 +617,7 @@
   {
    "id": "cierres",
    "m": "comercial",
-   "t": "Cierres",
+   "t": "Resumen del día, semana y mes",
    "path": "COMERCIAL → Resumen del día, semana y mes",
    "why": "Cierre diario, semanal y mensual: qué pasó, qué aprendimos, el futuro visible y los próximos movimientos.",
    "steps": [
@@ -685,7 +685,7 @@
   {
    "id": "sin-despachar",
    "m": "operaciones",
-   "t": "Sin despachar",
+   "t": "Pedidos sin despachar",
    "path": "OPERACIONES → Mover y entregar → Pedidos sin despachar",
    "why": "Cada pedido aceptado que aún no sale, con la razón y quién tiene el siguiente paso.",
    "steps": [
@@ -1063,7 +1063,7 @@
   {
    "id": "adm-exposicion",
    "m": "administracion",
-   "t": "Exposición de recursos",
+   "t": "Riesgo de los recursos",
    "path": "ADMINISTRACIÓN → Hoy → Riesgo de los recursos",
    "why": "Siete exposiciones distintas: caja, clientes, proveedores, inventario, moneda, activos y contratos.",
    "steps": [
@@ -1594,13 +1594,13 @@
   {
    "id": "ger-puente",
    "m": "gerencia",
-   "t": "Puente al futuro",
+   "t": "Lo que viene",
    "path": "GERENCIA → Dirección → Lo que viene",
    "why": "De lo que alguien vio venir hasta el dinero en el banco, en ocho etapas. Y lo de más valor que merece tu atención.",
    "steps": [
     "Abre [[Lo que viene]] y lee las ocho etapas de izquierda a derecha.",
     "En «Eságara futura visible», mira cada bolsa con la base con que se calcula.",
-    "En «Foco de alto valor», cada fila dice por qué está en la lista.",
+    "En «Negocios de alto valor», cada fila dice por qué está en la lista.",
     "Abajo, «Riesgo de concentración»: qué parte depende de un solo cliente o proveedor."
    ],
    "expect": "No hay un total: las etapas no se suman porque no tienen la misma certeza. Las oportunidades y las necesidades se cuentan, no se valoran. Lo por cobrar es igual al de Cuentas por cobrar."
@@ -1745,7 +1745,7 @@
    "why": "Cuando vende más de una empresa, las mismas cifras separadas por empresa.",
    "steps": [
     "En el Inicio de Gerencia, baja a «Por empresa vendedora».",
-    "Haz clic en una empresa: abre el Puente al futuro solo con sus Necesidades, facturas y compras.",
+    "Haz clic en una empresa: abre «Lo que viene» solo con sus Necesidades, facturas y compras.",
     "Vuelve a «Todas las empresas» con la pestaña de arriba."
    ],
    "expect": "Solo aparece cuando hay más de una empresa con datos o activada; hoy vende solo la de Estados Unidos, así que es normal no verlo. Las empresas suman el total. Las oportunidades futuras no pertenecen a una empresa."

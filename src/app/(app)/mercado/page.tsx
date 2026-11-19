@@ -34,7 +34,7 @@ export default async function MercadoHome({ searchParams }: { searchParams: Prom
       <div className="ph">
         <div>
           <div className="crumb">{t("Mercado", "Market")}</div>
-          <h1>{t("Explorar", "Explore")}</h1>
+          <h1>{t("Mercados y empresas", "Markets and companies")}</h1>
           <p>{t("Qué cambió, qué sabemos, qué no sabemos todavía y cuál es el siguiente movimiento útil. Explorar no es vender: es entender antes de proponer.", "What changed, what we know, what we don't know yet, and the next useful movement. Exploring isn't selling: it's understanding before proposing.")}</p>
         </div>
       </div>

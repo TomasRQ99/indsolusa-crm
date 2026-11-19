@@ -131,7 +131,7 @@ export default async function UnshippedPage() {
       <div className="ph">
         <div>
           <div className="crumb">{t("Operaciones", "Operations")}</div>
-          <h1>{t("Órdenes sin despachar", "Unshipped orders")}</h1>
+          <h1>{t("Pedidos sin despachar", "Orders not dispatched")}</h1>
           <p>{t("OC de clientes aceptadas que aún no salen. La causa se calcula de los pagos, las Supplier PO, el cupo y los documentos; nadie la escribe a mano.", "Accepted customer POs not yet shipped. The cause is derived from payments, supplier POs, credit and documents; nobody types it.")}</p>
         </div>
       </div>

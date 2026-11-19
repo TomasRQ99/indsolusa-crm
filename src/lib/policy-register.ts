@@ -14,7 +14,7 @@ export const POLICY_REGISTER: PolicyEntry[] = [
   { key: "financeRate", es: "Costo del dinero", en: "Cost of money", whoEs: "Propuesta + Gerencia", whoEn: "Proposal + Management", href: "/profile/rentabilidad" },
   { key: "opsPolicy", es: "Operaciones: tolerancias de flete, courier o carga, inventario", en: "Operations: freight tolerances, courier or cargo, stock", whoEs: "Gerencia", whoEn: "Management", href: "/operaciones/configuracion" },
   { key: "authPolicy", es: "Rangos de autorización por nivel", en: "Authorisation ranges by level", whoEs: "Gerencia", whoEn: "Management", href: "/profile/autorizaciones" },
-  { key: "focusPolicy", es: "Foco de alto valor", en: "High-value focus", whoEs: "Gerencia o Dirección", whoEn: "Management or Direction", href: "/comercial/foco" },
-  { key: "contactLine", es: "Línea de comunicaciones: rangos de tiempo sin contacto", en: "Communication line: time ranges without contact", whoEs: "Gerencia o Dirección", whoEn: "Management or Direction", href: "/comercial/comunicaciones#rangos" },
+  { key: "focusPolicy", es: "Negocios de alto valor", en: "High-value deals", whoEs: "Gerencia o Dirección", whoEn: "Management or Direction", href: "/comercial/foco" },
+  { key: "contactLine", es: "Último contacto por cliente: rangos de tiempo sin contacto", en: "Last contact per customer: time ranges without contact", whoEs: "Gerencia o Dirección", whoEn: "Management or Direction", href: "/comercial/comunicaciones#rangos" },
   { key: "econThresholds", es: "Señales económicas de Mercado", en: "Market economic signals", whoEs: "Gerencia", whoEn: "Management", href: "/mercado/fuentes" },
 ];

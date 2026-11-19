@@ -35,7 +35,7 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Pro
       <div className="ph">
         <div>
           <div className="crumb"><Link href="/deals">{t("Comercial", "Commercial")}</Link></div>
-          <h1>{t("Perfiles", "Profiles")}</h1>
+          <h1>{t("Diario de clientes", "Customer diary")}</h1>
           <p>{t("El diario de cada cliente: qué le duele, con qué lucha y cómo lo vive cada persona. Lo escribimos después de cada conversación para llegar a la siguiente sabiendo dónde quedamos.", "Each customer's diary: what hurts, what they struggle with and how each person lives it. We write it after every conversation, to arrive at the next one knowing where we left off.")}</p>
         </div>
       </div>

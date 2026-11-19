@@ -44,7 +44,7 @@ export default async function FutureBridgePage({ searchParams }: { searchParams:
   return (
     <>
       <div className="ph"><div>
-        <h1>{t("Puente al futuro", "Future bridge")}</h1>
+        <h1>{t("Lo que viene", "What is coming")}</h1>
         <p>{t("De lo que alguien vio venir hasta el dinero en el banco. Cada etapa tiene su propia clase de verdad: se leen una al lado de la otra y nunca se suman.", "From what someone saw coming to money in the bank. Each stage has its own kind of truth: they are read side by side and never added up.")}</p>
         <p className="small">{t("calculado", "as of")} {i.date(b.asOf)}</p>
       </div></div>
@@ -78,7 +78,7 @@ export default async function FutureBridgePage({ searchParams }: { searchParams:
         </table></div>
       </section>
 
-      <h2 className="gm-h2" id="foco">{t("Foco de alto valor", "High-value focus")} <span className="src">{t(`material desde Eságara ${i.money(b.focus.materialEsagaraUsd)} (política de Foco)`, `material from Eságara ${i.money(b.focus.materialEsagaraUsd)} (Focus policy)`)}</span></h2>
+      <h2 className="gm-h2" id="foco">{t("Negocios de alto valor", "High-value deals")} <span className="src">{t(`material desde Eságara ${i.money(b.focus.materialEsagaraUsd)} (política de Foco)`, `material from Eságara ${i.money(b.focus.materialEsagaraUsd)} (Focus policy)`)}</span></h2>
       <div className="gm-cols">
         <section className="card" id="top5"><b>{t("LAS CINCO MAYORES POR ESÁGARA", "TOP FIVE BY ESÁGARA")}</b>
           {v.top5.length === 0 ? <p className="quiet-p">{t("Ninguna Necesidad abierta tiene precio todavía.", "No open Need has a price yet.")}</p> : <ul className="rp-list">{v.top5.map((x, k) => item(x, t(`${k + 1}.ª Eságara más alta entre las Necesidades abiertas`, `#${k + 1} highest Eságara among open Needs`)))}</ul>}

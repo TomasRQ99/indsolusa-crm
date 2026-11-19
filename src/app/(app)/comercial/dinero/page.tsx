@@ -113,7 +113,7 @@ export default async function MoneyDesk({ searchParams }: { searchParams: Promis
       <div className="ph">
         <div>
           <div className="crumb">{t("Comercial", "Commercial")}</div>
-          <h1>{t("Dinero por mover", "Money to move")}</h1>
+          <h1>{t("Por entregar, facturar y cobrar", "To deliver, invoice and collect")}</h1>
           <p>{t("Una venta termina cuando se convierte en caja. Aquí está lo que falta entregar, facturar, cobrar o liberar en crédito: cuánto vale, por qué está detenido y quién lo mueve. Los saldos vienen de Administración; aquí no se editan.", "A sale ends when it becomes cash. Here is what is left to deliver, invoice, collect or free up in credit: what it is worth, why it is stopped and who moves it. Balances come from Administration; they aren't edited here.")}</p>
         </div>
         <div className="seg">
@@ -132,7 +132,7 @@ export default async function MoneyDesk({ searchParams }: { searchParams: Promis
         <div><span className="k">{t("Aceptado sin facturar", "Accepted, not invoiced")}</span><span className="v">{i.money(j.capital.committed)}</span><span className="s">{t(`incluye ${i.money(j.capital.readyGoods)} en mercancía lista`, `includes ${i.money(j.capital.readyGoods)} in ready goods`)}</span></div>
         {j.commission && (team ? canManageAll(user) : true) && <div><span className="k">{t("Comisión esperando recaudo", "Commission waiting for collection")}</span><span className="v">{i.money(j.commission.total)}</span><span className="s">{t("se libera con el dinero conciliado", "released with reconciled cash")}</span></div>}
       </section>
-      <p className="src">{t("Capital comprometido = facturas abiertas + Necesidades ganadas sin facturar. La mercancía lista ya está dentro de lo no facturado; no se suma dos veces.", "Committed capital = open invoices + won Needs not yet invoiced. Ready goods are already inside the uninvoiced part; not counted twice.")}{" "}<Link href="/comercial/fugas">{t("Ver fugas de caja y tiempos", "See cash leakage and delays")}</Link></p>
+      <p className="src">{t("Capital comprometido = facturas abiertas + Necesidades ganadas sin facturar. La mercancía lista ya está dentro de lo no facturado; no se suma dos veces.", "Committed capital = open invoices + won Needs not yet invoiced. Ready goods are already inside the uninvoiced part; not counted twice.")}{" "}<Link href="/comercial/fugas">{t("Ver Demoras del dinero", "See Money delays")}</Link></p>
 
       {/* 1 · ENTREGAR */}
       <section className="mk-sec" id="entregar">

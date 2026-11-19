@@ -60,7 +60,7 @@ export default async function ImportPage({ params, searchParams }: { params: Pro
     <>
       <div className="ph">
         <div>
-          <div className="crumb"><Link href="/mercado/fuentes">{t("Mercado · Fuentes de inteligencia", "Market · Intelligence sources")}</Link></div>
+          <div className="crumb"><Link href="/mercado/fuentes">{t("Mercado · Cargar datos del mercado", "Market · Load market data")}</Link></div>
           <h1>{imp.fileName}</h1>
           <p className="small">{imp.source.name} · {t(`${i.n(imp.rowCount)} filas`, `${i.n(imp.rowCount)} rows`)} · {(imp.size / 1024 / 1024).toFixed(1)} MB · {imp.createdByName}, {i.day(imp.createdAt)} · <a href={`/mercado/fuentes/${imp.id}/archivo`}>{t("Descargar el original", "Download the original")}</a></p>
           <span className={`sig ${IMPORT_STATUS[imp.status]?.[2] ?? "wait"}`}>{t(IMPORT_STATUS[imp.status]?.[0] ?? imp.status, IMPORT_STATUS[imp.status]?.[1] ?? imp.status)}</span>

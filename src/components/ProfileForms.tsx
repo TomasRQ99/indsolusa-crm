@@ -72,7 +72,7 @@ export function DiaryForm({ es, action, todayInput, contacts, meetings }: {
         </label>
       </div>
       {existing && <span className="src">{t("Se usa la fecha de esa conversación. No hay que registrarla otra vez.", "That conversation's date is used. There is no need to register it again.")}</span>}
-      {meeting.startsWith("new:") && <span className="src">{t("La conversación queda también en la historia del cliente y cuenta en la Línea de comunicaciones.", "The conversation is also saved in the customer's history and counts in the Communication line.")}</span>}
+      {meeting.startsWith("new:") && <span className="src">{t("La conversación queda también en la historia del cliente y cuenta en «Último contacto por cliente».", "The conversation is also saved in the customer's history and counts in “Last contact per customer”.")}</span>}
 
       <div className="pf-qs">{DIARY_FIELDS.filter((f) => !f.more && f.key !== "notes").map(field)}</div>
       <details className="pf-more">

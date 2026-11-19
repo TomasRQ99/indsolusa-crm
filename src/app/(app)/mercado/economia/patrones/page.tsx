@@ -59,7 +59,7 @@ export default async function Patterns({ searchParams }: { searchParams: Promise
       </div>
 
       {years.length < 2 ? (
-        <div className="card empty"><b>{t("Hace falta más de un año de datos", "More than one year of data is needed")}</b><span className="src block">{t("Carga publicaciones de otros años en Fuentes de inteligencia para ver patrones.", "Load publications for other years in Intelligence sources to see patterns.")}</span></div>
+        <div className="card empty"><b>{t("Hace falta más de un año de datos", "More than one year of data is needed")}</b><span className="src block">{t("Carga publicaciones de otros años en «Cargar datos del mercado» para ver patrones.", "Load publications for other years in “Load market data” to see patterns.")}</span></div>
       ) : (
         <>
           <section className="mk-sec">

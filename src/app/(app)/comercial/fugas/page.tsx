@@ -37,8 +37,8 @@ export default async function Leakage({ searchParams }: { searchParams: Promise<
     <>
       <div className="ph">
         <div>
-          <div className="crumb"><Link href="/comercial/dinero">{t("Comercial · Dinero por mover", "Commercial · Money to move")}</Link></div>
-          <h1>{t("Fugas de caja", "Cash leakage")}</h1>
+          <div className="crumb"><Link href="/comercial/dinero">{t("Comercial · Por entregar, facturar y cobrar", "Commercial · To deliver, invoice and collect")}</Link></div>
+          <h1>{t("Demoras del dinero", "Money delays")}</h1>
           <p>{t("Cuánto dinero está atrapado antes de convertirse en caja, dónde y por qué. Sirve para encontrar cuellos de botella del sistema; no para castigar a nadie por lo que no controla.", "How much money is trapped before becoming cash, where and why. It is for finding system bottlenecks; never for blaming anyone for what they don't control.")}</p>
         </div>
         <div className="seg">

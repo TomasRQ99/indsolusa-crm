@@ -39,7 +39,7 @@ export default async function CommercialFuturePage() {
   return (
     <div className="qlist">
       <div>
-        <h1>{t("Futuro comercial", "Commercial future")}</h1>
+        <h1>{t("Cotizaciones presentadas", "Quotes presented")}</h1>
         <p className="src">{t("Cotizaciones abiertas según lo que necesitan de ti. Sin probabilidades de cierre inventadas.", "Open quotes by what they need from you. No invented close probabilities.")}</p>
       </div>
       {rows.length === 0 && <p className="quiet-p">{t("No hay cotizaciones abiertas. Se crean desde la pestaña Cotización de cada Necesidad.", "No open quotes. Create them from each Need's Quote tab.")}</p>}

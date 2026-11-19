@@ -19,7 +19,7 @@ export default async function ExposurePage() {
 
   return (
     <>
-      <div className="ph"><div><h1>{t("Exposición de recursos", "Resource exposure")}</h1><p>{t("Qué tenemos, qué debemos, qué nos deben, qué hemos comprometido y cuánto riesgo estamos asumiendo. Siete exposiciones distintas, sin sumarlas en un solo número.", "What we have, what we owe, what we are owed, what we have committed and how much risk we carry. Seven different exposures, never added into one number.")}</p>
+      <div className="ph"><div><h1>{t("Riesgo de los recursos", "Resources at risk")}</h1><p>{t("Qué tenemos, qué debemos, qué nos deben, qué hemos comprometido y cuánto riesgo estamos asumiendo. Siete exposiciones distintas, sin sumarlas en un solo número.", "What we have, what we owe, what we are owed, what we have committed and how much risk we carry. Seven different exposures, never added into one number.")}</p>
         <p className="small">{t("calculado", "as of")} {i.date(e.asOf)} · <span className="sig wait">{t("foto de hoy", "today's snapshot")}</span></p></div></div>
 
       <section className="card" id="caja"><b>{t("1 · CAJA", "1 · CASH")}</b>

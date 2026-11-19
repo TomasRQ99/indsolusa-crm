@@ -5,7 +5,7 @@ import { CONTACT_LINE_KEY, DEFAULT_CONTACT_LINE, OUTCOMES_NOT_CONTACT, isVideo, 
 // Comercial · Línea de comunicaciones. One truth, derived: nothing is stored about "last contact" — it is read from
 // what SOLU already has (interactions, visits, conversations, tracked mail), so it can never drift from the record.
 
-export const CONTACT_LINE_SOURCE = "Línea de comunicaciones";
+export const CONTACT_LINE_SOURCE = "Último contacto por cliente";
 /** Activities that are mail to suppliers or are counted from the tracked-mail table instead. */
 const NOT_CUSTOMER_CONTACT = ["Localizar repuestos", "Plantillas de correo"];
 

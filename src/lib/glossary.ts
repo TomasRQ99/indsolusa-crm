@@ -115,7 +115,7 @@ export const GLOSSARY: GlossTerm[] = [
     def: { es: "El documento con el que el cliente nos compra. Cuando la aceptamos, la venta es firme: se protegen la promesa y la Eságara, y Operaciones puede empezar.", en: "The document the customer buys from us with. Once we accept it the sale is firm: the promise and the Eságara are protected and Operations can start." },
     ctx: [
       { sel: ".kanban .column > h2", where: { es: "Columna del tablero", en: "Board column" }, es: "Aquí es la etapa de las Necesidades con venta firme: lo que sigue es comprar, entregar, facturar y cobrar.", en: "Here it is the stage of Needs with a firm sale: next come buying, delivering, invoicing and collecting." },
-      { at: ["/administracion/cupos", "/operaciones/sin-despachar"], where: { es: "Cupos y Sin despachar", en: "Credit limits and Not dispatched" }, es: "Aquí cuenta como dinero ya comprometido con el cliente aunque todavía no se haya facturado.", en: "Here it counts as money already committed with the customer even though it has not been invoiced yet." },
+      { at: ["/administracion/cupos", "/operaciones/sin-despachar"], where: { es: "Cupos y Pedidos sin despachar", en: "Credit limits and Orders not dispatched" }, es: "Aquí cuenta como dinero ya comprometido con el cliente aunque todavía no se haya facturado.", en: "Here it counts as money already committed with the customer even though it has not been invoiced yet." },
     ],
   },
   {
@@ -194,7 +194,7 @@ export const GLOSSARY: GlossTerm[] = [
     def: { es: "Dinero atrapado antes de convertirse en caja: vendido sin entregar, entregado sin facturar, facturado sin cobrar. Sirve para encontrar dónde se detiene el sistema, no para culpar a nadie.", en: "Money trapped before it becomes cash: sold but not delivered, delivered but not invoiced, invoiced but not collected. It is for finding where the system stalls, not for blaming anyone." },
   },
   {
-    id: "foco", area: "comercial", name: { es: "Foco de alto valor", en: "High-value focus" }, forms: ["Foco de alto valor", "High-value focus"],
+    id: "foco", area: "comercial", name: { es: "Negocios de alto valor", en: "High-value deals" }, forms: ["Negocios de alto valor", "High-value deals"],
     def: { es: "Las Necesidades cuya Eságara supera el umbral definido. Se miran aparte porque un atraso en ellas pesa más.", en: "The Needs whose Eságara is above the set threshold. They are watched separately because a delay there weighs more." },
   },
   {
@@ -202,7 +202,7 @@ export const GLOSSARY: GlossTerm[] = [
     def: { es: "Una conversación con el cliente que dejó algo: información, una necesidad, relación, quién decide, un próximo paso, una objeción o la fecha en que decidirá. Un intento sin respuesta no cuenta.", en: "A conversation with the customer that left something: information, a need, relationship, who decides, a next step, an objection or when they will decide. An attempt with no answer does not count." },
   },
   {
-    id: "perfil-cliente", area: "comercial", name: { es: "Perfil (diario del cliente)", en: "Profile (customer diary)" }, forms: ["Perfiles", "diario del cliente", "customer diary"], only: ["/comercial"],
+    id: "perfil-cliente", area: "comercial", name: { es: "Diario de clientes", en: "Customer diary" }, forms: ["Diario de clientes", "diario del cliente", "Customer diary", "customer diary"], only: ["/comercial"],
     def: { es: "El diario de cada cliente: qué le duele, con qué lucha en su trabajo y cómo lo vive cada persona. Se escribe después de cada conversación para llegar a la siguiente sabiendo dónde quedamos.", en: "Each customer's diary: what hurts, what they struggle with at work and how each person lives it. It is written after every conversation so we arrive at the next one knowing where we left off." },
   },
   // ── Mercado ──
@@ -329,7 +329,7 @@ export const GLOSSARY: GlossTerm[] = [
     def: { es: "El resumen del mes por función: qué descubrimos, qué vendimos, qué cumplimos y qué recursos cuidamos. Cada cifra lleva a su detalle.", en: "The month's summary by function: what we discovered, sold, delivered on and which resources we looked after. Each figure leads to its detail." },
   },
   {
-    id: "puente-futuro", area: "gerencia", name: { es: "Puente al futuro", en: "Bridge to the future" }, forms: ["Puente al futuro", "Bridge to the future"],
+    id: "puente-futuro", area: "gerencia", name: { es: "Lo que viene", en: "What is coming" }, forms: ["Lo que viene", "What is coming"], only: ["/gerencia"],
     def: { es: "Lo que viene, desde lo que alguien vio venir hasta el dinero en el banco, en etapas que se leen una al lado de la otra y nunca se suman, porque cada una tiene una certeza distinta.", en: "What is coming, from what someone saw coming to money in the bank, in stages read side by side and never added up, because each has a different certainty." },
   },
   {

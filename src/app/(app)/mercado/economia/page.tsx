@@ -37,7 +37,7 @@ export default async function EconomicExplorer({ searchParams }: { searchParams:
         <div className="row">
           <Link href="/mercado/economia/patrones" className="btn secondary">{t("Patrones por sector", "Patterns by sector")}</Link>
           <Link href="/mercado/economia/comparar" className="btn secondary">{t("Comparar empresas", "Compare companies")}</Link>
-          {canImportData(user) && <Link href="/mercado/fuentes" className="btn secondary">{t("Fuentes de inteligencia", "Intelligence sources")}</Link>}
+          {canImportData(user) && <Link href="/mercado/fuentes" className="btn secondary">{t("Cargar datos del mercado", "Load market data")}</Link>}
         </div>
       </div>
 
@@ -60,7 +60,7 @@ export default async function EconomicExplorer({ searchParams }: { searchParams:
 
       {r.total === 0 ? (
         <div className="card empty"><b>{r.years.length ? t("Ninguna empresa cumple estos filtros", "No company matches these filters") : t("Aún no hay datos económicos", "No economic data yet")}</b>
-          <span className="src block">{r.years.length ? t("Prueba con menos filtros.", "Try fewer filters.") : t("Cuando se cargue un archivo de Supersociedades en Fuentes de inteligencia, aquí podrás filtrar miles de empresas por tamaño, sector, región y tendencia.", "Once a Supersociedades file is loaded in Intelligence sources, you'll be able to filter thousands of companies by size, sector, region and trend here.")}</span></div>
+          <span className="src block">{r.years.length ? t("Prueba con menos filtros.", "Try fewer filters.") : t("Cuando se cargue un archivo de Supersociedades en «Cargar datos del mercado», aquí podrás filtrar miles de empresas por tamaño, sector, región y tendencia.", "Once a Supersociedades file is loaded in “Load market data”, you'll be able to filter thousands of companies by size, sector, region and trend here.")}</span></div>
       ) : (
         <>
           <form action="/mercado/economia/comparar" method="get">

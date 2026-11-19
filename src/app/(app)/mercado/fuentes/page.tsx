@@ -45,7 +45,7 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
       <div className="ph">
         <div>
           <div className="crumb"><Link href="/mercado">{t("Mercado", "Market")}</Link></div>
-          <h1>{t("Fuentes de inteligencia", "Intelligence sources")}</h1>
+          <h1>{t("Cargar datos del mercado", "Load market data")}</h1>
           <p>{t("Archivos de Supersociedades, Cámara de Comercio u otras bases. SOLU guarda el archivo original, revisa cada fila y solo guarda lo que tú confirmas. Nunca reemplaza años anteriores.", "Files from Supersociedades, Chamber of Commerce or other databases. SOLU keeps the original file, checks every row and saves only what you confirm. It never replaces earlier years.")}</p>
         </div>
         <Link href="/mercado/economia" className="btn secondary">{t("Explorador económico", "Economic explorer")}</Link>

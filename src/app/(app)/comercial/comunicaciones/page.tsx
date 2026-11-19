@@ -83,7 +83,7 @@ export default async function ContactLinePage({ searchParams }: { searchParams: 
       <div className="ph">
         <div>
           <div className="crumb"><Link href="/deals">{t("Comercial", "Commercial")}</Link></div>
-          <h1>{t("Línea de comunicaciones", "Communication line")}</h1>
+          <h1>{t("Último contacto por cliente", "Last contact per customer")}</h1>
           <p>{t("Cada empresa según la última vez que hablamos. Entre más a la derecha, más tiempo lleva sin saber de nosotros. Abre un rango para ver sus empresas y registrar el contacto.", "Every company by the last time we spoke. The further right, the longer it has gone without hearing from us. Open a range to see its companies and register the contact.")}</p>
         </div>
       </div>
@@ -150,7 +150,7 @@ export default async function ContactLinePage({ searchParams }: { searchParams: 
           <aside className="cl-slide" data-tone={open.tone} role="dialog" aria-label={t(open.title.es, open.title.en)}>
             <header className="cl-shead">
               <div>
-                <span className="src">{t("Línea de comunicaciones", "Communication line")}</span>
+                <span className="src">{t("Último contacto por cliente", "Last contact per customer")}</span>
                 <b className="block">{t(open.title.es, open.title.en)} · {open.rows.length}</b>
                 <span className="src block">{t(open.sub.es, open.sub.en)}</span>
               </div>

@@ -105,10 +105,10 @@
    "Filter by sector or size.",
    "Open a company and compare it with another."
   ],
-  "expect": "The data comes from the last Supersociedades upload made in Sources."
+  "expect": "The data comes from the last Supersociedades upload made in “Load market data”."
  },
  "fuentes": {
-  "t": "Sources: upload market data",
+  "t": "Load market data",
   "why": "Upload data files (Excel or CSV) and review them before saving.",
   "steps": [
    "Open [[Cargar datos del mercado]] and choose the file.",
@@ -260,7 +260,7 @@
    "Check the document with [[Ver PDF]] (at the top), in English or Spanish.",
    "Once nothing required is missing, the box at the top turns green: click [[Presentar al cliente]] (right column, under the list). Prices become fixed."
   ],
-  "expect": "After presenting it, changes need [[Crear revisión]] (Rev. 1, same number). The quote moves to Commercial future. If you did not write the promise, SOLU builds it from the lead time."
+  "expect": "After presenting it, changes need [[Crear revisión]] (Rev. 1, same number). The quote moves to “Quotes presented”. If you did not write the promise, SOLU builds it from the lead time."
  },
  "liquidacion-costos": {
   "t": "Cost settlement of the quote",
@@ -297,7 +297,7 @@
   "expect": "Whoever requests the exception can never approve it. The tab shows the 90-day pattern per customer."
  },
  "futuro": {
-  "t": "Commercial future",
+  "t": "Quotes presented",
   "why": "All the presented quotes waiting for a customer decision, grouped by what is needed.",
   "steps": [
    "Open the tab and review each zone.",
@@ -338,7 +338,7 @@
   "expect": "A continuity signal creates a follow-up task. It does not create a sales opportunity by itself."
  },
  "dinero": {
-  "t": "Money to move",
+  "t": "To deliver, invoice and collect",
   "why": "All the blocked money, in four buckets, with the cause and who resolves it.",
   "steps": [
    "Open [[Por entregar, facturar y cobrar]] and pick a case.",
@@ -348,7 +348,7 @@
   "expect": "Requesting credit does not approve it: Finance or Management decide."
  },
  "fugas": {
-  "t": "Cash leakage",
+  "t": "Money delays",
   "why": "Where money is delayed, by stage and by cause.",
   "steps": [
    "Open [[Demoras del dinero]].",
@@ -367,7 +367,7 @@
   "expect": "In a proposal it is only used with evidence from that case."
  },
  "foco": {
-  "t": "High-value focus",
+  "t": "High-value deals",
   "why": "Top 5 by Eságara, decisions of the month, deals to protect, money to move and the big ones that have been still for days.",
   "steps": [
    "Open [[Negocios de alto valor]].",
@@ -388,7 +388,7 @@
   "expect": "The AI notes draft is off until there is a key. The trip's money (budget, advance, expenses and settlement) is explained in Administration → Trips."
  },
  "linea-comunicaciones": {
-  "t": "Communication line",
+  "t": "Last contact per customer",
   "why": "Each company by the last time we spoke, so no customer goes months without hearing from us.",
   "steps": [
    "Open [[Último contacto por cliente]]. Each range says how many companies have gone that long without contact; the further right, the longer.",
@@ -400,7 +400,7 @@
   "expect": "An answered call, a video call or visit that took place and an email move the company to “up to date”. A note, an unanswered call or a visit being organised stay in the history, but the company stays in its range. From the company you can open its profile and diary."
  },
  "perfiles": {
-  "t": "Profiles: each customer's diary",
+  "t": "Customer diary",
   "why": "What hurts each customer, what they struggle with and how each person lives it at work, written after every conversation, to present our service as the solution to that struggle.",
   "steps": [
    "Open [[Diario de clientes]] and pick a customer. At the top you see what hurts them, what they struggle with and the next follow-up.",
@@ -410,7 +410,7 @@
    "Under People, use [[+ Anotar algo de esta persona]]: what they want to achieve, what complicates their day, what worries them, how they decide. Always with how we know it.",
    "At the bottom, keep what is handy to have with [[+ Agregar documento]], [[+ Agregar producto]] or [[+ Agregar marca]]: a photo or PDF, a link, or both."
   ],
-  "expect": "The follow-up becomes a to-do of yours with its date in MY DAY → To-dos. A new call, video call or visit also goes into the customer's history and counts in the Communication line. What is noted about a person is about their work: SOLU does not store health, religion, politics or family-life data, or labels, and explains why. Only the commercial team sees that part; Finance and Administration see the diary."
+  "expect": "The follow-up becomes a to-do of yours with its date in MY DAY → To-dos. A new call, video call or visit also goes into the customer's history and counts in “Last contact per customer”. What is noted about a person is about their work: SOLU does not store health, religion, politics or family-life data, or labels, and explains why. Only the commercial team sees that part; Finance and Administration see the diary."
  },
  "metas": {
   "t": "My goals",
@@ -444,7 +444,7 @@
   "expect": "It does not compare you with the team."
  },
  "cierres": {
-  "t": "Closes",
+  "t": "Day, week and month summary",
   "why": "Daily, weekly and monthly close: what happened, what we learned, the visible future and the next moves.",
   "steps": [
    "Open [[Resumen del día, semana y mes]].",
@@ -484,7 +484,7 @@
   "expect": "If the shipment arrives at our warehouse, it is received on the supplier order (RECEIVING block) and the shipment is marked received by itself; delivery to the customer comes later, from “Customer deliveries”. If it goes straight to the customer, confirming their receipt creates the delivery note. The Need's dates are updated from the shipment."
  },
  "sin-despachar": {
-  "t": "Not dispatched",
+  "t": "Orders not dispatched",
   "why": "Every accepted order that has not left yet, with the reason and who has the next step.",
   "steps": [
    "Read the cause on each row (no supplier purchase, source not confirmed, in transit…).",
@@ -775,7 +775,7 @@
   "expect": "What is fine shows on a single green line. People outside Administration, Finance, Direction or Management see their own: their file, their assets and their purchases."
  },
  "adm-exposicion": {
-  "t": "Resource exposure",
+  "t": "Resources at risk",
   "why": "Seven different exposures: cash, customers, suppliers, stock, currency, assets and contracts.",
   "steps": [
    "Open [[Riesgo de los recursos]].",
@@ -1189,12 +1189,12 @@
   "expect": "The future, result, value and cash blocks count what happened within the period. Decisions, risks and capacity show how things stand today. They are company totals, with no list of people. In block 6, “Internal spending” adds up the approved internal purchases of the period and compares them with the period before; the amount is a link to the month's report."
  },
  "ger-puente": {
-  "t": "Future bridge",
+  "t": "What is coming",
   "why": "From what someone saw coming to the money in the bank, in eight stages. And the highest-value items that deserve your attention.",
   "steps": [
    "Open [[Lo que viene]] and read the eight stages from left to right.",
    "Under “VISIBLE FUTURE ESÁGARA”, look at each bucket with the basis it is calculated on.",
-   "Under “High-value focus”, each row says why it is on the list.",
+   "Under “High-value deals”, each row says why it is on the list.",
    "At the bottom, “CONCENTRATION RISK”: what share depends on a single customer or supplier."
   ],
   "expect": "There is no total: the stages are not added because they do not have the same certainty. Opportunities and needs are counted, not valued. Receivables equal those in Receivables."
@@ -1306,7 +1306,7 @@
   "why": "When more than one company sells, the same figures separated by company.",
   "steps": [
    "On the Management home, go down to “BY SELLING COMPANY”.",
-   "Click a company: it opens the Future bridge with only its Needs, invoices and purchases.",
+   "Click a company: it opens “What is coming” with only its Needs, invoices and purchases.",
    "Go back to “All companies” with the tab at the top."
   ],
   "expect": "It only shows when more than one company has data or is active; today only the United States company sells, so it is normal not to see it. The companies add up to the total. Future opportunities do not belong to a company."
@@ -1492,5 +1492,44 @@
    "For month end, go down to “INTERNAL SPENDING REPORT”: total, products and services, the 6-month chart, where it went and who bought. [[Descargar para Excel]] downloads the month's detail."
   ],
   "expect": "Only approved purchases that were already bought count in the report, in the month of the purchase and in dollars (another currency is converted at the day's rate). If the receipt is missing, the list marks it in red and it is uploaded later with “Upload receipt”. Finance, Administration or Management approve; whoever recorded it does not approve it, except Management. The report is seen by Finance, Administration, Direction and Management. The total also shows under REPORTS → Administration and MANAGEMENT → Executive close."
+ },
+ "ruta-pedido": {
+  "t": "Order route: the process as a menu",
+  "why": "The stations of an order in the order they happen, each with its number of open cases, so you know where the work is and where to go.",
+  "steps": [
+   "Open [[COMERCIAL]] or [[OPERACIONES]]. Under the tabs is the “Order route” strip, with the numbered stations.",
+   "Read the number next to each station: those are the cases open there right now.",
+   "Click a station to open its list. The station you are on is highlighted."
+  ],
+  "expect": "The number of Needs is the same as “In progress” on the board. A station without a number is not counted yet (Find supplier, Purchase orders and Delivery notes). The numbers update when you change screens, at most once a minute."
+ },
+ "nuevo-menu": {
+  "t": "+ New: create something from any screen",
+  "why": "One button to start what is created most, without looking for which module holds the form.",
+  "steps": [
+   "At the top, click [[+ Nuevo]].",
+   "Choose what you want to create: a customer's Need, a customer, a contact, a supplier, a to-do, a visit, a purchase requirement, an internal purchase or a Management decision.",
+   "SOLU takes you to the screen where that form is and, if it was inside a closed section, opens it."
+  ],
+  "expect": "Only the options for the screens your role can open are shown. The menu closes when you choose."
+ },
+ "formularios": {
+  "t": "Forms: what is required, what is wrong and what you already typed",
+  "why": "Nobody should fill in a form twice or guess what is required.",
+  "steps": [
+   "Look at a form: required fields carry a red asterisk at the end of their name.",
+   "If you fill in a field wrongly, it is marked in red.",
+   "If SOLU rejects the form (“What is marked in red is missing”), the fields come back with what you had typed and the notice “I brought back what you had typed” appears. Fix only what the notice says and save again."
+  ],
+  "expect": "What you type is kept only in your browser tab while you work, never passwords or attached files, and it is deleted when the form is saved. Files have to be attached again. If the form takes you to another screen after the error, it is not brought back."
+ },
+ "trm-barra": {
+  "t": "Today's TRM, always in view",
+  "why": "The official rate of the dollar in Colombian pesos, without leaving where you are.",
+  "steps": [
+   "Look at the top right, next to the bell: “TRM” and today's value.",
+   "Move the cursor over it to see the source and the date it applies from."
+  ],
+  "expect": "It is the official TRM from the Superfinanciera. If the source does not answer, the box does not appear. It is not shown on a phone."
  }
 }

@@ -5,7 +5,7 @@
 
 type Txt = { es: string; en: string };
 
-export const PROFILE_SOURCE = "Perfiles";
+export const PROFILE_SOURCE = "Diario de clientes";
 
 export const ECSA: Record<string, Txt & { hint: Txt }> = {
   EXPLORAR: { es: "Explorar", en: "Explore", hint: { es: "Estamos entendiendo cómo trabaja y qué le duele", en: "We are learning how they work and what hurts" } },

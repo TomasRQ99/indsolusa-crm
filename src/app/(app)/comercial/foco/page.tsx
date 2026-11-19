@@ -45,7 +45,7 @@ export default async function FocusPage({ searchParams }: { searchParams: Promis
       <div className="ph">
         <div>
           <div className="crumb"><Link href="/deals">{t("Comercial", "Commercial")}</Link></div>
-          <h1>{t("Foco de alto valor", "High-value focus")}</h1>
+          <h1>{t("Negocios de alto valor", "High-value deals")}</h1>
           <p>{t("Dónde está el valor y qué lo puede mover. Eságara en $ y %, la próxima decisión, el próximo movimiento y el riesgo que importa.", "Where the value is and what can move it. Eságara in $ and %, the next decision, the next movement and the risk that matters.")}</p>
         </div>
       </div>
@@ -70,7 +70,7 @@ export default async function FocusPage({ searchParams }: { searchParams: Promis
       <section className="card" data-zone="risk" id="proteger"><b>{t("Negocios para proteger", "Deals to protect")}</b><p className="src">{t("Aceptados y en ejecución, con algún riesgo abierto.", "Accepted and in execution, with an open risk.")}</p><Table rows={v.toProtect} empty={t("Ningún negocio aceptado con riesgo abierto.", "No accepted deal with an open risk.")} /></section>
 
       <section className="card" data-zone="flow" id="dinero">
-        <b>{t("Dinero por mover", "Money to move")}</b> · <Link href="/comercial/dinero" className="small">{t("Ver todo", "See all")} →</Link>
+        <b>{t("Por entregar, facturar y cobrar", "To deliver, invoice and collect")}</b> · <Link href="/comercial/dinero" className="small">{t("Ver todo", "See all")} →</Link>
         {v.moneyToMove.length === 0 ? <p className="small muted"><span className="sig ok">{t("Sin caja bloqueada.", "No blocked cash.")}</span></p> : (
           <ul className="mk-ul">{v.moneyToMove.map((b) => <li key={b.id}><b className="mono">{i.money(b.blockedValue)}</b> · {b.deal.account.name} · <Link href={`/deals/${b.deal.id}`}>{b.deal.code ?? b.deal.title}</Link> — {b.narrative}<span className="muted"> → {b.nextMovement}{showOwner ? ` · ${b.deal.owner.name}` : ""}</span></li>)}</ul>
         )}

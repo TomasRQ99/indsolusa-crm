@@ -126,7 +126,7 @@ export default async function CreditLimitsPage({ searchParams }: { searchParams:
                               </form>
                             ))
                           ) : (
-                            <p className="small">{t("La deciden Finanzas o Gerencia. Puedes pedirla desde Comercial · Dinero por mover.", "Finance or Management decide. You can request it from Commercial · Money to move.")} <Link href="/comercial/dinero#credito">{t("Ir", "Go")}</Link></p>
+                            <p className="small">{t("La deciden Finanzas o Gerencia. Puedes pedirla desde Comercial · Por entregar, facturar y cobrar.", "Finance or Management decide. You can request it from Commercial · To deliver, invoice and collect.")} <Link href="/comercial/dinero#credito">{t("Ir", "Go")}</Link></p>
                           )}
                         </div>
                       </div>

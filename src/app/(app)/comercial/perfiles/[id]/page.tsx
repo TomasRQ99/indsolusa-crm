@@ -61,7 +61,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pr
     <div className="pf">
       <div className="ph">
         <div>
-          <div className="crumb"><Link href="/deals">{t("Comercial", "Commercial")}</Link> · <Link href="/comercial/perfiles">{t("Perfiles", "Profiles")}</Link></div>
+          <div className="crumb"><Link href="/deals">{t("Comercial", "Commercial")}</Link> · <Link href="/comercial/perfiles">{t("Diario de clientes", "Customer diary")}</Link></div>
           <h1>{a.name}</h1>
           <p className="small">
             {a.industry ?? t("Sin industria", "No industry")} · {t("Responsable", "Owner")}: {a.owner.name}
