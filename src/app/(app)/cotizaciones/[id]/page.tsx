@@ -30,7 +30,7 @@ import { CostFxFields } from "@/components/CostFxFields";
 import { CostTotal } from "@/components/CostTotal";
 import { Info } from "@/components/Info";
 import { OpenOnLand } from "@/components/OpenOnLand";
-import { COST_LINES, costDetail } from "@/lib/cost-lines";
+import { COST_LINES, costDetail, esagaraPctOf, priceIncludes } from "@/lib/cost-lines";
 import { COST_STATUS, costStatusOf, quoteDiff, weakest, type QV } from "@/lib/proposal-rules";
 
 export default async function QuotePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; cmp?: string; abrir?: string }> }) {
@@ -85,6 +85,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     abierta: t("Ya había un borrador abierto: es este.", "There was already an open draft: this one."),
     solucion: t("Solución y promesa guardadas.", "Solution and promise saved."),
     costos: t("Costos guardados. SOLU recalculó la economía esperada.", "Costs saved. SOLU recalculated the expected economics."),
+    "costos-precio": t("Costos guardados. SOLU puso el precio de venta en los productos según la Eságara que escribiste: revísalo en «PRODUCTOS EN EL DOCUMENTO».", "Costs saved. SOLU put the sale price on the products from the Eságara you typed: check it under “PRODUCTS ON THE DOCUMENT”."),
     "tasa-mercado": t("Tasa actualizada a la del mercado. SOLU recalculó la economía esperada.", "Rate updated to the market's. SOLU recalculated the expected economics."),
     condiciones: t("Condiciones guardadas.", "Terms saved."),
     vendedor: t("Empresa que vende actualizada.", "Selling company updated."),
@@ -228,7 +229,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
             ? <><span className="sig ok">{t("No falta nada obligatorio", "Nothing required is missing")}</span><span className="grow" /><a className="btn sm" href="#presentar">{t("Ir a «Presentar al cliente»", "Go to “Present to customer”")} →</a></>
             : <span className="sig risk">{count + others.length === 1 ? t("Falta 1 cosa", "1 thing missing") : t(`Faltan ${count + others.length} cosas`, `${count + others.length} things missing`)}</span>}
         </div>
-        {count + others.length === 0 ? <p className="cq-sub">{t("Ya puedes presentarla. Abajo quedan datos opcionales por si quieres agregarlos.", "You can present it now. Optional items remain below in case you want to add them.")}</p> : <p className="cq-sub">{t("Para presentar solo hacen falta tres cosas: el precio de cada producto, el costo del producto y el tiempo de entrega. Llena lo que está en rojo y guarda; la «i» junto a cada nombre explica qué escribir.", "To present, only three things are needed: the price of every product, the product's cost and the lead time. Fill in what is in red and save; the “i” next to each name explains what to write.")}</p>}
+        {count + others.length === 0 ? <p className="cq-sub">{t("Ya puedes presentarla. Abajo quedan datos opcionales por si quieres agregarlos.", "You can present it now. Optional items remain below in case you want to add them.")}</p> : <p className="cq-sub">{t("Para presentar solo hacen falta tres cosas: el precio de cada producto, el costo del producto y el tiempo de entrega. Llena lo que está en rojo y guarda; la «i» junto a cada nombre explica qué escribir.", "To present, only three things are needed: the price of every product, the product's cost and the lead time. Fill in what is in red and save; the “i” next to each name explains what to write.")}{noPrice.length > 0 && <> {t("El precio también puede salir solo: escribe la Eságara que quieres ganar en", "The price can also come out by itself: type the Eságara you want to earn in")} <a href="#costos">«{t("Liquidación de costos", "Cost settlement")}»</a>.</>}</p>}
         {(count > 0 || optCount > 0) && (
           <form action={completeQuote.bind(null, q.id)} className="cq-form">
             {noPrice.map((l) => <label key={l.id} className="req-miss"><span className="fname">{t("Precio de venta por unidad (USD)", "Selling price per unit (USD)")}: {l.description.slice(0, 60)} <Info lang={user.lang} {...HELP.price} /> <Req /></span><input name={`price_${l.id}`} type="number" min="0" step="0.01" placeholder={HELP.price.example} /></label>)}
@@ -350,7 +351,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
       <form action={saveCosts.bind(null, q.id)} className="liq-sheet" id="costos">
         <div className="liq-head">
           <b>{t("Liquidación de costos", "Cost settlement")}</b>
-          <span className="src">{t("Escribe cada costo en su fila; lo que no aplique se deja en 0. El total y la Eságara se calculan solos mientras escribes.", "Type each cost on its row; leave at 0 what doesn't apply. The total and Eságara are calculated as you type.")}</span>
+          <span className="src">{t("Escribe cada costo en su fila; lo que no aplique se deja en 0. Abajo escribes la Eságara que quieres ganar y SOLU calcula el precio de venta mientras escribes.", "Type each cost on its row; leave at 0 what doesn't apply. Below you type the Eságara you want to earn and SOLU calculates the sale price as you type.")}</span>
         </div>
         <div className="liq-grid">
           <span className="liq-th">{t("Concepto", "Item")}</span><span className="liq-th r">{t("Valor", "Amount")}</span><span className="liq-th">{t("¿De dónde sale?", "Where is it from?")}</span>
@@ -383,11 +384,12 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
           <input id="lq-creditAmount" className="liq-val" name="creditAmount" type="number" step="0.01" min="0" defaultValue={det.credit} />
           <input className="liq-src" name="creditSrc" maxLength={200} defaultValue={q.creditSrc ?? ""} aria-label={`${srcLabel}: ${t("crédito a favor", "credit in our favor")}`} placeholder={t("Nota crédito, saldo con el transportador…", "Credit note, balance with the carrier…")} />
         </div>
-        <CostTotal lang={user.lang} sale={B.sale} saved={{ supplier: cur.supplier, freight: cur.freight, other: otherGross }} note={q.changeNote} askAlways={q.rev > 0} />
+        <CostTotal lang={user.lang} sale={B.sale} pct={B.cost > 0 ? esagaraPctOf(B.sale, B.cost) : null} lines={q.lines.length} threshold={policy.threshold} saved={{ supplier: cur.supplier, freight: cur.freight, other: otherGross }} note={q.changeNote} askAlways={q.rev > 0} />
         <div className="liq-foot">
           <button type="submit">{t("Guardar costos", "Save costs")}</button>
-          <span className="src">{t("Al guardar, SOLU recalcula la Eságara de la cotización.", "On save, SOLU recalculates the quote's Eságara.")}</span>
+          <span className="src">{t("Al guardar, SOLU pone el precio de venta en los productos según la Eságara que escribiste.", "On save, SOLU puts the sale price on the products from the Eságara you typed.")}</span>
         </div>
+        <p className="small" style={{ margin: 0 }}>{t("En el PDF del cliente", "On the customer's PDF")}: <b>{t("El precio incluye", "Price includes")}:</b> {priceIncludes(q, user.lang === "EN" ? "EN" : "ES")}. <span className="src">{t("Sale de los costos de esta hoja que tienen valor. El cliente ve los nombres, nunca nuestros costos ni la Eságara.", "It comes from the costs on this sheet that have an amount. The customer sees the names, never our costs or the Eságara.")}</span></p>
       </form>
     );
     return (

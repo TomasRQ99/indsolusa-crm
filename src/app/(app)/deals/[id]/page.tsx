@@ -42,10 +42,10 @@ import { prepareSpo } from "../../compras/actions";
 import { matchSupplier } from "@/lib/purchasing";
 import { recordShipment } from "../../logistica/actions";
 import { forwardOf, fwdLabel } from "@/lib/logistics";
-import { lineAmount, linesTotal } from "@/lib/money";
+import { lineAmount, linesTotal, subMoney } from "@/lib/money";
 import { CostTotal } from "@/components/CostTotal";
 import { stepNeeds } from "@/lib/step-needs";
-import { COST_LINES, costDetail } from "@/lib/cost-lines";
+import { COST_LINES, costDetail, esagaraPctOf } from "@/lib/cost-lines";
 import type { NeedContext } from "@/lib/need-handoff";
 import MarketContext from "@/components/MarketContext";
 
@@ -792,7 +792,7 @@ export default async function JourneyPage({
             <div className="liq-sheet in-form" id="costos">
               <div className="liq-head">
                 <b>{t("Liquidación de costos", "Cost settlement")}</b>
-                <span className="src">{t("La primera cuenta de lo que cuesta traerlo, en USD. Escribe cada costo en su fila; lo que no sepas todavía se deja en 0. Al preparar la cotización, esta hoja pasa completa y allá se afina (moneda del proveedor, de dónde sale cada valor).", "The first estimate of what it costs to bring it, in USD. Type each cost on its row; leave at 0 what you don't know yet. When the quote is prepared, this sheet carries over and is refined there (supplier currency, where each amount comes from).")}</span>
+                <span className="src">{t("La primera cuenta de lo que cuesta traerlo, en USD. Escribe cada costo en su fila; lo que no sepas todavía se deja en 0. Abajo escribes la Eságara que quieres ganar y SOLU calcula el precio de venta. Al preparar la cotización, esta hoja pasa completa y allá se afina (moneda del proveedor, de dónde sale cada valor).", "The first estimate of what it costs to bring it, in USD. Type each cost on its row; leave at 0 what you don't know yet. Below you type the Eságara you want to earn and SOLU calculates the sale price. When the quote is prepared, this sheet carries over and is refined there (supplier currency, where each amount comes from).")}</span>
               </div>
               <div className="liq-grid two">
                 <span className="liq-th">{t("Concepto", "Item")}</span><span className="liq-th r">{t("Valor USD", "Amount USD")}</span>
@@ -810,7 +810,7 @@ export default async function JourneyPage({
                 <input id="dl-creditAmount" className="liq-val" name="creditAmount" type="number" min="0" step="0.01" defaultValue={Number(deal.creditAmount)} />
                 <label className="liq-wide plain">{t("¿De dónde sale el crédito a favor? (solo si escribiste uno)", "Where does the credit come from? (only if you typed one)")}<input name="creditSrc" maxLength={200} defaultValue={deal.creditSrc ?? ""} placeholder={t("Nota crédito, saldo con el transportador…", "Credit note, balance with the carrier…")} /></label>
               </div>
-              <CostTotal lang={user.lang} sale={Number(deal.amount)} saved={{ supplier: 0, freight: 0, other: 0 }} note={null} askAlways={false} />
+              <CostTotal lang={user.lang} sale={Number(deal.amount)} pct={subMoney(deal.amount, J.eg.value) > 0 ? esagaraPctOf(deal.amount, subMoney(deal.amount, J.eg.value)) : null} lines={deal.items.length || 1} fixed={!!deal.quoteSentAt || deal.stage === "WON" || deal.stage === "LOST"} saved={{ supplier: 0, freight: 0, other: 0 }} note={null} askAlways={false} />
             </div>
             <button type="submit">{t("Guardar fuente", "Save source")}</button>
           </form>

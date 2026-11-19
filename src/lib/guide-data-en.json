@@ -242,7 +242,7 @@
   "why": "Record exactly what the customer needs and where it will come from, before quoting.",
   "steps": [
    "[[Necesidad]] tab: describe the result the customer wants and the need, and click [[Guardar necesidad]]. The customer's machine, the notes for internal use and “PHOTOS AND FILES” are right there.",
-   "[[Fuente]] tab: write where we will get it and, in the “Cost settlement” sheet, the first estimate of what it costs to bring it: product, shipping, taxes, customs, packing, bank wire and credit in our favor, in USD. Leave at 0 what you do not know yet. Click [[Guardar fuente]].",
+   "[[Fuente]] tab: write where we will get it and, in the “Cost settlement” sheet, the first estimate of what it costs to bring it: product, shipping, taxes, customs, packing, bank wire and credit in our favor, in USD. Leave at 0 what you do not know yet. In the blue box, under «Eságara que quieres ganar», type the percentage you want: SOLU calculates the «Precio de venta» (total cost ÷ (1 − Eságara)). Click [[Guardar fuente]].",
    "Note in the search log the suppliers' quotes and why you chose one."
   ],
   "expect": "The calculated Eságara shows under the source, and the blue box shows the total cost as you type. When the quote is prepared, the sheet carries over in full and is refined there (supplier currency and where each amount comes from)."
@@ -254,10 +254,10 @@
    "On the Need, open the [[Cotización]] tab and click [[Preparar cotización]]. SOLU brings the products and costs the Need already has.",
    "At the top, the box “COMPLETE TO PRESENT” has on one form the only required things: the price of every product, the product's cost and the lead time. Fill in the red fields (the “i” next to each name explains what to write) and click [[Guardar lo que llené]]. The rest is under “Optional” and does not stop you.",
    "Under “PRODUCTS ON THE DOCUMENT”, check each line and give it a price with “Edit”. To add another, open [[Agregar producto]] and click [[Agregar]].",
-   "Under “ECONOMICS”, fill in the “Cost settlement” sheet and click [[Guardar costos]]. Look at the Eságara in $ and %, before and after the cost of financing the payment terms.",
+   "Under “ECONOMICS”, fill in the “Cost settlement” sheet. In the blue box, under «Eságara que quieres ganar», type the percentage you want: SOLU calculates the «Precio de venta». Click [[Guardar costos]]: the price is put on the products. Below you see the Eságara before and after the cost of financing the payment terms.",
    "Optional: offer alternatives with [[+ Escenario]] and [[Agregar escenario]], and mark one with [[Recomendar este]].",
    "In the right column, “READY TO PRESENT” shows each point with “✓”, “!” (required and missing) or “·” (optional, not filled). Each point is a link: click it and SOLU takes you to where it is filled in, with the form open.",
-   "Check the document with [[Ver PDF]] (at the top), in English or Spanish.",
+   "Check the document with [[Ver PDF]] (at the top), in English or Spanish. The “Price includes” row names what the price covers (product, shipping, duties and taxes, customs, packing) from the costs that have an amount on the sheet; the customer sees no cost amounts and no Eságara.",
    "Once nothing required is missing, the box at the top turns green: click [[Presentar al cliente]] (right column, under the list). Prices become fixed."
   ],
   "expect": "After presenting it, changes need [[Crear revisión]] (Rev. 1, same number). The quote moves to “Quotes presented”. If you did not write the promise, SOLU builds it from the lead time."
@@ -271,7 +271,7 @@
    "“Shipping” row: type the cost of transport to the customer in USD and where it comes from (DHL's or the carrier's quote). In the “Transit days” row type how many days the goods travel; it is not a cost.",
    "“Taxes”, “Customs”, “Packaging”, “Bank wire” and “Other” rows: type each amount in USD. “Bank wire” is what the bank charges to send the money, not the amount sent. On the right there is a single box to say where these five amounts come from.",
    "“Credit in our favor” row: if there is a balance in our favor with the supplier or the carrier, type the amount and where it comes from (credit note, balance). It is subtracted from the cost.",
-   "Look at the blue box under the rows: “Total cost”, “Sale” and “Eságara” are calculated as you type. If a cost is lower than the saved one, the «¿Por qué bajó el costo?» box appears: write the reason (for example, new proforma).",
+   "Look at the blue box under the rows: “Total cost” is calculated by itself. Under «Eságara que quieres ganar» type the percentage you want (for example 30) and adjust it as many times as needed: «Precio de venta» changes as you type, with the calculation under it (total cost ÷ (1 − Eságara)). If you leave that box empty, the price is the one the products already have. On save, SOLU puts that price on the products; if there are several, it splits it in the same proportion as their prices. If a cost is lower than the saved one, the «¿Por qué bajó el costo?» box appears: write the reason (for example, new proforma).",
    "Click [[Guardar costos]]."
   ],
   "expect": "At the top, “Current expected economics” shows the recalculated Eságara in $ and %. Under the sheet, “Customer payment habits” shows the agreed terms, in how many days the customer usually pays and what financing those days costs: SOLU brings it by itself. If you typed a credit in our favor without saying where it comes from, or a cost went down and you did not write the reason, SOLU saves nothing and asks you for it. The sheet can only be edited while the quote is a draft; after presenting it, changes are made with “Create revision”."

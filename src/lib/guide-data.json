@@ -375,7 +375,7 @@
    "why": "Registra exactamente qué necesita el cliente y de dónde vendrá, antes de cotizar.",
    "steps": [
     "Pestaña [[Necesidad]]: describe el resultado que busca el cliente y la necesidad, y haz clic en [[Guardar necesidad]]. Ahí mismo están la máquina del cliente, las observaciones de uso interno y «FOTOS Y ARCHIVOS».",
-    "Pestaña [[Fuente]]: escribe de dónde lo vamos a conseguir y, en la hoja «Liquidación de costos», la primera cuenta de lo que cuesta traerlo: producto, envío, impuestos, aduana, empaque, giro y crédito a favor, en USD. Lo que no sepas todavía se deja en 0. Haz clic en [[Guardar fuente]].",
+    "Pestaña [[Fuente]]: escribe de dónde lo vamos a conseguir y, en la hoja «Liquidación de costos», la primera cuenta de lo que cuesta traerlo: producto, envío, impuestos, aduana, empaque, giro y crédito a favor, en USD. Lo que no sepas todavía se deja en 0. En el recuadro azul, en «Eságara que quieres ganar», escribe el porcentaje que quieres: SOLU calcula el «Precio de venta» (costo total ÷ (1 − Eságara)). Haz clic en [[Guardar fuente]].",
     "Anota en el registro de búsqueda las cotizaciones de proveedores y por qué elegiste uno."
    ],
    "expect": "La Eságara calculada aparece debajo de la fuente, y el recuadro azul muestra el costo total mientras escribes. Al preparar la cotización, la hoja pasa completa y allá se afina (moneda del proveedor y de dónde sale cada valor)."
@@ -390,10 +390,10 @@
     "En la Necesidad, abre la pestaña [[Cotización]] y haz clic en [[Preparar cotización]]. SOLU trae los productos y costos que ya tiene la Necesidad.",
     "Arriba, el recuadro «COMPLETA PARA PRESENTAR» tiene en un solo formulario lo único obligatorio: el precio de cada producto, el costo del producto y el tiempo de entrega. Llena los campos en rojo (la «i» junto a cada nombre explica qué escribir) y haz clic en [[Guardar lo que llené]]. Lo demás está en «Opcional» y no frena.",
     "En «PRODUCTOS EN EL DOCUMENTO», revisa cada línea y ponle precio con «Editar». Para sumar otra, abre [[Agregar producto]] y haz clic en [[Agregar]].",
-    "En «ECONOMÍA», llena la hoja «Liquidación de costos» y haz clic en [[Guardar costos]]. Mira la Eságara en $ y %, antes y después del costo de financiar el plazo de pago.",
+    "En «ECONOMÍA», llena la hoja «Liquidación de costos». En el recuadro azul, en «Eságara que quieres ganar», escribe el porcentaje que quieres: SOLU calcula el «Precio de venta». Haz clic en [[Guardar costos]]: el precio queda puesto en los productos. Debajo ves la Eságara antes y después del costo de financiar el plazo de pago.",
     "Opcional: ofrece alternativas con [[+ Escenario]] y [[Agregar escenario]], y marca una con [[Recomendar este]].",
     "En la columna derecha, «LISTA PARA PRESENTAR» muestra cada punto con «✓», «!» (obligatorio que falta) o «·» (opcional sin llenar). Cada punto es un enlace: haz clic y SOLU te lleva a donde se llena, con el formulario abierto.",
-    "Revisa el documento con [[Ver PDF]] (arriba), en inglés o español.",
+    "Revisa el documento con [[Ver PDF]] (arriba), en inglés o español. El renglón «El precio incluye» nombra lo que cubre el precio (producto, envío, arancel e impuestos, aduana, empaque) según los costos que tienen valor en la hoja; el cliente no ve valores de costo ni la Eságara.",
     "Cuando no falta nada obligatorio, el recuadro de arriba se pone verde: haz clic en [[Presentar al cliente]] (columna derecha, debajo de la lista). Los precios quedan fijos."
    ],
    "expect": "Después de presentarla, los cambios requieren [[Crear revisión]] (Rev. 1, mismo número). La cotización pasa a «Cotizaciones presentadas». Si no escribiste la promesa, SOLU la arma sola con el tiempo de entrega."
@@ -410,7 +410,7 @@
     "Fila «Envío»: escribe el costo del transporte hasta el cliente en USD y de dónde sale (cotización de DHL o del transportador). En la fila «Días de transporte» escribe cuántos días viaja la mercancía; no es un costo.",
     "Filas «Impuestos», «Aduana», «Empaque», «Giro» y «Otros»: escribe cada valor en USD. «Giro» es lo que cobra el banco por enviar el dinero, no el monto enviado. A la derecha hay una sola casilla para decir de dónde salen estos cinco valores.",
     "Fila «Crédito a favor»: si hay un saldo a nuestro favor con el proveedor o el transportador, escribe el valor y de dónde sale (nota crédito, saldo). Se resta del costo.",
-    "Mira el recuadro azul debajo de las filas: «Costo total», «Venta» y «Eságara» se calculan solos mientras escribes. Si un costo quedó más bajo que el guardado, aparece la casilla «¿Por qué bajó el costo?»: escribe el motivo (por ejemplo, nueva proforma).",
+    "Mira el recuadro azul debajo de las filas: «Costo total» se calcula solo. En «Eságara que quieres ganar» escribe el porcentaje que quieres (por ejemplo 30) y ajústalo las veces que haga falta: «Precio de venta» cambia mientras escribes, con la cuenta debajo (costo total ÷ (1 − Eságara)). Si dejas esa casilla vacía, el precio es el que ya tienen los productos. Al guardar, SOLU pone ese precio en los productos; si son varios, lo reparte en la misma proporción de sus precios. Si un costo quedó más bajo que el guardado, aparece la casilla «¿Por qué bajó el costo?»: escribe el motivo (por ejemplo, nueva proforma).",
     "Haz clic en [[Guardar costos]]."
    ],
    "expect": "Arriba, «Economía esperada actual» muestra la Eságara recalculada en $ y %. Debajo de la hoja, «Hábitos de pago del cliente» muestra el plazo pactado, a cuántos días suele pagar el cliente y cuánto cuesta financiar ese plazo: SOLU lo trae solo. Si escribiste un crédito a favor sin decir de dónde sale, o un costo bajó y no escribiste el motivo, SOLU no guarda nada y te lo pide. La hoja solo se puede escribir mientras la cotización es un borrador; después de presentarla se cambia con «Crear revisión»."

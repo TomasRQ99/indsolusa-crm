@@ -4,6 +4,12 @@ import { db } from "./db";
 import { today } from "./domain";
 import { renderDoc, type DocLang } from "./pdf-docs";
 import { quoteDocView } from "./sellers";
+import { priceIncludes } from "./cost-lines";
+
+/** "Price includes" is printed on drafts and on quotes presented from the day it was added (owner, 2026-11-19).
+ *  A quote the customer already received keeps the document they received. */
+const INCLUDES_SINCE = new Date("2026-11-19T00:00:00Z");
+const printsIncludes = (q: { status: string; presentedAt: Date | null }) => q.status === "DRAFT" || (!!q.presentedAt && q.presentedAt >= INCLUDES_SINCE);
 
 export async function quotePdf(id: string, langOverride?: DocLang | null): Promise<{ name: string; data: Buffer; draft: boolean } | null> {
   const q = await db.quote.findUnique({ where: { id }, include: { lines: { orderBy: { position: "asc" } }, deal: { select: { sellerKey: true, owner: { select: { name: true } } } } } });
@@ -15,7 +21,7 @@ export async function quotePdf(id: string, langOverride?: DocLang | null): Promi
     billTo: q.billTo ?? "", shipTo: q.shipTo ?? "",
     lines: q.lines.map((l) => ({ qty: l.qty, code: l.code, description: l.description, unitPrice: Number(l.unitPrice) })),
     draft: q.status === "DRAFT", leadMinDays: q.leadMinDays, leadMaxDays: q.leadMaxDays, incoterm: q.incoterm, paymentTerms: q.paymentTerms,
-    validityDays: q.validityDays, condition: q.condition, issuer: view.issuer.name ? view.issuer : undefined, money: view.money,
+    validityDays: q.validityDays, condition: q.condition, includes: printsIncludes(q) ? priceIncludes(q, lang) : null, issuer: view.issuer.name ? view.issuer : undefined, money: view.money,
   });
   return { name: quotePdfName(q), data: Buffer.from(pdf), draft: q.status === "DRAFT" };
 }

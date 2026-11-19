@@ -9,7 +9,8 @@ import { optionalDate, optionalId, optionalText, parseForm, requiredText } from 
 import { refreshApp } from "@/lib/revalidate";
 import { nextCode, today } from "@/lib/domain";
 import { CAUSE_KEYS } from "@/lib/causes";
-import { otherTotal } from "@/lib/cost-lines";
+import { esagaraPctOf, otherTotal, priceForEsagara, repriceLines } from "@/lib/cost-lines";
+import { linesTotal, sumMoney } from "@/lib/money";
 import { partKey } from "@/lib/parts";
 import { addWorkingDays } from "@/lib/holidays";
 
@@ -280,9 +281,21 @@ export async function saveSourcing(id: string, fd: FormData) {
     redirect(`/deals/${id}?tab=source&err=credito-fuente`);
   }
   const days = num(fd, "transitDays");
+  // The Eságara the person typed decides the price (owner, 2026-11-19): price = total cost ÷ (1 − Eságara %).
+  // Same rule as the quote's sheet (cotizaciones/actions.ts saveCosts). Never once the price is with the customer.
+  const cur = await db.deal.findUniqueOrThrow({ where: { id }, select: { amount: true, supplierCost: true, freightCost: true, otherCosts: true, quoteSentAt: true, stage: true, items: { orderBy: { id: "asc" }, select: { id: true, qty: true, unitPrice: true } } } });
+  const newCost = sumMoney([num(fd, "supplierCost") ?? cur.supplierCost, num(fd, "freightCost") ?? cur.freightCost, sheet ? otherTotal(parts) : num(fd, "otherCosts") ?? cur.otherCosts]);
+  const rawPct = String(fd.get("esagaraPct") ?? "").trim().replace(",", ".");
+  const wantPct = rawPct === "" ? null : Number(rawPct);
+  const target = cur.quoteSentAt || cur.stage === "WON" || cur.stage === "LOST" ? null : priceForEsagara(newCost, wantPct);
+  const reprice = target != null && esagaraPctOf(cur.amount, newCost) !== Math.round(wantPct! * 100) / 100;
+  const prices = reprice ? repriceLines(cur.items, target!) : [];
+  const newAmount = reprice ? (cur.items.length ? linesTotal(cur.items.map((it, n) => ({ qty: it.qty, p: prices[n] })), (l) => l.qty, (l) => l.p) : target!) : null;
+  if (reprice) await db.$transaction(cur.items.flatMap((it, n) => (prices[n] !== Number(it.unitPrice) ? [db.dealItem.update({ where: { id: it.id }, data: { unitPrice: prices[n] } })] : [])));
   await db.deal.update({
     where: { id },
     data: {
+      ...(newAmount != null ? { amount: newAmount } : {}),
       sourcingNote: txt(fd, "sourcingNote"),
       ...(num(fd, "supplierCost") !== undefined ? { supplierCost: num(fd, "supplierCost") } : {}),
       ...(num(fd, "freightCost") !== undefined ? { freightCost: num(fd, "freightCost") } : {}),

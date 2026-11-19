@@ -13,7 +13,7 @@ import { scopeState } from "@/lib/scope";
 import { costDrops } from "@/lib/esagara-rules";
 import { makeI18n } from "@/lib/i18n";
 import { money2, mulMoney, sumMoney } from "@/lib/money";
-import { otherTotal } from "@/lib/cost-lines";
+import { esagaraPctOf, otherTotal, priceForEsagara, repriceLines } from "@/lib/cost-lines";
 import { syncItemPrices } from "@/lib/item-prices";
 import { COST_STATUS } from "@/lib/proposal-rules";
 import { sellerMissing, sellerOf } from "@/lib/sellers";
@@ -192,6 +192,16 @@ export async function saveCosts(id: string, fd: FormData) {
     { supplierCost: usdAfter, freightCost: num(fd, "freightCost") ?? 0, otherCosts: sumMoney([otherCosts, parts.credit]) },
   );
   if (drops.length && !txt(fd, "changeNote", 300)) back(id, "err=motivo-costo");
+  // The Eságara the person typed decides the price (owner, 2026-11-19): price = total cost ÷ (1 − Eságara %).
+  // The box comes filled with the Eságara the prices already leave, so a sheet saved without touching it and
+  // without changing a cost changes no price; a cost that moves keeps the Eságara and moves the price.
+  const lines = await db.quoteLine.findMany({ where: { quoteId: id }, orderBy: { position: "asc" }, select: { id: true, qty: true, unitPrice: true } });
+  const newCost = sumMoney([fxRate ? mulMoney(newSupplier, fxRate) : money2(newSupplier), num(fd, "freightCost") ?? 0, otherCosts]);
+  const wantPct = num(fd, "esagaraPct");
+  const target = priceForEsagara(newCost, wantPct);
+  const reprice = target != null && lines.length > 0 && esagaraPctOf(saleOf(lines), newCost) !== Math.round(wantPct! * 100) / 100;
+  const prices = reprice ? repriceLines(lines, target!) : [];
+  await db.$transaction(lines.flatMap((l, n) => (reprice && prices[n] !== Number(l.unitPrice) ? [db.quoteLine.update({ where: { id: l.id }, data: { unitPrice: prices[n] } })] : [])));
   await db.quote.update({
     where: { id },
     data: {
@@ -218,7 +228,7 @@ export async function saveCosts(id: string, fd: FormData) {
       changeNote: txt(fd, "changeNote", 300),
     },
   });
-  back(id, "ok=costos");
+  back(id, reprice ? "ok=costos-precio" : "ok=costos");
 }
 
 /** Terms printed on the document and the customer's decision path. */
