@@ -1966,6 +1966,57 @@
     "Para quitar los globos: en la página Glosario, [[Ocultar los globos en las pantallas]]. Se vuelven a mostrar ahí mismo con [[Mostrar los globos en las pantallas]]."
    ],
    "expect": "El mismo término explica cosas distintas según dónde estés: «Necesidad» en el título de la primera columna del tablero es la etapa; en Mercado es cuándo una señal se vuelve Necesidad. Hay un globo por término en cada bloque de la pantalla, no en cada mención. Ocultarlos vale para ese navegador, no para la persona. En un teléfono o una tableta, donde no hay cursor, los globos «i» se ven siempre."
+  },
+  {
+   "id": "ruta-pedido",
+   "m": "global",
+   "t": "Ruta del pedido: el proceso como menú",
+   "path": "COMERCIAL y OPERACIONES · franja «Ruta del pedido»",
+   "why": "Las estaciones de un pedido en el orden en que ocurren, cada una con el número de casos abiertos, para saber dónde está el trabajo y a dónde ir.",
+   "steps": [
+    "Abre [[COMERCIAL]] u [[OPERACIONES]]. Debajo de las pestañas está la franja «Ruta del pedido», con las estaciones numeradas.",
+    "Lee el número junto a cada estación: son los casos abiertos ahí en este momento.",
+    "Haz clic en una estación para abrir su lista. La estación donde estás queda resaltada."
+   ],
+   "expect": "El número de Necesidades es el mismo que «En curso» en el tablero. Una estación sin número no se cuenta todavía (Buscar proveedor, Órdenes de compra y Remisiones). Los números se actualizan al cambiar de pantalla, como máximo una vez por minuto."
+  },
+  {
+   "id": "nuevo-menu",
+   "m": "global",
+   "t": "+ Nuevo: crear algo desde cualquier pantalla",
+   "path": "Barra superior · + Nuevo",
+   "why": "Un solo botón para empezar lo que más se crea, sin buscar en qué módulo está el formulario.",
+   "steps": [
+    "Arriba, haz clic en [[+ Nuevo]].",
+    "Elige qué quieres crear: una Necesidad de un cliente, un cliente, un contacto, un proveedor, un pendiente, una visita, un requerimiento de compra, una compra interna o una decisión de Gerencia.",
+    "SOLU te lleva a la pantalla donde está ese formulario y, si estaba dentro de una sección cerrada, la abre."
+   ],
+   "expect": "Solo aparecen las opciones de las pantallas que tu rol puede abrir. El menú se cierra al elegir."
+  },
+  {
+   "id": "formularios",
+   "m": "global",
+   "t": "Formularios: lo obligatorio, lo que está mal y lo que ya escribiste",
+   "path": "En todos los formularios",
+   "why": "Nadie debería escribir un formulario dos veces ni adivinar qué es obligatorio.",
+   "steps": [
+    "Mira un formulario: los campos obligatorios llevan un asterisco rojo al final de su nombre.",
+    "Si llenas mal un campo, se marca en rojo.",
+    "Si SOLU rechaza el formulario («Falta lo marcado en rojo»), los campos vuelven con lo que habías escrito y aparece el aviso «Recuperé lo que habías escrito». Corrige solo lo que marca el aviso y guarda de nuevo."
+   ],
+   "expect": "Lo escrito se guarda solo en la pestaña de tu navegador mientras trabajas, nunca contraseñas ni archivos adjuntos, y se borra cuando el formulario se guarda. Los archivos hay que adjuntarlos otra vez. Si el formulario te lleva a otra pantalla después del error, no se recupera."
+  },
+  {
+   "id": "trm-barra",
+   "m": "global",
+   "t": "TRM del día, siempre a la vista",
+   "path": "Barra superior · TRM",
+   "why": "La tasa oficial del dólar en pesos colombianos, sin salir de donde estás.",
+   "steps": [
+    "Mira arriba a la derecha, junto a la campana: «TRM» y el valor de hoy.",
+    "Pasa el cursor por encima para ver la fuente y desde qué fecha rige."
+   ],
+   "expect": "Es la TRM oficial de la Superfinanciera. Si la fuente no responde, el recuadro no aparece. En un teléfono no se muestra."
   }
  ]
 }
