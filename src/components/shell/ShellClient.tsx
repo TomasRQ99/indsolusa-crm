@@ -12,6 +12,7 @@ import { logout } from "@/app/login/actions";
 import { ReportSignal } from "@/components/ReportSignal";
 import { GuideOverlay, startGuide } from "./GuideOverlay";
 import { GlossaryLayer } from "./GlossaryLayer";
+import { FormKeeper } from "./FormKeeper";
 import type { GuideMatch } from "@/lib/guide";
 import { IconBell, IconChevron, IconClose, IconMenu, IconSearch, IconSparkle, MODULE_ICONS } from "./Icons";
 
@@ -421,6 +422,7 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
       <BackToNeed lang={lang} path={path} />
       {guideOn && <GuideOverlay lang={lang} path={path} />}
       <GlossaryLayer lang={lang === "ES" ? "es" : "en"} path={path} />
+      <FormKeeper lang={lang === "ES" ? "es" : "en"} path={path} />
 
       {/* Mobile: bottom bar */}
       <nav className="bottombar" aria-label={t("Accesos", "Shortcuts")}>

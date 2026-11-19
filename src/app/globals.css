@@ -2597,3 +2597,12 @@ a.sig:hover { text-decoration: underline; }
 .ie-door { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
 .ie-door .grow { flex: 1 1 260px; }
 @media (max-width: 720px) { .ie-form { grid-template-columns: 1fr; } }
+
+/* ───────────── Forms that respect the person (FormKeeper + required marks) ─────────────
+   A red asterisk on what is required, a clear mark on a field that is wrong, and the note shown
+   when SOLU brings back what the person had typed after an error. */
+#contenido label:has(> input:required, > select:required, > textarea:required)::before { content: "* "; color: var(--risk, #b4321f); font-weight: 700; }
+#contenido input:user-invalid, #contenido select:user-invalid, #contenido textarea:user-invalid { border-color: var(--risk, #b4321f); box-shadow: 0 0 0 3px color-mix(in srgb, var(--risk, #b4321f) 16%, transparent); background: color-mix(in srgb, var(--risk, #b4321f) 5%, var(--surface, #fff)); }
+.fk-note { position: fixed; z-index: 45; max-width: 330px; display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; font-size: 13px; line-height: 1.4; color: var(--ink, #14202e); background: var(--surface, #fff); border: 1px solid var(--brand-line); border-left: 4px solid var(--brand); border-radius: 8px; box-shadow: 0 10px 28px rgba(15, 40, 80, .18); }
+.fk-note button { border: 0; background: none; min-height: 0; padding: 0 2px; font-size: 18px; line-height: 1; color: var(--muted, #5b6b7c); cursor: pointer; }
+@media print { .fk-note { display: none; } }
