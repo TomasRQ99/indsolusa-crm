@@ -75,7 +75,7 @@
   "t": "Explore the market",
   "why": "Organise what we know about a market or a company: signals, open questions, plants and future needs.",
   "steps": [
-   "Open [[Explorar]] and go into «Mercado lácteo colombiano» (sample).",
+   "Open [[Mercados y empresas]] and go into «Mercado lácteo colombiano» (sample).",
    "Review the signals and open questions of each company and plant.",
    "When a real need appears, pass it to Commercial: a Need opens with all the context.",
    "Set a next move: a dated task is created."
@@ -111,7 +111,7 @@
   "t": "Sources: upload market data",
   "why": "Upload data files (Excel or CSV) and review them before saving.",
   "steps": [
-   "Open [[Fuentes]] and choose the file.",
+   "Open [[Cargar datos del mercado]] and choose the file.",
    "Review the preview: new rows, changes and errors.",
    "Confirm the upload."
   ],
@@ -341,7 +341,7 @@
   "t": "Money to move",
   "why": "All the blocked money, in four buckets, with the cause and who resolves it.",
   "steps": [
-   "Open [[Dinero por mover]] and pick a case.",
+   "Open [[Por entregar, facturar y cobrar]] and pick a case.",
    "Read the block, which step the invoice is at and the payment promises.",
    "Make the move that applies, or request credit if needed."
   ],
@@ -351,7 +351,7 @@
   "t": "Cash leakage",
   "why": "Where money is delayed, by stage and by cause.",
   "steps": [
-   "Open [[Fugas de caja]].",
+   "Open [[Demoras del dinero]].",
    "Look at the stage with the most days of delay.",
    "Review the Needs behind that delay."
   ],
@@ -370,7 +370,7 @@
   "t": "High-value focus",
   "why": "Top 5 by Eságara, decisions of the month, deals to protect, money to move and the big ones that have been still for days.",
   "steps": [
-   "Open [[Foco de alto valor]].",
+   "Open [[Negocios de alto valor]].",
    "Go through the Top 5 and open one.",
    "Review the big ones that have been still for days and set a move."
   ],
@@ -391,7 +391,7 @@
   "t": "Communication line",
   "why": "Each company by the last time we spoke, so no customer goes months without hearing from us.",
   "steps": [
-   "Open [[Línea de comunicaciones]]. Each range says how many companies have gone that long without contact; the further right, the longer.",
+   "Open [[Último contacto por cliente]]. Each range says how many companies have gone that long without contact; the further right, the longer.",
    "Open a range and pick a company.",
    "Choose what to record: [[Llamada]], [[Videollamada]], [[Visita]], [[Correo]] or [[Nota]].",
    "Tick the box that says how it went (for example “Answered” or “Unanswered”), write the notes and save with [[Registrar llamada]].",
@@ -403,7 +403,7 @@
   "t": "Profiles: each customer's diary",
   "why": "What hurts each customer, what they struggle with and how each person lives it at work, written after every conversation, to present our service as the solution to that struggle.",
   "steps": [
-   "Open [[Perfiles]] and pick a customer. At the top you see what hurts them, what they struggle with and the next follow-up.",
+   "Open [[Diario de clientes]] and pick a customer. At the top you see what hurts them, what they struggle with and the next follow-up.",
    "Click [[Escribir en el diario]]. Choose which conversation it comes from: a call, video call or visit already recorded, a new one, or none if it is just a note.",
    "Write the pain, the struggle, the impact and the personal side. The rest is under [[Presupuesto, decisión y acuerdo]].",
    "Under “Follow-up plan”, write what you will do and when. Save with [[Guardar en el diario]].",
@@ -447,7 +447,7 @@
   "t": "Closes",
   "why": "Daily, weekly and monthly close: what happened, what we learned, the visible future and the next moves.",
   "steps": [
-   "Open [[Cierres]].",
+   "Open [[Resumen del día, semana y mes]].",
    "Choose day, week or month.",
    "Review the next moves."
   ],
@@ -778,7 +778,7 @@
   "t": "Resource exposure",
   "why": "Seven different exposures: cash, customers, suppliers, stock, currency, assets and contracts.",
   "steps": [
-   "Open [[Exposición de recursos]].",
+   "Open [[Riesgo de los recursos]].",
    "Go through the seven blocks; each has its link to the detail."
   ],
   "expect": "There is no score or total that joins them. What is in another currency is shown apart, without converting."
@@ -1192,7 +1192,7 @@
   "t": "Future bridge",
   "why": "From what someone saw coming to the money in the bank, in eight stages. And the highest-value items that deserve your attention.",
   "steps": [
-   "Open [[Puente al futuro]] and read the eight stages from left to right.",
+   "Open [[Lo que viene]] and read the eight stages from left to right.",
    "Under “VISIBLE FUTURE ESÁGARA”, look at each bucket with the basis it is calculated on.",
    "Under “High-value focus”, each row says why it is on the list.",
    "At the bottom, “CONCENTRATION RISK”: what share depends on a single customer or supplier."

@@ -144,10 +144,10 @@
    "id": "explorar",
    "m": "mercado",
    "t": "Explorar el mercado",
-   "path": "MERCADO → Explorar el mercado → Explorar",
+   "path": "MERCADO → Explorar el mercado → Mercados y empresas",
    "why": "Organiza lo que sabemos de un mercado o una empresa: señales, preguntas abiertas, plantas y necesidades futuras.",
    "steps": [
-    "Abre [[Explorar]] y entra a «Mercado lácteo colombiano» (ejemplo).",
+    "Abre [[Mercados y empresas]] y entra a «Mercado lácteo colombiano» (ejemplo).",
     "Revisa las señales y las preguntas abiertas de cada empresa y planta.",
     "Cuando aparezca una necesidad real, pásala a Comercial: se abre una Necesidad con todo el contexto.",
     "Define un siguiente movimiento: se crea una tarea con fecha."
@@ -189,10 +189,10 @@
    "id": "fuentes",
    "m": "mercado",
    "t": "Fuentes: cargar datos del mercado",
-   "path": "MERCADO → Explorar el mercado → Fuentes (Gerencia, Director Comercial, Mercadeo)",
+   "path": "MERCADO → Explorar el mercado → Cargar datos del mercado (Gerencia, Director Comercial, Mercadeo)",
    "why": "Carga archivos de datos (Excel o CSV) y revísalos antes de guardarlos.",
    "steps": [
-    "Abre [[Fuentes]] y elige el archivo.",
+    "Abre [[Cargar datos del mercado]] y elige el archivo.",
     "Revisa la vista previa: filas nuevas, cambios y errores.",
     "Confirma la carga."
    ],
@@ -429,7 +429,7 @@
    "id": "futuro",
    "m": "comercial",
    "t": "Futuro comercial",
-   "path": "COMERCIAL → Futuro comercial",
+   "path": "COMERCIAL → Cotizaciones presentadas",
    "why": "Todas las cotizaciones presentadas que esperan una decisión del cliente, agrupadas según lo que hace falta.",
    "steps": [
     "Abre la pestaña y revisa cada zona.",
@@ -482,10 +482,10 @@
    "id": "dinero",
    "m": "comercial",
    "t": "Dinero por mover",
-   "path": "COMERCIAL → Dinero por mover",
+   "path": "COMERCIAL → Por entregar, facturar y cobrar",
    "why": "Todo el dinero bloqueado, en cuatro bolsas, con la causa y quién lo resuelve.",
    "steps": [
-    "Abre [[Dinero por mover]] y elige un caso.",
+    "Abre [[Por entregar, facturar y cobrar]] y elige un caso.",
     "Lee el bloqueo, en qué paso está la factura y las promesas de pago.",
     "Haz el movimiento que corresponde, o pide crédito si hace falta."
    ],
@@ -495,10 +495,10 @@
    "id": "fugas",
    "m": "comercial",
    "t": "Fugas de caja",
-   "path": "COMERCIAL → Fugas de caja",
+   "path": "COMERCIAL → Demoras del dinero",
    "why": "Dónde se demora el dinero, por etapa y por causa.",
    "steps": [
-    "Abre [[Fugas de caja]].",
+    "Abre [[Demoras del dinero]].",
     "Mira la etapa con más días de demora.",
     "Revisa las Necesidades detrás de esa demora."
    ],
@@ -520,10 +520,10 @@
    "id": "foco",
    "m": "comercial",
    "t": "Foco de alto valor",
-   "path": "COMERCIAL → Foco de alto valor",
+   "path": "COMERCIAL → Negocios de alto valor",
    "why": "Top 5 por Eságara, decisiones del mes, negocios a proteger, dinero a mover y lo grande que lleva días quieto.",
    "steps": [
-    "Abre [[Foco de alto valor]].",
+    "Abre [[Negocios de alto valor]].",
     "Recorre el Top 5 y abre uno.",
     "Revisa lo grande que lleva días quieto y define un movimiento."
    ],
@@ -547,10 +547,10 @@
    "id": "linea-comunicaciones",
    "m": "comercial",
    "t": "Línea de comunicaciones",
-   "path": "COMERCIAL → Línea de comunicaciones",
+   "path": "COMERCIAL → Último contacto por cliente",
    "why": "Cada empresa según la última vez que hablamos, para que ningún cliente pase meses sin saber de nosotros.",
    "steps": [
-    "Abre [[Línea de comunicaciones]]. Cada rango dice cuántas empresas llevan ese tiempo sin contacto; entre más a la derecha, más tiempo.",
+    "Abre [[Último contacto por cliente]]. Cada rango dice cuántas empresas llevan ese tiempo sin contacto; entre más a la derecha, más tiempo.",
     "Abre un rango y elige una empresa.",
     "Elige qué registrar: [[Llamada]], [[Videollamada]], [[Visita]], [[Correo]] o [[Nota]].",
     "Marca la casilla que dice cómo quedó (por ejemplo «Contestó» o «No contestó»), escribe las notas y guarda con [[Registrar llamada]].",
@@ -562,10 +562,10 @@
    "id": "perfiles",
    "m": "comercial",
    "t": "Perfiles: el diario de cada cliente",
-   "path": "COMERCIAL → Perfiles",
+   "path": "COMERCIAL → Diario de clientes",
    "why": "Qué le duele a cada cliente, con qué lucha y cómo lo vive cada persona en su trabajo, escrito después de cada conversación, para presentar nuestro servicio como la solución a esa lucha.",
    "steps": [
-    "Abre [[Perfiles]] y elige un cliente. Arriba ves qué le duele, con qué lucha y el próximo seguimiento.",
+    "Abre [[Diario de clientes]] y elige un cliente. Arriba ves qué le duele, con qué lucha y el próximo seguimiento.",
     "Haz clic en [[Escribir en el diario]]. Elige de qué conversación sale: una llamada, videollamada o visita ya registrada, una nueva, o ninguna si es solo una nota.",
     "Escribe el dolor, la lucha, el impacto y lo personal. En [[Presupuesto, decisión y acuerdo]] está el resto.",
     "En «Plan de seguimiento», escribe qué vas a hacer y cuándo. Guarda con [[Guardar en el diario]].",
@@ -618,10 +618,10 @@
    "id": "cierres",
    "m": "comercial",
    "t": "Cierres",
-   "path": "COMERCIAL → Cierres",
+   "path": "COMERCIAL → Resumen del día, semana y mes",
    "why": "Cierre diario, semanal y mensual: qué pasó, qué aprendimos, el futuro visible y los próximos movimientos.",
    "steps": [
-    "Abre [[Cierres]].",
+    "Abre [[Resumen del día, semana y mes]].",
     "Elige día, semana o mes.",
     "Revisa los próximos movimientos."
    ],
@@ -686,7 +686,7 @@
    "id": "sin-despachar",
    "m": "operaciones",
    "t": "Sin despachar",
-   "path": "OPERACIONES → Mover y entregar → Sin despachar",
+   "path": "OPERACIONES → Mover y entregar → Pedidos sin despachar",
    "why": "Cada pedido aceptado que aún no sale, con la razón y quién tiene el siguiente paso.",
    "steps": [
     "Lee la causa de cada fila (sin compra al proveedor, fuente sin confirmar, en tránsito…).",
@@ -1064,10 +1064,10 @@
    "id": "adm-exposicion",
    "m": "administracion",
    "t": "Exposición de recursos",
-   "path": "ADMINISTRACIÓN → Hoy → Exposición de recursos",
+   "path": "ADMINISTRACIÓN → Hoy → Riesgo de los recursos",
    "why": "Siete exposiciones distintas: caja, clientes, proveedores, inventario, moneda, activos y contratos.",
    "steps": [
-    "Abre [[Exposición de recursos]].",
+    "Abre [[Riesgo de los recursos]].",
     "Recorre los siete bloques; cada uno tiene su enlace al detalle."
    ],
    "expect": "No hay un puntaje ni un total que las junte. Lo que está en otra moneda se muestra aparte, sin convertir."
@@ -1595,10 +1595,10 @@
    "id": "ger-puente",
    "m": "gerencia",
    "t": "Puente al futuro",
-   "path": "GERENCIA → Dirección → Puente al futuro",
+   "path": "GERENCIA → Dirección → Lo que viene",
    "why": "De lo que alguien vio venir hasta el dinero en el banco, en ocho etapas. Y lo de más valor que merece tu atención.",
    "steps": [
-    "Abre [[Puente al futuro]] y lee las ocho etapas de izquierda a derecha.",
+    "Abre [[Lo que viene]] y lee las ocho etapas de izquierda a derecha.",
     "En «Eságara futura visible», mira cada bolsa con la base con que se calcula.",
     "En «Foco de alto valor», cada fila dice por qué está en la lista.",
     "Abajo, «Riesgo de concentración»: qué parte depende de un solo cliente o proveedor."
@@ -1741,7 +1741,7 @@
    "id": "ger-empresas",
    "m": "gerencia",
    "t": "Por empresa vendedora",
-   "path": "GERENCIA → Inicio · GERENCIA → Dirección → Puente al futuro",
+   "path": "GERENCIA → Inicio · GERENCIA → Dirección → Lo que viene",
    "why": "Cuando vende más de una empresa, las mismas cifras separadas por empresa.",
    "steps": [
     "En el Inicio de Gerencia, baja a «Por empresa vendedora».",
