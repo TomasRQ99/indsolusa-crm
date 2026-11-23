@@ -4,13 +4,14 @@ import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { isGerencia, ROLE_LABEL } from "@/lib/permissions";
 import { today } from "@/lib/domain";
-import { DATE_KINDS, HOW, NUDGE_ANSWERS, PRIORITIES, PROJECT_TAGS, STAGES, TEXT_MAX, healthText, initials, isSeated, myProjectWork, projectHealth, projectList, priorityOf, stageIndex, tagLabel } from "@/lib/projects";
+import { ProjectTagPicker } from "@/components/ProjectTagPicker";
+import { DATE_KINDS, HOW, NUDGE_ANSWERS, PRIORITIES, PROJECT_TAGS, STAGES, TEXT_MAX, healthText, initials, isSeated, myProjectWork, projectHealth, projectList, priorityOf, sectionsOf, stageIndex, tagLabel } from "@/lib/projects";
 import { answerNudge, createProject, declineInvite, deleteTemplate, joinProject } from "./actions";
 
 // PROYECTOS Y NOTAS → Proyectos. Every project of the company, open to everyone: what it is for, who started it and
 // who sits at its round table. Below, the form to start one.
 
-export default async function ProjectsPage({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string; ver?: string; tag?: string; plantilla?: string }> }) {
+export default async function ProjectsPage({ searchParams }: { searchParams: Promise<{ ok?: string; err?: string; ver?: string; tag?: string; plantilla?: string; etiqueta?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
@@ -26,6 +27,8 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
     db.account.findMany({ where: { internal: false }, orderBy: { name: "asc" }, take: 600, select: { id: true, name: true } }),
   ]);
   const tpl = templates.find((x) => x.id === sp.plantilla) ?? null;
+  // Arriving from a section of SOLU ("+ Proyecto sobre esta sección"): its tag comes ticked.
+  const preTag = sp.etiqueta && sp.etiqueta in PROJECT_TAGS ? sp.etiqueta : null;
   const tplItems = Array.isArray(tpl?.items) ? tpl!.items.length : 0;
   const hasWork = work.dates.length + work.items.length + work.asks.length + work.mentions.length + work.ledTrouble.length > 0;
   const when = (d: Date) => new Intl.DateTimeFormat(i.es ? "es-CO" : "en-US", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Bogota" }).format(d);
@@ -167,7 +170,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                   {p.fresh > 0 && <span className="sig attn">{p.fresh === 1 ? t("1 comentario nuevo", "1 new comment") : t(`${p.fresh} comentarios nuevos`, `${p.fresh} new comments`)}</span>}
                 </div>
                 <p className="pj-sum">{p.summary}</p>
-                {p.tags.length > 0 && <div className="pj-tags">{p.tags.map((k) => <Link key={k} href={tagHref(k)}>{tagLabel(k, i.es)}</Link>)}</div>}
+                {p.tags.length > 0 && <div className="pj-tags">{p.tags.map((k) => <Link key={k} href={tagHref(k)}>{tagLabel(k, i.es)}</Link>)}{sectionsOf(p.tags, i.es).map((x) => <Link key={x.href} href={x.href} className="pj-sec">{x.label} →</Link>)}</div>}
                 <p className="src">{t("Lo inició", "Started by")} <b>{p.createdBy.name}</b>{p.lead.id !== p.createdBy.id && <> · {t("responsable", "lead")} <b>{p.lead.name}</b></>} · {i.day(p.createdAt)} · {p.code}{p.account && <> · {t("Cliente", "Customer")}: <Link href={`/accounts/${p.account.id}`}>{p.account.name}</Link></>}{p.deal?.code && <> · {t("Necesidad", "Need")}: <Link href={`/deals/${p.deal.id}`}>{p.deal.code}</Link></>}</p>
                 <div className="pj-foot">
                   <span className="pj-table" title={t("Mesa redonda", "Round table")}>
@@ -221,9 +224,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
           <fieldset className="pj-set">
             <legend>5 · {t("Etiquetas (opcional)", "Tags (optional)")}</legend>
             <p className="src">{t("De qué trata el proyecto. Se ven en la lista y sirven para filtrarla.", "What the project is about. They show in the list and filter it.")}</p>
-            <div className="pj-tags pick">
-              {Object.keys(PROJECT_TAGS).map((k) => <label key={k}><input type="checkbox" name="tags" value={k} defaultChecked={!!tpl?.tags.includes(k)} /> {tagLabel(k, i.es)}</label>)}
-            </div>
+            <ProjectTagPicker es={i.es} checked={[...(tpl?.tags ?? []), ...(preTag ? [preTag] : [])]} />
             <label>{t("Otra etiqueta (opcional, separa con comas)", "Another tag (optional, separate with commas)")}<input name="ownTags" maxLength={80} defaultValue={(tpl?.tags ?? []).filter((k) => !(k in PROJECT_TAGS)).join(", ")} /></label>
           </fieldset>
 

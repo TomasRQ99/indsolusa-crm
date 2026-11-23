@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import type { SessionUser } from "./auth";
 import { db } from "./db";
 import { isGerencia } from "./permissions";
+import { MODULES } from "./nav";
 
 // Proyectos y notas (owner, 2026-11-23).
 // A project is open to the whole company: everyone sees it, its round table and who started it, and anyone joins
@@ -27,36 +28,79 @@ export const DATE_KINDS: Record<string, { es: string; en: string }> = {
 
 /** Tags of a project (owner, 2026-11-23): the owner's own examples first, then the areas of the company. A project
  *  may also carry a few tags of its own, typed by hand. */
-export const PROJECT_TAGS: Record<string, { es: string; en: string }> = {
-  MARKETING: { es: "Mercadeo", en: "Marketing" },
-  LOGISTICS: { es: "Logística", en: "Logistics" },
-  PLANNING: { es: "Planeación", en: "Planning" },
-  COMMITTEE: { es: "Comité", en: "Committee" },
-  // Committees "for fun" too (owner, same day): parties, Christmas, the end-of-year activity, gifts.
-  COMMITTEE_PARTY: { es: "Comité de fiestas", en: "Party committee" },
-  COMMITTEE_CHRISTMAS: { es: "Comité de Navidad", en: "Christmas committee" },
-  COMMITTEE_YEAR_END: { es: "Comité de fin de año", en: "End-of-year committee" },
-  COMMITTEE_GIFTS: { es: "Comité de regalos", en: "Gift committee" },
-  PURCHASING: { es: "Compras", en: "Purchasing" },
-  // The work the company orders by priority (owner, same day): requests, quotes, purchase orders, deliveries.
-  REQUESTS: { es: "Solicitudes", en: "Requests" },
-  QUOTES: { es: "Cotizaciones", en: "Quotes" },
-  PURCHASE_ORDERS: { es: "Órdenes de compra", en: "Purchase orders" },
-  DELIVERIES: { es: "Entregas", en: "Deliveries" },
-  PRIORITIES: { es: "Prioridades", en: "Priorities" },
-  ACTIVITY: { es: "Actividad", en: "Activity" },
-  DESIGN: { es: "Diseño", en: "Design" },
-  COMMERCIAL: { es: "Comercial", en: "Commercial" },
-  OPERATIONS: { es: "Operaciones", en: "Operations" },
-  ADMINISTRATION: { es: "Administración", en: "Administration" },
-  FINANCE: { es: "Finanzas", en: "Finance" },
-  TEAM: { es: "Equipo", en: "Team" },
-  TRAINING: { es: "Capacitación", en: "Training" },
-  TECHNOLOGY: { es: "Tecnología", en: "Technology" },
-  MANAGEMENT: { es: "Gerencia", en: "Management" },
+export const TAG_GROUPS = {
+  general: { es: "General", en: "General" },
+  comites: { es: "Comités", en: "Committees" },
+  mercado: { es: "Mercado", en: "Market" },
+  comercial: { es: "Comercial", en: "Commercial" },
+  operaciones: { es: "Operaciones", en: "Operations" },
+  administracion: { es: "Administración", en: "Administration" },
+  equipo: { es: "Equipo y empresa", en: "Team and company" },
+} as const;
+export type TagGroup = keyof typeof TAG_GROUPS;
+/** `href` = the section of SOLU the tag is about (owner, 2026-11-23: "projects with those categories link back to
+ *  their own sections in comercial or respective sections"). The project links to that section, and that section
+ *  shows the open projects about it. Keys never change once used: they are stored on the projects. */
+export const PROJECT_TAGS: Record<string, { es: string; en: string; g: TagGroup; href?: string }> = {
+  PLANNING: { es: "Planeación", en: "Planning", g: "general" },
+  PRIORITIES: { es: "Prioridades", en: "Priorities", g: "general" },
+  ACTIVITY: { es: "Actividad", en: "Activity", g: "general" },
+  DESIGN: { es: "Diseño", en: "Design", g: "general" },
+  IMPROVEMENT: { es: "Mejora de procesos", en: "Process improvement", g: "general" },
+  TECHNOLOGY: { es: "Tecnología", en: "Technology", g: "general" },
+  SOLU: { es: "SOLU (el sistema)", en: "SOLU (the system)", g: "general" },
+  MANAGEMENT: { es: "Gerencia", en: "Management", g: "general" },
+  // Committees, the "for fun" ones too (owner): parties, Christmas, the end-of-year activity, gifts.
+  COMMITTEE: { es: "Comité", en: "Committee", g: "comites" },
+  COMMITTEE_PARTY: { es: "Comité de fiestas", en: "Party committee", g: "comites" },
+  COMMITTEE_CHRISTMAS: { es: "Comité de Navidad", en: "Christmas committee", g: "comites" },
+  COMMITTEE_YEAR_END: { es: "Comité de fin de año", en: "End-of-year committee", g: "comites" },
+  COMMITTEE_GIFTS: { es: "Comité de regalos", en: "Gift committee", g: "comites" },
+  COMMITTEE_WELLBEING: { es: "Comité de bienestar", en: "Wellbeing committee", g: "comites" },
+  MARKETING: { es: "Mercadeo", en: "Marketing", g: "mercado", href: "/mercado" },
+  PROSPECTING: { es: "Prospección", en: "Prospecting", g: "mercado", href: "/mercado" },
+  CUSTOMERS: { es: "Clientes", en: "Customers", g: "mercado", href: "/accounts" },
+  SUPPLIERS: { es: "Proveedores", en: "Suppliers", g: "mercado", href: "/suppliers" },
+  CATALOG: { es: "Repuestos y catálogo", en: "Parts and catalogue", g: "mercado", href: "/localizar" },
+  COMMERCIAL: { es: "Comercial", en: "Commercial", g: "comercial" },
+  REQUESTS: { es: "Solicitudes", en: "Requests", g: "comercial", href: "/deals" },
+  QUOTES: { es: "Cotizaciones", en: "Quotes", g: "comercial", href: "/cotizaciones" },
+  VISITS: { es: "Visitas", en: "Visits", g: "comercial", href: "/visitas" },
+  CUSTOMER_FOLLOWUP: { es: "Seguimiento a clientes", en: "Customer follow-up", g: "comercial", href: "/comercial/comunicaciones" },
+  OPERATIONS: { es: "Operaciones", en: "Operations", g: "operaciones" },
+  PURCHASING: { es: "Compras", en: "Purchasing", g: "operaciones", href: "/compras/requerimientos" },
+  PURCHASE_ORDERS: { es: "Órdenes de compra", en: "Purchase orders", g: "operaciones", href: "/compras" },
+  INTERNAL_PURCHASES: { es: "Compras internas", en: "Internal purchases", g: "operaciones", href: "/compras/internas" },
+  LOGISTICS: { es: "Logística", en: "Logistics", g: "operaciones", href: "/logistica" },
+  IMPORTS: { es: "Importación y aduana", en: "Imports and customs", g: "operaciones", href: "/logistica" },
+  INVENTORY: { es: "Inventario", en: "Stock", g: "operaciones", href: "/operaciones/inventario" },
+  DELIVERIES: { es: "Entregas", en: "Deliveries", g: "operaciones", href: "/operaciones/despachos" },
+  WARRANTIES: { es: "Garantías", en: "Warranties", g: "operaciones", href: "/operaciones/garantias" },
+  ADMINISTRATION: { es: "Administración", en: "Administration", g: "administracion" },
+  FINANCE: { es: "Finanzas", en: "Finance", g: "administracion" },
+  BILLING: { es: "Facturación", en: "Invoicing", g: "administracion", href: "/operaciones/por-facturar" },
+  COLLECTIONS: { es: "Cartera y cobro", en: "Receivables and collection", g: "administracion", href: "/administracion/cobrar" },
+  SUPPLIER_PAYMENTS: { es: "Pagos a proveedores", en: "Supplier payments", g: "administracion", href: "/administracion/pagos-proveedores" },
+  BUDGET: { es: "Presupuesto", en: "Budget", g: "administracion", href: "/administracion/presupuesto" },
+  ASSETS: { es: "Activos", en: "Assets", g: "administracion", href: "/administracion/activos" },
+  CONTRACTS: { es: "Contratos", en: "Contracts", g: "administracion", href: "/administracion/obligaciones" },
+  TEAM: { es: "Equipo", en: "Team", g: "equipo" },
+  TRAINING: { es: "Capacitación", en: "Training", g: "equipo", href: "/equipo/desarrollo" },
+  HIRING: { es: "Contratación e inducción", en: "Hiring and onboarding", g: "equipo" },
+  ROLES: { es: "Roles y funciones", en: "Roles and functions", g: "equipo", href: "/equipo/roles" },
+  EVENTS: { es: "Eventos", en: "Events", g: "equipo" },
 };
+/** "COMERCIAL → Cotizaciones presentadas", the way the menu names the section a tag belongs to. */
+export function tagSection(k: string, es: boolean) {
+  const href = PROJECT_TAGS[k]?.href;
+  if (!href) return null;
+  for (const m of MODULES) { const tab = m.tabs.find((x) => x.href === href); if (tab) return { href, label: `${es ? m.es : m.en} → ${es ? tab.es : tab.en}` }; }
+  return { href, label: tagLabel(k, es) };
+}
+/** Sections of SOLU a project belongs to, from its tags (no repeats). */
+export const sectionsOf = (tags: string[], es: boolean) => { const seen = new Set<string>(); return tags.flatMap((k) => { const x = tagSection(k, es); if (!x || seen.has(x.href)) return []; seen.add(x.href); return [{ ...x, tag: k }]; }); };
 export const TAGS_MAX = 6;
-export const tagLabel = (k: string, es: boolean) => { const x = PROJECT_TAGS[k]; return x ? (es ? x.es : x.en) : k; };
+export function tagLabel(k: string, es: boolean) { const x = PROJECT_TAGS[k]; return x ? (es ? x.es : x.en) : k; }
 /** Ticked tags plus the hand-typed ones ("a, b"), without repeats, at most TAGS_MAX. */
 export function readTags(fd: FormData) {
   const picked = fd.getAll("tags").map(String).filter((k) => k in PROJECT_TAGS);

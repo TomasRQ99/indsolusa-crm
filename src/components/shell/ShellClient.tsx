@@ -84,7 +84,7 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
     return () => { live = false; clearTimeout(id); ctl.abort(); };
   }, [children]);
   // The frame: how much waits at each station of the order route, and today's TRM. Refreshed with the page, at most once a minute.
-  const [frame, setFrame] = useState<{ counts: Record<string, number>; trm: { rate: number; validFrom: string; source: string } | null }>({ counts: {}, trm: null });
+  const [frame, setFrame] = useState<{ counts: Record<string, number>; projects?: Record<string, { id: string; title: string; priority: string; tag: string }[]>; trm: { rate: number; validFrom: string; source: string } | null }>({ counts: {}, trm: null });
   const frameAt = useRef(0);
   useEffect(() => {
     if (Date.now() - frameAt.current < 60_000) return;
@@ -421,6 +421,18 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
                 })}
               </nav>
             )}
+            {(() => {
+              // Proyectos y notas: the open projects about the section on screen (their tag names this section).
+              const sec = (frame.projects ?? {})[path];
+              if (!sec?.length) return null;
+              return (
+                <nav className="pjstrip" aria-label={t("Proyectos sobre esta sección", "Projects about this section")}>
+                  <span className="pjstrip-t">{t("Proyectos sobre esta sección", "Projects about this section")}</span>
+                  {sec.map((p) => <Link key={p.id} href={`/proyectos/${p.id}`} data-pr={p.priority}>{p.title}</Link>)}
+                  <Link href={`/proyectos?etiqueta=${sec[0].tag}#nuevo`} className="pjstrip-new">{t("+ Proyecto sobre esta sección", "+ Project about this section")}</Link>
+                </nav>
+              );
+            })()}
           </div>
         )}
         {children}

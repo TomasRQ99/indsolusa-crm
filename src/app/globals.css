@@ -2820,3 +2820,19 @@ p.pj-table { margin: 0 0 8px; }
 .pj-tpl .pj-tags.filter { margin: 0; }
 .pj-tpl .pj-tags.filter a::before { content: none; }
 @media (max-width: 640px) { .pj-files, .pj-ment { margin-left: 0; } .pj-more { grid-column: 1 / -1; } .pj-items li { grid-template-columns: 30px minmax(0, 1fr); } .pj-items li > .pj-acts { grid-column: 2; } }
+
+/* Proyectos y notas: tags grouped by area, the section a project belongs to, and the strip a section shows. */
+.pj-tagpick { display: flex; flex-direction: column; gap: 8px; }
+.pj-tg { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 6px 10px; align-items: start; }
+.pj-tgn { font-size: 12px; font-weight: 700; color: var(--ink-2); padding-top: 9px; }
+.pj-arrow { color: var(--brand); font-weight: 700; }
+.pj-sec { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 6px; border: 1px solid var(--brand-line); background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.pj-tags a.pj-sec::before { content: none; }
+.pj-secs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 2px; }
+.pjstrip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 14px; padding: 8px 12px; border: 1px solid var(--line); border-left: 4px solid #4a4fc4; border-radius: 8px; background: var(--surface); font-size: 12.5px; }
+.pjstrip-t { font-weight: 700; color: var(--ink-2); margin-right: 4px; }
+.pjstrip a { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-sunken); color: var(--ink); font-weight: 600; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pjstrip a:hover { text-decoration: none; border-color: var(--brand); color: var(--brand); }
+.pjstrip a[data-pr="ALTA"] { border-color: var(--attn); }
+.pjstrip a.pjstrip-new { background: transparent; border-style: dashed; color: var(--brand); font-weight: 600; }
+@media (max-width: 640px) { .pj-tg { grid-template-columns: 1fr; } .pj-tgn { padding-top: 0; } }

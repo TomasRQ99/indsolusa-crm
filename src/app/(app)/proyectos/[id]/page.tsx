@@ -4,8 +4,9 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { dayInput, today } from "@/lib/domain";
+import { ProjectTagPicker } from "@/components/ProjectTagPicker";
 import { isGerencia, ROLE_LABEL } from "@/lib/permissions";
-import { DATE_KINDS, EXT_DAYS, HOW, NUDGE_ANSWERS, POST_FILE_MAX, PRIORITIES, PROJECT_TAGS, QUIET_DAYS, STAGES, TEXT_MAX, canRunProject, healthText, initials, isSeated, priorityOf, projectHealth, projectThread, stageIndex, tagLabel, type PostNode } from "@/lib/projects";
+import { DATE_KINDS, EXT_DAYS, HOW, NUDGE_ANSWERS, POST_FILE_MAX, PRIORITIES, PROJECT_TAGS, QUIET_DAYS, STAGES, TEXT_MAX, canRunProject, healthText, initials, isSeated, priorityOf, projectHealth, projectThread, sectionsOf, stageIndex, tagLabel, type PostNode } from "@/lib/projects";
 import { addDate, addItem, addPeople, alarmForDate, alarmForProject, answerNudge, askProgress, closeProject, decideExtension, deletePost, editPost, flagPost, joinProject, leaveProject, moveStage, postComment, removeDate, removeItem, removeMember, reopenProject, requestExtension, saveTemplate, toggleDateDone, toggleItem, updateProject } from "../actions";
 
 // Inside a project: the timeline (objectives → planning → execution → results), the clock of days without movement,
@@ -202,6 +203,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
           <h1>{p.title} {!p.closedAt && <span className={`sig ${priorityOf(p.priority).tone}`}>{t(priorityOf(p.priority).es, priorityOf(p.priority).en)}</span>} <span className={`sig ${health.tone}`}>{healthText(health, t)}</span></h1>
           <p>{p.summary}</p>
           {p.tags.length > 0 && <div className="pj-tags">{p.tags.map((k) => <Link key={k} href={`/proyectos?tag=${encodeURIComponent(k)}`}>{tagLabel(k, i.es)}</Link>)}</div>}
+          {sectionsOf(p.tags, i.es).length > 0 && <p className="pj-secs"><span className="src">{t("Este proyecto es sobre", "This project is about")}:</span>{sectionsOf(p.tags, i.es).map((x) => <Link key={x.href} href={x.href} className="pj-sec">{x.label} →</Link>)}</p>}
           <p className="src">{t("Lo inició", "Started by")} <b>{p.createdBy.name}</b> · {i.day(p.createdAt)}{p.lead.id !== p.createdBy.id && <> · {t("responsable", "lead")} <b>{p.lead.name}</b></>}
             {p.account && <> · {t("Cliente", "Customer")}: <Link href={`/accounts/${p.account.id}`}>{p.account.name}</Link></>}
             {p.deal && <> · {t("Necesidad", "Need")}: <Link href={`/deals/${p.deal.id}`}>{p.deal.code ?? p.deal.title}</Link></>}</p>
@@ -313,9 +315,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
                   <label className={p.objective ? undefined : "req-miss"}><span className="fname">{t("Objetivo", "Objective")}</span><textarea name="objective" required rows={3} maxLength={TEXT_MAX.objective} defaultValue={p.objective ?? ""} /></label>
                   <fieldset className="pj-set">
                     <legend>{t("Etiquetas (opcional)", "Tags (optional)")}</legend>
-                    <div className="pj-tags pick">
-                      {Object.keys(PROJECT_TAGS).map((k) => <label key={k}><input type="checkbox" name="tags" value={k} defaultChecked={p.tags.includes(k)} /> {tagLabel(k, i.es)}</label>)}
-                    </div>
+                    <ProjectTagPicker es={i.es} checked={p.tags} />
                     <label>{t("Otra etiqueta (opcional, separa con comas)", "Another tag (optional, separate with commas)")}<input name="ownTags" maxLength={80} defaultValue={p.tags.filter((k) => !(k in PROJECT_TAGS)).join(", ")} /></label>
                   </fieldset>
                   <div className="pj-dates two">
