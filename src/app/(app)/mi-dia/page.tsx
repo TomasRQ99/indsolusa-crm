@@ -2,6 +2,9 @@ import { healthText, myProjectWork } from "@/lib/projects";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { FirstDay } from "@/components/FirstDay";
+import { BriefButton } from "@/components/shell/DayBrief";
+import { BoardBlock } from "@/components/BoardBlock";
+import { buildBoard } from "@/lib/board";
 import { ValueKindSelect } from "@/components/ValueKindSelect";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
@@ -25,12 +28,12 @@ const ToneIcon = ({ tone }: { tone: Need["tone"] }) =>
     <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden><text x="6" y="10" textAnchor="middle" fontSize="11" fontWeight="700" fill="currentColor" fontFamily="sans-serif">?</text></svg>
   );
 
-export default async function MiDiaPage({ searchParams }: { searchParams: Promise<{ cal?: string; ok?: string; t?: string; d?: string }> }) {
+export default async function MiDiaPage({ searchParams }: { searchParams: Promise<{ cal?: string; ok?: string; t?: string; d?: string; s?: string; p?: string; eq?: string }> }) {
   const sp = await searchParams;
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
-  const [m, cash] = await Promise.all([buildMiDia(user, i), loadCashJourney(i, { ownerId: user.id, light: true }).catch((e) => { console.error("cash journey failed", e); return null; })]);
+  const [m, cash, board] = await Promise.all([buildMiDia(user, i), loadCashJourney(i, { ownerId: user.id, light: true }).catch((e) => { console.error("cash journey failed", e); return null; }), buildBoard(user, i, { section: sp.s, period: sp.p, team: sp.eq === "1" }).catch((e) => { console.error("board failed", e); return null; })]);
   const cashCases = cash ? cash.deliver.length + cash.invoice.length + cash.collect.length + cash.credit.length : 0;
 
   const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: "America/Bogota" }).format(new Date()));
@@ -248,6 +251,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
             {m.controlledCount === 1 ? t(" está avanzando o esperando con control.", " is moving or waiting under control.") : t(" están avanzando o esperando con control.", " are moving or waiting under control.")}
           </p>
         </div>
+        <BriefButton lang={user.lang} />
         <div className="agenda-line">
           {m.agenda.connected ? (
             m.agenda.error ? (
@@ -267,6 +271,8 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
       <OutlookNote code={sp.cal} t={t} />
       {sp.ok && okMsg[sp.ok] && <div className={`note${sp.ok.startsWith("sin-") ? " attn" : " okn"}`} role="status">{okMsg[sp.ok]}</div>}
       <Popovers />
+
+      {board && <BoardBlock b={board} i={i} />}
 
       {cash && cashCases > 0 && (
         <section className="mblock" data-zone="flow" aria-labelledby="h-cash" style={{ marginBottom: 16 }}>

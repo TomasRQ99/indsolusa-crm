@@ -13,6 +13,7 @@ import { ReportSignal } from "@/components/ReportSignal";
 import { GuideOverlay, startGuide } from "./GuideOverlay";
 import { GlossaryLayer } from "./GlossaryLayer";
 import { FormKeeper } from "./FormKeeper";
+import { BriefWalk, DayBrief } from "./DayBrief";
 import type { GuideMatch } from "@/lib/guide";
 import { IconBell, IconChevron, IconClose, IconMenu, IconSearch, IconSparkle, MODULE_ICONS } from "./Icons";
 
@@ -31,7 +32,9 @@ export type ShellProps = {
   lang: "ES" | "EN";
   /** On-screen guide (training). Each person turns it off in Mi perfil. */
   guideOn: boolean;
-  user: { name: string; role: string; initials: string };
+  user: { name: string; role: string; initials: string; id: string };
+  /** Resumen del día: off for the read-only board role. */
+  brief?: boolean;
   modules: ShellModule[];
   children: React.ReactNode;
 };
@@ -66,7 +69,7 @@ const NEW_ITEMS = [
   { href: "/proyectos/notas#nueva", es: "Nota", en: "Note" },
 ];
 
-export function ShellClient({ lang, guideOn, user, modules: baseModules, children }: ShellProps) {
+export function ShellClient({ lang, guideOn, user, brief, modules: baseModules, children }: ShellProps) {
   const [att, setAtt] = useState<{ counters: Partial<Record<ModuleKey, Counter>>; alerts: Alert[] }>({ counters: {}, alerts: [] });
   const path = usePathname() ?? "/";
   // Counters and bell load after the page is visible. They refresh whenever the server
@@ -478,6 +481,8 @@ export function ShellClient({ lang, guideOn, user, modules: baseModules, childre
       {guideOn && <GuideOverlay lang={lang} path={path} />}
       <GlossaryLayer lang={lang === "ES" ? "es" : "en"} path={path} />
       <FormKeeper lang={lang === "ES" ? "es" : "en"} path={path} />
+      {brief && <DayBrief lang={lang} uid={user.id} name={user.name.split(" ")[0]} path={path} />}
+      {brief && <BriefWalk lang={lang} path={path} />}
 
       {/* Mobile: bottom bar */}
       <nav className="bottombar" aria-label={t("Accesos", "Shortcuts")}>

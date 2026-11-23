@@ -79,6 +79,48 @@
    "expect": "El bloque aparece en Tu agenda a la hora correcta y no se cruza con otro."
   },
   {
+   "id": "resumen-dia",
+   "m": "midia",
+   "t": "Resumen del día: lo que aparece al entrar",
+   "path": "MI DÍA → Hoy · Ver el resumen de hoy",
+   "why": "La primera vez que entras cada día, SOLU te muestra lo que quedó atrás, de lo más grave a lo menos grave, para que decidas por dónde empezar.",
+   "steps": [
+    "Al entrar a SOLU por primera vez en el día, la ventana se abre sola. Para verla en otro momento, abre [[MI DÍA]] y haz clic en [[Ver el resumen de hoy]].",
+    "Lee los grupos de arriba hacia abajo: en rojo, lo que pone en riesgo un resultado (entregas que pasaron la fecha prometida, pagos prometidos que no llegaron); en ámbar, lo que necesita un movimiento. Dentro de cada grupo va primero lo que lleva más tiempo esperando; los días están a la derecha de cada caso.",
+    "Para atender un caso, haz clic en su botón («Avisar» o «Abrir»). Para atenderlos en orden, haz clic en «Empezar por el primer caso».",
+    "Si diriges el equipo, cambia entre «Mío» y «Equipo» arriba a la derecha de la ventana."
+   ],
+   "expect": "Si no hay nada atrasado, la ventana no se abre sola. Una Necesidad que espera con control (con su fecha todavía por delante) no aparece. Para que no se abra al entrar, desmarca «Mostrar al entrar cada día»; esa elección se guarda en este navegador."
+  },
+  {
+   "id": "recorrido-casos",
+   "m": "midia",
+   "t": "Recorrido de hoy: un caso tras otro",
+   "path": "MI DÍA → Hoy · Ver el resumen de hoy · Empezar por el primer caso",
+   "why": "Atender los casos del resumen en orden, sin volver a la lista después de cada uno.",
+   "steps": [
+    "Abre [[MI DÍA]], haz clic en [[Ver el resumen de hoy]] y luego en «Empezar por el primer caso» (o en el botón de cualquier caso).",
+    "SOLU abre el caso y deja abajo una barra: «Recorrido de hoy · caso 1 de …». Atiende el caso en la pantalla.",
+    "Haz clic en [[Siguiente caso →]] para pasar al siguiente, o en [[← Anterior]] para volver.",
+    "Haz clic en el nombre del caso, en la barra, para ver la lista completa y saltar a cualquiera."
+   ],
+   "expect": "En el último caso el botón dice «Terminar el recorrido» y te devuelve a Mi Día. La X sale del recorrido sin cambiar nada. El recorrido vive en esta pestaña del navegador: si la cierras, se acaba."
+  },
+  {
+   "id": "midia-tablero",
+   "m": "midia",
+   "t": "Mi tablero: cómo vas frente al periodo anterior",
+   "path": "MI DÍA → Hoy · MI TABLERO",
+   "why": "Ver de un vistazo cuánto hay abierto en cada tramo del pedido, si entra más o menos trabajo que antes, y qué lleva más tiempo abierto.",
+   "steps": [
+    "Abre [[MI DÍA]] y busca «MI TABLERO», debajo del saludo.",
+    "Elige una de las cuatro tarjetas: Necesidades, Cotizaciones, Pedidos por entregar o En tránsito. Cada una dice cuántas hay abiertas ahora, cuántas pasaron su fecha y cuántas están sin seguimiento.",
+    "Elige el periodo: [[7 días]], [[30 días]], [[3 meses]] o [[12 meses]]. La línea azul es este periodo; la punteada, el periodo anterior, del mismo largo.",
+    "A la derecha, mira la antigüedad de las abiertas y haz clic en una de «Las que llevan más tiempo abiertas» para abrirla."
+   ],
+   "expect": "La cifra grande es cuántas se crearon en el periodo, con la diferencia frente al anterior. Pasa el cursor por un punto de la gráfica para ver las dos cifras, o abre «Ver las cifras en tabla». Gerencia y Dirección Comercial pueden cambiar entre «Mío» y «Equipo»."
+  },
+  {
    "id": "miplan",
    "m": "midia",
    "t": "Mi Plan y archivo para Outlook",
@@ -499,6 +541,21 @@
     "Cuando la lista PREPARACIÓN PARA EL CIERRE esté completa, cierra con [[Cerrar Necesidad]]. Anota cualquier señal de una necesidad futura (continuidad), con una fecha de seguimiento."
    ],
    "expect": "Una señal de continuidad crea una tarea de seguimiento. No crea una oportunidad de venta por sí sola."
+  },
+  {
+   "id": "aviso-retraso",
+   "m": "comercial",
+   "t": "Aviso de retraso: decirle al cliente y dar una nueva fecha",
+   "path": "MI DÍA → Hoy · Ver el resumen de hoy · Avisar",
+   "why": "Cuando una entrega pasa su fecha prometida, es mejor que el cliente se entere por ti: en una sola pantalla dices la causa, ofreces una nueva fecha y sale el correo.",
+   "steps": [
+    "Abre [[MI DÍA]], haz clic en [[Ver el resumen de hoy]] y, en el grupo de entregas que pasaron la fecha prometida, en «Avisar». Se abre «Aviso de retraso» con la situación del pedido: fecha prometida, último seguimiento y cómo van las órdenes al proveedor.",
+    "En «¿QUÉ CAUSÓ EL RETRASO?» elige una causa. SOLU llena «Qué pasó» y «Qué estamos haciendo para resolverlo»; puedes cambiar los dos textos.",
+    "Elige la «Nueva fecha de entrega». Si SOLU propone una, dice de dónde sale, y la tomas con [[Usar esa fecha]].",
+    "En «SUS OTROS CASOS ABIERTOS» deja marcados los que quieres contarle al cliente en el mismo correo.",
+    "Revisa el correo (idioma, «Para», asunto y texto) y haz clic en [[Enviar al cliente y guardar la nueva fecha]]. Si ya le avisaste por teléfono o WhatsApp, usa [[Ya le avisé por otro medio: solo guardar la fecha]]."
+   ],
+   "expect": "La nueva fecha queda como la promesa al cliente, con su causa, y el pedido deja de aparecer como atrasado. El correo sale del buzón de la empresa y queda en el historial de la Necesidad. Mientras falte la causa o la fecha, un recuadro rojo dice qué falta. «Proponer con IA» aparece cuando la empresa conecte su llave de IA."
   },
   {
    "id": "dinero",
@@ -1878,6 +1935,20 @@
     "En «Falta algo para cerrar», lee qué falta y abre la Necesidad para resolverlo."
    ],
    "expect": "Cada línea lleva a la pantalla donde se resuelve."
+  },
+  {
+   "id": "causas-retraso",
+   "m": "administracion",
+   "t": "Causas de retraso: la lista que se ofrece al avisar",
+   "path": "ADMINISTRACIÓN → Configuración → Causas de retraso",
+   "why": "Que todos expliquen un retraso con las mismas causas, y que cada causa ya traiga qué decirle al cliente y qué proponemos hacer.",
+   "steps": [
+    "Abre [[ADMINISTRACIÓN]], luego [[Configuración]] y [[Causas de retraso]].",
+    "En cada causa revisa su nombre, la familia para los informes de Gerencia, qué pasó (para el cliente) y qué proponemos hacer, en español y en inglés.",
+    "Para agregar una causa, llena el último recuadro, que está vacío. Para dejar de ofrecer una, desmarca «Activa»; para borrarla, marca «Quitar esta causa al guardar».",
+    "Haz clic en [[Guardar las causas de retraso]]."
+   ],
+   "expect": "La lista nueva es la que ven las personas en «Aviso de retraso» desde ese momento. La cambian Gerencia, Dirección Comercial o Administración; los demás la ven sin poder editarla. El texto para el cliente no debe nombrar ni culpar a un proveedor o transportador."
   },
   {
    "id": "auth-rangos",

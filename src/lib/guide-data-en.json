@@ -1649,5 +1649,61 @@
    "If the note grew and you need more people, click “Turn into a project”: it moves to the list of projects, in everyone's view, and SOLU asks you to write its objective."
   ],
   "expect": "The alarm shows in MY DAY → To-dos from now, and in “Your agenda” in MY DAY → Today when the day comes (with no time, it is set for 08:00). Marking the note as done closes its alarms. Not even Management sees another person's notes."
+ },
+ "resumen-dia": {
+  "t": "Day summary: what appears when you enter",
+  "why": "The first time you enter each day, SOLU shows what fell behind, from the most serious to the least, so you decide where to start.",
+  "steps": [
+   "When you enter SOLU for the first time in the day, the window opens by itself. To see it at another moment, open [[MI DÍA]] and click [[Ver el resumen de hoy]].",
+   "Read the groups from top to bottom: in red, what puts a result at risk (deliveries past their promised date, promised payments that did not arrive); in amber, what needs a move. Inside each group, what has waited longest comes first; the days are on the right of each case.",
+   "To handle a case, click its button (“Notify” or “Open”). To handle them in order, click “Start with the first case”.",
+   "If you lead the team, switch between “Mine” and “Team” at the top right of the window."
+  ],
+  "expect": "If nothing is overdue, the window does not open by itself. A Need waiting under control (its date still ahead) is not shown. To stop it opening when you enter, untick “Show when I enter each day”; that choice is kept in this browser."
+ },
+ "recorrido-casos": {
+  "t": "Today's walk: one case after another",
+  "why": "Handle the cases of the summary in order, without going back to the list after each one.",
+  "steps": [
+   "Open [[MI DÍA]], click [[Ver el resumen de hoy]] and then “Start with the first case” (or the button of any case).",
+   "SOLU opens the case and leaves a bar at the bottom: “Today's walk · case 1 of …”. Handle the case on the screen.",
+   "Click [[Siguiente caso →]] to move to the next one, or [[← Anterior]] to go back.",
+   "Click the name of the case, on the bar, to see the whole list and jump to any of them."
+  ],
+  "expect": "On the last case the button reads “Finish the walk” and takes you back to My Day. The X leaves the walk without changing anything. The walk lives in this browser tab: closing it ends the walk."
+ },
+ "midia-tablero": {
+  "t": "My board: how you are doing against the previous period",
+  "why": "See at a glance how much is open in each stretch of the order, whether more or less work is coming in than before, and what has been open the longest.",
+  "steps": [
+   "Open [[MI DÍA]] and find “MY BOARD”, below the greeting.",
+   "Pick one of the four cards: Needs, Quotes, Orders to deliver or In transit. Each one says how many are open now, how many are past their date and how many have no follow-up.",
+   "Pick the period: [[7 días]], [[30 días]], [[3 meses]] or [[12 meses]]. The blue line is this period; the dashed one, the previous period of the same length.",
+   "On the right, look at the age of the open ones and click one under “Open the longest” to open it."
+  ],
+  "expect": "The large figure is how many were created in the period, with the difference against the previous one. Hover a point of the chart to see both figures, or open “See the figures as a table”. Management and the Commercial Director can switch between “Mine” and “Team”."
+ },
+ "aviso-retraso": {
+  "t": "Delay notice: tell the customer and give a new date",
+  "why": "When a delivery passes its promised date, it is better that the customer hears it from you: on one screen you state the cause, offer a new date and the email goes out.",
+  "steps": [
+   "Open [[MI DÍA]], click [[Ver el resumen de hoy]] and, in the group of deliveries past their promised date, click “Notify”. “Delay notice” opens with the state of the order: promised date, last follow-up and how the supplier orders are going.",
+   "Under “WHAT CAUSED THE DELAY?” pick a cause. SOLU fills in “What happened” and “What we are doing to solve it”; you can change both texts.",
+   "Pick the “New delivery date”. If SOLU proposes one, it says where it comes from, and you take it with [[Usar esa fecha]].",
+   "Under “THEIR OTHER OPEN CASES” leave ticked the ones you want to tell the customer about in the same email.",
+   "Review the email (language, “To”, subject and text) and click [[Enviar al cliente y guardar la nueva fecha]]. If you already told them by phone or WhatsApp, use [[Ya le avisé por otro medio: solo guardar la fecha]]."
+  ],
+  "expect": "The new date becomes the promise to the customer, with its cause, and the order stops showing as late. The email goes out from the company mailbox and stays in the Need's history. While the cause or the date is missing, a red box says what is missing. “Propose with AI” appears once the company connects its AI key."
+ },
+ "causas-retraso": {
+  "t": "Delay causes: the list offered when notifying",
+  "why": "So everyone explains a delay with the same causes, and each cause already carries what to tell the customer and what we propose to do.",
+  "steps": [
+   "Open [[ADMINISTRACIÓN]], then [[Configuración]] and [[Causas de retraso]].",
+   "On each cause check its name, the family for Management reports, what happened (for the customer) and what we propose to do, in Spanish and in English.",
+   "To add a cause, fill in the last box, which is empty. To stop offering one, untick “Active”; to delete it, tick “Remove this cause on save”.",
+   "Click [[Guardar las causas de retraso]]."
+  ],
+  "expect": "The new list is what people see in “Delay notice” from that moment. Management, the Commercial Director or Administration change it; everyone else sees it without being able to edit it. The text for the customer must not name or blame a supplier or carrier."
  }
 }
