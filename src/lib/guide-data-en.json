@@ -1552,9 +1552,9 @@
   "t": "Create a project",
   "why": "A project is something the team wants to get done. Everyone can see it: what it is for, who started it and who sits at the round table.",
   "steps": [
-   "In PROJECTS & NOTES → Projects, click [[+ Nuevo proyecto]] (or in the top bar: + New → Project). The “Create a project” form is below the list.",
+   "In PROJECTS & NOTES → Projects, click [[+ Nuevo proyecto]] (or in the top bar: + New → Project). The “Create a project” form is below the list. If templates have been saved, “Start from a template” is above the form: choosing one fills in the description, objective, tags and priority.",
    "Type “1 · Project name”, “2 · Short description” (what everyone reads in the list) and “3 · Objective”: what you want to achieve and how we will know it was achieved. These three are required.",
-   "Under “4 · Priority” choose High, Medium or Low priority: the list of projects is ordered by it. Under “5 · Tags (optional)” tick what it is about (Marketing, Logistics, Christmas committee…) or type your own in “Another tag”. Under “6 · Desired timeline (optional)” set by when you want each stage finished; if it is just starting, leave the dates empty.",
+   "Under “4 · Priority” choose High, Medium or Low priority: the list of projects is ordered by it. Under “5 · Tags (optional)” tick what it is about (Marketing, Logistics, Christmas committee…) or type your own in “Another tag”. Under “Is it about a customer or a Need? (optional)” you can link it to a customer or type the Need's code. Under “6 · Desired timeline (optional)” set by when you want each stage finished; if it is just starting, leave the dates empty.",
    "Under “People you want to work with (optional)” tick who you want to invite. If you are Management, you also see “Who is the project for?”, “Saved teams (optional)” and “People assigned to the round table”.",
    "Click [[Crear proyecto]]. The project page opens, in the “Objectives” stage."
   ],
@@ -1566,8 +1566,8 @@
   "steps": [
    "In PROJECTS & NOTES → Projects, look at the list: it is ordered by priority, and each project shows its stage, description, tags, who started it and the “Round table”. Filter with “All open”, “The ones I am in”, “Closed” or with a tag.",
    "Click [[Unirme]] on the project you are interested in. If someone invited you, it is at the top under “You were invited”, with “Join” and “Not now”.",
-   "Once in the project, under “Forum”, type in the box and click [[Publicar]] to start a conversation.",
-   "To answer someone, click “Reply” under their comment, type and click “Post reply”. The reply sits below it, as a thread, and can be replied to in turn.",
+   "Once in the project, under “Forum”, type in the box and click [[Publicar]] to start a conversation. With @ and someone's first name (for example @Paola) it reaches their bell. Under “Attach, notify someone or note what the customer said” you can upload photos or a PDF and tick who to notify.",
+   "To answer someone, click “Reply” under their comment, type and click “Post reply”. The reply sits below it, as a thread, and can be replied to in turn. You correct your own comment with “Edit”: it is marked as “edited”.",
    "To bring someone else in, under “Round table” open “Invite people”, tick them and click “Send invitation”. Management sees “Assign people or teams”."
   ],
   "expect": "Joining needs no approval and is noted in the forum. In the list, “new comments” tells you people wrote since your last visit. If you open a project without being at the table, you can read everything and come in with “Join the round table”. With “Leave the round table” you step out whenever you want."
@@ -1581,20 +1581,51 @@
    "Under “Project dates”, open “+ New date”: choose “What is it?” (Meeting, Appointment or Task to do), type the “Title”, the “Day” and, if it has one, the “Time”. Click [[Agregar fecha]].",
    "On each date, “Put in my My Day” keeps it as your own alarm: you see it in MY DAY → To-dos from now, and in “Your agenda” in MY DAY → Today when the day comes. “Add to Outlook” downloads a calendar file: open it and Outlook saves the meeting.",
    "For an alarm of your own about the project, under “Remind me in My Day” choose the “Day”, type what you want to remember and click [[Poner alarma]].",
-   "In the “Results” stage, the lead writes “What was achieved?” and clicks “Save and close the project”."
+   "In the “Results” stage, the lead writes “What was achieved?” and clicks “Save and close the project”. To repeat this kind of project later, under “Save as template” type a name and click [[Guardar plantilla]]."
   ],
-  "expect": "Each person decides which dates go into their My Day: nobody gets them by force. If your Outlook is connected in My profile, the alarm also goes to your calendar. A closed project moves to “Closed” and the lead can reopen it."
+  "expect": "Each person decides which dates go into their My Day: nobody gets them by force. If your Outlook is connected in My profile, the alarm also goes to your calendar. A closed project moves to “Closed” and the lead can reopen it. The template keeps the description, objective, tags, priority and tasks by stage, with no people or dates."
  },
- "proy-notas": {
-  "t": "Personal notes and reminders",
-  "why": "For what you just want to remember. Nobody else sees your notes.",
+ "proy-tareas-avance": {
+  "t": "Tasks by stage and asking for progress",
+  "why": "Share out who does what in each stage, and ask how something is going without chasing anyone by chat.",
   "steps": [
-   "In PROJECTS & NOTES → My notes (or in the top bar: + New → Note), type “1 · What do you want to remember?” and, if needed, the “2 · Detail (optional)”.",
-   "For SOLU to remind you, under “3 · Alarm in My Day (optional)” set the “Day” and the “Time”. Click [[Guardar nota]].",
-   "Under “PENDING NOTES”, tick the note with ✓ when it is done, or open “Set alarm” to give it another date.",
-   "If the note grew and you need more people, click “Turn into a project”: it moves to the list of projects, in everyone's view, and SOLU asks you to write its objective."
+   "Open a project from the list and go down to “Tasks by stage”. Open “+ New task”, type “What has to be done?”, choose who is “In charge (optional)”, the date “By (optional)” and the “Stage”, and click [[Agregar tarea]].",
+   "When a task is ready, click its box: it is crossed out, with the name of whoever ticked it. On the “Timeline”, each stage says how many tasks are done.",
+   "To know how another person's task is going, click “Ask for progress” on that task (or on a project date). It reaches their bell and their My Day.",
+   "If you are the one asked: in the project, at the top, “You are asked for progress” has four one-click answers: “On track”, “Running late”, “Already done” or “It is blocked”, with an optional line of context."
   ],
-  "expect": "The alarm shows in MY DAY → To-dos from now, and in “Your agenda” in MY DAY → Today when the day comes (with no time, it is set for 08:00). Marking the note as done closes its alarms. Not even Management sees another person's notes."
+  "expect": "The answer is written in the forum for the whole table, and “Already done” marks the task or date as done. “Ask for progress” only shows when the task has someone in charge and it is not you; while it waits for an answer it says “Progress asked”. A task past its date is marked “Overdue”."
+ },
+ "proy-reloj": {
+  "t": "Project clock: 14 days without movement, and the extension",
+  "why": "A project may go at most 14 days without movement. The clock shows it, and if more time is needed it is asked of Management.",
+  "steps": [
+   "Open a project. Below the timeline, “Project clock” says how many days are left, when the last movement was and until which day it may stay still.",
+   "A comment, a date, a task or a stage change count as movement and restart the clock.",
+   "If the project needs to wait, open “Request extension”, type “Why does it need more time without movement?”, choose “How many more days?” (7 or 14) and click “Send to Management”.",
+   "Management gets it on the bell and in MANAGEMENT → Today → Executive close, block “INTERNAL PROJECTS”. In the project, they click “Approve extension” or “Do not approve” (with the reason)."
+  ],
+  "expect": "In the list, each open project carries its state: “On time”, “N d left without movement”, “Stage past its date” or “No movement for over 14 days”. When it runs out, whoever leads the project gets a notice on the bell. Approving an extension does not count as movement: it only moves the limit date. Only one extension can be waiting at a time, and the decision is noted in the forum."
+ },
+ "proy-decisiones-cliente": {
+  "t": "Decisions, pinned conversations and what the customer said",
+  "why": "So an agreement is not lost among the comments, and to note what a customer said when you chose to talk to them.",
+  "steps": [
+   "In a project's forum, the lead, whoever started it, or Management see two links under each comment: “Mark as decision” and “Pin to top”.",
+   "A comment marked as a decision shows above the forum, under “Decisions and agreements”, with a link to it. A pinned conversation stays first.",
+   "To note something a customer said: open “Attach, notify someone or note what the customer said”, tick “The customer said this (I am noting it, I talked to them)”, type “Who said it? (optional)” and click [[Publicar]]."
+  ],
+  "expect": "What the customer said shows above the forum, under “What the customer said”, with who said it and who noted it. SOLU never writes to the customer from a project: contacting them is each person's decision. If the project is linked to a customer or a Need, its name shows at the top as a link to its record."
+ },
+ "proy-mi-trabajo": {
+  "t": "My work in projects and my notices",
+  "why": "One place with what is yours across every project, and you choose what SOLU tells you on its own.",
+  "steps": [
+   "In PROJECTS & NOTES → Projects, at the top, “My work in projects” gathers: “You are asked for progress”, “You were mentioned”, “My next dates (14 days)”, “My open tasks” and “Projects I lead that need attention”. Each line takes you to the exact place.",
+   "In MY DAY → Today, the “MY PROJECTS” block shows what is yours today: what you are asked, your dates for today and tomorrow, and what is yours and overdue.",
+   "To choose your notices, open TEAM → Setup → My profile, go down to “Notices from my projects”, tick or untick the two boxes and click [[Guardar mis avisos]]."
+  ],
+  "expect": "On the bell, dates and overdue things come in a single line starting with “Projects:”, not one for each. You always get an invitation, an assignment by Management, an @ mention and the notice that a project you lead has stopped moving. None of this comes by email. The “My work” block only shows when you have something."
  },
  "proy-equipos": {
   "t": "Saved teams for projects",
@@ -1607,5 +1638,16 @@
    "To change who is in a team, open “Change name or people” on its card. “Archive” stops offering it for new projects."
   ],
   "expect": "The team stays saved for the next projects, and its name shows in the list of projects and at the round table. Everyone can see the teams; only Management creates, changes and adds them. Changing a team does not take anyone out of, or put anyone into, the projects that already had it."
+ },
+ "proy-notas": {
+  "t": "Personal notes and reminders",
+  "why": "For what you just want to remember. Nobody else sees your notes.",
+  "steps": [
+   "In PROJECTS & NOTES → My notes (or in the top bar: + New → Note), type “1 · What do you want to remember?” and, if needed, the “2 · Detail (optional)”.",
+   "For SOLU to remind you, under “3 · Alarm in My Day (optional)” set the “Day” and the “Time”. Click [[Guardar nota]].",
+   "Under “PENDING NOTES”, tick the note with ✓ when it is done, or open “Set alarm” to give it another date.",
+   "If the note grew and you need more people, click “Turn into a project”: it moves to the list of projects, in everyone's view, and SOLU asks you to write its objective."
+  ],
+  "expect": "The alarm shows in MY DAY → To-dos from now, and in “Your agenda” in MY DAY → Today when the day comes (with no time, it is set for 08:00). Marking the note as done closes its alarms. Not even Management sees another person's notes."
  }
 }

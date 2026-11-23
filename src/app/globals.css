@@ -2780,3 +2780,43 @@ input.need-in { border-color: var(--risk); box-shadow: 0 0 0 2px #f6d5d0; backgr
 .pj-team::before { content: "◎"; font-size: 11px; }
 p.pj-table { margin: 0 0 8px; }
 .ph h1 .sig { vertical-align: middle; margin-left: 6px; }
+
+/* Proyectos y notas, second wave: my work, the clock, tasks by stage, asking for progress, forum extras. */
+.pj-work { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 4px 24px; }
+.pj-work .ie-h { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.pj-mi { list-style: none; margin: 0; padding: 4px 16px 12px; display: flex; flex-direction: column; }
+.pj-mi li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+.pj-mi li:first-child { border-top: 0; }
+.pj-clock { height: 10px; border-radius: 999px; background: var(--surface-sunken); overflow: hidden; margin: 8px 0; max-width: 520px; }
+.pj-clock span { display: block; height: 100%; border-radius: 999px; background: var(--ok); }
+.pj-clock span[data-tone="attn"] { background: var(--attn); }
+.pj-clock span[data-tone="risk"] { background: var(--risk); }
+.pj-ext { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding: 10px 12px; margin-top: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--attn-soft); }
+.pj-ans { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; width: 100%; }
+.pj-ans input { width: 100%; max-width: 520px; }
+.pj-stage + .pj-stage { margin-top: 6px; }
+.pj-stage .ie-h { display: flex; gap: 8px; align-items: center; }
+.pj-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.pj-items li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.pj-items li:first-child { border-top: 0; }
+.pj-items li[data-done] .pj-it b { text-decoration: line-through; color: var(--ink-3); font-weight: 500; }
+.pj-it { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pj-chk { width: 28px; height: 28px; min-height: 28px !important; padding: 0 !important; border-radius: 6px; display: inline-grid; place-items: center; font-weight: 700; color: var(--ok); }
+.pj-chk.ro { border: 1px solid var(--line-strong); }
+.pj-keep { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 20px; padding: 10px 12px; margin: 4px 0 12px; border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: 8px; background: var(--surface-sunken); font-size: 13px; }
+.pj-keep ul { margin: 4px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.pj-post[data-kind="decision"] > .pj-body { border-left: 3px solid var(--ok); padding-left: 10px; }
+.pj-post[data-kind="customer"] > .pj-body { border-left: 3px solid var(--line-strong); padding-left: 10px; font-style: italic; }
+.pj-files { display: flex; flex-wrap: wrap; gap: 6px; margin-left: 36px; }
+.pj-files a { display: inline-flex; gap: 6px; align-items: center; padding: 4px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-sunken); font-size: 12.5px; overflow-wrap: anywhere; }
+.pj-ment { margin-left: 36px; }
+.pj-more { grid-column: 2; }
+.pj-more > summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--brand); margin: 0 !important; }
+.pj-more[open] { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.pj-more label, .pj-file { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--ink-2); }
+.pj-more label.pj-cust { flex-direction: row; align-items: flex-start; gap: 8px; color: var(--ink); }
+.pj-more input[type="file"], .pj-file input { max-width: 100%; font-size: 12.5px; }
+.pj-tpl { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px; }
+.pj-tpl .pj-tags.filter { margin: 0; }
+.pj-tpl .pj-tags.filter a::before { content: none; }
+@media (max-width: 640px) { .pj-files, .pj-ment { margin-left: 0; } .pj-more { grid-column: 1 / -1; } .pj-items li { grid-template-columns: 30px minmax(0, 1fr); } .pj-items li > .pj-acts { grid-column: 2; } }

@@ -183,9 +183,13 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   RoleGapReview: ["userId", "roleKey", "version", "dimension", "result", "reviewedByName", "reviewedOn", "supersededAt"],
   // Proyectos y notas. What moves a project and who sits at its table; never the text of a note (it is personal)
   // nor of a forum post.
-  Project: ["kind", "priority", "stage", "leadId", "closedAt", "startOn", "objectivesBy", "planBy", "executionBy", "resultsBy"],
+  Project: ["kind", "priority", "quietUntil", "accountId", "dealId", "stage", "leadId", "closedAt", "startOn", "objectivesBy", "planBy", "executionBy", "resultsBy"],
   ProjectMember: ["projectId", "userId", "how", "addedByName"],
-  ProjectPost: ["projectId", "authorId", "deletedAt"],
+  ProjectPost: ["projectId", "authorId", "deletedAt", "editedAt", "pinned", "decision", "customerInput"],
+  ProjectItem: ["projectId", "stage", "ownerId", "dueOn", "doneAt", "doneByName"],
+  ProjectNudge: ["projectId", "toUserId", "fromName", "answer", "answeredAt"],
+  ProjectExtension: "all",
+  ProjectTemplate: ["name", "createdByName"],
   ProjectTeam: ["name", "active", "createdByName"],
   ProjectTeamMember: ["teamId", "userId"],
   ProjectTeamLink: ["projectId", "teamId", "addedByName"],

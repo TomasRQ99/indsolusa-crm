@@ -159,14 +159,21 @@ model User {
   projectsLed      Project[]           @relation("ProjectLead")
   projectSeats     ProjectMember[]     @relation("ProjectSeat")
   projectPosts     ProjectPost[]       @relation("ProjectPostAuthor")
+  /// Proyectos y notas · alarms: automatic notices about the dates of my projects, and "pedir avance" reaching my bell
+  projectAlerts    Boolean             @default(true)
+  projectAsks      Boolean             @default(true)
+  projectItems     ProjectItem[]       @relation("ProjectItemOwner")
+  projectMentions  ProjectMention[]    @relation("ProjectMentioned")
+  projectNudges    ProjectNudge[]      @relation("ProjectNudgeTo")
   projectTeamSeats ProjectTeamMember[] @relation("ProjectTeamSeat")
 }
 
 model Account {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
+  projects   Project[]
   name       String
   /// Our own company as the holder of stock purchases; never a customer.
-  internal   Boolean  @default(false)
+  internal   Boolean   @default(false)
   industry   String?
   website    String?
   phone      String?
@@ -177,9 +184,9 @@ model Account {
   city       String?
   postalCode String?
   ownerId    String
-  owner      User     @relation(fields: [ownerId], references: [id])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  owner      User      @relation(fields: [ownerId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   // Commercial and billing terms
   taxId                 String?
@@ -284,6 +291,7 @@ model Contact {
 // purchase, delivery, invoice, cash and the customer's result.
 model Deal {
   id        String    @id @default(cuid())
+  projects  Project[]
   code      String?   @unique
   title     String
   amount    Decimal   @default(0) @db.Decimal(14, 2)
@@ -5556,11 +5564,24 @@ model Project {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  members ProjectMember[]
-  posts   ProjectPost[]
-  dates   ProjectDate[]
-  teams   ProjectTeamLink[]
-  tasks   Task[]
+  members    ProjectMember[]
+  posts      ProjectPost[]
+  dates      ProjectDate[]
+  teams      ProjectTeamLink[]
+  items      ProjectItem[]
+  nudges     ProjectNudge[]
+  extensions ProjectExtension[]
+
+  /// A project may go at most 14 days without movement (owner, 2026-11-23). Gerencia can extend it: until this day
+  /// the project does not count as stalled.
+  quietUntil DateTime?
+
+  /// optional link to the customer and the Need this project is about
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  dealId    String?
+  deal      Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  tasks     Task[]
 
   @@index([kind, closedAt])
   @@index([leadId])
@@ -5586,18 +5607,28 @@ model ProjectMember {
 /// The forum of a project: a post, and replies under it (parentId), to any depth.
 /// system = written by SOLU when the project moves (stage changed, someone joined).
 model ProjectPost {
-  id        String        @id @default(cuid())
-  projectId String
-  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User          @relation("ProjectPostAuthor", fields: [authorId], references: [id])
-  parentId  String?
-  parent    ProjectPost?  @relation("ProjectPostThread", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   ProjectPost[] @relation("ProjectPostThread")
-  body      String
-  system    Boolean       @default(false)
-  deletedAt DateTime?
-  createdAt DateTime      @default(now())
+  id            String            @id @default(cuid())
+  projectId     String
+  project       Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  authorId      String
+  author        User              @relation("ProjectPostAuthor", fields: [authorId], references: [id])
+  parentId      String?
+  parent        ProjectPost?      @relation("ProjectPostThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       ProjectPost[]     @relation("ProjectPostThread")
+  body          String
+  system        Boolean           @default(false)
+  editedAt      DateTime?
+  /// kept at the top of the forum
+  pinned        Boolean           @default(false)
+  /// an agreement or decision: listed apart so it is not lost in the thread
+  decision      Boolean           @default(false)
+  /// something a customer said, recorded by the employee who talked to them (SOLU never writes to the customer here)
+  customerInput Boolean           @default(false)
+  customerName  String?
+  files         ProjectPostFile[]
+  mentions      ProjectMention[]
+  deletedAt     DateTime?
+  createdAt     DateTime          @default(now())
 
   @@index([projectId, createdAt])
 }
@@ -5619,9 +5650,98 @@ model ProjectDate {
   createdByName String
   createdAt     DateTime  @default(now())
 
-  tasks Task[]
+  tasks  Task[]
+  nudges ProjectNudge[]
 
   @@index([projectId, day])
+}
+
+/// A photo or PDF attached to a forum post.
+model ProjectPostFile {
+  id        String      @id @default(cuid())
+  postId    String
+  post      ProjectPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  name      String
+  mime      String
+  size      Int
+  data      Bytes
+  createdAt DateTime    @default(now())
+
+  @@index([postId])
+}
+
+/// "@person" in a forum post: it reaches that person's bell until they open the project.
+model ProjectMention {
+  id        String      @id @default(cuid())
+  postId    String
+  post      ProjectPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  projectId String
+  userId    String
+  user      User        @relation("ProjectMentioned", fields: [userId], references: [id], onDelete: Cascade)
+  byName    String
+  seenAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  @@unique([postId, userId])
+  @@index([userId, seenAt])
+}
+
+/// One line of a stage's checklist: what, who answers for it, by when.
+model ProjectItem {
+  id            String    @id @default(cuid())
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage         String
+  title         String
+  ownerId       String?
+  owner         User?     @relation("ProjectItemOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  dueOn         DateTime?
+  doneAt        DateTime?
+  doneByName    String?
+  createdByName String
+  createdAt     DateTime  @default(now())
+
+  nudges ProjectNudge[]
+
+  @@index([projectId, stage])
+  @@index([ownerId, doneAt])
+}
+
+/// "Pedir avance": someone at the table asks the person in charge of a date or a checklist line how it is going.
+/// answer: ON_TRACK | LATE | DONE | BLOCKED. The answer is also written in the forum.
+model ProjectNudge {
+  id         String       @id @default(cuid())
+  projectId  String
+  project    Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemId     String?
+  item       ProjectItem? @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  dateId     String?
+  date       ProjectDate? @relation(fields: [dateId], references: [id], onDelete: Cascade)
+  toUserId   String
+  toUser     User         @relation("ProjectNudgeTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  fromUserId String
+  fromName   String
+  answer     String?
+  note       String?
+  answeredAt DateTime?
+  createdAt  DateTime     @default(now())
+
+  @@index([toUserId, answeredAt])
+  @@index([projectId])
+}
+
+/// A project saved as a starting point for the next one of its kind (the Christmas committee, the year-end activity).
+model ProjectTemplate {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  summary       String
+  objective     String?
+  tags          String[] @default([])
+  priority      String   @default("MEDIA")
+  /// [{ stage, title }]
+  items         Json
+  createdByName String
+  createdAt     DateTime @default(now())
 }
 
 /// Proyectos y notas · a saved team (owner, 2026-11-23): a named folder of people Gerencia creates once and adds to
@@ -5664,4 +5784,24 @@ model ProjectTeamLink {
 
   @@unique([projectId, teamId])
   @@index([teamId])
+}
+
+/// "Solicitar extensión": a project that is reaching its 14 days without movement asks Gerencia for more time.
+/// status: REQUESTED | APPROVED | REJECTED
+model ProjectExtension {
+  id              String    @id @default(cuid())
+  projectId       String
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requestedById   String
+  requestedByName String
+  reason          String
+  days            Int
+  status          String    @default("REQUESTED")
+  decidedByName   String?
+  decisionNote    String?
+  decidedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([status])
+  @@index([projectId])
 }

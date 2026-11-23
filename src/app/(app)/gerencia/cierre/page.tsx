@@ -11,6 +11,7 @@ import { interventionQueue } from "@/lib/future-pulse";
 import { peopleCapacity } from "@/lib/gerencia-people";
 import { decisionsNeeded } from "@/lib/gerencia-store";
 import { monthKey, rangeSpend } from "@/lib/internal-expenses";
+import { QUIET_DAYS, healthText, projectsForManagement } from "@/lib/projects";
 
 // Módulo 15 §19 · Executive close of a day, a week or a month. It counts what happened inside the period (event
 // dates), and it starts with the future: what Gerencia must decide and what is coming, then result, value, risks,
@@ -42,6 +43,7 @@ export default async function ExecutiveClosePage({ searchParams }: { searchParam
     ger ? peopleCapacity(T) : null,
   ]);
   // What the company spent on itself in the period, and in the period just before it (same kind of period).
+  const pj = await projectsForManagement(T);
   const prevB = boundsOf(kind, shift(kind, ref, -1));
   const [spend, spendPrev] = await Promise.all([rangeSpend(start, end), rangeSpend(prevB.start, prevB.end)]);
   const spendDiff = Math.round((spend.total - spendPrev.total) * 100) / 100;
@@ -123,6 +125,18 @@ export default async function ExecutiveClosePage({ searchParams }: { searchParam
           </dl>
         </section>
       )}
+      <section className="card" id="proyectos"><b>{t("PROYECTOS INTERNOS", "INTERNAL PROJECTS")}</b> <span className="small muted">{t("como están hoy", "as they stand today")} · {pj.open} {t("abiertos", "open")}</span>
+        {pj.requests.length + pj.quiet.length + pj.late.length + pj.noNext.length === 0 ? <p className="small"><span className="sig ok">{t(`Ningún proyecto atrasado ni con más de ${QUIET_DAYS} días sin movimiento`, `No project late or over ${QUIET_DAYS} days without movement`)}</span></p> : (
+          <dl className="rp-dl">
+            {pj.requests.length > 0 && <><dt>{t("Extensiones que esperan tu decisión", "Extensions waiting for your decision")}</dt><dd><b>{pj.requests.length}</b>{pj.requests.map((r) => <span key={r.id} className="src block"><Link href={`/proyectos/${r.project.id}#reloj`}>{r.project.title}</Link> · {r.requestedByName} {t("pide", "asks for")} {r.days} {t("días", "days")}: {r.reason}</span>)}</dd></>}
+            {pj.quiet.length > 0 && <><dt>{t(`Más de ${QUIET_DAYS} días sin movimiento`, `Over ${QUIET_DAYS} days without movement`)}</dt><dd><b className="risk-t">{pj.quiet.length}</b>{pj.quiet.slice(0, 8).map((p) => <span key={p.id} className="src block"><Link href={`/proyectos/${p.id}#reloj`}>{p.title}</Link> · {p.lead.name} · {healthText(p.h, t)}</span>)}</dd></>}
+            {pj.late.length > 0 && <><dt>{t("Con la etapa atrasada", "With the stage past its date")}</dt><dd><b>{pj.late.length}</b>{pj.late.slice(0, 8).map((p) => <span key={p.id} className="src block"><Link href={`/proyectos/${p.id}#linea`}>{p.title}</Link> · {p.lead.name}</span>)}</dd></>}
+            {pj.noNext.length > 0 && <><dt>{t("Prioridad alta sin próxima fecha ni tarea", "High priority with no next date or task")}</dt><dd><b>{pj.noNext.length}</b>{pj.noNext.slice(0, 8).map((p) => <span key={p.id} className="src block"><Link href={`/proyectos/${p.id}`}>{p.title}</Link> · {p.lead.name}</span>)}</dd></>}
+          </dl>
+        )}
+        <p className="src"><Link href="/proyectos">{t("Abrir Proyectos y notas", "Open Projects and notes")} →</Link></p>
+      </section>
+
       {rep.improve.length > 0 && <section className="card" id="mejora"><b>{t("QUÉ MEJORAR", "WHAT TO IMPROVE")}</b><ul className="plain small">{rep.improve.map((x, k) => <li key={k}>{t(x.es, x.en)}</li>)}</ul></section>}
       <p className="src">{t("Los bloques 2, 3, 4 y 6 cuentan lo que ocurrió dentro del periodo. Los bloques 1, 5 y 7 muestran cómo están las cosas hoy: SOLU no guarda la historia de esos estados.", "Blocks 2, 3, 4 and 6 count what happened inside the period. Blocks 1, 5 and 7 show how things stand today: SOLU keeps no history of those states.")}</p>
     </>

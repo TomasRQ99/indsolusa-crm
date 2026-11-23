@@ -1,3 +1,5 @@
+import { healthText, myProjectWork } from "@/lib/projects";
+import { db } from "@/lib/db";
 import Link from "next/link";
 import { FirstDay } from "@/components/FirstDay";
 import { ValueKindSelect } from "@/components/ValueKindSelect";
@@ -222,6 +224,13 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
   // Minimal 21-day timeline for "Futuro".
   const pos = (d: Date) => Math.min(100, Math.max(0, (daysBetween(m.now, d) / 21) * 100));
   const firstWindow = m.future.find((f) => f.window);
+  // Proyectos y notas: what my projects ask of me today (asks and mentions always; dates and delays unless I switched them off).
+  const [pw, pjPrefs] = await Promise.all([myProjectWork(user.id, m.now), db.user.findUnique({ where: { id: user.id }, select: { projectAlerts: true, projectAsks: true } })]);
+  const pjDates = pjPrefs?.projectAlerts === false ? [] : [...pw.overdueDates, ...pw.tomorrow.filter((d) => !pw.overdueDates.includes(d))];
+  const pjItems = pjPrefs?.projectAlerts === false ? [] : pw.overdueItems;
+  const pjLed = pjPrefs?.projectAlerts === false ? pw.ledTrouble.filter((x) => x.h.key === "quiet") : pw.ledTrouble;
+  const pjAsks = pjPrefs?.projectAsks === false ? [] : pw.asks;
+  const pjCount = pjDates.length + pjItems.length + pjLed.length + pjAsks.length + pw.mentions.length;
 
   return (
     <div className="midia">
@@ -263,6 +272,19 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
         <section className="mblock" data-zone="flow" aria-labelledby="h-cash" style={{ marginBottom: 16 }}>
           <div className="bhead"><b id="h-cash">{t("DINERO QUE DEBO MOVER", "MONEY I NEED TO MOVE")}</b><span>{t("de mercancía lista a dinero conciliado · primero lo que necesita un movimiento, luego lo de más valor", "from ready goods to reconciled cash · first what needs a move, then the highest value")}</span><span className="grow" /><Link className="small" href="/comercial/dinero?scope=mine">{t("Abrir", "Open")}</Link></div>
           <CashBags j={cash} i={i} compact />
+        </section>
+      )}
+
+      {pjCount > 0 && (
+        <section className="mblock" data-zone="plan" aria-labelledby="h-pj" id="proyectos" style={{ marginBottom: 16 }}>
+          <div className="bhead"><b id="h-pj">{t("MIS PROYECTOS", "MY PROJECTS")}</b><span>{t("lo que tus proyectos te piden hoy", "what your projects ask of you today")}</span><span className="grow" /><Link className="small" href="/proyectos#mi-trabajo">{t("Abrir", "Open")}</Link></div>
+          <ul className="pj-mi">
+            {pjAsks.map((n) => <li key={n.id}><span className="sig attn">{t("Te piden avance", "Progress asked")}</span><Link href={`/proyectos/${n.project.id}#avance`}>{n.item?.title ?? n.date?.title}</Link><span className="src">{n.fromName} · {n.project.title}</span></li>)}
+            {pw.mentions.map((x) => <li key={x.id}><span className="sig attn">{t("Te mencionaron", "Mentioned")}</span><Link href={`/proyectos/${x.projectId}#c-${x.postId}`}>{x.post.body.slice(0, 90)}{x.post.body.length > 90 ? "…" : ""}</Link><span className="src">{x.byName} · {x.post.project.title}</span></li>)}
+            {pjDates.map((d) => <li key={d.id}><span className={`sig ${d.day < m.now ? "attn" : "info"}`}>{d.day < m.now ? t("Fecha que ya pasó", "Date already past") : d.day.getTime() === m.now.getTime() ? t("Hoy", "Today") : t("Mañana", "Tomorrow")}</span><Link href={`/proyectos/${d.project.id}#fechas`}>{d.title}</Link><span className="src">{d.time ? `${d.time} · ` : ""}{d.project.title}</span></li>)}
+            {pjItems.map((x) => <li key={x.id}><span className="sig attn">{t("Tarea atrasada", "Task overdue")}</span><Link href={`/proyectos/${x.project.id}#tareas`}>{x.title}</Link><span className="src">{x.project.title}</span></li>)}
+            {pjLed.map(({ p, h }) => <li key={p.id}><span className={`sig ${h.tone}`}>{healthText(h, t)}</span><Link href={`/proyectos/${p.id}#reloj`}>{p.title}</Link><span className="src">{t("proyecto que llevas", "a project you lead")}</span></li>)}
+          </ul>
         </section>
       )}
 

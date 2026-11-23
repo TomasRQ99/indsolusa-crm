@@ -3,10 +3,13 @@ import { makeI18n } from "@/lib/i18n";
 import { OutlookNote } from "@/components/OutlookNote";
 import { PasswordForm } from "./PasswordForm";
 import { connectOutlook, disconnectOutlook, setGuide, setWorkday } from "./actions";
+import { db } from "@/lib/db";
+import { saveProjectAlerts } from "../proyectos/actions";
 
-export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ cal?: string }> }) {
-  const { cal } = await searchParams;
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ cal?: string; ok?: string }> }) {
+  const { cal, ok } = await searchParams;
   const user = await requireUser();
+  const pj = await db.user.findUnique({ where: { id: user.id }, select: { projectAlerts: true, projectAsks: true } });
   const i = makeI18n(user.lang);
   const { t } = i;
   return (
@@ -67,6 +70,17 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             <button type="submit" className={user.guideOn ? "secondary sm" : "sm"}>{user.guideOn ? t("Apagar la guía de entrenamiento", "Turn off the training guide") : t("Encender la guía de entrenamiento", "Turn on the training guide")}</button>
           </form>
           <p className="src" style={{ marginTop: 8 }}>{t("Solo cambia para ti. No se usa para medir a nadie.", "It only changes for you. It is never used to measure anyone.")}</p>
+        </div>
+        <div className="card" id="avisos-proyectos">
+          <h2>{t("Avisos de mis proyectos", "Notices from my projects")}</h2>
+          {ok === "avisos-proyectos" && <p className="small"><span className="sig ok">{t("Guardado", "Saved")}</span></p>}
+          <p className="small muted" style={{ marginBottom: 10 }}>{t("Las alarmas que tú pones siempre te llegan. Aquí eliges lo que SOLU te avisa por su cuenta, en la campana y en Mi Día. Nunca por correo.", "The alarms you set always reach you. Here you choose what SOLU tells you on its own, on the bell and in My Day. Never by email.")}</p>
+          <form action={saveProjectAlerts} className="qa-form">
+            <label style={{ flexDirection: "row", gap: 8, alignItems: "flex-start" }}><input type="checkbox" name="projectAlerts" value="1" defaultChecked={pj?.projectAlerts !== false} style={{ marginTop: 3 }} /> <span>{t("Un resumen de mis fechas de hoy y mañana, de lo mío que está atrasado y de la etapa atrasada en los proyectos que llevo", "A summary of my dates for today and tomorrow, of what is mine and overdue, and of a late stage in the projects I lead")}</span></label>
+            <label style={{ flexDirection: "row", gap: 8, alignItems: "flex-start" }}><input type="checkbox" name="projectAsks" value="1" defaultChecked={pj?.projectAsks !== false} style={{ marginTop: 3 }} /> <span>{t("Cuando alguien me pide el avance de una tarea o una fecha", "When someone asks me how a task or a date is going")}</span></label>
+            <button type="submit" className="sm" style={{ alignSelf: "flex-start" }}>{t("Guardar mis avisos", "Save my notices")}</button>
+          </form>
+          <p className="src" style={{ marginTop: 8 }}>{t("Siempre te llegan: una invitación, una asignación de Gerencia, una mención con @ y el aviso de que un proyecto que llevas se quedó sin movimiento. Aunque apagues los avisos, todo sigue visible dentro de cada proyecto.", "You always get: an invitation, an assignment by Management, an @ mention and the notice that a project you lead has stopped moving. Even with notices off, everything stays visible inside each project.")}</p>
         </div>
         <div className="card">
           <h2>{t("Mi jornada", "My working day")}</h2>
