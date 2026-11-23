@@ -153,6 +153,13 @@ model User {
   readiness          ReadinessAssessment[]    @relation("ReadinessOf")
   roleBackups        RoleBackup[]             @relation("RoleBackupUser")
   roleGapReviews     RoleGapReview[]          @relation("RoleGapOf")
+
+  // Proyectos y notas
+  projectsCreated  Project[]           @relation("ProjectCreator")
+  projectsLed      Project[]           @relation("ProjectLead")
+  projectSeats     ProjectMember[]     @relation("ProjectSeat")
+  projectPosts     ProjectPost[]       @relation("ProjectPostAuthor")
+  projectTeamSeats ProjectTeamMember[] @relation("ProjectTeamSeat")
 }
 
 model Account {
@@ -829,6 +836,11 @@ model Task {
   deal            Deal?        @relation(fields: [dealId], references: [id], onDelete: Cascade)
   explorationId   String?
   exploration     Exploration? @relation(fields: [explorationId], references: [id], onDelete: Cascade)
+  /// Proyectos y notas: an alarm for Mi Día that comes from a project, a note, or a date on a project's timeline
+  projectId       String?
+  project         Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectDateId   String?
+  projectDate     ProjectDate? @relation(fields: [projectDateId], references: [id], onDelete: SetNull)
   createdAt       DateTime     @default(now())
 
   @@index([assigneeId, status])
@@ -5509,4 +5521,147 @@ model ProfileItem {
   createdAt      DateTime @default(now())
 
   @@index([accountId, kind])
+}
+
+/// Proyectos y notas (owner, 2026-11-23). A project is open to the whole company: everyone sees it, its round table
+/// and who started it; anyone joins without approval. A NOTE is a personal reminder, seen only by its author.
+/// kind:  PROJECT | NOTE
+/// stage: OBJETIVOS | PLANIFICACION | EJECUCION | RESULTADOS
+model Project {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  kind         String    @default("PROJECT")
+  title        String
+  /// the short description the list shows (for a note: the note itself)
+  summary      String
+  objective    String?
+  /// labels the list shows and filters by: keys of PROJECT_TAGS (projects.ts) or a short free text
+  tags         String[]  @default([])
+  /// ALTA | MEDIA | BAJA: what to do first; the list is ordered by it
+  priority     String    @default("MEDIA")
+  stage        String    @default("OBJETIVOS")
+  /// desired timeline: when each stage should be finished; all empty = "open, it is just starting"
+  startOn      DateTime?
+  objectivesBy DateTime?
+  planBy       DateTime?
+  executionBy  DateTime?
+  resultsBy    DateTime?
+  result       String?
+  closedAt     DateTime?
+  createdById  String
+  createdBy    User      @relation("ProjectCreator", fields: [createdById], references: [id])
+  /// who the project is for (Gerencia may create it for someone else); otherwise the creator
+  leadId       String
+  lead         User      @relation("ProjectLead", fields: [leadId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  members ProjectMember[]
+  posts   ProjectPost[]
+  dates   ProjectDate[]
+  teams   ProjectTeamLink[]
+  tasks   Task[]
+
+  @@index([kind, closedAt])
+  @@index([leadId])
+}
+
+/// A seat at the round table. how: LEAD | ASSIGNED (by Gerencia) | INVITED (asked by the creator, not yet in) | JOINED
+model ProjectMember {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation("ProjectSeat", fields: [userId], references: [id], onDelete: Cascade)
+  how         String
+  addedByName String?
+  /// last time the person opened the project: what came after is "new" for them
+  seenAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+/// The forum of a project: a post, and replies under it (parentId), to any depth.
+/// system = written by SOLU when the project moves (stage changed, someone joined).
+model ProjectPost {
+  id        String        @id @default(cuid())
+  projectId String
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User          @relation("ProjectPostAuthor", fields: [authorId], references: [id])
+  parentId  String?
+  parent    ProjectPost?  @relation("ProjectPostThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   ProjectPost[] @relation("ProjectPostThread")
+  body      String
+  system    Boolean       @default(false)
+  deletedAt DateTime?
+  createdAt DateTime      @default(now())
+
+  @@index([projectId, createdAt])
+}
+
+/// A dated thing on the project's timeline. kind: MEETING | APPOINTMENT | DELIVERABLE
+/// time = "HH:MM" Bogotá, or null for "that day, no fixed hour".
+model ProjectDate {
+  id            String    @id @default(cuid())
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage         String
+  kind          String
+  title         String
+  day           DateTime
+  time          String?
+  minutes       Int       @default(30)
+  doneAt        DateTime?
+  createdById   String
+  createdByName String
+  createdAt     DateTime  @default(now())
+
+  tasks Task[]
+
+  @@index([projectId, day])
+}
+
+/// Proyectos y notas · a saved team (owner, 2026-11-23): a named folder of people Gerencia creates once and adds to
+/// any project. It is an addition to roles, never a replacement: it grants no authority and scopes no report
+/// (that is `Team`, Módulo 13). Adding it to a project seats its people at the round table.
+model ProjectTeam {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  description   String?
+  active        Boolean  @default(true)
+  createdByName String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  members  ProjectTeamMember[]
+  projects ProjectTeamLink[]
+}
+
+model ProjectTeamMember {
+  id        String      @id @default(cuid())
+  teamId    String
+  team      ProjectTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation("ProjectTeamSeat", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([teamId, userId])
+  @@index([userId])
+}
+
+/// Which saved teams were added to a project (shown on the list and on the project).
+model ProjectTeamLink {
+  id          String      @id @default(cuid())
+  projectId   String
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  teamId      String
+  team        ProjectTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  addedByName String
+  createdAt   DateTime    @default(now())
+
+  @@unique([projectId, teamId])
+  @@index([teamId])
 }

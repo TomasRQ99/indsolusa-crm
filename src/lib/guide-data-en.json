@@ -1511,7 +1511,7 @@
   "why": "One button to start what is created most, without looking for which module holds the form.",
   "steps": [
    "At the top, click [[+ Nuevo]].",
-   "Choose what you want to create: a customer's Need, a customer, a contact, a supplier, a to-do, a visit, a purchase requirement, an internal purchase or a Management decision.",
+   "Choose what you want to create: a customer's Need, a customer, a contact, a supplier, a to-do, a visit, a purchase requirement, an internal purchase, a Management decision, a project or a note.",
    "SOLU takes you to the screen where that form is and, if it was inside a closed section, opens it."
   ],
   "expect": "Only the options for the screens your role can open are shown. The menu closes when you choose."
@@ -1547,5 +1547,65 @@
    "To tell the customer how it is going, click [[Escribir al cliente: avance de su solicitud]]: the email comes already written from what SOLU knows about the Need."
   ],
   "expect": "On marking it located, the “Locate” step turns green and “Source” comes next. With no part number, the supplier list can only be ordered by general history. Photos stay on the Need and can be attached to the customer's emails. If it was not that piece, “It was not that piece” puts it back to not located."
+ },
+ "proy-crear": {
+  "t": "Create a project",
+  "why": "A project is something the team wants to get done. Everyone can see it: what it is for, who started it and who sits at the round table.",
+  "steps": [
+   "In PROJECTS & NOTES → Projects, click [[+ Nuevo proyecto]] (or in the top bar: + New → Project). The “Create a project” form is below the list.",
+   "Type “1 · Project name”, “2 · Short description” (what everyone reads in the list) and “3 · Objective”: what you want to achieve and how we will know it was achieved. These three are required.",
+   "Under “4 · Priority” choose High, Medium or Low priority: the list of projects is ordered by it. Under “5 · Tags (optional)” tick what it is about (Marketing, Logistics, Christmas committee…) or type your own in “Another tag”. Under “6 · Desired timeline (optional)” set by when you want each stage finished; if it is just starting, leave the dates empty.",
+   "Under “People you want to work with (optional)” tick who you want to invite. If you are Management, you also see “Who is the project for?”, “Saved teams (optional)” and “People assigned to the round table”.",
+   "Click [[Crear proyecto]]. The project page opens, in the “Objectives” stage."
+  ],
+  "expect": "The project shows in the list for everyone, with its priority, description, tags, who started it and the round table. The people you invited get a notice on the bell and decide whether to join; people assigned by Management sit at the table right away. If the dates are not in order, SOLU does not save and says so."
+ },
+ "proy-participar": {
+  "t": "Join a project and take part in the forum",
+  "why": "Anyone can join any project, without asking permission. Everyone reads the forum; people at the round table write in it.",
+  "steps": [
+   "In PROJECTS & NOTES → Projects, look at the list: it is ordered by priority, and each project shows its stage, description, tags, who started it and the “Round table”. Filter with “All open”, “The ones I am in”, “Closed” or with a tag.",
+   "Click [[Unirme]] on the project you are interested in. If someone invited you, it is at the top under “You were invited”, with “Join” and “Not now”.",
+   "Once in the project, under “Forum”, type in the box and click [[Publicar]] to start a conversation.",
+   "To answer someone, click “Reply” under their comment, type and click “Post reply”. The reply sits below it, as a thread, and can be replied to in turn.",
+   "To bring someone else in, under “Round table” open “Invite people”, tick them and click “Send invitation”. Management sees “Assign people or teams”."
+  ],
+  "expect": "Joining needs no approval and is noted in the forum. In the list, “new comments” tells you people wrote since your last visit. If you open a project without being at the table, you can read everything and come in with “Join the round table”. With “Leave the round table” you step out whenever you want."
+ },
+ "proy-linea-fechas": {
+  "t": "A project's timeline, dates and alarms",
+  "why": "Every project moves through four stages: Objectives, Planning, Execution and Results. Its meetings, appointments and dated tasks can go to your My Day and your Outlook.",
+  "steps": [
+   "Open a project from the list. At the top, “Timeline” shows the current stage in blue and by when each one is due (“Open, no date” if none was set).",
+   "The lead, whoever started it, or Management moves on with the blue “Move to…” button (or goes back with “Back to…”). The change is noted in the forum.",
+   "Under “Project dates”, open “+ New date”: choose “What is it?” (Meeting, Appointment or Task to do), type the “Title”, the “Day” and, if it has one, the “Time”. Click [[Agregar fecha]].",
+   "On each date, “Put in my My Day” keeps it as your own alarm: you see it in MY DAY → To-dos from now, and in “Your agenda” in MY DAY → Today when the day comes. “Add to Outlook” downloads a calendar file: open it and Outlook saves the meeting.",
+   "For an alarm of your own about the project, under “Remind me in My Day” choose the “Day”, type what you want to remember and click [[Poner alarma]].",
+   "In the “Results” stage, the lead writes “What was achieved?” and clicks “Save and close the project”."
+  ],
+  "expect": "Each person decides which dates go into their My Day: nobody gets them by force. If your Outlook is connected in My profile, the alarm also goes to your calendar. A closed project moves to “Closed” and the lead can reopen it."
+ },
+ "proy-notas": {
+  "t": "Personal notes and reminders",
+  "why": "For what you just want to remember. Nobody else sees your notes.",
+  "steps": [
+   "In PROJECTS & NOTES → My notes (or in the top bar: + New → Note), type “1 · What do you want to remember?” and, if needed, the “2 · Detail (optional)”.",
+   "For SOLU to remind you, under “3 · Alarm in My Day (optional)” set the “Day” and the “Time”. Click [[Guardar nota]].",
+   "Under “PENDING NOTES”, tick the note with ✓ when it is done, or open “Set alarm” to give it another date.",
+   "If the note grew and you need more people, click “Turn into a project”: it moves to the list of projects, in everyone's view, and SOLU asks you to write its objective."
+  ],
+  "expect": "The alarm shows in MY DAY → To-dos from now, and in “Your agenda” in MY DAY → Today when the day comes (with no time, it is set for 08:00). Marking the note as done closes its alarms. Not even Management sees another person's notes."
+ },
+ "proy-equipos": {
+  "t": "Saved teams for projects",
+  "why": "A named group of people that Management creates once and adds to any project. It adds to roles, it does not replace them: it gives no permissions and changes nobody's role.",
+  "steps": [
+   "In PROJECTS & NOTES → Saved teams, click [[+ Nuevo equipo]] (only Management sees it).",
+   "Type “1 · Team name”, if you want “2 · What it is for (optional)”, tick the “3 · People in the team” and click [[Guardar el equipo]].",
+   "When creating a project, under “Saved teams (optional)” tick the team: all its people are assigned to the round table.",
+   "In a project that already exists, under “Round table” open “Assign people or teams”, tick the team and click “Assign to the round table”.",
+   "To change who is in a team, open “Change name or people” on its card. “Archive” stops offering it for new projects."
+  ],
+  "expect": "The team stays saved for the next projects, and its name shows in the list of projects and at the round table. Everyone can see the teams; only Management creates, changes and adds them. Changing a team does not take anyone out of, or put anyone into, the projects that already had it."
  }
 }

@@ -41,6 +41,11 @@
    "where": "GERENCIA"
   },
   {
+   "id": "proyectos",
+   "name": "Proyectos y notas",
+   "where": "PROYECTOS Y NOTAS"
+  },
+  {
    "id": "global",
    "name": "En todas partes",
    "where": "BARRA SUPERIOR"
@@ -2007,7 +2012,7 @@
    "why": "Un solo botón para empezar lo que más se crea, sin buscar en qué módulo está el formulario.",
    "steps": [
     "Arriba, haz clic en [[+ Nuevo]].",
-    "Elige qué quieres crear: una Necesidad de un cliente, un cliente, un contacto, un proveedor, un pendiente, una visita, un requerimiento de compra, una compra interna o una decisión de Gerencia.",
+    "Elige qué quieres crear: una Necesidad de un cliente, un cliente, un contacto, un proveedor, un pendiente, una visita, un requerimiento de compra, una compra interna, una decisión de Gerencia, un proyecto o una nota.",
     "SOLU te lleva a la pantalla donde está ese formulario y, si estaba dentro de una sección cerrada, la abre."
    ],
    "expect": "Solo aparecen las opciones de las pantallas que tu rol puede abrir. El menú se cierra al elegir."
@@ -2036,6 +2041,81 @@
     "Pasa el cursor por encima para ver la fuente y desde qué fecha rige."
    ],
    "expect": "Es la TRM oficial de la Superfinanciera. Si la fuente no responde, el recuadro no aparece. En un teléfono no se muestra."
+  },
+  {
+   "id": "proy-crear",
+   "m": "proyectos",
+   "t": "Crear un proyecto",
+   "path": "PROYECTOS Y NOTAS → Proyectos",
+   "why": "Un proyecto es algo que el equipo quiere sacar adelante. Queda a la vista de todos: para qué es, quién lo inició y quién está en la mesa redonda.",
+   "steps": [
+    "En PROYECTOS Y NOTAS → Proyectos, haz clic en [[+ Nuevo proyecto]] (o en la barra superior: + Nuevo → Proyecto). El formulario «Crear un proyecto» está debajo de la lista.",
+    "Escribe «1 · Nombre del proyecto», «2 · Descripción corta» (es lo que todos leen en la lista) y «3 · Objetivo»: qué quieres lograr y cómo se sabrá que se logró. Son los tres datos obligatorios.",
+    "En «4 · Prioridad» elige Prioridad alta, media o baja: la lista de proyectos se ordena por ella. En «5 · Etiquetas (opcional)» marca de qué trata (Mercadeo, Logística, Comité de Navidad…) o escribe la tuya en «Otra etiqueta». En «6 · Línea de tiempo deseada (opcional)» pon para cuándo quieres terminar cada etapa; si apenas está empezando, deja las fechas vacías.",
+    "En «Personas con las que quieres trabajar (opcional)» marca a quién quieres invitar. Si eres Gerencia, verás además «¿Para quién es el proyecto?», «Equipos guardados (opcional)» y «Personas asignadas a la mesa redonda».",
+    "Haz clic en [[Crear proyecto]]. Se abre la página del proyecto, en la etapa «Objetivos»."
+   ],
+   "expect": "El proyecto aparece en la lista para todos, con su prioridad, su descripción, sus etiquetas, quién lo inició y la mesa redonda. A quien invitaste le llega un aviso en la campana y decide si entra; a quien asignó Gerencia queda en la mesa de una vez. Si las fechas no están en orden, SOLU no guarda y lo dice."
+  },
+  {
+   "id": "proy-participar",
+   "m": "proyectos",
+   "t": "Unirse a un proyecto y participar en el foro",
+   "path": "PROYECTOS Y NOTAS → Proyectos",
+   "why": "Cualquiera puede entrar a cualquier proyecto, sin pedir permiso. Todos leen el foro; escribe quien está en la mesa redonda.",
+   "steps": [
+    "En PROYECTOS Y NOTAS → Proyectos, mira la lista: va ordenada por prioridad, y cada proyecto muestra su etapa, su descripción, sus etiquetas, quién lo inició y la «Mesa redonda». Filtra con «Todos los abiertos», «En los que estoy», «Cerrados» o con una etiqueta.",
+    "Haz clic en [[Unirme]] en el proyecto que te interesa. Si alguien te invitó, está arriba en «Te invitaron», con «Unirme» y «Ahora no».",
+    "Ya en el proyecto, en «Foro», escribe en la casilla y haz clic en [[Publicar]] para abrir una conversación.",
+    "Para contestarle a alguien, haz clic en «Responder» debajo de su comentario, escribe y haz clic en «Publicar respuesta». La respuesta queda debajo, como un hilo, y se puede responder a su vez.",
+    "Para traer a alguien más, en «Mesa redonda» abre «Invitar personas», márcalas y haz clic en «Enviar invitación». Gerencia ve «Asignar personas o equipos»."
+   ],
+   "expect": "Unirse no necesita aprobación y queda anotado en el foro. En la lista, «comentarios nuevos» te dice que escribieron desde tu última visita. Si abres un proyecto sin estar en la mesa, puedes leerlo todo y entrar con «Unirme a la mesa redonda». Con «Salir de la mesa redonda» te retiras cuando quieras."
+  },
+  {
+   "id": "proy-linea-fechas",
+   "m": "proyectos",
+   "t": "Línea de tiempo, fechas y alarmas de un proyecto",
+   "path": "PROYECTOS Y NOTAS → Proyectos",
+   "why": "Todo proyecto avanza por cuatro etapas: Objetivos, Planificación, Ejecución y Resultados. Sus reuniones, citas y tareas con fecha se pueden llevar a tu Mi Día y a tu Outlook.",
+   "steps": [
+    "Abre un proyecto de la lista. Arriba, «Línea de tiempo» muestra en azul la etapa actual y para cuándo es cada una («Abierto, sin fecha» si no se puso).",
+    "El responsable, quien lo inició o Gerencia avanza con el botón azul «Pasar a…» (o regresa con «Volver a…»). El cambio queda anotado en el foro.",
+    "En «Fechas del proyecto», abre «+ Nueva fecha»: elige «¿Qué es?» (Reunión, Cita o Tarea a ejecutar), escribe el «Título», el «Día» y, si la tiene, la «Hora». Haz clic en [[Agregar fecha]].",
+    "En cada fecha, «Poner en mi Mi Día» la deja como alarma tuya: la ves en MI DÍA → Pendientes desde ya, y en «Tu agenda» de MI DÍA → Hoy cuando llegue el día. «Agregar a Outlook» baja un archivo de calendario: ábrelo y Outlook guarda la reunión.",
+    "Para una alarma solo tuya sobre el proyecto, en «Recordármelo en Mi Día» elige el «Día», escribe qué quieres recordar y haz clic en [[Poner alarma]].",
+    "En la etapa «Resultados», el responsable escribe «¿Qué se logró?» y hace clic en «Guardar y cerrar el proyecto»."
+   ],
+   "expect": "Cada persona decide qué fechas pone en su Mi Día: a nadie le llegan a la fuerza. Si tu Outlook está conectado en Mi perfil, la alarma queda también en tu calendario. Un proyecto cerrado pasa a «Cerrados» y el responsable puede reabrirlo."
+  },
+  {
+   "id": "proy-equipos",
+   "m": "proyectos",
+   "t": "Equipos guardados para los proyectos",
+   "path": "PROYECTOS Y NOTAS → Equipos guardados",
+   "why": "Un grupo de personas con nombre que Gerencia crea una vez y agrega a cualquier proyecto. Se suma a los roles, no los reemplaza: no da permisos ni cambia el rol de nadie.",
+   "steps": [
+    "En PROYECTOS Y NOTAS → Equipos guardados, haz clic en [[+ Nuevo equipo]] (solo Gerencia lo ve).",
+    "Escribe «1 · Nombre del equipo», si quieres «2 · Para qué es (opcional)», marca las «3 · Personas del equipo» y haz clic en [[Guardar el equipo]].",
+    "Al crear un proyecto, en «Equipos guardados (opcional)» marca el equipo: todas sus personas quedan asignadas a la mesa redonda.",
+    "En un proyecto que ya existe, en «Mesa redonda» abre «Asignar personas o equipos», marca el equipo y haz clic en «Asignar a la mesa redonda».",
+    "Para cambiar quién está en un equipo, abre «Cambiar nombre o personas» en su tarjeta. «Archivar» deja de ofrecerlo para proyectos nuevos."
+   ],
+   "expect": "El equipo queda guardado para los proyectos siguientes, y su nombre se ve en la lista de proyectos y en la mesa redonda. Todos pueden ver los equipos; solo Gerencia los crea, los cambia y los agrega. Cambiar un equipo no saca ni mete a nadie en los proyectos que ya lo tenían."
+  },
+  {
+   "id": "proy-notas",
+   "m": "proyectos",
+   "t": "Notas y recordatorios personales",
+   "path": "PROYECTOS Y NOTAS → Mis notas",
+   "why": "Para lo que solo quieres recordar. Nadie más ve tus notas.",
+   "steps": [
+    "En PROYECTOS Y NOTAS → Mis notas (o en la barra superior: + Nuevo → Nota), escribe «1 · ¿Qué quieres recordar?» y, si hace falta, el «2 · Detalle (opcional)».",
+    "Para que SOLU te avise, en «3 · Alarma en Mi Día (opcional)» pon el «Día» y la «Hora». Haz clic en [[Guardar nota]].",
+    "En «NOTAS PENDIENTES», marca la nota con ✓ cuando esté hecha, o abre «Poner alarma» para darle otra fecha.",
+    "Si la nota creció y necesitas a más personas, haz clic en «Convertir en proyecto»: pasa a la lista de proyectos, a la vista de todos, y SOLU te pide escribir su objetivo."
+   ],
+   "expect": "La alarma aparece en MI DÍA → Pendientes desde ya, y en «Tu agenda» de MI DÍA → Hoy cuando llegue el día (sin hora, queda a las 08:00). Al marcar la nota como hecha se cierran sus alarmas. Ni Gerencia ve las notas de otra persona."
   }
  ]
 }

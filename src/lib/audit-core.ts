@@ -181,6 +181,15 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   PersonReading: ["contactId", "aspect", "observedOn", "authorName", "supersededAt"],
   ProfileItem: ["accountId", "kind", "title", "url", "fileName", "mime", "size", "uploadedByName"],
   RoleGapReview: ["userId", "roleKey", "version", "dimension", "result", "reviewedByName", "reviewedOn", "supersededAt"],
+  // Proyectos y notas. What moves a project and who sits at its table; never the text of a note (it is personal)
+  // nor of a forum post.
+  Project: ["kind", "priority", "stage", "leadId", "closedAt", "startOn", "objectivesBy", "planBy", "executionBy", "resultsBy"],
+  ProjectMember: ["projectId", "userId", "how", "addedByName"],
+  ProjectPost: ["projectId", "authorId", "deletedAt"],
+  ProjectTeam: ["name", "active", "createdByName"],
+  ProjectTeamMember: ["teamId", "userId"],
+  ProjectTeamLink: ["projectId", "teamId", "addedByName"],
+  ProjectDate: ["projectId", "stage", "kind", "day", "time", "doneAt", "createdByName"],
 };
 const MASK = new Set(["bankAccount", "docAccount"]);
 const SKIP = new Set(["id", "createdAt", "updatedAt"]);

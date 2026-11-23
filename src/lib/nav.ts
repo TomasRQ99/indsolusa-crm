@@ -131,7 +131,15 @@ export const MODULES: NavModule[] = [
       { href: "/administracion/historial", es: "Historial de cambios", en: "Change history", group: "ajustes", managerOnly: true },
     ],
   },
-  { key: "proyectos", es: "PROYECTOS", en: "PROJECTS", match: ["/proyectos"], tabs: [{ href: "/proyectos", es: "Proyectos", en: "Projects" }] },
+  {
+    key: "proyectos", es: "PROYECTOS Y NOTAS", en: "PROJECTS & NOTES", match: ["/proyectos"],
+    // Owner, 2026-11-23: projects are open to everyone (round table, forum, timeline); notes are personal.
+    tabs: [
+      { href: "/proyectos", es: "Proyectos", en: "Projects" },
+      { href: "/proyectos/equipos", es: "Equipos guardados", en: "Saved teams" },
+      { href: "/proyectos/notas", es: "Mis notas", en: "My notes" },
+    ],
+  },
   {
     key: "equipo", es: "EQUIPO", en: "TEAM", match: ["/equipo", "/admin", "/profile"],
     // Módulo 16: the person first (my role, my development), then the people they accompany, then the organisation.

@@ -8,6 +8,7 @@ import { today } from "./domain";
 export const calendarTaskInclude = {
   assignee: { select: { name: true } },
   account: { select: { id: true, name: true } },
+  project: { select: { id: true, code: true, title: true, kind: true } },
   deal: {
     select: {
       id: true, code: true, title: true, nextMove: true, nextMoveDate: true, offerValidUntil: true,
@@ -40,6 +41,15 @@ const day = (d: Date, t: T) => new Intl.DateTimeFormat(t("es-CO", "en-US"), { da
 
 export function calendarEvent(tk: CalendarTask, t: T, base: string): CalendarEvent {
   const now = today();
+  // An alarm that comes from Proyectos y notas: the title is already complete, and the way back is the project or the notes.
+  if (tk.project) {
+    const note = tk.project.kind === "NOTE";
+    const kind = note ? t("Nota", "Note") : t("Proyecto", "Project");
+    const lines: Line[] = [{ label: t("Propósito", "Purpose"), value: tk.title }];
+    if (!note) lines.push({ label: t("Proyecto", "Project"), value: `${tk.project.code} · ${tk.project.title}`, href: `${base}/proyectos/${tk.project.id}` });
+    lines.push({ label: t("Responsable", "Owner"), value: tk.assignee.name });
+    return { title: `${kind} – ${tk.title}`.slice(0, 120), kind, lines, flags: tk.dueDate && tk.dueDate < now ? [t(`Vencida desde el ${day(tk.dueDate, t)}`, `Overdue since ${day(tk.dueDate, t)}`)] : [], link: note ? `${base}/proyectos/notas` : `${base}/proyectos/${tk.project.id}` };
+  }
   const k = KINDS.find((x) => x.re.test(tk.title));
   const kind = k ? t(k.es, k.en) : t("Tarea", "Task");
   const d = tk.deal;

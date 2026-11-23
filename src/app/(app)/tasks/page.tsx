@@ -16,13 +16,14 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   const showAll = view === "all" && canManageAll(user);
   const now = today();
 
-  const where: Prisma.TaskWhereInput = { ...(showAll ? {} : { assigneeId: user.id }), ...(done ? {} : { status: "OPEN" }) };
+  // A note is personal (Proyectos y notas): its alarm never shows in someone else's team view.
+  const where: Prisma.TaskWhereInput = { ...(showAll ? { OR: [{ projectId: null }, { project: { kind: "PROJECT" } }, { assigneeId: user.id }] } : { assigneeId: user.id }), ...(done ? {} : { status: "OPEN" }) };
   const [tasks, users] = await Promise.all([
     db.task.findMany({
       where,
       orderBy: [{ status: "asc" }, { dueDate: { sort: "asc", nulls: "last" } }],
       take: 300,
-      include: { assignee: { select: { name: true } }, account: { select: { id: true, name: true } }, deal: { select: { id: true, code: true, title: true } } },
+      include: { assignee: { select: { name: true } }, account: { select: { id: true, name: true } }, deal: { select: { id: true, code: true, title: true } }, project: { select: { id: true, code: true, kind: true } } },
     }),
     db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
@@ -63,7 +64,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                 <tr key={tk.id}>
                   <td>{editable && <form action={toggleTask.bind(null, tk.id)}><button className="secondary sm" type="submit" aria-label={t("Marcar hecho", "Toggle done")}>{tk.status === "DONE" ? "↺" : "✓"}</button></form>}</td>
                   <td className={tk.status === "DONE" ? "done" : undefined}>{tk.title}{tk.plannedFor && <span className="src">{t("En Mi Plan", "In My Plan")} · {i.dateShort(tk.plannedFor)}</span>}</td>
-                  <td>{tk.deal && <Link href={`/deals/${tk.deal.id}`} className="mono small">{tk.deal.code}</Link>}{tk.account && <span className="src"><Link href={`/accounts/${tk.account.id}`}>{tk.account.name}</Link></span>}</td>
+                  <td>{tk.deal && <Link href={`/deals/${tk.deal.id}`} className="mono small">{tk.deal.code}</Link>}{tk.project && tk.assigneeId === user.id && <Link href={tk.project.kind === "NOTE" ? "/proyectos/notas" : `/proyectos/${tk.project.id}`} className="mono small">{tk.project.code}</Link>}{tk.account && <span className="src"><Link href={`/accounts/${tk.account.id}`}>{tk.account.name}</Link></span>}</td>
                   <td>{tk.assignee.name}</td>
                   <td>{i.dateShort(tk.dueDate)} {overdue && <span className="sig attn">{t("se pasó", "past due")}</span>}</td>
                   <td>

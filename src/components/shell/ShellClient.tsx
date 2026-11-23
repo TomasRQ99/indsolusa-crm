@@ -62,6 +62,8 @@ const NEW_ITEMS = [
   { href: "/compras/requerimientos#nuevo", es: "Requerimiento de compra", en: "Purchase requirement" },
   { href: "/compras/internas#nueva", es: "Compra interna", en: "Internal purchase" },
   { href: "/gerencia/decisiones#pedir", es: "Decisión de Gerencia", en: "Management decision" },
+  { href: "/proyectos#nuevo", es: "Proyecto", en: "Project" },
+  { href: "/proyectos/notas#nueva", es: "Nota", en: "Note" },
 ];
 
 export function ShellClient({ lang, guideOn, user, modules: baseModules, children }: ShellProps) {
