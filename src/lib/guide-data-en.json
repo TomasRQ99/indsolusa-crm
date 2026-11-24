@@ -316,9 +316,10 @@
    "Under “3 · PENDING WITH…” you see their open requests, quotes without a decision, purchase orders not delivered, deliveries in progress, receivables to collect and open projects. Tick the box of each item that goes in the email (up to 12).",
    "If you want, write in the box on the right of each item what you need from the customer (for example: we still need the logo). It goes in the email, next to that point.",
    "Click [[Generar correo de seguimiento]]. “Follow-up email” opens, already written with every item you ticked. Nothing is sent yet.",
-   "Check “To”, pick the subject, change the text if needed and click [[Enviar correo]]."
+   "Check “To”, pick the subject and change the text if needed. Under “IF THEY DON'T REPLY” leave the box “Remind me in MY DAY → To-dos on” ticked with its date (it comes set three working days ahead), or untick it.",
+   "Click [[Enviar correo]]."
   ],
-  "expect": "The email goes out from the company account and you return to the list with the notice “Follow-up sent…”. Each item that was in the email shows “Last follow-up” with today's date, and the email is logged on the customer. Under “All customers” there are no tick boxes: to send an email you go into a customer. A project appears here when it is linked to a customer; if it does not come from a Need with a person, it reads “no person assigned” and shows for every person of that company. If you tick nothing, SOLU says: “Tick at least one pending item to generate the email”."
+  "expect": "The email goes out from the company account and you return to the list with the notice “Follow-up sent…”. If you left the reminder, that day you have a to-do in MY DAY → To-dos to check whether they replied. Each item that was in the email shows “Last follow-up” with today's date, and the email is logged on the customer. Under “All customers” there are no tick boxes: to send an email you go into a customer. A project appears here when it is linked to a customer; if it does not come from a Need with a person, it reads “no person assigned” and shows for every person of that company. If you tick nothing, SOLU says: “Tick at least one pending item to generate the email”."
  },
  "seguimientos-criterio": {
   "t": "Follow-ups: review by urgency, days overdue or Eságara value",
@@ -327,7 +328,7 @@
    "Open [[COMERCIAL]] and click [[Seguimientos]]. It opens on “All customers”; to review just one, click its name under “1 · CUSTOMER AND PERSON”.",
    "Under “2 · CRITERION”, on the “Show” row, choose what to review: “Everything”, “Requests”, “Quotes”, “Purchase orders”, “Deliveries”, “Receivables” or “Projects”.",
    "On the “Order” row, choose “Most overdue first”, “By urgency”, “Highest Eságara first” or “Lowest Eságara first”.",
-   "To mark the urgency of an item, use the list that reads “Urgency: not marked” on its row and choose high, medium or low. It saves by itself.",
+   "To mark the urgency of an item, use the list that reads “Urgency: not marked” on its row and choose high, medium or low. It saves by itself. The same list is on the Need's page, at the top, next to the customer's name.",
    "On the “Urgency” row, choose “High”, “Medium”, “Low” or “Not marked” to see only those.",
    "Under “All customers”, click the customer's name, above each row, to go into that customer with the same criterion and prepare their email."
   ],

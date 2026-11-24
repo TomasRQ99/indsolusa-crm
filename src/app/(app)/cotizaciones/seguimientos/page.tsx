@@ -8,7 +8,7 @@ import UrgencyPick from "./UrgencyPick";
 // Comercial → Seguimientos: everything still open with customers (requests, quotes, purchase orders, deliveries,
 // receivables, projects), for one customer or for all of them, filtered and ordered by the criterion the person
 // picks (overdue first, urgency, Eságara). Inside a customer, several are ticked and SOLU writes ONE email for all.
-export default async function FollowUpsPage({ searchParams }: { searchParams: Promise<{ a?: string; c?: string; q?: string; t?: string; u?: string; o?: string; ok?: string; err?: string }> }) {
+export default async function FollowUpsPage({ searchParams }: { searchParams: Promise<{ a?: string; c?: string; q?: string; t?: string; u?: string; o?: string; ok?: string; err?: string; r?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
@@ -87,7 +87,7 @@ export default async function FollowUpsPage({ searchParams }: { searchParams: Pr
         <div className="grow" />
         <Link className="btn secondary" href="/cotizaciones">{t("Cotizaciones presentadas", "Quotes presented")}</Link>
       </div>
-      {sp.ok === "correo" && <p className="note okn">{t("Seguimiento enviado desde la cuenta de la empresa. Quedó registrado en el cliente y en cada pendiente («Último seguimiento»).", "Follow-up sent from the company account. It is logged on the customer and on each item (“Last follow-up”).")}</p>}
+      {sp.ok === "correo" && <p className="note okn">{t("Seguimiento enviado desde la cuenta de la empresa. Quedó registrado en el cliente y en cada pendiente («Último seguimiento»).", "Follow-up sent from the company account. It is logged on the customer and on each item (“Last follow-up”).")}{sp.r && /^\d{4}-\d{2}-\d{2}$/.test(sp.r) ? ` ${t(`Te queda un pendiente en MI DÍA → Pendientes para el ${i.day(new Date(`${sp.r}T00:00:00Z`))}, para revisar si respondieron.`, `A to-do is in MY DAY → To-dos for ${i.day(new Date(`${sp.r}T00:00:00Z`))}, to check whether they replied.`)}` : ""}</p>}
       {sp.err && errs[sp.err] && <p className="note attn">{errs[sp.err]}</p>}
 
       {all.length === 0 ? (

@@ -11,6 +11,7 @@ import { textToHtml, type MailLang } from "@/lib/email-templates";
 import { quotePdf } from "@/lib/quote-pdf";
 import { cleanKeys, composeFollowUps, isUrgency } from "@/lib/followups";
 import { canEdit } from "@/lib/permissions";
+import { today } from "@/lib/domain";
 
 const emailOk = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
 
@@ -93,6 +94,16 @@ export async function sendFollowUps(fd: FormData) {
       userId: user.id, accountId: c.account.id, contactId: c.contact?.id ?? null, dealId: oneDeal, phase: c.items.some((x) => x.kind === "Q") ? "quote" : c.items.some((x) => x.kind === "N") ? "need" : c.items.some((x) => x.kind === "O" || x.kind === "E") ? "execute" : c.items.some((x) => x.kind === "I") ? "finance" : null, source: "Seguimientos", uncertain: unsure, outcome: "PENDING_REPLY",
     },
   });
+  // "Si no responden": a to-do for the sender on the chosen day (never before today, at most a year ahead).
+  const on = String(fd.get("remindOn") ?? "");
+  let reminded = false;
+  if (fd.get("remind") === "1" && /^\d{4}-\d{2}-\d{2}$/.test(on)) {
+    const due = new Date(`${on}T00:00:00Z`);
+    if (!isNaN(due.getTime()) && due >= today() && due.getTime() - Date.now() < 366 * 864e5) {
+      await db.task.create({ data: { title: `Revisar si ${c.toName} respondió el seguimiento de ${c.account.name} (${c.items.length === 1 ? "1 pendiente" : `${c.items.length} pendientes`})`.slice(0, 200), dueDate: due, assigneeId: user.id, accountId: c.account.id, contactId: c.contact?.id ?? null, dealId: oneDeal } });
+      reminded = true;
+    }
+  }
   refreshApp();
-  redirect(unsure ? "/correo/respuestas?ok=incierto" : done);
+  redirect(unsure ? "/correo/respuestas?ok=incierto" : `${done}${reminded ? `&r=${on}` : ""}`);
 }

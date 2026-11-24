@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { mailConfig } from "@/lib/mail";
+import { dayInput, today } from "@/lib/domain";
+import { addWorkingDays } from "@/lib/holidays";
 import { cleanKeys, composeFollowUps } from "@/lib/followups";
 import MailBodyHints from "@/components/MailBodyHints";
 import { sendFollowUps } from "../actions";
@@ -117,6 +119,15 @@ export default async function FollowUpMailPage({ searchParams }: { searchParams:
             <span className="src">{t("Sirve cuando el cliente pudo haber perdido el correo original.", "Useful when the customer may have lost the original email.")}</span>
           </section>
         )}
+
+        <section className="jblock loc-sec" id="recordatorio">
+          <div className="jbh"><b>{t("SI NO RESPONDEN", "IF THEY DON'T REPLY")}</b></div>
+          <div className="fu-remind">
+            <label><input type="checkbox" name="remind" value="1" defaultChecked /> <span>{t("Recordármelo en MI DÍA → Pendientes el", "Remind me in MY DAY → To-dos on")}</span></label>
+            <input type="date" name="remindOn" defaultValue={dayInput(addWorkingDays(today(), 3))} min={dayInput(today())} aria-label={t("Día del recordatorio", "Reminder day")} />
+          </div>
+          <span className="src">{t("SOLU te deja un pendiente ese día para revisar si respondieron. Viene a tres días hábiles; cambia la fecha o desmarca la casilla.", "SOLU leaves you a to-do that day to check whether they replied. It comes set three working days ahead; change the date or untick the box.")}</span>
+        </section>
 
         <div className="loc-rowacts">
           <button type="submit">{t("Enviar correo", "Send email")}</button>

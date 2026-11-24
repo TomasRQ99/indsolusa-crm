@@ -49,6 +49,7 @@ import { COST_LINES, costDetail, esagaraPctOf } from "@/lib/cost-lines";
 import { quoteAdjustPending } from "@/lib/quote-reminder";
 import type { NeedContext } from "@/lib/need-handoff";
 import MarketContext from "@/components/MarketContext";
+import UrgencyPick from "../../cotizaciones/seguimientos/UrgencyPick";
 
 const TAB_ORDER: TabKey[] = ["resumen", "need", "locate", "source", "quote", "execute", "finance", "file", "result"];
 
@@ -1315,6 +1316,9 @@ export default async function JourneyPage({
           <h1>{deal.account.name}</h1>
           <span className={`sig ${toneCls(J.signal.tone)}`}>{J.signal.label}</span>
           <span className="sig-why">{J.signal.why}</span>
+          {canEdit(user, deal.ownerId)
+            ? <UrgencyPick dealId={deal.id} value={deal.urgency} es={i.es} about={deal.code ?? deal.title} />
+            : deal.urgency && <span className="sig wait">{t(`Urgencia ${({ ALTA: "alta", MEDIA: "media", BAJA: "baja" } as Record<string, string>)[deal.urgency] ?? ""}`, `${({ ALTA: "High", MEDIA: "Medium", BAJA: "Low" } as Record<string, string>)[deal.urgency] ?? ""} urgency`)}</span>}
         </div>
         <p className="jh-sub">{deal.title}{deal.contact && <> · {deal.contact.firstName} {deal.contact.lastName}</>} · {deal.owner.name}</p>
         <div className="dr">

@@ -559,9 +559,10 @@
     "En «3 · PENDIENTES DE…» aparecen sus solicitudes abiertas, cotizaciones sin decisión, órdenes de compra sin entregar, entregas en curso, cartera por cobrar y proyectos abiertos. Marca la casilla de cada pendiente que va en el correo (hasta 12).",
     "Si quieres, escribe en la casilla de la derecha de cada pendiente qué necesitas del cliente (por ejemplo: nos falta recibir el logo). Sale en el correo, junto a ese punto.",
     "Haz clic en [[Generar correo de seguimiento]]. Se abre «Correo de seguimiento», ya escrito con todos los pendientes que marcaste. Todavía no se envía nada.",
-    "Revisa «Para», elige el asunto, cambia el texto si hace falta y haz clic en [[Enviar correo]]."
+    "Revisa «Para», elige el asunto y cambia el texto si hace falta. En «SI NO RESPONDEN» deja marcada la casilla «Recordármelo en MI DÍA → Pendientes el» con su fecha (viene a tres días hábiles), o desmárcala.",
+    "Haz clic en [[Enviar correo]]."
    ],
-   "expect": "El correo sale desde la cuenta de la empresa y vuelves a la lista con el aviso «Seguimiento enviado…». Cada pendiente que iba en el correo muestra «Último seguimiento» con la fecha de hoy, y el correo queda registrado en el cliente. En «Todos los clientes» no hay casillas: para enviar un correo hay que entrar a un cliente. Un proyecto aparece aquí cuando está enlazado a un cliente; si no viene de una Necesidad con persona, dice «sin persona asignada» y se muestra para todas las personas de esa empresa. Si no marcas nada, SOLU avisa: «Marca al menos un pendiente para generar el correo»."
+   "expect": "El correo sale desde la cuenta de la empresa y vuelves a la lista con el aviso «Seguimiento enviado…». Si dejaste el recordatorio, ese día tienes un pendiente en MI DÍA → Pendientes para revisar si respondieron. Cada pendiente que iba en el correo muestra «Último seguimiento» con la fecha de hoy, y el correo queda registrado en el cliente. En «Todos los clientes» no hay casillas: para enviar un correo hay que entrar a un cliente. Un proyecto aparece aquí cuando está enlazado a un cliente; si no viene de una Necesidad con persona, dice «sin persona asignada» y se muestra para todas las personas de esa empresa. Si no marcas nada, SOLU avisa: «Marca al menos un pendiente para generar el correo»."
   },
   {
    "id": "seguimientos-criterio",
@@ -573,7 +574,7 @@
     "Abre [[COMERCIAL]] y haz clic en [[Seguimientos]]. Se abre en «Todos los clientes»; para revisar uno solo, haz clic en su nombre en «1 · CLIENTE Y PERSONA».",
     "En «2 · CRITERIO», en la fila «Ver», elige qué revisar: «Todo», «Solicitudes», «Cotizaciones», «Órdenes de compra», «Entregas», «Cartera» o «Proyectos».",
     "En la fila «Orden», elige «Más vencidas primero», «Por urgencia», «Mayor Eságara primero» o «Menor Eságara primero».",
-    "Para marcar la urgencia de un pendiente, usa la lista que dice «Urgencia: sin marcar» en su fila y elige alta, media o baja. Se guarda sola.",
+    "Para marcar la urgencia de un pendiente, usa la lista que dice «Urgencia: sin marcar» en su fila y elige alta, media o baja. Se guarda sola. La misma lista está en la página de la Necesidad, arriba, junto al nombre del cliente.",
     "En la fila «Urgencia», elige «Alta», «Media», «Baja» o «Sin marcar» para ver solo esos.",
     "En «Todos los clientes», haz clic en el nombre del cliente, arriba de cada fila, para entrar a ese cliente con el mismo criterio y preparar su correo."
    ],
