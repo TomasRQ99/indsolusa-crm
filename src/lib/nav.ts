@@ -67,6 +67,7 @@ export const MODULES: NavModule[] = [
     tabs: [
       { href: "/deals", es: "Necesidades", en: "Needs", group: "negocios" },
       { href: "/cotizaciones", es: "Cotizaciones presentadas", en: "Quotes presented", group: "negocios" },
+      { href: "/cotizaciones/seguimientos", es: "Seguimientos", en: "Follow-ups", group: "negocios" },
       { href: "/comercial/foco", es: "Negocios de alto valor", en: "High-value deals", group: "negocios" },
       { href: "/visitas", es: "Visitas", en: "Visits", group: "negocios" },
       { href: "/comercial/comunicaciones", es: "Último contacto por cliente", en: "Last contact per customer", group: "negocios" },

@@ -14,7 +14,7 @@ export default async function RepliesPage({ searchParams }: { searchParams: Prom
   const r = await replyReport(90);
   const st = lastReplySync();
   const when = st ? `${i.dateShort(st.at)} ${new Intl.DateTimeFormat(i.es ? "es-CO" : "en-US", { hour: "2-digit", minute: "2-digit", timeZone: "America/Bogota" }).format(st.at)}` : "";
-  const tplName = (k: string) => (k in TEMPLATES ? t(TEMPLATES[k as TemplateKey].es, TEMPLATES[k as TemplateKey].en) : k);
+  const tplName = (k: string) => (k === "FOLLOWUPS" ? t("Seguimiento de varios pendientes", "Follow-up of several items") : k in TEMPLATES ? t(TEMPLATES[k as TemplateKey].es, TEMPLATES[k as TemplateKey].en) : k);
   const hrs = (h: number | null) => (h == null ? "—" : h < 24 ? t(`${Math.max(1, Math.round(h))} h`, `${Math.max(1, Math.round(h))} h`) : t(`${i.n2(h / 24).replace(/0$/, "")} días`, `${i.n2(h / 24).replace(/0$/, "")} days`));
   // No fake precision: a "typical" time needs at least 3 replies; with 1–2 we show the facts.
   const typ = (h: number | null, n: number) => (h == null ? "—" : n >= 3 ? hrs(h) : n === 1 ? t(`${hrs(h)} (1 vez)`, `${hrs(h)} (once)`) : t(`${hrs(h)} (2 veces)`, `${hrs(h)} (twice)`));
@@ -25,7 +25,7 @@ export default async function RepliesPage({ searchParams }: { searchParams: Prom
     OTHER: t("No se pudo revisar el buzón: ", "Couldn't check the mailbox: ") + (st?.message ?? ""),
   };
   const hrefFor = (m: (typeof r.waiting)[number]) =>
-    m.refKind === "RFQR" ? `/correo/nuevo?tpl=FOLLOWUP&id=${m.refId}` : m.refKind === "SPO" ? `/compras/${m.refId}` : m.refKind === "QUOTE" ? `/cotizaciones/${m.refId}` : m.refKind === "INVOICE" ? `/administracion/cobrar?f=${m.refId}` : m.supplierId ? `/suppliers/${m.supplierId}` : "#";
+    m.refKind === "RFQR" ? `/correo/nuevo?tpl=FOLLOWUP&id=${m.refId}` : m.refKind === "SPO" ? `/compras/${m.refId}` : m.refKind === "QUOTE" ? `/cotizaciones/${m.refId}` : m.refKind === "INVOICE" ? `/administracion/cobrar?f=${m.refId}` : m.refKind === "FOLLOWUPS" ? `/cotizaciones/seguimientos?a=${m.refId}` : m.supplierId ? `/suppliers/${m.supplierId}` : "#";
 
   return (
     <>

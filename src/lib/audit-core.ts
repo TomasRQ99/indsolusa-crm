@@ -10,7 +10,7 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   User: ["role", "active", "email", "name"],
   Prospect: ["status", "email", "contactId", "accountId", "revealedById"],
   Account: ["creditLimit", "paymentTermsDays", "allowsPartialBilling", "taxId", "requiresReceptionCode", "requiresPortal", "ownerId"],
-  Deal: ["sellerKey", "amount", "supplierCost", "freightCost", "otherCosts", "taxCost", "customsCost", "packingCost", "wireCost", "creditAmount","stage", "ownerId", "promisedDate", "poAcceptedAt", "creditExceptionById", "creditExceptionAt", "creditExceptionNote", "closedAt", "explorationId", "plantId", "originRef"],
+  Deal: ["sellerKey", "amount", "supplierCost", "freightCost", "otherCosts", "taxCost", "customsCost", "packingCost", "wireCost", "creditAmount","stage", "ownerId", "promisedDate", "poAcceptedAt", "creditExceptionById", "creditExceptionAt", "creditExceptionNote", "closedAt", "explorationId", "plantId", "originRef", "urgency"],
   DealItem: ["qty", "unitPrice", "code", "description"],
   Supplier: ["bankBeneficiary", "bankName", "bankAccount", "bankSwift", "bankVerifiedAt", "bankVerifiedById", "paymentTerms", "advancePct", "currency", "taxId"],
   Quote: ["currency", "docFxRate", "docFxSource", "ivaExempt", "ivaExemptReason", "ivaPct", "status", "rev", "supplierCost", "freightCost", "otherCosts", "taxCost", "customsCost", "packingCost", "wireCost", "creditAmount", "fxRate", "protSale", "protCost", "protEsagra", "presentedAt", "decidedAt", "validityDays", "paymentTerms", "incoterm"],
@@ -184,6 +184,8 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   // Proyectos y notas. What moves a project and who sits at its table; never the text of a note (it is personal)
   // nor of a forum post.
   Project: ["kind", "priority", "quietUntil", "accountId", "dealId", "stage", "leadId", "closedAt", "startOn", "objectivesBy", "planBy", "executionBy", "resultsBy"],
+  // Seguimientos: who followed up what with which customer (the email text is in Activity)
+  FollowUp: ["accountId", "contactId", "toAddr", "items", "sentByName"],
   ProjectMember: ["projectId", "userId", "how", "addedByName"],
   ProjectPost: ["projectId", "authorId", "deletedAt", "editedAt", "pinned", "decision", "customerInput"],
   ProjectItem: ["projectId", "stage", "ownerId", "dueOn", "doneAt", "doneByName"],

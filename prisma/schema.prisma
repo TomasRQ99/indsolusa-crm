@@ -390,6 +390,8 @@ model Deal {
   views                 JourneyView[]
   threads               CommThread[]
   quotes                Quote[]
+  /// Seguimientos: how urgent the person marked this Need: ALTA | MEDIA | BAJA (null = not marked)
+  urgency               String?
   customerPos           CustomerPO[]
   activities            Activity[]
   items                 DealItem[]
@@ -5804,4 +5806,21 @@ model ProjectExtension {
 
   @@index([status])
   @@index([projectId])
+}
+
+/// Seguimientos (Comercial): one email to a customer that follows up several pending things at once
+/// (quotes without a decision, invoices with a balance, open projects). items = "Q:<quoteId>" | "I:<invoiceId>" | "P:<projectId>".
+model FollowUp {
+  id         String   @id @default(cuid())
+  accountId  String
+  contactId  String?
+  toAddr     String
+  subject    String
+  items      String[] @default([])
+  sentById   String
+  sentByName String
+  uncertain  Boolean  @default(false)
+  sentAt     DateTime @default(now())
+
+  @@index([accountId, sentAt])
 }

@@ -307,6 +307,32 @@
   ],
   "expect": "A quote in a deliberate wait shows \"No action today\" instead of nagging you."
  },
+ "seguimientos": {
+  "t": "Follow-ups: several pending items of one customer in a single email",
+  "why": "Follow up several requests, quotes, purchase orders, deliveries, invoices to collect and projects of the same customer with one email, instead of writing one for each item.",
+  "steps": [
+   "Open [[COMERCIAL]] and click [[Seguimientos]]. You also get there from “Quotes presented”, with the “Follow-ups” button at the top right.",
+   "Under “1 · CUSTOMER AND PERSON”, click the customer. The number on the right is how many pending items it has. Then click the person, or leave “The whole company”.",
+   "Under “3 · PENDING WITH…” you see their open requests, quotes without a decision, purchase orders not delivered, deliveries in progress, receivables to collect and open projects. Tick the box of each item that goes in the email (up to 12).",
+   "If you want, write in the box on the right of each item what you need from the customer (for example: we still need the logo). It goes in the email, next to that point.",
+   "Click [[Generar correo de seguimiento]]. “Follow-up email” opens, already written with every item you ticked. Nothing is sent yet.",
+   "Check “To”, pick the subject, change the text if needed and click [[Enviar correo]]."
+  ],
+  "expect": "The email goes out from the company account and you return to the list with the notice “Follow-up sent…”. Each item that was in the email shows “Last follow-up” with today's date, and the email is logged on the customer. Under “All customers” there are no tick boxes: to send an email you go into a customer. A project appears here when it is linked to a customer; if it does not come from a Need with a person, it reads “no person assigned” and shows for every person of that company. If you tick nothing, SOLU says: “Tick at least one pending item to generate the email”."
+ },
+ "seguimientos-criterio": {
+  "t": "Follow-ups: review by urgency, days overdue or Eságara value",
+  "why": "Review your pending items in the order that helps you: the most overdue, the most urgent or what leaves the most Eságara, for one customer or for all of them.",
+  "steps": [
+   "Open [[COMERCIAL]] and click [[Seguimientos]]. It opens on “All customers”; to review just one, click its name under “1 · CUSTOMER AND PERSON”.",
+   "Under “2 · CRITERION”, on the “Show” row, choose what to review: “Everything”, “Requests”, “Quotes”, “Purchase orders”, “Deliveries”, “Receivables” or “Projects”.",
+   "On the “Order” row, choose “Most overdue first”, “By urgency”, “Highest Eságara first” or “Lowest Eságara first”.",
+   "To mark the urgency of an item, use the list that reads “Urgency: not marked” on its row and choose high, medium or low. It saves by itself.",
+   "On the “Urgency” row, choose “High”, “Medium”, “Low” or “Not marked” to see only those.",
+   "Under “All customers”, click the customer's name, above each row, to go into that customer with the same criterion and prepare their email."
+  ],
+  "expect": "Urgency is marked once per Need and applies to its request, its quote, its purchase order, its delivery and its invoice. Days overdue are the days since the date that counts: the quote's validity, the invoice's due date, the date required on the purchase order, the delivery date, or the request's next move. Whatever has no date or no calculated Eságara goes last. A project uses its own priority and has no Eságara. If nothing matches, SOLU says “Nothing matches this criterion” and offers “Clear the filters”."
+ },
  "po": {
   "t": "Customer PO versus the quote",
   "why": "Spots differences between what the customer ordered and what we quoted, before we commit.",

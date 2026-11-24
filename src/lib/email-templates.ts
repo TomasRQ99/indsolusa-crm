@@ -345,6 +345,87 @@ export function paymentMail(o: { lang: MailLang; invoiceNumber: string; contactN
   return { subjects, ...sigFix(render(blocks, o.lang)) };
 }
 
+// ---------- 7. Several follow-ups in one email (Comercial → Seguimientos) ----------
+/** One email to one person about several pending things of their company: quotes without a decision, invoices with
+ *  a balance and open projects (owner, 2026-11-24). Each line may carry what the person wrote for it ("note"). */
+export type FollowUpLine =
+  | { kind: "QUOTE"; number: string; what: string; sentAt: Date | null; validUntil: Date | null; note?: string | null }
+  | { kind: "INVOICE"; number: string; customerPo: string | null; balance: number; currency: string; dueAt: Date; note?: string | null }
+  | { kind: "PROJECT"; title: string; note?: string | null }
+  | { kind: "NEED"; code: string | null; what: string; note?: string | null }
+  | { kind: "PO"; number: string; what: string; note?: string | null }
+  | { kind: "DELIVERY"; po: string | null; what: string; scheduledFor: Date | null; note?: string | null };
+export function followUpsMail(o: { lang: MailLang; contactName: string | null; customer: string; lines: FollowUpLine[]; sender: string; from: string }): Mail {
+  const en = o.lang === "EN";
+  const now = Date.now();
+  const note = (n?: string | null) => { const x = (n ?? "").trim().replace(/\s+/g, " "); return x ? ` ${/[.!?…]$/.test(x) ? x : `${x}.`}` : ""; };
+  const quotes = o.lines.filter((l) => l.kind === "QUOTE");
+  const invoices = o.lines.filter((l) => l.kind === "INVOICE");
+  const projects = o.lines.filter((l) => l.kind === "PROJECT");
+  const qLine = (l: Extract<FollowUpLine, { kind: "QUOTE" }>) => {
+    const expired = !!l.validUntil && l.validUntil.getTime() < now - 864e5;
+    return en
+      ? `Quotation ${l.number} – ${l.what}${l.sentAt ? `, sent on ${longDay(l.sentAt, "EN")}` : ""}.${l.validUntil ? (expired ? ` Its validity ended on ${longDay(l.validUntil, "EN")}; if you still need it, we will update it for you.` : ` It is valid until ${longDay(l.validUntil, "EN")}.`) : ""}${note(l.note)}`
+      : `Cotización ${l.number} – ${l.what}${l.sentAt ? `, enviada el ${longDay(l.sentAt, "ES")}` : ""}.${l.validUntil ? (expired ? ` Su validez terminó el ${longDay(l.validUntil, "ES")}; si aún la necesita, se la actualizamos.` : ` Es válida hasta el ${longDay(l.validUntil, "ES")}.`) : ""}${note(l.note)}`;
+  };
+  const iLine = (l: Extract<FollowUpLine, { kind: "INVOICE" }>) => {
+    const overdue = l.dueAt.getTime() < now - 864e5;
+    return en
+      ? `Invoice ${l.number}${l.customerPo ? ` (your P.O. ${l.customerPo})` : ""}: open balance ${l.currency} ${money(l.balance, "EN")}, ${overdue ? "was due on" : "due on"} ${longDay(l.dueAt, "EN")}.${note(l.note)}`
+      : `Factura ${l.number}${l.customerPo ? ` (su orden de compra ${l.customerPo})` : ""}: saldo pendiente ${l.currency} ${money(l.balance, "ES")}, ${overdue ? "venció el" : "vence el"} ${longDay(l.dueAt, "ES")}.${note(l.note)}`;
+  };
+  const pLine = (l: Extract<FollowUpLine, { kind: "PROJECT" }>) => `${l.title}${l.note?.trim() ? `:${note(l.note)}` : "."}`;
+  // Requests, purchase orders and deliveries: only what the record says. A date is given only when it is still ahead
+  // (a delivery that is late has its own email, the delay notice).
+  const needs = o.lines.filter((l) => l.kind === "NEED") as Extract<FollowUpLine, { kind: "NEED" }>[];
+  const pos = o.lines.filter((l) => l.kind === "PO") as Extract<FollowUpLine, { kind: "PO" }>[];
+  const dels = o.lines.filter((l) => l.kind === "DELIVERY") as Extract<FollowUpLine, { kind: "DELIVERY" }>[];
+  const nLine = (l: (typeof needs)[number]) => `${en ? "Request" : "Solicitud"}${l.code ? ` ${l.code}` : ""} – ${l.what}.${note(l.note)}`;
+  const oLine = (l: (typeof pos)[number]) => `${en ? "Your purchase order" : "Su orden de compra"} ${l.number} – ${l.what}.${note(l.note)}`;
+  const dLine = (l: (typeof dels)[number]) => {
+    const ahead = !!l.scheduledFor && l.scheduledFor.getTime() >= now - 864e5;
+    return en
+      ? `Delivery${l.po ? ` of your purchase order ${l.po}` : ""} – ${l.what}${ahead ? `, scheduled for ${longDay(l.scheduledFor!, "EN")}` : ""}.${note(l.note)}`
+      : `Entrega${l.po ? ` de su orden de compra ${l.po}` : ""} – ${l.what}${ahead ? `, programada para el ${longDay(l.scheduledFor!, "ES")}` : ""}.${note(l.note)}`;
+  };
+  const one = o.lines.length === 1;
+  const sections: Block[] = [
+    ...(needs.length ? [{ p: en ? "Requests in progress" : "Solicitudes en curso", strong: true } as Block, { bullets: needs.map(nLine) } as Block] : []),
+    ...(quotes.length ? [{ p: en ? "Quotations awaiting your decision" : "Cotizaciones pendientes de su decisión", strong: true } as Block, { bullets: quotes.map((l) => qLine(l as Extract<FollowUpLine, { kind: "QUOTE" }>)) } as Block] : []),
+    ...(pos.length ? [{ p: en ? "Purchase orders in process" : "Órdenes de compra en proceso", strong: true } as Block, { bullets: pos.map(oLine) } as Block] : []),
+    ...(dels.length ? [{ p: en ? "Deliveries" : "Entregas", strong: true } as Block, { bullets: dels.map(dLine) } as Block] : []),
+    ...(invoices.length ? [{ p: en ? "Invoices with an open balance" : "Facturas con saldo pendiente", strong: true } as Block, { bullets: invoices.map((l) => iLine(l as Extract<FollowUpLine, { kind: "INVOICE" }>)) } as Block] : []),
+    ...(projects.length ? [{ p: en ? "Projects in progress" : "Proyectos en curso", strong: true } as Block, { bullets: projects.map((l) => pLine(l as Extract<FollowUpLine, { kind: "PROJECT" }>)) } as Block] : []),
+  ];
+  const blocks: Block[] = en ? [
+    { p: o.contactName ? `Good day ${o.contactName},` : "Good day," },
+    { p: one ? `I am writing to follow up on a matter we have pending with ${o.customer}:` : `I am writing to follow up, in a single email, on the ${o.lines.length} matters we have pending with ${o.customer}:` },
+    ...sections,
+    { p: one ? "Could you let us know how it is going? You can simply reply to this email." : "Could you let us know how each one is going? You can simply reply to this email, point by point.", strong: true },
+    ...(quotes.length ? [{ p: "If anything in a quotation needs to change (quantity, model or date), tell us and we will adjust it the same day." } as Block] : []),
+    ...(invoices.length ? [{ p: `If an invoice is already paid, please send us the payment receipt so we can apply it. Pay only with the instructions printed on the invoice: ${COMPANY.shortName} never changes its bank details by email.` } as Block] : []),
+    ...signature("EN", o.sender, o.from),
+  ] : [
+    { p: o.contactName ? `Buen día ${o.contactName}:` : "Buen día:" },
+    { p: one ? `Le escribo para hacer seguimiento a un tema que tenemos pendiente con ${o.customer}:` : `Le escribo para hacer seguimiento, en un solo correo, a los ${o.lines.length} temas que tenemos pendientes con ${o.customer}:` },
+    ...sections,
+    { p: one ? "¿Nos puede contar cómo va? Puede responder este mismo correo." : "¿Nos puede contar cómo va cada uno? Puede responder este mismo correo, punto por punto.", strong: true },
+    ...(quotes.length ? [{ p: "Si algo de una cotización debe cambiar (cantidad, modelo o fecha), díganos y la ajustamos el mismo día." } as Block] : []),
+    ...(invoices.length ? [{ p: `Si alguna factura ya fue pagada, por favor envíenos el comprobante para aplicarlo. Pague únicamente con las instrucciones impresas en la factura: ${COMPANY.shortName} nunca cambia sus datos bancarios por correo.` } as Block] : []),
+    ...signature("ES", o.sender, o.from),
+  ];
+  const label = (l: FollowUpLine) => l.kind === "QUOTE" ? (en ? `quotation ${l.number}` : `cotización ${l.number}`) : l.kind === "INVOICE" ? (en ? `invoice ${l.number}` : `factura ${l.number}`)
+    : l.kind === "NEED" ? (en ? `request ${l.code ?? l.what.slice(0, 40)}` : `solicitud ${l.code ?? l.what.slice(0, 40)}`) : l.kind === "PO" ? (en ? `P.O. ${l.number}` : `orden de compra ${l.number}`)
+    : l.kind === "DELIVERY" ? (en ? `delivery${l.po ? ` of P.O. ${l.po}` : ""}` : `entrega${l.po ? ` de la OC ${l.po}` : ""}`) : l.title.slice(0, 50);
+  const firsts = [needs[0], quotes[0], pos[0], dels[0], invoices[0], projects[0]].filter(Boolean).slice(0, 3).map((l) => label(l!));
+  const list = firsts.length > 1 ? `${firsts.slice(0, -1).join(", ")} ${en ? "and" : "y"} ${firsts[firsts.length - 1]}` : firsts[0] ?? "";
+  const rest = o.lines.length - firsts.length;
+  const subjects = en
+    ? [one ? `Follow-up: ${list} – ${o.customer}` : `Follow-up with ${o.customer}: ${o.lines.length} pending matters`, `${o.customer}: ${list}${rest > 0 ? ` (+${rest})` : ""}`, `Pending matters with ${COMPANY.shortName} – ${o.customer}`]
+    : [one ? `Seguimiento: ${list} – ${o.customer}` : `Seguimiento ${o.customer}: ${o.lines.length} temas pendientes`, `${o.customer}: ${list}${rest > 0 ? ` (+${rest})` : ""}`, `Temas pendientes con ${COMPANY.shortName} – ${o.customer}`];
+  return { subjects, ...sigFix(render(blocks, o.lang)) };
+}
+
 /** Plain text edited by the person → simple HTML (paragraphs and line breaks), for sending. */
 export function textToHtml(text: string) {
   return `<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;line-height:1.45;color:#1f2933">${text.split(/\n{2,}/).map((p) => `<p style="margin:0 0 12px">${esc(p).replace(/\n/g, "<br>")}</p>`).join("")}</div>`;
