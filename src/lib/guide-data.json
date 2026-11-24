@@ -1391,6 +1391,20 @@
    "expect": "El calendario conectado es solo el de tu propio buzón de Outlook. Después de conectarlo, los bloques de tu agenda aparecen en Outlook."
   },
   {
+   "id": "modo-prueba",
+   "m": "equipo",
+   "t": "Modo prueba: ver u ocultar la información de prueba",
+   "path": "EQUIPO → Configuración → Mi perfil → Modo prueba",
+   "why": "Para trabajar con información real sin que los datos de ejemplo y los clientes de prueba llenen las listas, los conteos y los totales. No se borra nada.",
+   "steps": [
+    "Abre EQUIPO → Configuración → Mi perfil y busca el recuadro «Modo prueba».",
+    "Haz clic en [[Desactivar modo prueba]]. Desde ese momento solo ves información real, y desaparece la etiqueta MODO PRUEBA de la barra superior.",
+    "Para volver a ver la información de prueba, haz clic en [[Activar modo prueba]] en el mismo recuadro.",
+    "Gerencia y Dirección Comercial: para elegir qué clientes y proveedores son de prueba, haz clic en «Elegir qué clientes y proveedores son de prueba», marca o desmarca la casilla «De prueba» de cada uno y haz clic en [[Guardar información de prueba]]."
+   ],
+   "expect": "Con el modo prueba desactivado, las listas, los conteos y los totales dejan por fuera los datos que dicen «(ejemplo)» y los clientes y proveedores marcados como prueba, con sus Necesidades, cotizaciones, pedidos, facturas, pagos y tareas. Solo cambia para ti. Un registro de prueba que abras por su enlace directo se sigue abriendo. Los clientes cuyo nombre empieza por «Prueba» quedaron marcados como prueba desde el inicio."
+  },
+  {
    "id": "eq-mirol",
    "m": "equipo",
    "t": "Mi rol",

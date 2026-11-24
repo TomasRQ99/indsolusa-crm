@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { makeAuditHook } from "./audit-core";
+import { narrowForTestMode } from "./test-mode";
 
 // Reuse one client across hot reloads in development.
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
@@ -17,7 +18,15 @@ function build(): PrismaClient {
   const base = new PrismaClient({ datasourceUrl: datasourceUrl() });
   // #4 Audit trail: material writes are recorded automatically (see audit-core.ts).
   const audit = makeAuditHook(base);
-  const ext = base.$extends({ query: { $allModels: { $allOperations: audit.hook } } });
+  // Modo prueba: lists, counts and totals leave test information out for the people who turned it off (test-mode.ts).
+  const ext = base.$extends({
+    query: {
+      $allModels: {
+        $allOperations: async (p: { model?: string; operation: string; args: unknown; query: (a: unknown) => Promise<unknown> }) =>
+          audit.hook({ ...p, args: await narrowForTestMode(base, p.model, p.operation, p.args) }),
+      },
+    },
+  });
   // Rows from a transaction are written only once it commits (a rolled-back change leaves no record).
   // The extension only adds behavior, not types, so the client keeps its normal PrismaClient type.
   const tx = ext.$transaction.bind(ext) as (...a: unknown[]) => Promise<unknown>;

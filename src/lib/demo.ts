@@ -8,6 +8,7 @@ import { addDays, nextCode, nextDocNumber, today } from "./domain";
 import { subMoney } from "./money";
 import { loadCredit } from "./queries";
 import { VALUE_SEED } from "./proposal-rules";
+import { withTestData } from "./test-mode";
 
 // Sample data so every SOLU screen can be seen working. Every record is marked
 // "(ejemplo)" and can be removed in one step without touching real data.
@@ -15,8 +16,9 @@ import { VALUE_SEED } from "./proposal-rules";
 const DEMO_DOMAIN = "@ejemplo.solu";
 const TAG = " (ejemplo)";
 
+// Loading and removing the sample data always sees it, whatever the person chose in Modo prueba.
 export async function demoLoaded() {
-  return (await db.account.count({ where: { isDemo: true } })) > 0;
+  return withTestData(async () => (await db.account.count({ where: { isDemo: true } })) > 0);
 }
 
 export async function ensureDefaultPolicy() {
@@ -36,6 +38,10 @@ export async function ensureDefaultPolicy() {
 }
 
 export async function loadDemo(adminId: string) {
+  return withTestData(() => loadDemoData(adminId));
+}
+
+async function loadDemoData(adminId: string) {
   if (await demoLoaded()) return topUpMarketDemo(adminId);
   await ensureDefaultPolicy();
   const T = today();
@@ -1041,6 +1047,10 @@ async function seedComercialC7(userId: string) {
 const NAMEPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320"><rect width="520" height="320" fill="#8a9097"/><rect x="20" y="20" width="480" height="280" rx="10" fill="#d9dde1" stroke="#5c636a" stroke-width="3"/><circle cx="42" cy="42" r="7" fill="#9aa1a8"/><circle cx="478" cy="42" r="7" fill="#9aa1a8"/><circle cx="42" cy="278" r="7" fill="#9aa1a8"/><circle cx="478" cy="278" r="7" fill="#9aa1a8"/><text x="60" y="78" font-family="Arial" font-weight="700" font-size="30" fill="#0f9d9a">SIEMENS</text><text x="60" y="112" font-family="Arial" font-size="20" fill="#222">SINAMICS G120C</text><text x="60" y="150" font-family="Courier New" font-size="18" fill="#222">6SL3210-1KE21-7UF1</text><text x="60" y="184" font-family="Arial" font-size="16" fill="#222">IN: 3AC 380-480V 50/60Hz 18,5A</text><text x="60" y="210" font-family="Arial" font-size="16" fill="#222">OUT: 3AC 0-480V 16,5A 7,5kW</text><text x="60" y="236" font-family="Arial" font-size="14" fill="#444">S/N: XAJ2-7781-0042  IP20</text><text x="60" y="262" font-family="Arial" font-size="12" fill="#666">Made in Germany</text></svg>`;
 
 export async function removeDemo() {
+  return withTestData(removeDemoData);
+}
+
+async function removeDemoData() {
   const demoUsers = await db.user.findMany({ where: { email: { endsWith: DEMO_DOMAIN } }, select: { id: true } });
   const ids = demoUsers.map((u) => u.id);
   await db.$transaction(

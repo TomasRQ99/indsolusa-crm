@@ -9,10 +9,10 @@ import { eventsOf } from "./domain-events";
 export const AUDITED: Record<string, readonly string[] | "all"> = {
   User: ["role", "active", "email", "name"],
   Prospect: ["status", "email", "contactId", "accountId", "revealedById"],
-  Account: ["creditLimit", "paymentTermsDays", "allowsPartialBilling", "taxId", "requiresReceptionCode", "requiresPortal", "ownerId"],
+  Account: ["creditLimit", "paymentTermsDays", "allowsPartialBilling", "taxId", "requiresReceptionCode", "requiresPortal", "ownerId", "isTest"],
   Deal: ["sellerKey", "amount", "supplierCost", "freightCost", "otherCosts", "taxCost", "customsCost", "packingCost", "wireCost", "creditAmount","stage", "ownerId", "promisedDate", "poAcceptedAt", "creditExceptionById", "creditExceptionAt", "creditExceptionNote", "closedAt", "explorationId", "plantId", "originRef", "urgency"],
   DealItem: ["qty", "unitPrice", "code", "description"],
-  Supplier: ["bankBeneficiary", "bankName", "bankAccount", "bankSwift", "bankVerifiedAt", "bankVerifiedById", "paymentTerms", "advancePct", "currency", "taxId"],
+  Supplier: ["bankBeneficiary", "bankName", "bankAccount", "bankSwift", "bankVerifiedAt", "bankVerifiedById", "paymentTerms", "advancePct", "currency", "taxId", "isTest"],
   Quote: ["currency", "docFxRate", "docFxSource", "ivaExempt", "ivaExemptReason", "ivaPct", "status", "rev", "supplierCost", "freightCost", "otherCosts", "taxCost", "customsCost", "packingCost", "wireCost", "creditAmount", "fxRate", "protSale", "protCost", "protEsagra", "presentedAt", "decidedAt", "validityDays", "paymentTerms", "incoterm"],
   QuoteLine: ["qty", "unitPrice", "code", "description"],
   CustomerPO: "all",

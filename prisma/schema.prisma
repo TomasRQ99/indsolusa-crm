@@ -70,6 +70,8 @@ model User {
   lang               Lang                  @default(ES)
   /// On-screen guide (training): the search bar offers step-by-step guides and marks buttons on screen. Each person turns it off in Mi perfil.
   guideOn            Boolean               @default(true)
+  /// Modo prueba: while on, this person sees the sample data and the customers and suppliers marked as test. Each person turns it off in Mi perfil; nothing is deleted.
+  testMode           Boolean               @default(true)
   // Length of a normal working day, used by Mi Plan to size capacity.
   workdayMinutes     Int                   @default(570)
   /// Authorisation level of the person (company ranges by level): EMPRENDEDOR | JUNIOR | SENIOR, or null when not set
@@ -197,6 +199,8 @@ model Account {
   requiresPortal        Boolean   @default(false)
   portalValidUntil      DateTime?
   isDemo                Boolean   @default(false)
+  /// Marked by the team as test information (Mi perfil → Modo prueba). Hidden, with everything that hangs from it, from people who turned Modo prueba off.
+  isTest                Boolean   @default(false)
   // Default language of the documents sent to this customer (Quote, Invoice).
   docLang               Lang      @default(EN)
   // Billing profile: whether the customer accepts one invoice per partial delivery, and who receives invoices.
@@ -904,6 +908,8 @@ model Supplier {
   bankVerifiedById String?
   bankVerifiedBy   User?     @relation(fields: [bankVerifiedById], references: [id])
   isDemo           Boolean   @default(false)
+  /// Marked by the team as test information (Mi perfil → Modo prueba).
+  isTest           Boolean   @default(false)
   createdAt        DateTime  @default(now())
   // Commercial terms the supplier usually gives (used to prepare the Supplier PO and its payment milestones).
   paymentTerms     String?
