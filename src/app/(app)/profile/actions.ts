@@ -8,6 +8,8 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { rememberLang } from "@/lib/lang-cookie";
 import { refreshApp } from "@/lib/revalidate";
+import { canManageAll } from "@/lib/permissions";
+import { forgetTestMode, withTestData } from "@/lib/test-mode";
 import { addDays, today } from "@/lib/domain";
 import { bogotaTime, listEvents } from "@/lib/outlook";
 import { outlookErrorCode } from "@/lib/outlook-sync";
@@ -51,6 +53,43 @@ export async function setGuide(formData: FormData) {
   const user = await requireUser();
   await db.user.update({ where: { id: user.id }, data: { guideOn: formData.get("on") === "1" } });
   refreshApp();
+}
+
+/** Modo prueba on or off, for this person only. Nothing is deleted: off only leaves test information out of what
+ *  this person sees (lib/test-mode.ts). */
+export async function setTestMode(formData: FormData) {
+  const user = await requireUser();
+  await db.user.update({ where: { id: user.id }, data: { testMode: formData.get("on") === "1" } });
+  forgetTestMode(user.id);
+  refreshApp();
+  redirect("/profile?ok=modo-prueba#modo-prueba");
+}
+
+/** Which customers and suppliers are test information. Gerencia and Dirección Comercial decide it for everyone. */
+export async function saveTestMarks(formData: FormData) {
+  const user = await requireUser();
+  if (!canManageAll(user)) redirect("/profile");
+  const picked = (name: string) => new Set(formData.getAll(name).map(String));
+  const shown = (name: string) => formData.getAll(name).map(String).slice(0, 5000);
+  const [accOn, supOn] = [picked("account"), picked("supplier")];
+  // Only what was on the screen changes: a customer registered meanwhile keeps its mark.
+  const [accAll, supAll] = [shown("accountShown"), shown("supplierShown")];
+  await withTestData(async () => {
+    const [accs, sups] = await Promise.all([
+      db.account.findMany({ where: { id: { in: accAll }, isDemo: false }, select: { id: true, isTest: true } }),
+      db.supplier.findMany({ where: { id: { in: supAll }, isDemo: false }, select: { id: true, isTest: true } }),
+    ]);
+    const split = (rows: { id: string; isTest: boolean }[], on: Set<string>) => ({ mark: rows.filter((r) => !r.isTest && on.has(r.id)).map((r) => r.id), clear: rows.filter((r) => r.isTest && !on.has(r.id)).map((r) => r.id) });
+    const a = split(accs, accOn), s = split(sups, supOn);
+    await db.$transaction([
+      db.account.updateMany({ where: { id: { in: a.mark } }, data: { isTest: true } }),
+      db.account.updateMany({ where: { id: { in: a.clear } }, data: { isTest: false } }),
+      db.supplier.updateMany({ where: { id: { in: s.mark } }, data: { isTest: true } }),
+      db.supplier.updateMany({ where: { id: { in: s.clear } }, data: { isTest: false } }),
+    ]);
+  });
+  refreshApp();
+  redirect("/profile/modo-prueba?ok=1");
 }
 
 export async function setWorkday(formData: FormData) {

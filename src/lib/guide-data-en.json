@@ -958,6 +958,17 @@
   ],
   "expect": "The connected calendar is only your own Outlook mailbox. After connecting it, your agenda blocks show in Outlook."
  },
+ "modo-prueba": {
+  "t": "Test mode: show or hide the test information",
+  "why": "To work with real information without the sample data and the test customers filling the lists, counts and totals. Nothing is deleted.",
+  "steps": [
+   "Open TEAM → Settings → My profile and find the “Test mode” box.",
+   "Click [[Desactivar modo prueba]]. From then on you only see real information, and the TEST MODE label leaves the top bar.",
+   "To see the test information again, click [[Activar modo prueba]] in the same box.",
+   "Management and Commercial Director: to choose which customers and suppliers are test, click “Choose which customers and suppliers are test”, tick or untick the “Test” box of each one and click [[Guardar información de prueba]]."
+  ],
+  "expect": "With test mode off, lists, counts and totals leave out the data marked “(ejemplo)” and the customers and suppliers marked as test, with their Needs, quotes, orders, invoices, payments and tasks. It only changes for you. A test record you open by its direct link still opens. Customers whose name starts with “Prueba” were marked as test from the start."
+ },
  "eq-mirol": {
   "t": "My role",
   "why": "What the company expects from your role and what you can expect from the company, in six blocks, and the line that joins the company's purpose with what you do today.",

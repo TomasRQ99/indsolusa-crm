@@ -3,6 +3,7 @@
 import { fullAddress } from "@/lib/customer-fields";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { withTestData } from "@/lib/test-mode";
 import { requireUser } from "@/lib/auth";
 import { assertCanEdit } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
@@ -383,7 +384,8 @@ export async function createRevision(id: string) {
   const existing = await db.quote.findFirst({ where: { number: q.number, status: "DRAFT" } });
   if (existing) back(existing.id, "ok=abierta");
   const src = await db.quote.findUniqueOrThrow({ where: { id }, include: { lines: true, scenarios: true } });
-  const top = await db.quote.aggregate({ where: { number: q.number }, _max: { rev: true } });
+  // The next revision number counts every revision, also the ones a person hid with Modo prueba.
+  const top = await withTestData(() => db.quote.aggregate({ where: { number: q.number }, _max: { rev: true } }));
   const { id: _i, createdAt: _c, issuedAt: _is, presentedAt: _p, decidedAt: _d, protSale: _ps, protCost: _pc, protEsagra: _pe, protPolicy: _pp, status: _s, rev: _r, createdById: _cb, changeNote: _cn, sellerSnap: _ss, ivaPct: _ip, lines, scenarios, ...rest } = src;
   const nq = await db.quote.create({
     data: {

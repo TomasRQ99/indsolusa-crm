@@ -2,7 +2,8 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { OutlookNote } from "@/components/OutlookNote";
 import { PasswordForm } from "./PasswordForm";
-import { connectOutlook, disconnectOutlook, setGuide, setWorkday } from "./actions";
+import { connectOutlook, disconnectOutlook, setGuide, setTestMode, setWorkday } from "./actions";
+import { canManageAll } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { saveProjectAlerts } from "../proyectos/actions";
 
@@ -70,6 +71,24 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             <button type="submit" className={user.guideOn ? "secondary sm" : "sm"}>{user.guideOn ? t("Apagar la guía de entrenamiento", "Turn off the training guide") : t("Encender la guía de entrenamiento", "Turn on the training guide")}</button>
           </form>
           <p className="src" style={{ marginTop: 8 }}>{t("Solo cambia para ti. No se usa para medir a nadie.", "It only changes for you. It is never used to measure anyone.")}</p>
+        </div>
+        <div className="card" id="modo-prueba">
+          <h2>{t("Modo prueba", "Test mode")}</h2>
+          <p className="small" style={{ marginBottom: 8 }}>
+            <span className={`sig ${user.testMode ? "wait" : "ok"}`}>{user.testMode ? t("Activado: ves la información de prueba", "On: you see the test information") : t("Desactivado: solo ves información real", "Off: you only see real information")}</span>
+            {ok === "modo-prueba" && <> <span className="sig ok">{t("Guardado", "Saved")}</span></>}
+          </p>
+          <p className="small muted" style={{ marginBottom: 12 }}>
+            {user.testMode
+              ? t("En las listas, los conteos y los totales aparecen los datos de ejemplo de SOLU, que dicen «(ejemplo)», y los clientes y proveedores marcados como prueba, con sus Necesidades, cotizaciones, pedidos, facturas, pagos y tareas. Desactívalo para trabajar solo con información real. No se borra nada: puedes activarlo de nuevo cuando quieras.", "Lists, counts and totals include SOLU's sample data, marked “(ejemplo)”, and the customers and suppliers marked as test, with their Needs, quotes, orders, invoices, payments and tasks. Turn it off to work with real information only. Nothing is deleted: you can turn it back on any time.")
+              : t("Las listas, los conteos y los totales dejan por fuera los datos de ejemplo y los clientes y proveedores marcados como prueba, con todo lo que cuelga de ellos. Nada se borró: al activarlo vuelven tal como estaban.", "Lists, counts and totals leave out the sample data and the customers and suppliers marked as test, with everything that hangs from them. Nothing was deleted: turn it on and they come back exactly as they were.")}
+          </p>
+          <form action={setTestMode}>
+            <input type="hidden" name="on" value={user.testMode ? "0" : "1"} />
+            <button type="submit" className={user.testMode ? "sm" : "secondary sm"}>{user.testMode ? t("Desactivar modo prueba", "Turn off test mode") : t("Activar modo prueba", "Turn on test mode")}</button>
+          </form>
+          {canManageAll(user) && <p className="small" style={{ marginTop: 12 }}><a href="/profile/modo-prueba">{t("Elegir qué clientes y proveedores son de prueba", "Choose which customers and suppliers are test")} →</a></p>}
+          <p className="src" style={{ marginTop: 8 }}>{t("Solo cambia para ti: cada persona lo decide en su perfil. Un registro de prueba que abras por su enlace directo se sigue abriendo.", "It only changes for you: each person decides it in their profile. A test record you open by its direct link still opens.")}</p>
         </div>
         <div className="card" id="avisos-proyectos">
           <h2>{t("Avisos de mis proyectos", "Notices from my projects")}</h2>

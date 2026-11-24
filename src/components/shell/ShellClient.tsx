@@ -32,6 +32,8 @@ export type ShellProps = {
   lang: "ES" | "EN";
   /** On-screen guide (training). Each person turns it off in Mi perfil. */
   guideOn: boolean;
+  /** Modo prueba (Mi perfil): this person also sees test information. */
+  testMode?: boolean;
   user: { name: string; role: string; initials: string; id: string };
   /** Resumen del día: off for the read-only board role. */
   brief?: boolean;
@@ -69,7 +71,7 @@ const NEW_ITEMS = [
   { href: "/proyectos/notas#nueva", es: "Nota", en: "Note" },
 ];
 
-export function ShellClient({ lang, guideOn, user, brief, modules: baseModules, children }: ShellProps) {
+export function ShellClient({ lang, guideOn, testMode, user, brief, modules: baseModules, children }: ShellProps) {
   const [att, setAtt] = useState<{ counters: Partial<Record<ModuleKey, Counter>>; alerts: Alert[] }>({ counters: {}, alerts: [] });
   const path = usePathname() ?? "/";
   // Counters and bell load after the page is visible. They refresh whenever the server
@@ -339,6 +341,12 @@ export function ShellClient({ lang, guideOn, user, brief, modules: baseModules, 
         )}
 
         <div className="grow" />
+
+        {testMode && (
+          <a className="trm-chip" href="/profile#modo-prueba" style={{ textDecoration: "none", color: "inherit" }} title={t("Estás viendo también la información de prueba. Se desactiva en Mi perfil.", "You are also seeing the test information. Turn it off in My profile.")}>
+            <small>{t("MODO PRUEBA", "TEST MODE")}</small>
+          </a>
+        )}
 
         {frame.trm && (
           <span className="trm-chip" title={t(`${frame.trm.source} · vigente desde ${frame.trm.validFrom}`, `${frame.trm.source} · valid from ${frame.trm.validFrom}`)}>
