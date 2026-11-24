@@ -79,6 +79,7 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   PoAllocation: "all",
   DispatchInstruction: "all",
   GoalTarget: "all",
+  GoalRecipe: "all",
   VisitPlan: "all",
   VisitCommitment: "all",
   CommercialMission: "all",

@@ -7,11 +7,36 @@ import { canManageAll } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { money2, sameMoney } from "@/lib/money";
 import { METRIC_KEYS, isClosed, validPeriod } from "@/lib/goal-rules";
+import { RATIO_MAX, RECIPE_DEFAULTS } from "@/lib/goal-recipe";
 
 // Comercial C7 · Gerencia / Director Comercial set a person's monthly targets (decision C-15). Each change supersedes
 // the current row and keeps it as history; a closed month never changes (AC5).
 
 const go = (u: string, p: string, qs: string): never => { refreshApp(); redirect(`/comercial/metas?u=${u}&p=${p}&${qs}`); };
+
+/** Recetario mensual: the person writes their own recipe (or a manager for them). Editing replaces the month's row. */
+export async function saveRecipe(userId: string, period: string, fd: FormData) {
+  const user = await requireUser();
+  const p = validPeriod(period) ? period : "";
+  const back = (qs: string): never => { refreshApp(); redirect(`/comercial/metas?p=${p || period}${userId !== user.id ? `&u=${userId}` : ""}&${qs}#recetario`); };
+  if (userId !== user.id && !canManageAll(user)) back("err=permiso-recetario");
+  if (!p) back("err=periodo");
+  if (isClosed(p, new Date())) back("err=cerrado");
+  const person = await db.user.findUnique({ where: { id: userId }, select: { active: true } });
+  if (!person?.active) back("err=persona");
+  const num = (k: string) => Number(String(fd.get(k) ?? "").replace(/,/g, "").trim());
+  const salesGoal = num("salesGoal"), avgSale = num("avgSale");
+  if (!(salesGoal > 0) || !(avgSale > 0) || salesGoal > 1e9 || avgSale > 1e9) back("err=recetario-valor");
+  const ratios = {} as Record<keyof typeof RECIPE_DEFAULTS, number>;
+  for (const k of Object.keys(RECIPE_DEFAULTS) as (keyof typeof RECIPE_DEFAULTS)[]) {
+    const n = num(k);
+    if (!Number.isInteger(n) || n < 1 || n > RATIO_MAX) back("err=recetario-proporcion");
+    ratios[k] = n;
+  }
+  const data = { salesGoal: money2(salesGoal), avgSale: money2(avgSale), ...ratios, setByName: user.name };
+  await db.goalRecipe.upsert({ where: { userId_period: { userId, period: p } }, create: { userId, period: p, ...data }, update: data });
+  back("ok=recetario");
+}
 
 export async function saveTargets(userId: string, period: string, fd: FormData) {
   const user = await requireUser();

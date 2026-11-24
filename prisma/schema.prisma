@@ -3011,6 +3011,26 @@ model GoalTarget {
   @@index([userId, period])
 }
 
+/// Recetario mensual (2026-11-24): the person's own sales recipe for a month. From the sales goal, the average sale
+/// and four "1 of N" ratios SOLU derives the closes, quotes, first meetings, decision-maker pitches and prospecting
+/// activities needed (and per working day). One row per person and month; editing replaces it (audited).
+model GoalRecipe {
+  id                  String   @id @default(cuid())
+  userId              String
+  period              String
+  salesGoal           Decimal  @db.Decimal(14, 2)
+  avgSale             Decimal  @db.Decimal(14, 2)
+  quotesPerClose      Int      @default(2)
+  meetingsPerQuote    Int      @default(2)
+  pitchesPerMeeting   Int      @default(3)
+  activitiesPerPitch  Int      @default(3)
+  setByName           String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([userId, period])
+}
+
 // ---------- Comercial C8a · Visits & Commercial Missions (v1.3 §57) ----------
 
 /// A planned or unplanned customer visit. The brief is derived from what SOLU already knows (no re-typing); the

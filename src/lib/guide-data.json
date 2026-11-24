@@ -761,6 +761,21 @@
    "expect": "Solo las ves tú y la gerencia. No hay ranking del equipo."
   },
   {
+   "id": "recetario",
+   "m": "comercial",
+   "t": "Recetario mensual: de tu meta de ventas a tus actividades de cada día",
+   "path": "COMERCIAL → Mis metas · RECETARIO MENSUAL",
+   "why": "Saber cuántos negocios, cotizaciones, primeras reuniones, speech a tomadores de decisión y actividades de prospección necesitas en el mes, y por día, para llegar a tu meta de ventas.",
+   "steps": [
+    "Abre [[COMERCIAL]] y haz clic en [[Mis metas]]. Arriba está el bloque «RECETARIO MENSUAL» con tu nombre.",
+    "Escribe tu «Meta de ventas del mes (USD)» y el «Valor de tu venta promedio (USD)». Si SOLU ya conoce tu venta promedio real de los últimos 12 meses, la muestra debajo de las casillas: haz clic en «Usar este valor» para tomarla.",
+    "Revisa las cuatro proporciones: de cada cuántas cotizaciones cierras 1, de cada cuántas primeras reuniones sale 1 cotización, de cada cuántos tomadores de decisión que escuchan tu speech sale 1 primera reunión, y de cada cuántas actividades de prospección llegas a 1 tomador de decisión. Vienen en 2, 2, 3 y 3: cámbialas por las tuyas.",
+    "Mira la gráfica: cambia mientras escribes. Baja de la meta de ventas hasta las «Actividades de prospección diaria», con los días hábiles del mes.",
+    "Haz clic en [[Guardar mi recetario]]."
+   ],
+   "expect": "SOLU confirma «Recetario guardado.» A la derecha de cada barra, «Llevas» dice lo que ya pasó este mes según lo registrado en SOLU, y en la última barra «Hoy» cuenta las actividades de hoy; «Cómo se cuenta lo que llevas», debajo de la gráfica, explica cada cifra. Cada mes tiene su propio recetario; un mes que ya cerró no se cambia. Gerencia y Dirección Comercial pueden ver y escribir el recetario de otra persona eligiéndola en «Persona»."
+  },
+  {
    "id": "cobertura",
    "m": "comercial",
    "t": "Cobertura por ausencia",

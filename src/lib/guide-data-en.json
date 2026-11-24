@@ -463,6 +463,18 @@
   ],
   "expect": "Only you and management see them. There is no team ranking."
  },
+ "recetario": {
+  "t": "Monthly recipe: from your sales goal to your daily activities",
+  "why": "Know how many deals, quotes, first meetings, pitches to decision makers and prospecting activities you need this month, and per day, to reach your sales goal.",
+  "steps": [
+   "Open [[COMERCIAL]] and click [[Mis metas]]. At the top is the “MONTHLY RECIPE” block with your name.",
+   "Type your “Sales goal for the month (USD)” and “Your average sale (USD)”. If SOLU already knows your real average sale over the last 12 months, it shows it below the boxes: click “Use this value” to take it.",
+   "Check the four ratios: out of how many quotes you close 1, out of how many first meetings 1 quote comes, out of how many decision makers who hear your pitch 1 first meeting comes, and out of how many prospecting activities you reach 1 decision maker. They start at 2, 2, 3 and 3: change them to yours.",
+   "Look at the chart: it changes as you type. It goes down from the sales goal to the “Daily prospecting activities”, using the month's working days.",
+   "Click [[Guardar mi recetario]]."
+  ],
+  "expect": "SOLU confirms “Recipe saved.” To the right of each bar, “So far” shows what already happened this month as recorded in SOLU, and on the last bar “Today” counts today's activities; “How «so far» is counted”, below the chart, explains each figure. Each month has its own recipe; a month already closed doesn't change. Management and the Commercial Director can view and write another person's recipe by picking them under “Person”."
+ },
  "cobertura": {
   "t": "Coverage during absence",
   "why": "When you are away, another person looks after your Needs for a while.",

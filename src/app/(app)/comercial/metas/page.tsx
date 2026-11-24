@@ -5,7 +5,9 @@ import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { goalBoard } from "@/lib/goals";
 import { GOAL_METRICS, GOAL_RULES, METRIC_KEYS, VALUE_KINDS, isClosed, periodBounds, periodOf, shiftPeriod, validPeriod, type Pace, type PaceStatus } from "@/lib/goal-rules";
-import { saveTargets } from "./actions";
+import { saveRecipe, saveTargets } from "./actions";
+import { recipeActuals, recipeFor } from "@/lib/goal-recipe-data";
+import Recetario from "./Recetario";
 
 // Comercial C7 · Goals & Future Creation (v1.1 §37–42, §50). One person and one month at a time.
 // Decided C-01 / C-15: the person sees their own goals; Gerencia / Director Comercial pick one person to review
@@ -22,7 +24,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
   const people = manage ? await db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : [];
   const personId = manage && sp.u && people.some((p) => p.id === sp.u) ? sp.u : user.id;
   const person = personId === user.id ? { id: user.id, name: user.name } : people.find((p) => p.id === personId)!;
-  const b = await goalBoard(personId, period, now);
+  const [b, recipe, ra] = await Promise.all([goalBoard(personId, period, now), recipeFor(personId, period), recipeActuals(personId, period, now)]);
   const closed = isClosed(period, now);
   const future = period > periodOf(now);
   const monthName = new Intl.DateTimeFormat(i.es ? "es-CO" : "en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(periodBounds(period).start).replace(/^./, (c) => c.toUpperCase());
@@ -43,7 +45,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
     BEHIND: ["Detrás del ritmo", "Behind pace", "risk"],
     EARLY: ["El mes no empieza", "Month not started", "wait"],
   };
-  const okMsg: Record<string, string> = { guardado: t("Metas guardadas. La versión anterior queda en el historial.", "Targets saved. The previous version stays in history."), "sin-cambios": t("No había cambios que guardar.", "There were no changes to save.") };
+  const okMsg: Record<string, string> = { recetario: t("Recetario guardado.", "Recipe saved."), guardado: t("Metas guardadas. La versión anterior queda en el historial.", "Targets saved. The previous version stays in history."), "sin-cambios": t("No había cambios que guardar.", "There were no changes to save.") };
   const errMsg: Record<string, string> = {
     permiso: t("Solo Gerencia o la Dirección Comercial fijan metas.", "Only Management or the Commercial Director set targets."),
     cerrado: t("Ese mes ya cerró: sus metas no cambian.", "That month is closed: its targets don't change."),
@@ -51,6 +53,9 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
     valor: t("Las metas son números de cero en adelante.", "Targets are numbers from zero up."),
     periodo: t("Mes no válido.", "Invalid month."),
     persona: t("Esa persona no está activa.", "That person isn't active."),
+    "permiso-recetario": t("El recetario lo escribe la propia persona, Gerencia o la Dirección Comercial.", "The recipe is written by the person, Management or the Commercial Director."),
+    "recetario-valor": t("Escribe la meta de ventas y el valor de tu venta promedio, mayores que cero.", "Type the sales goal and your average sale, above zero."),
+    "recetario-proporcion": t("Cada proporción es un número entero de 1 a 50.", "Each ratio is a whole number from 1 to 50."),
   };
 
   const Card = ({ k, p }: { k: (typeof METRIC_KEYS)[number]; p: Pace }) => {
@@ -113,6 +118,10 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
         )}
       </div>
       {!future && <p className="src">{t(`Día hábil ${b.paces.VALUE_CONTACTS.elapsedDays} de ${b.paces.VALUE_CONTACTS.totalDays} (lunes a viernes, sin festivos de Colombia). La proyección aparece desde el día hábil ${GOAL_RULES.projectionMinDays}.`, `Working day ${b.paces.VALUE_CONTACTS.elapsedDays} of ${b.paces.VALUE_CONTACTS.totalDays} (Monday to Friday, skipping Colombian holidays). The projection shows from working day ${GOAL_RULES.projectionMinDays}.`)}</p>}
+
+      <Recetario es={i.es} name={person.name} workdays={b.paces.VALUE_CONTACTS.totalDays} closed={closed} canEdit={own || manage}
+        saved={recipe ? { salesGoal: Number(recipe.salesGoal), avgSale: Number(recipe.avgSale), quotesPerClose: recipe.quotesPerClose, meetingsPerQuote: recipe.meetingsPerQuote, pitchesPerMeeting: recipe.pitchesPerMeeting, activitiesPerPitch: recipe.activitiesPerPitch } : null}
+        savedBy={recipe?.setByName ?? null} actual={future ? {} : ra.actual} avg12={ra.avg12} action={saveRecipe.bind(null, personId, period)} key={`${personId}-${period}-${recipe?.updatedAt.getTime() ?? 0}`} />
 
       <div className="goal-grid">{METRIC_KEYS.map((k) => <Card key={k} k={k} p={b.paces[k]} />)}</div>
 
