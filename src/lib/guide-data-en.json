@@ -1700,14 +1700,28 @@
  },
  "midia-tablero": {
   "t": "My board: how you are doing against the previous period",
-  "why": "See at a glance how much is open in each stretch of the order, whether more or less work is coming in than before, and what has been open the longest.",
+  "why": "See at a glance which step each open case is at, whether more or less work is coming in than before, what has been open the longest, how much was invoiced in 12 months and which customers bought most.",
   "steps": [
    "Open [[MI DÍA]] and find “MY BOARD”, below the greeting.",
+   "At the top, the row “open cases, step by step” shows the 11 steps of an order, from Need to Result, with how many cases are at each one and since when. Each case counts once, at the step right after the last one done. Click a step to go to its list.",
    "Pick one of the four cards: Needs, Quotes, Orders to deliver or In transit. Each one says how many are open now, how many are past their date and how many have no follow-up.",
    "Pick the period: [[7 días]], [[30 días]], [[3 meses]] or [[12 meses]]. The blue line is this period; the dashed one, the previous period of the same length.",
-   "On the right, look at the age of the open ones and click one under “Open the longest” to open it."
+   "On the right, look at the age of the open ones and click one under “Open the longest” to open it.",
+   "Further down, “Invoiced sales · last 12 months” shows one bar per month with the number of invoices under it, and “Customers that bought most · 12 months” the eight customers with the most invoiced. Click a customer to open their record."
   ],
-  "expect": "The large figure is how many were created in the period, with the difference against the previous one. Hover a point of the chart to see both figures, or open “See the figures as a table”. Management and the Commercial Director can switch between “Mine” and “Team”."
+  "expect": "The large figure on each card is how many were created in the period, with the difference against the previous one. Hover a point or a bar to see its figures, or open “See the figures as a table”. Sales are the value of the invoices issued, in USD, before VAT. Management and the Commercial Director can switch between “Mine” and “Team”."
+ },
+ "calendario-casos": {
+  "t": "Case calendar: what happened and where you should be",
+  "why": "See any day, past or future: what happened, where each case stood that day, what was kept and what was not, and where each case should be on a future date, with the deadlines SOLU recommends.",
+  "steps": [
+   "Open [[MI DÍA]] and click the [[Calendario de casos]] tab. It opens on the current month, with today marked.",
+   "Look at the coloured numbers on each day: red “Not kept”, blue “Dated commitment”, orange “Deadline recommended by SOLU”, green “Kept” and gray “Something that happened”. Hover a day to read it in words.",
+   "Click a past day: each case says “That day it was at:” and, if it changed, “today it is at:”, with what happened that day.",
+   "Click a future day: each case says “By that day it should be at:” and where it is today. Recommended deadlines say how they were calculated.",
+   "Use [[← Mes anterior]] and [[Mes siguiente →]] to change month, and [[Volver a hoy]] to come back. Click a line to open the case."
+  ],
+  "expect": "Receipt at the warehouse is recommended 4 working days before the promised delivery, the supplier's dispatch those days minus the transit days, and a quote follow-up 7 days after the last contact. They are guides: they do not replace the date the supplier confirms. Management and the Commercial Director can switch between “Mine” and “Team”."
  },
  "aviso-retraso": {
   "t": "Delay notice: tell the customer and give a new date",

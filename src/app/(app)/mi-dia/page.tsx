@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FirstDay } from "@/components/FirstDay";
 import { BriefButton } from "@/components/shell/DayBrief";
 import { BoardBlock } from "@/components/BoardBlock";
-import { buildBoard } from "@/lib/board";
+import { buildBoard, buildBoardExtras } from "@/lib/board";
 import { ValueKindSelect } from "@/components/ValueKindSelect";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
@@ -33,7 +33,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
-  const [m, cash, board] = await Promise.all([buildMiDia(user, i), loadCashJourney(i, { ownerId: user.id, light: true }).catch((e) => { console.error("cash journey failed", e); return null; }), buildBoard(user, i, { section: sp.s, period: sp.p, team: sp.eq === "1" }).catch((e) => { console.error("board failed", e); return null; })]);
+  const [m, cash, board, boardX] = await Promise.all([buildMiDia(user, i), loadCashJourney(i, { ownerId: user.id, light: true }).catch((e) => { console.error("cash journey failed", e); return null; }), buildBoard(user, i, { section: sp.s, period: sp.p, team: sp.eq === "1" }).catch((e) => { console.error("board failed", e); return null; }), buildBoardExtras(user, i, { team: sp.eq === "1" }).catch((e) => { console.error("board extras failed", e); return null; })]);
   const cashCases = cash ? cash.deliver.length + cash.invoice.length + cash.collect.length + cash.credit.length : 0;
 
   const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: "America/Bogota" }).format(new Date()));
@@ -272,7 +272,7 @@ export default async function MiDiaPage({ searchParams }: { searchParams: Promis
       {sp.ok && okMsg[sp.ok] && <div className={`note${sp.ok.startsWith("sin-") ? " attn" : " okn"}`} role="status">{okMsg[sp.ok]}</div>}
       <Popovers />
 
-      {board && <BoardBlock b={board} i={i} />}
+      {board && <BoardBlock b={board} x={boardX} i={i} />}
 
       {cash && cashCases > 0 && (
         <section className="mblock" data-zone="flow" aria-labelledby="h-cash" style={{ marginBottom: 16 }}>

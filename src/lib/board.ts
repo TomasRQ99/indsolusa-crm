@@ -109,3 +109,80 @@ export async function buildBoard(user: SessionUser, i: I18n, o: { section?: stri
     buckets, totalNow, totalPrev, ages, active: list.length, oldest: list.slice(0, 6),
   };
 }
+
+// ---------- The whole route, the invoiced sales of 12 months and the customers that bought most ----------
+// (owner, 2026-11-23: the stage line of the board, "ventas netas y facturas" and "mejores clientes".)
+
+export type BoardStation = { key: string; label: string; n: number; since: Date | null; href: string };
+export type BoardExtras = Awaited<ReturnType<typeof buildBoardExtras>>;
+
+export async function buildBoardExtras(user: SessionUser, i: I18n, o: { team?: boolean }) {
+  const { t } = i;
+  const team = !!o.team && canManageAll(user);
+  const dealScope = { ...(team ? {} : { ownerId: user.id }), internal: false };
+  const now = today();
+  // Twelve calendar months, the current one included.
+  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1));
+  const ts = (d: Date) => new Date(d.getTime() + 5 * 3600e3);
+
+  const [open, invoices] = await Promise.all([
+    db.deal.findMany({
+      where: { ...dealScope, stage: { not: "LOST" }, closedAt: null, resultAchievedAt: null },
+      select: {
+        createdAt: true, stage: true, desiredResult: true, locatedAt: true, supplierCost: true, sourcingNote: true, quoteSentAt: true, poAcceptedAt: true,
+        supplierPos: { select: { confirmedAt: true, receivedAt: true } },
+        deliveries: { select: { invoice: { select: { id: true } } } },
+        invoices: { select: { amount: true, applications: { select: { amount: true } } } },
+      },
+    }),
+    db.invoice.findMany({ where: { deal: dealScope, issuedAt: { gte: ts(from) } }, select: { amount: true, issuedAt: true, accountId: true, account: { select: { name: true } } } }),
+  ]);
+
+  // Where each open case is: the step right after the last one that is done (the same steps as the path of a Need).
+  const STEPS: { key: string; label: string; href: string }[] = [
+    { key: "need", label: t("Necesidad", "Need"), href: "/deals" },
+    { key: "locate", label: t("Localizar", "Locate"), href: "/deals" },
+    { key: "source", label: t("Fuente", "Source"), href: "/localizar" },
+    { key: "quote", label: t("Cotización", "Quote"), href: "/cotizaciones" },
+    { key: "po", label: t("OC del cliente", "Customer PO"), href: "/cotizaciones" },
+    { key: "purchase", label: t("Compra", "Purchase"), href: "/compras" },
+    { key: "ship", label: t("En tránsito", "In transit"), href: "/logistica" },
+    { key: "deliver", label: t("Entrega", "Delivery"), href: "/operaciones/despachos" },
+    { key: "invoice", label: t("Factura", "Invoice"), href: "/operaciones/por-facturar" },
+    { key: "cash", label: t("Cobro", "Collection"), href: "/administracion/cobrar" },
+    { key: "result", label: t("Resultado", "Result"), href: "/deals" },
+  ];
+  const stations: BoardStation[] = STEPS.map((s) => ({ ...s, n: 0, since: null }));
+  for (const d of open) {
+    const won = d.stage === "WON";
+    const sourced = d.supplierPos.length > 0 || Number(d.supplierCost) > 0 || !!d.sourcingNote;
+    const delivered = d.deliveries.length > 0;
+    const done = [
+      !!d.desiredResult, !!d.locatedAt || sourced, sourced, !!d.quoteSentAt || d.stage === "NEGOTIATION" || won, !!d.poAcceptedAt || won,
+      d.supplierPos.length > 0 && d.supplierPos.every((p) => !!p.confirmedAt), (d.supplierPos.length > 0 && d.supplierPos.every((p) => !!p.receivedAt)) || delivered, delivered,
+      delivered && d.deliveries.every((x) => !!x.invoice), d.invoices.length > 0 && d.invoices.every((x) => x.applications.reduce((s, a) => s + Number(a.amount), 0) + 0.005 >= Number(x.amount)),
+    ];
+    const at = Math.min(STEPS.length - 1, done.lastIndexOf(true) + 1);
+    const st = stations[at];
+    st.n++;
+    if (!st.since || d.createdAt < st.since) st.since = d.createdAt;
+  }
+
+  const months = Array.from({ length: 12 }, (_, k) => {
+    const d = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth() + k, 1));
+    return { key: d.toISOString().slice(0, 7), label: new Intl.DateTimeFormat(i.es ? "es-CO" : "en-US", { month: "short", timeZone: "UTC" }).format(d).replace(".", ""), year: d.getUTCFullYear(), total: 0, n: 0 };
+  });
+  const byAcc = new Map<string, { id: string; name: string; total: number; n: number }>();
+  for (const inv of invoices) {
+    const key = new Date(inv.issuedAt.getTime() - 5 * 3600e3).toISOString().slice(0, 7);
+    const mo = months.find((x) => x.key === key);
+    if (!mo) continue;
+    const v = Number(inv.amount);
+    mo.total += v; mo.n++;
+    const a = byAcc.get(inv.accountId) ?? { id: inv.accountId, name: inv.account.name.replace(/ \(ejemplo\)$/, ""), total: 0, n: 0 };
+    a.total += v; a.n++;
+    byAcc.set(inv.accountId, a);
+  }
+  const customers = [...byAcc.values()].sort((a, b) => b.total - a.total).slice(0, 8);
+  return { team, stations, openCases: open.length, months, salesTotal: months.reduce((s, x) => s + x.total, 0), invoiceCount: months.reduce((s, x) => s + x.n, 0), customers, customerCount: byAcc.size };
+}

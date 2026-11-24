@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { I18n } from "@/lib/i18n";
-import type { Board } from "@/lib/board";
+import type { Board, BoardExtras } from "@/lib/board";
+import { RouteStrip, SalesAndCustomers } from "@/components/BoardExtras";
 import { CellBar, Delta } from "@/components/Viz";
 
 // MI TABLERO on Mi Día. Server component: the section, the period and Mío/Equipo travel in the address, so a
@@ -48,7 +49,7 @@ function CompareLine({ b, i }: { b: Board; i: I18n }) {
   );
 }
 
-export function BoardBlock({ b, i }: { b: Board; i: I18n }) {
+export function BoardBlock({ b, x, i }: { b: Board; x?: BoardExtras | null; i: I18n }) {
   const { t } = i;
   const href = (o: { s?: string; p?: string; eq?: boolean }) => {
     const q = new URLSearchParams({ s: o.s ?? b.section, p: o.p ?? b.period });
@@ -71,6 +72,8 @@ export function BoardBlock({ b, i }: { b: Board; i: I18n }) {
           </nav>
         )}
       </div>
+
+      {x && <RouteStrip x={x} i={i} />}
 
       <nav className="bd-cards" aria-label={t("Secciones", "Sections")}>
         {b.cards.map((c) => (
@@ -146,6 +149,7 @@ export function BoardBlock({ b, i }: { b: Board; i: I18n }) {
           )}
         </div>
       </div>
+      {x && <SalesAndCustomers x={x} i={i} />}
     </section>
   );
 }

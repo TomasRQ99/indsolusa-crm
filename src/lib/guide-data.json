@@ -111,14 +111,31 @@
    "m": "midia",
    "t": "Mi tablero: cómo vas frente al periodo anterior",
    "path": "MI DÍA → Hoy · MI TABLERO",
-   "why": "Ver de un vistazo cuánto hay abierto en cada tramo del pedido, si entra más o menos trabajo que antes, y qué lleva más tiempo abierto.",
+   "why": "Ver de un vistazo en qué paso está cada caso abierto, si entra más o menos trabajo que antes, qué lleva más tiempo abierto, cuánto se facturó en 12 meses y qué clientes compraron más.",
    "steps": [
     "Abre [[MI DÍA]] y busca «MI TABLERO», debajo del saludo.",
+    "Arriba, la fila «casos abiertos, paso por paso» muestra los 11 pasos del pedido, de Necesidad a Resultado, con cuántos casos hay en cada uno y desde cuándo. Cada caso cuenta una vez, en el paso que le sigue al último que ya se hizo. Haz clic en un paso para ir a su lista.",
     "Elige una de las cuatro tarjetas: Necesidades, Cotizaciones, Pedidos por entregar o En tránsito. Cada una dice cuántas hay abiertas ahora, cuántas pasaron su fecha y cuántas están sin seguimiento.",
     "Elige el periodo: [[7 días]], [[30 días]], [[3 meses]] o [[12 meses]]. La línea azul es este periodo; la punteada, el periodo anterior, del mismo largo.",
-    "A la derecha, mira la antigüedad de las abiertas y haz clic en una de «Las que llevan más tiempo abiertas» para abrirla."
+    "A la derecha, mira la antigüedad de las abiertas y haz clic en una de «Las que llevan más tiempo abiertas» para abrirla.",
+    "Más abajo, «Ventas facturadas · últimos 12 meses» muestra una barra por mes con el número de facturas debajo, y «Clientes que más compraron · 12 meses» los ocho clientes con más facturado. Haz clic en un cliente para abrir su ficha."
    ],
-   "expect": "La cifra grande es cuántas se crearon en el periodo, con la diferencia frente al anterior. Pasa el cursor por un punto de la gráfica para ver las dos cifras, o abre «Ver las cifras en tabla». Gerencia y Dirección Comercial pueden cambiar entre «Mío» y «Equipo»."
+   "expect": "La cifra grande de cada tarjeta es cuántas se crearon en el periodo, con la diferencia frente al anterior. Pasa el cursor por un punto o una barra para ver sus cifras, o abre «Ver las cifras en tabla». Las ventas son el valor de las facturas emitidas, en USD, sin IVA. Gerencia y Dirección Comercial pueden cambiar entre «Mío» y «Equipo»."
+  },
+  {
+   "id": "calendario-casos",
+   "m": "midia",
+   "t": "Calendario de casos: lo que pasó y dónde deberías estar",
+   "path": "MI DÍA → Calendario de casos",
+   "why": "Ver cualquier día, pasado o futuro: qué pasó, en qué estaba cada caso ese día, qué se cumplió y qué no, y en qué debería estar cada caso en una fecha futura, con los plazos que SOLU recomienda.",
+   "steps": [
+    "Abre [[MI DÍA]] y haz clic en la pestaña [[Calendario de casos]]. Se abre en el mes actual, con hoy marcado.",
+    "Mira los números de colores en cada día: rojo «No se cumplió», azul «Compromiso con fecha», naranja «Plazo recomendado por SOLU», verde «Cumplido» y gris «Algo que pasó». Pasa el cursor por un día para leerlo en palabras.",
+    "Haz clic en un día pasado: cada caso dice «Ese día estaba en:» y, si cambió, «hoy está en:», con lo que pasó ese día.",
+    "Haz clic en un día futuro: cada caso dice «Para ese día debería estar en:» y dónde está hoy. Los plazos recomendados dicen cómo se calcularon.",
+    "Usa [[← Mes anterior]] y [[Mes siguiente →]] para cambiar de mes, y [[Volver a hoy]] para regresar. Haz clic en una línea para abrir el caso."
+   ],
+   "expect": "El recibo en bodega se recomienda 4 días hábiles antes de la entrega prometida, el despacho del proveedor esos días menos los días de transporte, y el seguimiento de una cotización 7 días después del último contacto. Son guías: no reemplazan la fecha que confirme el proveedor. Gerencia y Dirección Comercial pueden cambiar entre «Mío» y «Equipo»."
   },
   {
    "id": "miplan",
