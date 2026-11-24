@@ -286,12 +286,28 @@
    "steps": [
     "Abre \"Nuevo cliente\". En \"Documentos del cliente\" elige el RUT (PDF descargado de la DIAN) y, si quieres, el certificado de Cámara de Comercio.",
     "SOLU llena razón social, RUT/NIT con su dígito de verificación (casilla DV, opcional), departamento, ciudad, dirección, teléfono y correo para facturas, marcados \"del RUT\" o \"del Cámara\". Revísalos (si el dígito no cuadra, lo avisa). Solo la razón social es obligatoria: elige el país (cambia el indicativo del teléfono), escribe el sitio web como lo conozcas y, si quieres, el contacto para promociones con la casilla de autorización. Haz clic en [[Crear cliente]].",
-    "Haz clic en el nombre del cliente para abrir su vista 360. En \"Documentos\" puedes abrir el RUT, ver lo que SOLU leyó o subir más archivos con [[Subir]].",
+    "Haz clic en cualquier parte de la fila del cliente para abrir su vista 360 (la columna «Facturado · 12 meses» dice cuánto le facturamos el último año). En \"Documentos\" puedes abrir el RUT, ver lo que SOLU leyó o subir más archivos con [[Subir]].",
     "Revisa la historia, el patrón de facturación y los equipos instalados.",
     "Inicia una necesidad nueva desde aquí con [[Crear y abrir]]. Se abre una Necesidad.",
     "Perfil de facturación: indica si acepta facturas parciales y quién recibe las facturas, y [[Guardar]]."
    ],
    "expect": "Si ya existe un cliente con ese RUT/NIT, SOLU no crea otro y te lleva al existente. Los RUT escaneados o en foto se guardan, pero las casillas se llenan a mano. Del certificado de Cámara, SOLU toma el correo de la empresa y nunca el de la Cámara; si no lo encuentra, deja la casilla vacía. Un correo incompleto o un sitio web escrito a tu manera no impiden crear el cliente. Las gráficas solo aparecen con al menos 3 datos."
+  },
+  {
+   "id": "estadisticas-cliente",
+   "m": "mercado",
+   "t": "Estadísticas de un cliente",
+   "path": "MERCADO → Clientes y proveedores → Clientes → un cliente → Estadísticas",
+   "why": "Cómo se ha comportado cada cliente con nosotros, mes a mes y comparado con antes: cuánto pide, cuánto compra y paga, cuánto tarda cada paso, cuántos correos nos manda y cómo ha cambiado su cupo.",
+   "steps": [
+    "Abre el cliente desde la lista. Arriba de «NECESIDADES ACTIVAS» está «ESTADÍSTICAS · ÚLTIMOS 12 MESES» con seis cifras comparadas con los 12 meses anteriores. Haz clic en una cifra o en [[Ver todas las estadísticas mes a mes]].",
+    "Elige el periodo: [[Últimos 12 meses]], [[Últimos 24 meses]], [[Últimos 36 meses]] o [[Toda la historia]]. Cada periodo se compara con el anterior del mismo largo.",
+    "Lee cada cifra: su nombre dice cómo se cuenta. A la derecha, una barra por mes; la raya gris es el mismo mes un año antes.",
+    "Haz clic en un mes (en una gráfica o en el encabezado de la tabla): arriba aparece «Qué pasó en …» con cada registro que forma las cifras de ese mes, y cada uno se abre. Ciérralo con [[Cerrar]].",
+    "En «CUPO Y RECLAMOS» abre «Historial del cupo» para ver cada cambio: fecha, antes, después y quién lo hizo.",
+    "Al final, la tabla «Mes a mes, todas las cifras» pone todo junto, el mes más reciente a la izquierda."
+   ],
+   "expect": "Las cifras salen solas de lo que ya está registrado; no hay nada que llenar. Solo cuenta el dinero conciliado por Tesorería y los correos que llegaron al buzón conectado a SOLU. Los tiempos son promedios de los casos de ese mes («—» si no hubo casos). La flecha verde dice que la cifra se movió en la dirección buena y la roja que se movió en la mala; los correos y el cupo no tienen color porque subir o bajar no es bueno ni malo por sí solo."
   },
   {
    "id": "contacts",

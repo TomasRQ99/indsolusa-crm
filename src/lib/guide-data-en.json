@@ -123,12 +123,25 @@
   "steps": [
    "Open \"New customer\". Under \"Customer documents\" choose the RUT (PDF downloaded from the DIAN) and, if you want, the Chamber of Commerce certificate.",
    "SOLU fills in legal name, tax ID with its check digit (DV box, optional), state, city, address, phone and invoice email, marked \"from RUT\" or \"from Chamber\". Check them (if the check digit does not match, it says so). Only the legal name is required: choose the country (it changes the phone code), type the website as you know it and, if you want, the contact for promotions with the permission box. Click [[Crear cliente]].",
-   "Click the customer's name to open their 360 view. Under \"Documents\" you can open the RUT, see what SOLU read or upload more files with [[Subir]].",
+   "Click anywhere on the customer's row to open their 360 view (the column \"Invoiced · 12 months\" says how much we invoiced them in the last year). Under \"Documents\" you can open the RUT, see what SOLU read or upload more files with [[Subir]].",
    "Review the history, the billing pattern and the installed equipment.",
    "Start a new need from here with [[Crear y abrir]]. A Need opens.",
    "Billing profile: say whether they accept partial invoices and who receives the invoices, and [[Guardar]]."
   ],
   "expect": "If a customer with that tax ID already exists, SOLU does not create another and takes you to the existing one. Scanned or photographed RUTs are stored, but the boxes are filled in by hand. Charts only show with at least 3 data points."
+ },
+ "estadisticas-cliente": {
+  "t": "A customer's statistics",
+  "why": "How each customer has performed for us, month by month and compared with before: how much they ask for, how much they buy and pay, how long each step takes, how many emails they send us and how their credit limit has changed.",
+  "steps": [
+   "Open the customer from the list. Above \"ACTIVE NEEDS\" is \"STATISTICS · LAST 12 MONTHS\" with six figures compared with the 12 months before. Click a figure or [[Ver todas las estadísticas mes a mes]].",
+   "Choose the period: [[Últimos 12 meses]], [[Últimos 24 meses]], [[Últimos 36 meses]] or [[Toda la historia]]. Each period is compared with the previous one of the same length.",
+   "Read each figure: its name says how it is counted. On the right, one bar per month; the grey line is the same month a year earlier.",
+   "Click a month (on a chart or in the table header): \"What happened in …\" appears at the top with each record behind that month's figures, and each one opens. Close it with [[Cerrar]].",
+   "Under \"CREDIT LIMIT AND CLAIMS\" open \"Credit limit history\" to see each change: date, before, after and who made it.",
+   "At the end, the table \"Month by month, every figure\" puts everything together, most recent month on the left."
+  ],
+  "expect": "The figures come on their own from what is already recorded; there is nothing to fill in. Only money reconciled by Treasury and emails that reached the mailbox connected to SOLU count. Times are averages of that month's cases (\"—\" if there were none). A green arrow says the figure moved the good way and a red one the bad way; emails and the credit limit have no colour because going up or down is neither good nor bad by itself."
  },
  "contacts": {
   "t": "Contacts",

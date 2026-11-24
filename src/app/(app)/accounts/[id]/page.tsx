@@ -21,6 +21,9 @@ import { EmailComposer } from "@/components/EmailComposer";
 import { Popovers } from "@/components/Popovers";
 import { COUNTRIES, DIAL_CODES, countryOf, placeLine } from "@/lib/customer-fields";
 import { setPromoOptIn } from "../../contacts/actions";
+import { fmtStat, loadCustomerStats, monthOf, monthRange, periodOf, prevYear, statDef } from "@/lib/customer-stats";
+import { Delta } from "@/components/Viz";
+import "@/components/customer-stats.css";
 
 export default async function Customer360({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -34,13 +37,18 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
   const mail = mailConfig();
   const recipients = a.contacts.filter((c) => c.email).map((c) => ({ id: c.id, label: `${c.firstName} ${c.lastName} <${c.email}>` }));
   const MAP_ROLES = [["RECEIVES", t("Recibe la factura", "Receives the invoice")], ["VALIDATES", t("Valida", "Validates")], ["APPROVES", t("Aprueba", "Approves")], ["SCHEDULES", t("Programa el pago", "Schedules payment")], ["PAYS", t("Paga (Tesorería)", "Pays (Treasury)")]] as const;
-  const [users, docs, payRules, payMap] = await Promise.all([
+  const [users, docs, payRules, payMap, stats] = await Promise.all([
     canManageAll(user) ? db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
     // The file bytes stay in the database: only the list is loaded here.
     db.accountDocument.findMany({ where: { accountId: id }, orderBy: { createdAt: "desc" }, select: { id: true, kind: true, name: true, size: true, extracted: true, createdAt: true } }),
     getPayRules(),
     db.paymentMap.findUnique({ where: { accountId: id }, include: { people: { include: { contact: { select: { id: true, firstName: true, lastName: true, title: true } } } } } }),
+    loadCustomerStats(id),
   ]);
+  // Estadísticas: six headline figures of the last 12 months against the 12 before; the full page has every figure.
+  const m12 = monthRange(monthOf(new Date()), 12);
+  const p12 = monthRange(prevYear(m12[11]), 12);
+  const tiles = ["needs", "quotedUsd", "invoicedUsd", "paidUsd", "payDays", "mailsIn"].map((k) => statDef(k)!).map((d) => ({ d, now: periodOf(stats, d, m12), prev: periodOf(stats, d, p12) }));
   const mapEditable = canEditMoney(user, a.ownerId);
   const F = ({ f, src }: { f: Fresh; src?: string | null }) => <span className={`fresh${f.stale ? " stale" : ""}`}>{src ? `${src} · ` : ""}{f.label}{f.stale && f.at ? ` · ${t("confirmar", "re-confirm")}` : ""}</span>;
 
@@ -83,7 +91,7 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
           <F f={freshness(i, lastInteraction, 90, now)} src={t("última interacción", "last interaction")} />
         </div>
         <div className="jh-title"><h1>{a.name}</h1></div>
-        <p className="jh-sub">{a.industry ?? t("Sin industria", "No industry")}{placeLine(a, i.es) ? ` · ${placeLine(a, i.es)}` : ""}{a.phone ? ` · ${a.phone}` : ""} · {t("Responsable", "Owner")}: {a.owner.name} · {t(`cliente desde ${i.day(a.createdAt)}`, `customer since ${i.day(a.createdAt)}`)} · <Link href={`/mercado/empresas/${a.id}`}>{t("Cómo funciona esta empresa (Mercado)", "How this company works (Market)")}</Link> · <Link href={`/comercial/perfiles/${a.id}`}>{t("Perfil y diario", "Profile and diary")}</Link></p>
+        <p className="jh-sub">{a.industry ?? t("Sin industria", "No industry")}{placeLine(a, i.es) ? ` · ${placeLine(a, i.es)}` : ""}{a.phone ? ` · ${a.phone}` : ""} · {t("Responsable", "Owner")}: {a.owner.name} · {t(`cliente desde ${i.day(a.createdAt)}`, `customer since ${i.day(a.createdAt)}`)} · <Link href={`/mercado/empresas/${a.id}`}>{t("Cómo funciona esta empresa (Mercado)", "How this company works (Market)")}</Link> · <Link href={`/comercial/perfiles/${a.id}`}>{t("Perfil y diario", "Profile and diary")}</Link> · <Link href={`/accounts/${a.id}/estadisticas`}><b>{t("Estadísticas", "Statistics")}</b></Link></p>
       </header>
 
       {isNew && (
@@ -118,6 +126,20 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
 
       <div className="jbody">
         <div className="jmain">
+          <section className="jblock" id="estadisticas">
+            <div className="jbh"><b>{t("ESTADÍSTICAS · ÚLTIMOS 12 MESES", "STATISTICS · LAST 12 MONTHS")}</b><span className="grow" /><span className="src">{t("comparado con los 12 meses anteriores", "compared with the 12 months before")}</span></div>
+            <div className="cs-sum">
+              {tiles.map(({ d, now, prev }) => (
+                <Link key={d.key} href={`/accounts/${a.id}/estadisticas#s-${d.key}`} className="cs-tile" title={t(d.defEs, d.defEn)}>
+                  <span className="src">{t(d.es, d.en)}</span>
+                  <b>{fmtStat(i, d.unit, now.value)}</b>
+                  <span className="small"><Delta now={now.value ?? 0} prev={now.value == null ? null : prev.value} good={d.good} fmt={(x) => fmtStat(i, d.unit, x)} same={t("igual", "same")} /> <span className="src">{t("antes", "before")}: {fmtStat(i, d.unit, prev.value)}</span></span>
+                </Link>
+              ))}
+            </div>
+            <Link className="qa-btn" href={`/accounts/${a.id}/estadisticas`}>{t("Ver todas las estadísticas mes a mes", "See every statistic month by month")}</Link>
+          </section>
+
           <section className="jblock">
             <div className="jbh"><b>{t("NECESIDADES ACTIVAS", "ACTIVE NEEDS")}</b><span className="grow" /><span className="src">{t("entra a la Necesidad para actuar", "enter the Need to act")}</span></div>
             {active.length === 0 ? <p className="quiet-p">{t("Nada en curso.", "Nothing in progress.")}</p> : (

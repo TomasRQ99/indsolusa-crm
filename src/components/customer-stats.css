@@ -1,0 +1,57 @@
+/* Customer statistics (MERCADO → Clientes → customer → Estadísticas), 2026-11-24. Prefix cs-. */
+.cs-range { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 12px; }
+.cs-chip { display: inline-block; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-2); font-size: 13px; text-decoration: none; }
+.cs-chip:hover { border-color: var(--brand); color: var(--brand); }
+.cs-chip.on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+.cs-range .src { margin-left: 4px; }
+.cs-legend { margin: 0 0 10px; }
+.cs-key { display: inline-block; vertical-align: middle; }
+.cs-key.bar { width: 10px; height: 10px; border-radius: 2px; background: var(--brand); }
+.cs-key.prev { width: 14px; height: 0; border-top: 2px solid var(--ink-3); }
+.cs-group { margin-bottom: 12px; }
+.cs-gh { font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 4px; }
+.cs-list { list-style: none; margin: 0; padding: 0; }
+.cs-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(130px, .7fr) minmax(0, 1.6fr); gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.cs-row:first-child { border-top: 0; }
+.cs-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cs-fig { display: flex; flex-direction: column; gap: 2px; }
+.cs-fig > b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.cs-plot { min-width: 0; }
+.cs-chart { width: 100%; height: auto; display: block; max-height: 110px; }
+.cs-base { stroke: var(--line-strong); stroke-width: 1; }
+.cs-bar { fill: var(--brand); }
+.cs-bar.neg { fill: var(--ok); }
+.cs-prev { stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; }
+.cs-none { fill: var(--line-strong); }
+.cs-hit { fill: transparent; }
+.cs-pt:hover .cs-hit, .cs-pt:focus .cs-hit { fill: var(--brand-soft); }
+.cs-pt.on .cs-hit { fill: var(--brand-soft); }
+.cs-pt:hover .cs-bar { fill: var(--brand-strong, #0d4aa3); }
+.cs-v { font-size: 10px; font-weight: 700; fill: var(--ink); }
+.cs-ax { font-size: 9px; fill: var(--ink-3); }
+.cs-th { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; padding: 10px 12px; }
+.cs-month .cs-th { padding: 0 0 8px; }
+.cs-month { border-color: var(--brand); }
+.cs-mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px 18px; }
+.cs-mgrid ul { margin: 2px 0 0; }
+.cs-mgrid li { padding: 2px 0; }
+.cs-table { font-size: 12px; }
+.cs-table th, .cs-table td { white-space: nowrap; }
+.cs-table td:first-child, .cs-table th:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; white-space: normal; min-width: 190px; }
+.cs-table .on { background: var(--brand-soft); }
+.cs-tg td { font-weight: 700; color: var(--ink-2); background: var(--surface-sunken) !important; text-transform: uppercase; font-size: 11px; letter-spacing: .04em; }
+.cs-credit { margin-top: 8px; }
+.cs-credit table { margin: 6px 0; }
+/* Customer 360 summary */
+.cs-sum { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 6px 0 8px; }
+.cs-tile { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: inherit; }
+.cs-tile:hover { border-color: var(--brand); }
+.cs-tile > b { font-size: 16px; font-variant-numeric: tabular-nums; }
+/* Customers list: the whole row opens the customer */
+.cs-rows tbody tr { position: relative; }
+.cs-rows tbody tr:hover { background: var(--surface-sunken); }
+.cs-rows td:first-child a::after { content: ""; position: absolute; inset: 0; }
+@media (max-width: 760px) {
+  .cs-row { grid-template-columns: 1fr auto; }
+  .cs-plot { grid-column: 1 / -1; }
+}
