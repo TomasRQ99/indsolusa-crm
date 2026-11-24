@@ -1734,6 +1734,28 @@
   ],
   "expect": "Receipt at the warehouse is recommended 4 working days before the promised delivery, the supplier's dispatch those days minus the transit days, and a quote follow-up 7 days after the last contact. They are guides: they do not replace the date the supplier confirms. Management and the Commercial Director can switch between “Mine” and “Team”."
  },
+ "comparar-equipo": {
+  "t": "Compare the team: each person's customers, activity and results",
+  "why": "See each person on the team side by side: how many customers they have in their care, how many were active, how many contacts they made and what they moved in the period.",
+  "steps": [
+   "Open [[MI DÍA]] and click the [[Comparar equipo]] tab. You also get there from “MY BOARD”, with the link “Compare the team →”.",
+   "Pick the period: [[30 días]], [[3 meses]] or [[12 meses]].",
+   "Read the table: one row per person and one column per figure: Customers in care, Active customers, Contacts made, New Needs, Quotes presented, POs accepted and Invoiced sales. Your row is highlighted and says “You”.",
+   "Click a column title to order by it, highest first. “Person” goes back to ordering by name.",
+   "Open “What each column counts” to read how each figure is counted."
+  ],
+  "expect": "Each figure carries a bar measured against the highest one in its column, and the “Team” row adds everyone up. Everyone sees this page, with the same figures. No score joins the columns."
+ },
+ "necesidad-ia": {
+  "t": "Create Need with AI",
+  "why": "Dictate or type the case and let SOLU build the Need, ask for what is missing, propose what to do and draft the reply to the customer. It waits for the company's AI key.",
+  "steps": [
+   "Open [[COMERCIAL]] and the [[Necesidades]] tab.",
+   "In the “New Need” box, to the right of the title, click [[Crear Necesidad con IA]].",
+   "Read the notice and click [[Entendido]]. Meanwhile, record the case with the “New Need” form."
+  ],
+  "expect": "Until the company connects its AI key, the notice says “Needs the AI key (API key).” Management connects it in Render, in the ANTHROPIC_API_KEY variable."
+ },
  "aviso-retraso": {
   "t": "Delay notice: tell the customer and give a new date",
   "why": "When a delivery passes its promised date, it is better that the customer hears it from you: on one screen you state the cause, offer a new date and the email goes out.",

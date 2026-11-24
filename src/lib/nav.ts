@@ -43,6 +43,7 @@ export const MODULES: NavModule[] = [
       { href: "/mi-dia", es: "Hoy", en: "Today" },
       { href: "/mi-plan", es: "Mi Plan", en: "My Plan" },
       { href: "/mi-dia/calendario", es: "Calendario de casos", en: "Case calendar" },
+      { href: "/mi-dia/equipo", es: "Comparar equipo", en: "Compare the team" },
       { href: "/tasks", es: "Pendientes", en: "To-dos" },
       { href: "/comunicacion", es: "Comunicación", en: "Communication" },
       { href: "/email", es: "Correo", en: "Email" },

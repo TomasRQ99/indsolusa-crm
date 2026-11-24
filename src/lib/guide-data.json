@@ -138,6 +138,21 @@
    "expect": "El recibo en bodega se recomienda 4 días hábiles antes de la entrega prometida, el despacho del proveedor esos días menos los días de transporte, y el seguimiento de una cotización 7 días después del último contacto. Son guías: no reemplazan la fecha que confirme el proveedor. Gerencia y Dirección Comercial pueden cambiar entre «Mío» y «Equipo»."
   },
   {
+   "id": "comparar-equipo",
+   "m": "midia",
+   "t": "Comparar equipo: clientes, actividad y resultados de cada persona",
+   "path": "MI DÍA → Comparar equipo",
+   "why": "Ver a cada persona del equipo lado a lado: cuántos clientes tiene a cargo, cuántos estuvieron activos, cuántos contactos hizo y lo que movió en el periodo.",
+   "steps": [
+    "Abre [[MI DÍA]] y haz clic en la pestaña [[Comparar equipo]]. También llegas desde «MI TABLERO», con el enlace «Comparar equipo →».",
+    "Elige el periodo: [[30 días]], [[3 meses]] o [[12 meses]].",
+    "Lee la tabla: una fila por persona y una columna por cifra: Clientes a cargo, Clientes activos, Contactos hechos, Necesidades nuevas, Cotizaciones presentadas, OC aceptadas y Ventas facturadas. Tu fila está resaltada y dice «Tú».",
+    "Haz clic en el título de una columna para ordenar por ella, de mayor a menor. «Persona» vuelve al orden por nombre.",
+    "Abre «Qué cuenta cada columna» para leer cómo se cuenta cada cifra."
+   ],
+   "expect": "Cada cifra lleva una barra medida contra la más alta de su columna, y la fila «Equipo» suma a todos. Todos ven esta página, con las mismas cifras. No hay un puntaje que junte las columnas."
+  },
+  {
    "id": "miplan",
    "m": "midia",
    "t": "Mi Plan y archivo para Outlook",
@@ -373,6 +388,19 @@
     "De vuelta en el tablero: en cualquier tarjeta, usa la lista desplegable para moverla de etapa. Las tarjetas en rojo dicen «Sin siguiente movimiento»: nadie ha decidido qué sigue."
    ],
    "expect": "La Necesidad queda con su número (J-…), el correo registrado y el próximo contacto como siguiente movimiento. Un código nuevo queda registrado en Localizar repuestos, y la máquina queda en la lista de ese cliente, para no escribirlos otra vez. Si desmarcas la casilla del correo, el botón dice «Crear Necesidad» y no se envía nada. El tablero oculta las Necesidades cerradas y las perdidas hace más de 90 días."
+  },
+  {
+   "id": "necesidad-ia",
+   "m": "comercial",
+   "t": "Crear Necesidad con IA",
+   "path": "COMERCIAL → Necesidades · Nueva Necesidad",
+   "why": "Dictar o escribir el caso y que SOLU arme la Necesidad, pregunte lo que falta, proponga qué hacer y prepare la respuesta al cliente. Espera la llave de IA de la empresa.",
+   "steps": [
+    "Abre [[COMERCIAL]] y la pestaña [[Necesidades]].",
+    "En el recuadro «Nueva Necesidad», a la derecha del título, haz clic en [[Crear Necesidad con IA]].",
+    "Lee el aviso y haz clic en [[Entendido]]. Mientras tanto, registra el caso con el formulario «Nueva Necesidad»."
+   ],
+   "expect": "Mientras la empresa no conecte su llave de IA, el aviso dice «Necesita la llave de IA (API key).» Gerencia la conecta en Render, en la variable ANTHROPIC_API_KEY."
   },
   {
    "id": "journey",

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { AiNeedButton } from "@/components/AiNeedButton";
 
 // The first step of every order: a customer asks for something. Modelled on the team's own "Nueva Solicitud":
 // customer and contact, what they need, the product or spare part (picked from what is already registered, so it
@@ -13,9 +14,9 @@ type Contact = { id: string; accountId: string; name: string; email: string | nu
 type PartOpt = { code: string; name: string };
 type Machine = { accountId: string; name: string };
 
-export function NewNeedForm({ lang, action, accounts, contacts, parts, machines, defaultFollowUp }: {
+export function NewNeedForm({ lang, action, accounts, contacts, parts, machines, defaultFollowUp, aiReady = false }: {
   lang: "ES" | "EN"; action: (fd: FormData) => void | Promise<void>;
-  accounts: Opt[]; contacts: Contact[]; parts: PartOpt[]; machines: Machine[]; defaultFollowUp: string;
+  accounts: Opt[]; contacts: Contact[]; parts: PartOpt[]; machines: Machine[]; defaultFollowUp: string; aiReady?: boolean;
 }) {
   const t = (es: string, en: string) => (lang === "EN" ? en : es);
   const [accountId, setAccountId] = useState("");
@@ -38,6 +39,7 @@ export function NewNeedForm({ lang, action, accounts, contacts, parts, machines,
           <h2>{t("Nueva Necesidad", "New Need")}</h2>
           <p>{t("Empieza aquí cuando un cliente pide algo. Con esto queda registrada la solicitud, se le confirma al cliente por correo y queda la fecha del próximo contacto.", "Start here when a customer asks for something. This records the request, confirms it to the customer by email and sets the date of the next contact.")}</p>
         </div>
+        <AiNeedButton lang={lang} configured={aiReady} />
       </div>
       <form action={action} className="nn-form">
         <div className="nn-col">

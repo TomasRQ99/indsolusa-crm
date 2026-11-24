@@ -65,6 +65,7 @@ export function BoardBlock({ b, x, i }: { b: Board; x?: BoardExtras | null; i: I
         <b id="h-bd">{t("MI TABLERO", "MY BOARD")}</b>
         <span>{b.team ? t("todo el equipo", "the whole team") : t("solo lo tuyo", "only yours")} · {t("elige una sección para ver cómo va frente al periodo anterior", "pick a section to see how it is doing against the previous period")}</span>
         <span className="grow" />
+        <Link className="bd-team-link" href="/mi-dia/equipo">{t("Comparar equipo →", "Compare the team →")}</Link>
         {b.canTeam && (
           <nav className="seg" aria-label={t("De quién", "Whose")}>
             <Link href={href({ eq: false })} className={!b.team ? "on" : undefined} aria-current={!b.team ? "true" : undefined} scroll={false}>{t("Mío", "Mine")}</Link>

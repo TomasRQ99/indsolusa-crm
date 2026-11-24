@@ -3085,3 +3085,34 @@ p.pj-table { margin: 0 0 8px; }
 .cc-t { display: flex; flex-direction: column; }
 @media (max-width: 1100px) { .cc-two { grid-template-columns: 1fr; } .bd-route ol { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .bd-route ol { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cc-lines li { grid-template-columns: 1fr; gap: 2px; } .cc-day { min-height: 48px; padding: 4px 3px; } .cc-nav { flex-wrap: wrap; } }
+
+/* ---------- Comparar equipo (Mi Día) · Crear Necesidad con IA ---------- */
+.tc-sub { margin: 0 0 6px; font-size: 13px; }
+.tc-me { margin: 0 0 10px; font-size: 13px; background: var(--brand-soft); border-radius: 6px; padding: 6px 10px; }
+.tc-t { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tc-t th, .tc-t td { padding: 8px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+.tc-t thead th { border-top: 0; font-size: 12px; white-space: normal; min-width: 92px; }
+.tc-t thead th:first-child { min-width: 150px; text-align: left; }
+.tc-t thead a { color: var(--ink-2); text-decoration: none; }
+.tc-t thead a:hover, .tc-t thead a[aria-current] { color: var(--brand); text-decoration: underline; }
+.tc-t tbody th, .tc-t tfoot th { text-align: left; font-weight: 600; white-space: nowrap; text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--ink); }
+.tc-t tbody th .sig { margin-left: 6px; }
+.tc-t tr.me th, .tc-t tr.me td { background: var(--brand-soft); }
+.tc-t .tc-v { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tc-t .tc-v small { color: var(--ink-3); font-size: 11px; }
+.tc-t tfoot th, .tc-t tfoot td { border-top: 2px solid var(--line-strong); }
+.tc-t tfoot th { text-align: left; }
+.tc-help { margin-top: 10px; font-size: 13px; }
+.tc-help dl { margin: 8px 0; display: grid; gap: 6px; }
+.tc-help dt { font-weight: 600; }
+.tc-help dd { margin: 0; color: var(--ink-2); }
+.bd-team-link { font-size: 13px; }
+.nn-head .ai-need-btn { margin-left: auto; flex: none; color: var(--ai); border-color: var(--ai); background: var(--ai-soft); }
+.ai-need-dlg { border: 0; border-radius: 12px; padding: 0; max-width: min(460px, calc(100vw - 32px)); box-shadow: 0 12px 40px rgba(0,0,0,.25); background: var(--surface); color: var(--ink); }
+.ai-need-dlg::backdrop { background: rgba(10, 20, 30, .45); }
+.ai-need-box { padding: 20px 22px; display: grid; gap: 10px; }
+.ai-need-box h2 { margin: 0; font-size: 18px; color: var(--ai); }
+.ai-need-msg { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--ai-soft); }
+.ai-need-box .src { margin: 0; }
+.ai-need-act { display: flex; justify-content: flex-end; }
+@media (max-width: 760px) { .nn-head { flex-wrap: wrap; } .nn-head .ai-need-btn { margin-left: 46px; } }

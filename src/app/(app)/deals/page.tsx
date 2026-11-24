@@ -12,6 +12,7 @@ import { cardAsk } from "@/lib/journey";
 import { createNeed, moveDealStage } from "./actions";
 import { NewNeedForm } from "@/components/NewNeedForm";
 import { addWorkingDays } from "@/lib/holidays";
+import { aiConfigured } from "@/lib/ai";
 
 export default async function DealsPage({ searchParams }: { searchParams: Promise<{ mine?: string; err?: string }> }) {
   const user = await requireUser();
@@ -65,7 +66,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
       </div>
 
       {err === "nueva" && <p className="note risk">{t("Para crear la Necesidad faltan el cliente y el asunto.", "To create the Need, the customer and the subject are missing.")}</p>}
-      <NewNeedForm lang={user.lang} action={createNeed} accounts={accounts} contacts={contacts.flatMap((c) => (c.accountId ? [{ id: c.id, accountId: c.accountId, name: `${c.firstName} ${c.lastName}`.trim(), email: c.email }] : []))} parts={parts.map((x) => ({ code: x.mpn, name: x.name }))} machines={machines} defaultFollowUp={dayInput(addWorkingDays(now, 2))} />
+      <NewNeedForm lang={user.lang} action={createNeed} accounts={accounts} contacts={contacts.flatMap((c) => (c.accountId ? [{ id: c.id, accountId: c.accountId, name: `${c.firstName} ${c.lastName}`.trim(), email: c.email }] : []))} parts={parts.map((x) => ({ code: x.mpn, name: x.name }))} machines={machines} defaultFollowUp={dayInput(addWorkingDays(now, 2))} aiReady={aiConfigured()} />
 
       <section className="sum">
         <div data-tone={mineNow.length > 0 ? "info" : undefined}><span className="k">{t("Tu paso ahora", "Your step now")}</span><span className="v">{mineNow.length}</span><span className="s">{t("Necesidades con un paso nuestro para hoy", "Needs with a step of ours for today")}</span>{mineNow[0] && <Link className="go" href={`/deals/${mineNow[0].id}`}>{t("Abrir el primero", "Open the first one")} →</Link>}</div>
