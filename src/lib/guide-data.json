@@ -207,7 +207,7 @@
     "Se abre «Nueva Necesidad» con el texto del correo. Agrega lo que sepas del caso y haz clic en [[Armar la Necesidad]].",
     "Revisa lo que entendió SOLU y haz clic en [[Pasar al formulario]]. Elige el cliente si SOLU no lo reconoció, revisa cada casilla y crea la Necesidad."
    ],
-   "expect": "Se ven los 30 correos más recientes de la carpeta. Aquí solo se lee: no se mueve, no se marca y no se guarda ningún correo. «Mi buzón» es el correo con el que entras a SOLU; nadie abre el buzón de otra persona. Si Microsoft no encuentra el buzón, la página lo dice: SOLU solo lee buzones de la misma cuenta de Microsoft 365 que el correo de la empresa."
+   "expect": "Se ven los 30 correos más recientes de la carpeta. Aquí solo se lee: no se mueve, no se marca y no se guarda ningún correo. «Mi buzón» es el correo con el que entras a SOLU; nadie abre el buzón de otra persona. Si Microsoft no encuentra el buzón, la página lo dice: SOLU solo lee buzones de la misma cuenta de Microsoft 365 que el correo de la empresa. Si Gerencia conectó además un buzón que no es de Microsoft, su dueño ve un tercer botón con esa dirección; solo esa persona lo ve y lo abre."
   },
   {
    "id": "email",
@@ -220,7 +220,7 @@
     "Elige una plantilla (cotización a proveedor, seguimiento, negociación, entrega, oferta o cobro) y el idioma.",
     "Elige el contacto, revisa el texto y envía. Si el tono suena brusco, SOLU te avisa, pero no te bloquea."
    ],
-   "expect": "El correo llega desde sales@indsolusa.com. Pruébalo primero con tu propia dirección. La revisión del dominio (SPF, DKIM y DMARC) debe verse en orden. En cada correo de plantilla puedes escribir varios destinatarios en «Para», y copias en «CC» y «CCO», separados por coma. El correo que envía una cotización lleva marcado el PDF de la cotización como adjunto (se puede desmarcar). En los correos «Avance de su solicitud» y «Oferta al cliente» hay un bloque «REDACTAR CON IA»: cuando la IA está conectada, escribe un borrador personalizado con los datos de la Necesidad, sin nombrar al proveedor ni mencionar costos, y tú lo revisas antes de enviar."
+   "expect": "El correo llega desde sales@indsolusa.com. Pruébalo primero con tu propia dirección. La revisión del dominio (SPF, DKIM y DMARC) debe verse en orden. En cada correo de plantilla puedes escribir varios destinatarios en «Para», y copias en «CC» y «CCO», separados por coma. El correo que envía una cotización lleva marcado el PDF de la cotización como adjunto (se puede desmarcar). En los correos «Avance de su solicitud» y «Oferta al cliente» hay un bloque «REDACTAR CON IA»: cuando la IA está conectada, escribe un borrador personalizado con los datos de la Necesidad, sin nombrar al proveedor ni mencionar costos, y tú lo revisas antes de enviar. Quien tiene un buzón propio conectado ve además la lista «Enviar desde»: puede enviar desde el correo de la empresa o desde su buzón. Desde su buzón, la respuesta del cliente llega a su propio correo y SOLU no la empareja sola en «Respuestas»."
   },
   {
    "id": "respuestas",

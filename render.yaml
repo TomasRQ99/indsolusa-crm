@@ -31,6 +31,12 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY # Claude API key (platform.claude.com); without it the AI options stay off. Test it in Administración → Inteligencia artificial
         sync: false
+      - key: MAILBOX2_ADDRESS # a mailbox outside Microsoft 365, read over IMAP (read-only) in Comunicación → Correos del buzón; optional
+        sync: false
+      - key: MAILBOX2_IMAP_HOST # its incoming IMAP server, e.g. mail.company.com (port 993 unless MAILBOX2_IMAP_PORT says otherwise)
+        sync: false
+      - key: MAILBOX2_PASSWORD # its password; never typed into SOLU
+        sync: false
       - key: AI_MONTHLY_CAP_USD # AI stops for the month once this much was spent
         value: "20"
       - key: MOUSER_API_KEY # Mouser Search API (free, mouser.com/api-hub); optional

@@ -62,7 +62,7 @@
    "“New Need” opens with the text of the email. Add what you know about the case and click [[Armar la Necesidad]].",
    "Review what SOLU understood and click [[Pasar al formulario]]. Pick the customer if SOLU did not recognise it, check every box and create the Need."
   ],
-  "expect": "You see the 30 most recent emails of the folder. This only reads: no email is moved, marked or stored. “My mailbox” is the email you log in to SOLU with; nobody opens another person's mailbox. If Microsoft does not find the mailbox, the page says so: SOLU only reads mailboxes of the same Microsoft 365 account as the company email."
+  "expect": "You see the 30 most recent emails of the folder. This only reads: no email is moved, marked or stored. “My mailbox” is the email you log in to SOLU with; nobody opens another person's mailbox. If Microsoft does not find the mailbox, the page says so: SOLU only reads mailboxes of the same Microsoft 365 account as the company email. If Management also connected a mailbox that is not Microsoft's, its owner sees a third button with that address; only that person sees and opens it."
  },
  "email": {
   "t": "Email from the company address",
@@ -72,7 +72,7 @@
    "Pick a template (supplier quote request, follow-up, negotiation, delivery, offer or collection) and the language.",
    "Pick the contact, check the text and send. If the tone sounds harsh, SOLU warns you but does not block you."
   ],
-  "expect": "The email arrives from sales@indsolusa.com. Try it first with your own address. The domain check (SPF, DKIM and DMARC) should look in order. On every template email you can type several recipients under “To”, and copies under “CC” and “BCC”, separated by commas. The email that sends a quote has the quote's PDF ticked as an attachment (it can be unticked). The “Progress on your request” and “Customer offer” emails have a “DRAFT WITH AI” block: when AI is connected, it writes a personalised draft from the Need's data, never naming the supplier or mentioning costs, and you review it before sending."
+  "expect": "The email arrives from sales@indsolusa.com. Try it first with your own address. The domain check (SPF, DKIM and DMARC) should look in order. On every template email you can type several recipients under “To”, and copies under “CC” and “BCC”, separated by commas. The email that sends a quote has the quote's PDF ticked as an attachment (it can be unticked). The “Progress on your request” and “Customer offer” emails have a “DRAFT WITH AI” block: when AI is connected, it writes a personalised draft from the Need's data, never naming the supplier or mentioning costs, and you review it before sending. Whoever has their own mailbox connected also sees the “Send from” list: they can send from the company email or from their mailbox. From their mailbox, the customer's reply arrives in their own email and SOLU does not match it by itself under “Replies”."
  },
  "respuestas": {
   "t": "Replies to what we sent",

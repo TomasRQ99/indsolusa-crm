@@ -1,3 +1,4 @@
+import { ownBoxSend } from "./mailbox-imap";
 import nodemailer, { type Transporter } from "nodemailer";
 import type Mail from "nodemailer/lib/mailer";
 import { COMPANY_NAME } from "./brand";
@@ -67,7 +68,7 @@ function bccList() {
 }
 
 /** `html` is optional: when given, Outlook shows it (the plain `text` stays as the fallback). */
-export async function sendMail(opts: { to: Recipient; alsoTo?: string[]; cc?: string[]; bcc?: string[]; subject: string; text: string; html?: string; senderName?: string; attachments?: MailAttachment[] }) {
+export async function sendMail(opts: { to: Recipient; alsoTo?: string[]; cc?: string[]; bcc?: string[]; subject: string; text: string; html?: string; senderName?: string; attachments?: MailAttachment[]; /** send from the person's own connected mailbox (mailbox-imap.ts) instead of the company address */ viaOwnBox?: boolean }) {
   // Test mode: MAIL_DRY_RUN=1 writes the email to the server log instead of sending it.
   // Test mode for the uncertain path: logs, then behaves as if the connection was cut mid-send.
   if (process.env.MAIL_DRY_RUN === "uncertain") {
@@ -77,6 +78,14 @@ export async function sendMail(opts: { to: Recipient; alsoTo?: string[]; cc?: st
   if (process.env.MAIL_DRY_RUN === "1") {
     console.log(`[MAIL_DRY_RUN] to=${toAddress(opts.to).address}${opts.alsoTo?.length ? ` +to=${opts.alsoTo.length}` : ""}${opts.cc?.length ? ` cc=${opts.cc.length}` : ""}${opts.bcc?.length ? ` bcc=${opts.bcc.length}` : ""} subject=${opts.subject}${opts.attachments?.length ? ` attachments=${opts.attachments.map((a) => a.name).join(", ")}` : ""}\n${opts.text}\n[/MAIL_DRY_RUN]`);
     return;
+  }
+  if (opts.viaOwnBox) {
+    try { return await ownBoxSend(opts); } catch (e) {
+      const err = e as { code?: string; command?: string; responseCode?: number };
+      if (err.command === "DATA" || (!err.responseCode && err.command !== "CONN" && /ETIMEDOUT|ECONNRESET|ESOCKET/.test(err.code ?? ""))) throw new MailUncertainError("The mail server stopped answering while sending: it may have gone out.");
+      if (err.responseCode === 535 || err.code === "EAUTH") throw new MailError("El servidor del buzón no aceptó el usuario o la contraseña (MAILBOX2_PASSWORD en Render).");
+      throw e;
+    }
   }
   const c = mailConfig();
   if (!c.configured) {

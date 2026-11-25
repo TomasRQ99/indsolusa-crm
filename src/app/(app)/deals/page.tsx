@@ -13,7 +13,7 @@ import { createNeed, moveDealStage } from "./actions";
 import { NewNeedForm } from "@/components/NewNeedForm";
 import { addWorkingDays } from "@/lib/holidays";
 import { aiConfigured } from "@/lib/ai";
-import { boxAddress, getMail, mailAsCase } from "@/lib/mailbox";
+import { boxKey, mailAsCase, readOne } from "@/lib/mailbox";
 import { canManageAll } from "@/lib/permissions";
 
 export default async function DealsPage({ searchParams }: { searchParams: Promise<{ mine?: string; err?: string; conv?: string; mail?: string; box?: string; f?: string }> }) {
@@ -34,10 +34,8 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
   let mailErr = false;
   if (mail && !conv) {
     const folder = f === "in" ? "in" as const : "out" as const;
-    const address = boxAddress(box === "empresa" ? "empresa" : "mio", user);
     try {
-      if (!address) throw new Error("no mailbox");
-      const m = await getMail(address, mail.slice(0, 400), folder);
+      const m = await readOne(boxKey(box), folder, mail.slice(0, 400), user);
       mailSeed = { threadId: "", text: mailAsCase(m, folder), from: (folder === "out" ? m.to : m.from) || m.subject, accountId: null, contactId: null };
     } catch { mailErr = true; }
   }

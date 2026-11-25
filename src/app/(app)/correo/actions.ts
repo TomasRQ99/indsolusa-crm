@@ -1,6 +1,8 @@
 "use server";
 
+
 import { redirect } from "next/navigation";
+import { imapAllowed, imapBox } from "@/lib/mailbox-imap";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { refreshApp } from "@/lib/revalidate";
@@ -66,10 +68,12 @@ export async function sendComposed(fd: FormData) {
     if (attachments.reduce((s2, x) => s2 + x.data.length, 0) > MAX_ATTACH_BYTES) redirect(qs("err=adjuntos"));
   }
 
+  // "Enviar desde": the owner of the connected mailbox may send from it instead of the company address.
+  const viaOwnBox = fd.get("fromBox") === "externo" && imapAllowed(user) && imapBox().ready;
   // One key per compose screen: a double click or a browser resubmit never sends twice.
   const key = String(fd.get("idem") ?? "").trim();
   const idemKey = /^[A-Za-z0-9-]{16,64}$/.test(key) ? `compose:${key}` : null;
-  const r = await sendTracked({ template: tpl, refKind: c.ref.kind, refId: c.ref.id, refCode: c.ref.code, partyKind: c.ref.party, supplierId: c.ref.supplierId, accountId: c.ref.party === "CUSTOMER" ? c.accountId : null, dealId: c.dealId, toAddr: to, toName: c.toName, subject, text: body, html, senderName: user.name, idemKey, attachments, alsoTo, cc: ccOnly, bcc: bccOnly });
+  const r = await sendTracked({ template: tpl, refKind: c.ref.kind, refId: c.ref.id, refCode: c.ref.code, partyKind: c.ref.party, supplierId: c.ref.supplierId, accountId: c.ref.party === "CUSTOMER" ? c.accountId : null, dealId: c.dealId, toAddr: to, toName: c.toName, subject, text: body, html, senderName: user.name, idemKey, attachments, alsoTo, cc: ccOnly, bcc: bccOnly, viaOwnBox });
   const done = `${c.back}${c.back.includes("?") ? "&" : "?"}ok=correo`;
   if (r.status === "DUPLICATE") redirect(r.prior === "SENT" ? done : "/correo/respuestas?ok=incierto");
   if (r.status === "FAILED") redirect(qs(`err=envio&msg=${encodeURIComponent((r.error ?? "").slice(0, 200))}`));

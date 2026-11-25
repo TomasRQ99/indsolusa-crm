@@ -10,6 +10,7 @@ import MailBodyHints from "@/components/MailBodyHints";
 import { db } from "@/lib/db";
 import { aiConfigured } from "@/lib/ai";
 import { draftWithAi } from "../ai-actions";
+import { imapAllowed, imapBox } from "@/lib/mailbox-imap";
 
 export default async function ComposeMail({ searchParams }: { searchParams: Promise<{ tpl?: string; id?: string; lang?: string; err?: string; msg?: string; borrador?: string }> }) {
   const user = await requireUser();
@@ -27,6 +28,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
   const aiKind = tpl === "PROGRESS" || tpl === "OFFER";
   const draft = (aiKind || tpl === "ACK") && sp.borrador && c.dealId ? await db.aiDraft.findFirst({ where: { id: sp.borrador.slice(0, 40), dealId: c.dealId, kind: tpl }, select: { subject: true, body: true, createdByName: true } }) : null;
   const aiOn = aiConfigured();
+  const ownBox = imapAllowed(user) && imapBox().ready ? imapBox().address : null;
   const other = c.lang === "EN" ? "ES" : "EN";
   const langHref = `/correo/nuevo?${new URLSearchParams({ tpl, id: sp.id!, lang: other })}`;
   const errs: Record<string, string> = {
@@ -82,6 +84,15 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
           <div className="jbh"><b>{t("PARA", "TO")}</b><span className="grow" />
             <span className="src">{c.lang === "ES" ? "Español" : "English"} · <Link href={langHref}>{other === "ES" ? t("Cambiar a español", "Switch to Spanish") : t("Cambiar a inglés", "Switch to English")}</Link></span>
           </div>
+          {ownBox && (
+            <label className="mail-from">{t("Enviar desde", "Send from")}
+              <select name="fromBox" defaultValue="empresa">
+                <option value="empresa">{from} · {t("correo de la empresa", "company email")}</option>
+                <option value="externo">{ownBox} · {t("mi buzón", "my mailbox")}</option>
+              </select>
+              <span className="src">{t("Desde tu buzón, el cliente te responde a ti y la respuesta llega a tu correo: SOLU no la empareja sola en «Respuestas». La copia queda en tus Enviados.", "From your mailbox, the customer replies to you and the reply arrives in your own email: SOLU does not match it by itself under “Replies”. The copy stays in your Sent folder.")}</span>
+            </label>
+          )}
           <div className="mail-to">
             <label>{t("Para", "To")} · {c.toName}<input type="text" inputMode="email" name="to" defaultValue={c.to ?? ""} required autoComplete="off" placeholder={t("correo@empresa.com", "name@company.com")} /></label>
             <label>{t("CC (con copia)", "CC (copy)")}<input type="text" inputMode="email" name="cc" autoComplete="off" placeholder={t("opcional", "optional")} /></label>

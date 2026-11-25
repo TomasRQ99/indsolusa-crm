@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   // A second build folder for checking a change while another server keeps running from .next (local only).
   ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   // pdfkit reads its font files (Helvetica ≈ Arial) from node_modules at runtime: don't bundle it.
-  serverExternalPackages: ["pdfkit", "unpdf"],
+  serverExternalPackages: ["pdfkit", "unpdf", "imapflow", "mailparser"],
   // Photos attached to customer messages (e.g. a nameplate) go through server actions.
   // Customer documents (RUT, Cámara de Comercio) too: up to 6 files of 5 MB.
   experimental: { serverActions: { bodySizeLimit: "26mb" } },

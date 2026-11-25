@@ -6,11 +6,14 @@
 // the same Microsoft 365 account as the company's, and only with the Mail.Read application permission.
 
 import { forgetGraphToken, graphAccessToken, mailConfig } from "./mail";
+import { imapAllowed, imapBox, imapGet, imapList, ImapError } from "./mailbox-imap";
 
-export type BoxKey = "mio" | "empresa";
+/** "externo" = the one mailbox outside Microsoft 365, read over IMAP (mailbox-imap.ts); only its owner opens it. */
+export type BoxKey = "mio" | "empresa" | "externo";
+export const boxKey = (v: string | undefined): BoxKey => (v === "empresa" || v === "externo" ? v : "mio");
 export type Folder = "in" | "out";
 export class MailboxError extends Error {
-  constructor(public code: "NOT_CONFIGURED" | "DENIED" | "NO_MAILBOX" | "OTHER", msg?: string) { super(msg ?? code); }
+  constructor(public code: "NOT_CONFIGURED" | "DENIED" | "NO_MAILBOX" | "OTHER" | "X_SETUP" | "X_AUTH" | "X_FOLDER" | "X_OWNER", msg?: string) { super(msg ?? code); }
 }
 export type MailRow = { id: string; subject: string; from: string; to: string; at: Date; preview: string };
 export type MailFull = MailRow & { body: string };
@@ -25,7 +28,33 @@ const row = (m: Raw, folder: Folder): MailRow => ({
 
 /** The address behind "mio" / "empresa" for this person. Never taken from the URL. */
 export function boxAddress(box: BoxKey, user: { email: string }) {
+  if (box === "externo") return imapAllowed(user) ? imapBox().address || null : null;
   return box === "empresa" ? mailConfig().from ?? null : user.email;
+}
+
+const fromImap = (e: unknown): never => {
+  if (e instanceof ImapError) throw new MailboxError(e.code === "NOT_CONFIGURED" ? "X_SETUP" : e.code === "AUTH" ? "X_AUTH" : e.code === "NO_FOLDER" ? "X_FOLDER" : "OTHER", e.message);
+  throw e;
+};
+/** The latest emails of a folder of the mailbox this person chose. */
+export async function readList(box: BoxKey, folder: Folder, user: { email: string }): Promise<MailRow[]> {
+  if (box === "externo") {
+    if (!imapAllowed(user)) throw new MailboxError("X_OWNER");
+    try { return await imapList(folder); } catch (e) { return fromImap(e); }
+  }
+  const address = boxAddress(box, user);
+  if (!address) throw new MailboxError("NOT_CONFIGURED");
+  return listMail(address, folder);
+}
+/** One email, with its text, of the mailbox this person chose. */
+export async function readOne(box: BoxKey, folder: Folder, id: string, user: { email: string }): Promise<MailFull> {
+  if (box === "externo") {
+    if (!imapAllowed(user)) throw new MailboxError("X_OWNER");
+    try { return await imapGet(folder, id); } catch (e) { return fromImap(e); }
+  }
+  const address = boxAddress(box, user);
+  if (!address) throw new MailboxError("NOT_CONFIGURED");
+  return getMail(address, id, folder);
 }
 
 async function graph(path: string) {
