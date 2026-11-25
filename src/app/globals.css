@@ -3167,6 +3167,7 @@ p.pj-table { margin: 0 0 8px; }
 .ai-need-sec summary { cursor: pointer; color: var(--ai); font-weight: 600; }
 .ai-need-reply { white-space: pre-wrap; margin: 8px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--ai-soft); }
 .nn-ai { margin: 0 0 12px; }
+.nn-new { display: grid; gap: 8px; padding: 10px 12px; border-radius: 8px; background: var(--ai-soft); border: 1px dashed var(--ai); }
 .ci-ai { margin: 0 0 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .ci-ai .ai-need-btn { color: var(--ai); border-color: var(--ai); background: var(--ai-soft); flex: none; }
 .ci-ai .src { flex: 1 1 260px; }

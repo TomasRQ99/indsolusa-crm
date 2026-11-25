@@ -60,7 +60,7 @@
    "Under “1 · WHICH MAILBOX” choose [[Mi buzón]] or [[Buzón de la empresa]], and [[Enviados]] or [[Recibidos]].",
    "Under “2 · PICK THE EMAIL”, find the email and click [[Crear Necesidad con IA]] on its row.",
    "“New Need” opens with the text of the email. Add what you know about the case and click [[Armar la Necesidad]].",
-   "Review what SOLU understood and click [[Pasar al formulario]]. Pick the customer if SOLU did not recognise it, check every box and create the Need."
+   "Review what SOLU understood and click [[Pasar al formulario]]. If the customer was not on the list, check the new customer and contact data SOLU took from the email; check every box and create the Need."
   ],
   "expect": "You see the 30 most recent emails of the folder. This only reads: no email is moved, marked or stored. “My mailbox” is the email you log in to SOLU with; nobody opens another person's mailbox. If Microsoft does not find the mailbox, the page says so: SOLU only reads mailboxes of the same Microsoft 365 account as the company email. If Management also connected a mailbox that is not Microsoft's, its owner sees a third button with that address; only that person sees and opens it."
  },
@@ -222,7 +222,7 @@
   "t": "New Need and the Needs board",
   "why": "Every order starts here: what the customer asks for is recorded, we confirm by email that we received it, and the date of the next contact is set. Below, the board shows every open Need by stage.",
   "steps": [
-   "At the top, under “New Need”, pick the customer and the main contact. If the customer is not on the list, create it first in Customers.",
+   "At the top, under “New Need”, pick the customer and the main contact. If the customer is not on the list, choose “+ Create new customer” and type its name: it is created together with the Need. The same goes for “+ Create new contact”.",
    "Type the subject (what they need, in one line) and the “Result the customer wants (what they want to achieve)”: with that written, the “Need” step is done. Then the request detail and, if needed, the notes for internal use: those never reach the customer.",
    "Type the product or spare part code, or pick it from the list of those already registered (SOLU brings its description), the quantity and the customer's machine. Upload photos or files if there are any.",
    "Leave the date of the next contact and the “We received your request” email box ticked, and click [[Crear Necesidad y revisar el correo]].",
@@ -1853,7 +1853,7 @@
    "Type the case as you would tell a colleague: who is asking, what they need and what for. In Chrome and Edge you can also click [[Dictar]] and speak; when you finish, [[Detener el dictado]].",
    "Click [[Armar la Necesidad]]. SOLU shows what it understood, “What still needs asking the customer” and “What SOLU proposes”.",
    "If it is right, click [[Pasar al formulario]]. If not, [[Volver a contar el caso]].",
-   "On the form, check every box: names, part numbers and quantities. If SOLU did not find the customer on the list, pick it yourself.",
+   "On the form, check every box: names, part numbers and quantities. If the customer or the contact were not on the list, SOLU leaves “+ Create new customer” and “+ Create new contact” chosen with what it read in the email: check the company name, the person's name, their email and phone. They are created together with the Need.",
    "Click [[Crear Necesidad y revisar el correo]]: the email opens with the reply the AI prepared. Read it, change it and click [[Enviar correo]]."
   ],
   "expect": "The form is filled in and reads “Filled in with AI.” at the top. What still needs asking and the proposal go into “Notes (internal use)”, which never reach the customer. AI does not make things up: what you did not say stays empty. Dictated part numbers often come out wrong: always compare them. Until the company connects its AI key, the button opens the notice “Needs the AI key (API key).” The window closes only with the “×” in the corner or on moving to the form: a click outside does not close it. If you close it with the “×”, what you wrote is still there when you open it again."

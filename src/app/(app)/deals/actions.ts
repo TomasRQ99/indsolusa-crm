@@ -433,13 +433,31 @@ async function storeFiles(dealId: string, fd: FormData, by: string, room = MAX_F
  *  email already written, to review and send it. */
 export async function createNeed(fd: FormData) {
   const user = await requireUser();
-  const accountId = String(fd.get("accountId") ?? "");
+  let accountId = String(fd.get("accountId") ?? "");
   const title = txt(fd, "title", 150);
   if (!accountId || !title) redirect("/deals?err=nueva");
+  // "+ Crear cliente nuevo": the customer is created here, with only its name (the rest is completed in Clientes).
+  // A customer that already has that same name is used instead of making a second one.
+  if (accountId === "__new") {
+    const name = txt(fd, "newAccountName", 200);
+    if (!name) redirect("/deals?err=cliente-nuevo");
+    const same = await db.account.findFirst({ where: { internal: false, name: { equals: name!, mode: "insensitive" } }, select: { id: true } });
+    accountId = same?.id ?? (await db.account.create({ data: { name: name!, website: txt(fd, "newAccountWebsite", 200), ownerId: user.id }, select: { id: true } })).id;
+  }
   const account = await db.account.findFirst({ where: { id: accountId, internal: false }, select: { id: true } });
   if (!account) redirect("/deals?err=nueva");
   const contactId = String(fd.get("contactId") ?? "");
-  const contact = contactId ? await db.contact.findFirst({ where: { id: contactId, accountId }, select: { id: true } }) : null;
+  let contact: { id: string } | null = null;
+  if (contactId === "__new") {
+    const full = txt(fd, "newContactName", 160);
+    const mail = (txt(fd, "newContactEmail", 200) ?? "").toLowerCase();
+    const email = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail) ? mail : null;
+    if (full || email) {
+      const [first, ...rest] = (full ?? email!.split("@")[0]).split(/\s+/);
+      contact = (email ? await db.contact.findFirst({ where: { accountId, email: { equals: email, mode: "insensitive" } }, select: { id: true } }) : null)
+        ?? await db.contact.create({ data: { firstName: first, lastName: rest.join(" "), email, phone: txt(fd, "newContactPhone", 40), title: txt(fd, "newContactTitle", 120), accountId }, select: { id: true } });
+    }
+  } else if (contactId) contact = await db.contact.findFirst({ where: { id: contactId, accountId }, select: { id: true } });
   const itemDescription = txt(fd, "itemDescription", 300);
   const itemCode = txt(fd, "itemCode", 60);
   const qty = Math.max(1, Math.min(100000, Math.round(num(fd, "itemQty") ?? 1)));

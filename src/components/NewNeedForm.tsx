@@ -13,6 +13,8 @@ type Opt = { id: string; name: string };
 type Contact = { id: string; accountId: string; name: string; email: string | null };
 type PartOpt = { code: string; name: string };
 type Machine = { accountId: string; name: string };
+/** Value of the "create new" choice in the customer and contact lists. */
+const NEW = "__new";
 
 export function NewNeedForm({ lang, action, accounts, contacts, parts, machines, defaultFollowUp, aiReady = false, aiSeed = null }: {
   lang: "ES" | "EN"; action: (fd: FormData) => void | Promise<void>;
@@ -31,7 +33,11 @@ export function NewNeedForm({ lang, action, accounts, contacts, parts, machines,
   const useAi = (r: NeedAiFill) => {
     // The conversation already knows its customer: that one wins over the name the AI read.
     const acc = aiSeed?.accountId ?? r.accountId;
-    setAi({ ...r, accountId: acc }); setAccountId(acc ?? ""); setContactId((aiSeed?.accountId ? aiSeed.contactId : r.contactId) ?? "");
+    const con = aiSeed?.accountId ? aiSeed.contactId : r.contactId;
+    setAi({ ...r, accountId: acc });
+    // Not on the list: the form opens "create new" with what the AI read, for the person to check.
+    setAccountId(acc ?? (r.draft.customerName ? NEW : ""));
+    setContactId(con ?? (r.draft.contactName || r.draft.contactEmail ? NEW : ""));
     setCode(r.draft.itemCode ?? ""); setDesc(r.draft.itemDescription ?? "");
   };
   const g = ai?.draft;
@@ -54,7 +60,7 @@ export function NewNeedForm({ lang, action, accounts, contacts, parts, machines,
         </div>
         <AiNeedButton lang={lang} configured={aiReady} onUse={useAi} seed={aiSeed ? { text: aiSeed.text, from: aiSeed.from } : null} />
       </div>
-      {ai && <p className="note attn nn-ai" role="status"><b>{t("Llenado con IA.", "Filled in with AI.")}</b> {t("Revisa cada casilla antes de crear la Necesidad: nombres, números de parte y cantidades.", "Check every box before creating the Need: names, part numbers and quantities.")}{!ai.accountId ? ` ${t("Falta elegir el cliente.", "The customer still has to be picked.")}` : ""}</p>}
+      {ai && <p className="note attn nn-ai" role="status"><b>{t("Llenado con IA.", "Filled in with AI.")}</b> {t("Revisa cada casilla antes de crear la Necesidad: nombres, números de parte y cantidades.", "Check every box before creating the Need: names, part numbers and quantities.")}{!accountId ? ` ${t("Falta elegir el cliente.", "The customer still has to be picked.")}` : accountId === NEW ? ` ${t("El cliente no estaba en la lista: se crea junto con la Necesidad. Revisa su nombre.", "The customer was not on the list: it is created together with the Need. Check its name.")}` : ""}</p>}
       <form key={ai ? JSON.stringify(ai.draft).length + ai.draft.title : "manual"} action={action} className="nn-form">
         {ai && aiSeed?.threadId && <input type="hidden" name="threadId" value={aiSeed.threadId} />}
         {g?.replyBody && <><input type="hidden" name="aiSubject" value={g.replySubject ?? ""} /><input type="hidden" name="aiBody" value={g.replyBody} /></>}
@@ -63,16 +69,41 @@ export function NewNeedForm({ lang, action, accounts, contacts, parts, machines,
           <label>{t("Cliente", "Customer")} *
             <select name="accountId" required value={accountId} onChange={(e) => { setAccountId(e.target.value); setContactId(""); }}>
               <option value="" disabled>{t("Elegir…", "Choose…")}</option>
+              <option value={NEW}>{t("+ Crear cliente nuevo", "+ Create new customer")}</option>
               {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </label>
-          <span className="src">{t("¿No está en la lista? ", "Not on the list? ")}<Link href="/accounts">{t("Créalo primero en Clientes", "Create it first in Customers")}</Link></span>
+          {accountId === NEW ? (
+            <div className="nn-new">
+              <label>{t("Nombre de la empresa (cliente nuevo)", "Company name (new customer)")} *
+                <input name="newAccountName" required maxLength={200} defaultValue={g?.customerName ?? ""} placeholder={t("Razón social o nombre comercial", "Legal or trade name")} />
+              </label>
+              <label>{t("Sitio web (opcional)", "Website (optional)")}
+                <input name="newAccountWebsite" maxLength={200} defaultValue={g?.customerWebsite ?? ""} />
+              </label>
+              <span className="src">{t("Se crea junto con la Necesidad, a tu nombre. Si ya existe un cliente con ese mismo nombre, SOLU usa ese. El resto de sus datos (NIT, dirección) se completa después en Clientes.", "It is created together with the Need, under your name. If a customer with that same name already exists, SOLU uses that one. The rest of its data (tax ID, address) is completed later in Customers.")}</span>
+            </div>
+          ) : <span className="src">{t("¿No está en la lista? Elige «+ Crear cliente nuevo», o ", "Not on the list? Choose “+ Create new customer”, or ")}<Link href="/accounts">{t("créalo con todos sus datos en Clientes", "create it with all its data in Customers")}</Link></span>}
           <label>{t("Contacto principal", "Main contact")}
             <select name="contactId" value={contactId} onChange={(e) => setContactId(e.target.value)} disabled={!accountId}>
-              <option value="">{!accountId ? t("Elige primero el cliente", "Pick the customer first") : mine.length ? t("Elegir…", "Choose…") : t("Este cliente aún no tiene contactos", "This customer has no contacts yet")}</option>
+              <option value="">{!accountId ? t("Elige primero el cliente", "Pick the customer first") : mine.length ? t("Elegir…", "Choose…") : t("Sin contacto", "No contact")}</option>
+              {accountId && <option value={NEW}>{t("+ Crear contacto nuevo", "+ Create new contact")}</option>}
               {mine.map((c) => <option key={c.id} value={c.id}>{c.name}{c.email ? ` · ${c.email}` : ""}</option>)}
             </select>
           </label>
+          {contactId === NEW && (
+            <div className="nn-new">
+              <label>{t("Nombre y apellido (contacto nuevo)", "Full name (new contact)")} *
+                <input name="newContactName" required maxLength={160} defaultValue={g?.contactName ?? ""} />
+              </label>
+              <div className="nn-row">
+                <label style={{ flex: "1 1 180px" }}>{t("Correo", "Email")}<input name="newContactEmail" type="text" inputMode="email" maxLength={200} defaultValue={g?.contactEmail ?? ""} autoComplete="off" /></label>
+                <label style={{ flex: "1 1 130px" }}>{t("Teléfono", "Phone")}<input name="newContactPhone" maxLength={40} defaultValue={g?.contactPhone ?? ""} autoComplete="off" /></label>
+              </div>
+              <label>{t("Cargo", "Job title")}<input name="newContactTitle" maxLength={120} defaultValue={g?.contactTitle ?? ""} /></label>
+              <span className="src">{t("Se crea junto con la Necesidad. Si ese correo ya es de un contacto de este cliente, SOLU usa ese.", "It is created together with the Need. If that email already belongs to a contact of this customer, SOLU uses that one.")}</span>
+            </div>
+          )}
 
           <b className="nn-step">2 · {t("Qué necesita", "What they need")}</b>
           <label>{t("Asunto: qué necesita el cliente, en una línea", "Subject: what the customer needs, in one line")} *

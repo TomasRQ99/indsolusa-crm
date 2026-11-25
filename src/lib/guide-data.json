@@ -205,7 +205,7 @@
     "En «1 · QUÉ BUZÓN» elige [[Mi buzón]] o [[Buzón de la empresa]], y [[Enviados]] o [[Recibidos]].",
     "En «2 · ELIGE EL CORREO», busca el correo y haz clic en [[Crear Necesidad con IA]] en su fila.",
     "Se abre «Nueva Necesidad» con el texto del correo. Agrega lo que sepas del caso y haz clic en [[Armar la Necesidad]].",
-    "Revisa lo que entendió SOLU y haz clic en [[Pasar al formulario]]. Elige el cliente si SOLU no lo reconoció, revisa cada casilla y crea la Necesidad."
+    "Revisa lo que entendió SOLU y haz clic en [[Pasar al formulario]]. Si el cliente no estaba en la lista, revisa los datos del cliente y del contacto nuevos que SOLU tomó del correo; revisa cada casilla y crea la Necesidad."
    ],
    "expect": "Se ven los 30 correos más recientes de la carpeta. Aquí solo se lee: no se mueve, no se marca y no se guarda ningún correo. «Mi buzón» es el correo con el que entras a SOLU; nadie abre el buzón de otra persona. Si Microsoft no encuentra el buzón, la página lo dice: SOLU solo lee buzones de la misma cuenta de Microsoft 365 que el correo de la empresa. Si Gerencia conectó además un buzón que no es de Microsoft, su dueño ve un tercer botón con esa dirección; solo esa persona lo ve y lo abre."
   },
@@ -412,7 +412,7 @@
    "path": "COMERCIAL → Necesidades",
    "why": "Todo pedido empieza aquí: se registra lo que pide el cliente, se le confirma por correo que lo recibimos y queda la fecha del próximo contacto. Debajo, el tablero muestra cada Necesidad abierta por etapa.",
    "steps": [
-    "Arriba, en «Nueva Necesidad», elige el cliente y el contacto principal. Si el cliente no está en la lista, créalo primero en Clientes.",
+    "Arriba, en «Nueva Necesidad», elige el cliente y el contacto principal. Si el cliente no está en la lista, elige «+ Crear cliente nuevo» y escribe su nombre: se crea junto con la Necesidad. Lo mismo con «+ Crear contacto nuevo».",
     "Escribe el asunto (qué necesita, en una línea) y el «Resultado que busca el cliente (qué quiere lograr)»: con eso escrito, el paso «Necesidad» queda hecho. Después el detalle de la solicitud y, si hace falta, las observaciones de uso interno: esas nunca salen al cliente.",
     "Escribe el código del producto o repuesto, o elígelo de la lista de los ya registrados (SOLU trae su descripción), la cantidad y la máquina del cliente. Sube fotos o archivos si los hay.",
     "Deja la fecha del próximo contacto y la casilla del correo «Recibimos su solicitud» marcada, y haz clic en [[Crear Necesidad y revisar el correo]].",
@@ -433,7 +433,7 @@
     "Escribe el caso como se lo contarías a un compañero: quién pide, qué necesita y para qué. En Chrome y Edge también puedes hacer clic en [[Dictar]] y hablar; al terminar, [[Detener el dictado]].",
     "Haz clic en [[Armar la Necesidad]]. SOLU muestra lo que entendió, «Lo que falta preguntar al cliente» y «Qué propone SOLU».",
     "Si está bien, haz clic en [[Pasar al formulario]]. Si no, [[Volver a contar el caso]].",
-    "En el formulario, revisa cada casilla: nombres, números de parte y cantidades. Si SOLU no encontró al cliente en la lista, elígelo tú.",
+    "En el formulario, revisa cada casilla: nombres, números de parte y cantidades. Si el cliente o el contacto no estaban en la lista, SOLU deja elegido «+ Crear cliente nuevo» y «+ Crear contacto nuevo» con lo que leyó del correo: revisa el nombre de la empresa, el nombre de la persona, su correo y su teléfono. Se crean junto con la Necesidad.",
     "Haz clic en [[Crear Necesidad y revisar el correo]]: se abre el correo con la respuesta que preparó la IA. Léela, cámbiala y haz clic en [[Enviar correo]]."
    ],
    "expect": "El formulario queda lleno y arriba dice «Llenado con IA.» Lo que falta preguntar y la propuesta quedan en «Observaciones (uso interno)», que nunca salen al cliente. La IA no inventa: lo que no dijiste queda vacío. Al dictar, los números de parte suelen quedar mal: compáralos siempre. Mientras la empresa no conecte su llave de IA, el botón abre el aviso «Necesita la llave de IA (API key).» La ventana solo se cierra con la «×» de la esquina o al pasar al formulario: un clic afuera no la cierra. Si la cierras con la «×», lo que escribiste sigue ahí al abrirla de nuevo."

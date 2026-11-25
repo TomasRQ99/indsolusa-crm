@@ -64,8 +64,8 @@ export function AiNeedButton({ lang, configured, onUse, seed }: { lang: "ES" | "
   const use = () => { if (res) onUse?.(res); close(); setRes(null); setText(""); };
   const d = res?.draft;
   const rows: [string, string | null][] = d ? [
-    [t("Cliente", "Customer"), res!.accountName ?? (d.customerName ? t(`${d.customerName} · no está en la lista: elígelo en el formulario`, `${d.customerName} · not on the list: pick it on the form`) : null)],
-    [t("Contacto", "Contact"), d.contactName ? (res!.contactId ? d.contactName : t(`${d.contactName} · elígelo en el formulario`, `${d.contactName} · pick it on the form`)) : null],
+    [t("Cliente", "Customer"), res!.accountName ?? (d.customerName ? t(`${d.customerName} · cliente nuevo: se crea al crear la Necesidad`, `${d.customerName} · new customer: created when the Need is created`) : null)],
+    [t("Contacto", "Contact"), d.contactName || d.contactEmail ? `${[d.contactName, d.contactTitle, d.contactEmail, d.contactPhone].filter(Boolean).join(" · ")}${res!.contactId ? "" : t(" · contacto nuevo", " · new contact")}` : null],
     [t("Asunto", "Subject"), d.title || null],
     [t("Resultado que busca", "Result they want"), d.desiredResult],
     [t("Detalle", "Detail"), d.needSpecs],
