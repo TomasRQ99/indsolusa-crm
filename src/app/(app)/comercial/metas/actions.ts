@@ -8,6 +8,7 @@ import { refreshApp } from "@/lib/revalidate";
 import { money2, sameMoney } from "@/lib/money";
 import { METRIC_KEYS, isClosed, validPeriod } from "@/lib/goal-rules";
 import { RATIO_MAX, RECIPE_DEFAULTS } from "@/lib/goal-recipe";
+import { BAT_KEYS, BAT_ROWS } from "@/lib/batting";
 
 // Comercial C7 · Gerencia / Director Comercial set a person's monthly targets (decision C-15). Each change supersedes
 // the current row and keeps it as history; a closed month never changes (AC5).
@@ -36,6 +37,39 @@ export async function saveRecipe(userId: string, period: string, fd: FormData) {
   const data = { salesGoal: money2(salesGoal), avgSale: money2(avgSale), ...ratios, setByName: user.name };
   await db.goalRecipe.upsert({ where: { userId_period: { userId, period: p } }, create: { userId, period: p, ...data }, update: data });
   back("ok=recetario");
+}
+
+/** Tabla de bateo: the person (or a manager for them) writes the month's goals for requests, quotes and purchase
+ *  orders. Stored as GoalTarget rows with the BAT_ keys; a change supersedes the row and keeps it. */
+export async function saveBatTargets(userId: string, period: string, fd: FormData) {
+  const user = await requireUser();
+  const p = validPeriod(period) ? period : "";
+  const back = (qs: string): never => { refreshApp(); redirect(`/comercial/metas?p=${p || period}${userId !== user.id ? `&u=${userId}` : ""}&${qs}#bateo`); };
+  if (userId !== user.id && !canManageAll(user)) back("err=permiso-bateo");
+  if (!p) back("err=periodo");
+  if (isClosed(p, new Date())) back("err=cerrado");
+  const person = await db.user.findUnique({ where: { id: userId }, select: { active: true } });
+  if (!person?.active) back("err=persona");
+  const current = await db.goalTarget.findMany({ where: { userId, period: p, supersededAt: null, metric: { in: BAT_KEYS } } });
+  const changes: { metric: string; target: number | null; prev: (typeof current)[number] | null }[] = [];
+  for (const row of BAT_ROWS) {
+    const raw = String(fd.get(row.k) ?? "").replace(/,/g, "").trim();
+    const n = raw === "" ? null : Number(raw);
+    if (n != null && (!Number.isFinite(n) || n < 0 || n > 1e9 || (row.unit === "n" && !Number.isInteger(n)))) back("err=bateo-valor");
+    const target = n == null || n === 0 ? null : money2(n);
+    const prev = current.find((c) => c.metric === row.k) ?? null;
+    if (target == null && !prev) continue;
+    if (prev && target != null && sameMoney(prev.target, target)) continue;
+    changes.push({ metric: row.k, target, prev });
+  }
+  if (!changes.length) back("ok=sin-cambios");
+  await db.$transaction(async (tx) => {
+    for (const c of changes) {
+      if (c.prev) await tx.goalTarget.update({ where: { id: c.prev.id }, data: { supersededAt: new Date() } });
+      if (c.target != null) await tx.goalTarget.create({ data: { userId, metric: c.metric, period: p, target: c.target, setByName: user.name, version: (c.prev?.version ?? 0) + 1 } });
+    }
+  });
+  back("ok=bateo");
 }
 
 export async function saveTargets(userId: string, period: string, fd: FormData) {

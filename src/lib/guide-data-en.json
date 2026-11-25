@@ -475,6 +475,18 @@
   ],
   "expect": "SOLU confirms “Recipe saved.” To the right of each bar, “So far” shows what already happened this month as recorded in SOLU, and on the last bar “Today” counts today's activities; “How «so far» is counted”, below the chart, explains each figure. Each month has its own recipe; a month already closed doesn't change. Management and the Commercial Director can view and write another person's recipe by picking them under “Person”."
  },
+ "tabla-bateo": {
+  "t": "Batting table: your requests, quotes and purchase orders against your goal and your earlier months",
+  "why": "See how you are doing this month in requests, quotes and purchase orders against your goal, the previous month and your 3, 6 and 12-month average, and see the same for a single company.",
+  "steps": [
+   "Open [[COMERCIAL]] and click [[Mis metas]]. Below the recipe is the “BATTING TABLE” block with your name.",
+   "Read each row: “Month goal”, “This month”, “Previous month”, “3-month average”, “6-month average” and “12-month average”. On the right, the chart “Last 12 months and this one” shows this month in dark and the month goal as a dashed line.",
+   "To type your goals, go down to the boxes “# Requests goal for the month”, “# Quotes goal for the month”, “$ Quotes goal for the month (USD)”, “# Purchase orders goal for the month” and “$ Purchase orders goal for the month (USD)” and click [[Guardar metas de la tabla]].",
+   "To see a single company, type its name in “Search company” and click “Search”. If several companies have that text in their name, choose one from the list.",
+   "To go back to your whole table, click “See all companies”."
+  ],
+  "expect": "SOLU confirms “Batting table goals saved.” Below the “This month” figure the percentage of the goal appears. “Your batting” says how many quotes come per 100 requests and how many purchase orders per 100 quotes, this month and in 12 months. With a company chosen, “Only” and its name appear, the “Month goal” column and the goal boxes are hidden, and a link leads to “Company statistics”. If you leave the quotes and purchase-order goals empty, SOLU uses those of your recipe for the month and says so with “from your recipe”. “How the batting table is counted” explains each figure. A month already closed doesn't change. Management and the Commercial Director can view and write another person's table by picking them under “Person”."
+ },
  "cobertura": {
   "t": "Coverage during absence",
   "why": "When you are away, another person looks after your Needs for a while.",

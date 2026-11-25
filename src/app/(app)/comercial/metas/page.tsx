@@ -5,15 +5,18 @@ import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { goalBoard } from "@/lib/goals";
 import { GOAL_METRICS, GOAL_RULES, METRIC_KEYS, VALUE_KINDS, isClosed, periodBounds, periodOf, shiftPeriod, validPeriod, type Pace, type PaceStatus } from "@/lib/goal-rules";
-import { saveRecipe, saveTargets } from "./actions";
+import { saveBatTargets, saveRecipe, saveTargets } from "./actions";
 import { recipeActuals, recipeFor } from "@/lib/goal-recipe-data";
+import { recipeOf } from "@/lib/goal-recipe";
+import { BAT_KEYS, findCompanies, loadBatting, type BatKey } from "@/lib/batting";
 import Recetario from "./Recetario";
+import Bateo, { type BatTarget } from "./Bateo";
 
 // Comercial C7 · Goals & Future Creation (v1.1 §37–42, §50). One person and one month at a time.
 // Decided C-01 / C-15: the person sees their own goals; Gerencia / Director Comercial pick one person to review
 // and set targets. There is no list of people by result and no ranking anywhere on this page.
 
-export default async function GoalsPage({ searchParams }: { searchParams: Promise<{ u?: string; p?: string; ok?: string; err?: string }> }) {
+export default async function GoalsPage({ searchParams }: { searchParams: Promise<{ u?: string; p?: string; ok?: string; err?: string; q?: string; c?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
@@ -24,7 +27,12 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
   const people = manage ? await db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : [];
   const personId = manage && sp.u && people.some((p) => p.id === sp.u) ? sp.u : user.id;
   const person = personId === user.id ? { id: user.id, name: user.name } : people.find((p) => p.id === personId)!;
-  const [b, recipe, ra] = await Promise.all([goalBoard(personId, period, now), recipeFor(personId, period), recipeActuals(personId, period, now)]);
+  // Tabla de bateo: the company comes from the link of a chosen match (?c=) or from the text searched (?q=).
+  const q = (sp.q ?? "").trim().slice(0, 80);
+  const picked = sp.c ? await db.account.findUnique({ where: { id: sp.c }, select: { id: true, name: true } }) : null;
+  const matches = !picked && q ? await findCompanies(q) : null;
+  const company = picked ?? (matches?.length === 1 ? matches[0] : null);
+  const [b, recipe, ra, bat] = await Promise.all([goalBoard(personId, period, now), recipeFor(personId, period), recipeActuals(personId, period, now), loadBatting(personId, period, company?.id ?? null)]);
   const closed = isClosed(period, now);
   const future = period > periodOf(now);
   const monthName = new Intl.DateTimeFormat(i.es ? "es-CO" : "en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(periodBounds(period).start).replace(/^./, (c) => c.toUpperCase());
@@ -33,8 +41,17 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
   // Counts are whole things: below one a day, the pace reads better per week (5 working days).
   const perDay = (k: keyof typeof GOAL_METRICS, v: number, days: number) => GOAL_METRICS[k].unit === "usd" ? t(`${fmt(k, v)} por día hábil · ${days} días hábiles`, `${fmt(k, v)} per working day · ${days} working days`)
     : v < 1 ? t(`${one.format(v * 5)} por semana · ${days} días hábiles`, `${one.format(v * 5)} per week · ${days} working days`) : t(`${one.format(v)} por día hábil · ${days} días hábiles`, `${one.format(v)} per working day · ${days} working days`);
-  const href = (p: string, u = personId) => `/comercial/metas?p=${p}${u !== user.id ? `&u=${u}` : ""}`;
+  const href = (p: string, u = personId) => `/comercial/metas?p=${p}${u !== user.id ? `&u=${u}` : ""}${company ? `&c=${company.id}` : ""}`;
   const own = personId === user.id;
+  // Goals of the batting table: the ones typed; without them, quotes and orders come from the month's recipe.
+  const rec = recipe ? recipeOf({ salesGoal: Number(recipe.salesGoal), avgSale: Number(recipe.avgSale), quotesPerClose: recipe.quotesPerClose, meetingsPerQuote: recipe.meetingsPerQuote, pitchesPerMeeting: recipe.pitchesPerMeeting, activitiesPerPitch: recipe.activitiesPerPitch }, b.paces.VALUE_CONTACTS.totalDays) : null;
+  const fromRecipe: Partial<Record<BatKey, number>> = rec ? { BAT_QUOTE_N: rec.quotes, BAT_PO_N: rec.closes, BAT_PO_USD: rec.salesGoal } : {};
+  const batTargets: Partial<Record<BatKey, BatTarget>> = {};
+  for (const k of BAT_KEYS) {
+    const typed = b.targets.find((x) => x.metric === k);
+    if (typed) batTargets[k] = { value: Number(typed.target), fromRecipe: false };
+    else if (fromRecipe[k]) batTargets[k] = { value: fromRecipe[k]!, fromRecipe: true };
+  }
 
   const statusTxt: Record<PaceStatus, [string, string, string]> = {
     NO_TARGET: ["Sin meta", "No target", "wait"],
@@ -45,7 +62,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
     BEHIND: ["Detrás del ritmo", "Behind pace", "risk"],
     EARLY: ["El mes no empieza", "Month not started", "wait"],
   };
-  const okMsg: Record<string, string> = { recetario: t("Recetario guardado.", "Recipe saved."), guardado: t("Metas guardadas. La versión anterior queda en el historial.", "Targets saved. The previous version stays in history."), "sin-cambios": t("No había cambios que guardar.", "There were no changes to save.") };
+  const okMsg: Record<string, string> = { bateo: t("Metas de la tabla de bateo guardadas.", "Batting table goals saved."), recetario: t("Recetario guardado.", "Recipe saved."), guardado: t("Metas guardadas. La versión anterior queda en el historial.", "Targets saved. The previous version stays in history."), "sin-cambios": t("No había cambios que guardar.", "There were no changes to save.") };
   const errMsg: Record<string, string> = {
     permiso: t("Solo Gerencia o la Dirección Comercial fijan metas.", "Only Management or the Commercial Director set targets."),
     cerrado: t("Ese mes ya cerró: sus metas no cambian.", "That month is closed: its targets don't change."),
@@ -54,6 +71,8 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
     periodo: t("Mes no válido.", "Invalid month."),
     persona: t("Esa persona no está activa.", "That person isn't active."),
     "permiso-recetario": t("El recetario lo escribe la propia persona, Gerencia o la Dirección Comercial.", "The recipe is written by the person, Management or the Commercial Director."),
+    "permiso-bateo": t("Las metas de la tabla de bateo las escribe la propia persona, Gerencia o la Dirección Comercial.", "The batting table goals are written by the person, Management or the Commercial Director."),
+    "bateo-valor": t("Las metas de la tabla son números de cero en adelante; las de cantidad (#), enteros.", "The table goals are numbers from zero up; the count ones (#), whole numbers."),
     "recetario-valor": t("Escribe la meta de ventas y el valor de tu venta promedio, mayores que cero.", "Type the sales goal and your average sale, above zero."),
     "recetario-proporcion": t("Cada proporción es un número entero de 1 a 50.", "Each ratio is a whole number from 1 to 50."),
   };
@@ -122,6 +141,10 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
       <Recetario es={i.es} name={person.name} workdays={b.paces.VALUE_CONTACTS.totalDays} closed={closed} canEdit={own || manage}
         saved={recipe ? { salesGoal: Number(recipe.salesGoal), avgSale: Number(recipe.avgSale), quotesPerClose: recipe.quotesPerClose, meetingsPerQuote: recipe.meetingsPerQuote, pitchesPerMeeting: recipe.pitchesPerMeeting, activitiesPerPitch: recipe.activitiesPerPitch } : null}
         savedBy={recipe?.setByName ?? null} actual={future ? {} : ra.actual} avg12={ra.avg12} action={saveRecipe.bind(null, personId, period)} key={`${personId}-${period}-${recipe?.updatedAt.getTime() ?? 0}`} />
+
+      <Bateo i={i} name={person.name} bat={bat} targets={batTargets} company={company} matches={matches} q={q} future={future} closed={closed} canEdit={own || manage}
+        action={saveBatTargets.bind(null, personId, period)} baseHref={`/comercial/metas?p=${period}${own ? "" : `&u=${personId}`}`} hidden={{ p: period, ...(own ? {} : { u: personId }) }}
+        statsHref={company ? `/accounts/${company.id}/estadisticas` : null} />
 
       <div className="goal-grid">{METRIC_KEYS.map((k) => <Card key={k} k={k} p={b.paces[k]} />)}</div>
 

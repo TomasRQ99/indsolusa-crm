@@ -39,7 +39,7 @@ export async function goalBoard(userId: string, period: string, now = new Date()
   const [a, targets, history] = await Promise.all([
     goalActuals(userId, period),
     currentTargets(userId, period),
-    db.goalTarget.findMany({ where: { userId, period, supersededAt: { not: null } }, orderBy: { createdAt: "desc" }, take: 20 }),
+    db.goalTarget.findMany({ where: { userId, period, supersededAt: { not: null }, metric: { in: METRIC_KEYS } }, orderBy: { createdAt: "desc" }, take: 20 }),
   ]);
   const tOf = (k: MetricKey) => targets.find((t) => t.metric === k) ?? null;
   const paces = Object.fromEntries(METRIC_KEYS.map((k) => { const t = tOf(k); return [k, paceOf(t ? Number(t.target) : null, a.values[k], period, now)]; })) as Record<MetricKey, Pace>;

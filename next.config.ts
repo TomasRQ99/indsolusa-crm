@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // A second build folder for checking a change while another server keeps running from .next (local only).
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   // pdfkit reads its font files (Helvetica ≈ Arial) from node_modules at runtime: don't bundle it.
   serverExternalPackages: ["pdfkit", "unpdf"],
   // Photos attached to customer messages (e.g. a nameplate) go through server actions.

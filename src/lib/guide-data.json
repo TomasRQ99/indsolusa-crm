@@ -776,6 +776,21 @@
    "expect": "SOLU confirma «Recetario guardado.» A la derecha de cada barra, «Llevas» dice lo que ya pasó este mes según lo registrado en SOLU, y en la última barra «Hoy» cuenta las actividades de hoy; «Cómo se cuenta lo que llevas», debajo de la gráfica, explica cada cifra. Cada mes tiene su propio recetario; un mes que ya cerró no se cambia. Gerencia y Dirección Comercial pueden ver y escribir el recetario de otra persona eligiéndola en «Persona»."
   },
   {
+   "id": "tabla-bateo",
+   "m": "comercial",
+   "t": "Tabla de bateo: tus solicitudes, cotizaciones y órdenes de compra frente a tu meta y a tus meses anteriores",
+   "path": "COMERCIAL → Mis metas · TABLA DE BATEO",
+   "why": "Ver cómo vas este mes en solicitudes, cotizaciones y órdenes de compra frente a tu meta, al mes anterior y a tu promedio de 3, 6 y 12 meses, y ver lo mismo de una sola empresa.",
+   "steps": [
+    "Abre [[COMERCIAL]] y haz clic en [[Mis metas]]. Debajo del recetario está el bloque «TABLA DE BATEO» con tu nombre.",
+    "Lee cada fila: «Meta del mes», «Mes actual», «Mes anterior», «Promedio 3 meses», «Promedio 6 meses» y «Promedio 12 meses». A la derecha, la gráfica «Últimos 12 meses y este» muestra el mes actual en oscuro y la meta del mes como una línea punteada.",
+    "Para escribir tus metas, baja a las casillas «# Meta Solicitudes Mes», «# Meta Cotizaciones Mes», «$ Meta Cotizaciones Mes (USD)», «# Meta Órdenes de Compra Mes» y «$ Meta Órdenes de Compra Mes (USD)» y haz clic en [[Guardar metas de la tabla]].",
+    "Para ver una sola empresa, escribe su nombre en «Buscar empresa» y haz clic en «Buscar». Si varias empresas tienen ese texto en el nombre, elige una de la lista.",
+    "Para volver a tu tabla completa, haz clic en «Ver todas las empresas»."
+   ],
+   "expect": "SOLU confirma «Metas de la tabla de bateo guardadas.» Debajo de la cifra del «Mes actual» aparece el porcentaje de la meta. «Tu bateo» dice cuántas cotizaciones salen por cada 100 solicitudes y cuántas órdenes de compra por cada 100 cotizaciones, este mes y en 12 meses. Con una empresa elegida aparece «Solo» y su nombre, la columna «Meta del mes» y las casillas de metas se ocultan, y un enlace lleva a «Estadísticas de la empresa». Si dejas vacías las metas de cotizaciones y órdenes de compra, SOLU usa las de tu recetario del mes y lo dice con «de tu recetario». «Cómo se cuenta la tabla de bateo» explica cada cifra. Un mes que ya cerró no se cambia. Gerencia y Dirección Comercial pueden ver y escribir la tabla de otra persona eligiéndola en «Persona»."
+  },
+  {
    "id": "cobertura",
    "m": "comercial",
    "t": "Cobertura por ausencia",
