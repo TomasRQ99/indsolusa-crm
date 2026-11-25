@@ -41,8 +41,10 @@ function Spark({ months, goal, title, short, es }: { months: { key: string; valu
   );
 }
 
-export default function Bateo({ i, name, bat, coach, targets, company, matches, q, future, closed, canEdit, action, baseHref, hidden, statsHref }: {
-  i: Fmt; name: string; bat: Batting; coach: Coach; targets: Partial<Record<string, BatTarget>>; company: { id: string; name: string } | null;
+export default function Bateo({ i, name, bat, coach, days, targets, company, matches, q, future, closed, canEdit, action, baseHref, hidden, statsHref }: {
+  i: Fmt; name: string; bat: Batting; coach: Coach;
+  /** Working days of the month: gone, in all, and from which one a projection is shown. */
+  days: { elapsed: number; total: number; min: number }; targets: Partial<Record<string, BatTarget>>; company: { id: string; name: string } | null;
   matches: { id: string; name: string }[] | null; q: string; future: boolean; closed: boolean; canEdit: boolean;
   action: (fd: FormData) => void | Promise<void>; baseHref: string; hidden: Record<string, string>; statsHref: string | null;
 }) {
@@ -51,11 +53,14 @@ export default function Bateo({ i, name, bat, coach, targets, company, matches, 
   // An average of counts keeps one decimal (1,3 requests a month), a count of the month is a whole number.
   const one = new Intl.NumberFormat(i.es ? "es-CO" : "en-US", { maximumFractionDigits: 1 });
   const avg = (unit: "n" | "usd", v: number | null) => (v == null ? "—" : unit === "usd" ? i.money(v) : one.format(v));
-  const H = { goal: t("Meta del mes", "Month goal"), now: t("Mes actual", "This month"), prev: t("Mes anterior", "Previous month"), a3: t("Promedio 3 meses", "3-month average"), a6: t("Promedio 6 meses", "6-month average"), a12: t("Promedio 12 meses", "12-month average"), best: t("Mi mejor marca", "My best mark"), done: t("Cumplimiento", "Achievement"), plot: t("Últimos 12 meses y este", "Last 12 months and this one") };
+  const H = { goal: t("Meta del mes", "Month goal"), now: t("Mes actual", "This month"), prev: t("Mes anterior", "Previous month"), a3: t("Promedio 3 meses", "3-month average"), a6: t("Promedio 6 meses", "6-month average"), a12: t("Promedio 12 meses", "12-month average"), best: t("Mi mejor marca", "My best mark"), vary: t("Variación", "Change"), done: t("Cumplimiento", "Achievement"), plot: t("Últimos 12 meses y este", "Last 12 months and this one") };
   // "27 % (4 de 15)": the percentage with its hits and at-bats, so nobody reads much into two cases.
   const rate = (k: "quoteMonth" | "orderMonth" | "quoteYear" | "orderYear") => (bat.rates[k] == null ? t("— (sin casos)", "— (no cases)") : `${bat.rates[k]} % (${bat.rates.n[k][0]} ${t("de", "of")} ${bat.rates.n[k][1]})`);
   const groups = Object.keys(BAT_GROUPS) as (keyof typeof BAT_GROUPS)[];
-  const cols = company ? 8 : 10;
+  const cols = company ? 9 : 11;
+  // Projection "if the current pace holds": only while the month is running and after the first working days.
+  const running = !future && !closed && days.elapsed < days.total;
+  const project = (v: number) => (running ? (days.elapsed >= days.min ? (v / days.elapsed) * days.total : null) : v);
 
   return (
     <section className="card bt" id="bateo">
@@ -93,6 +98,7 @@ export default function Bateo({ i, name, bat, coach, targets, company, matches, 
               <th>{H.a12}</th>
               <th>{H.best}</th>
               <th>{H.now}</th>
+              <th>{H.vary}</th>
               {!company && <th>{H.done}</th>}
               <th>{H.plot}</th>
             </tr>
@@ -105,6 +111,9 @@ export default function Bateo({ i, name, bat, coach, targets, company, matches, 
                 const tg = company ? null : targets[r.k] ?? null;
                 const share = tg && tg.value > 0 ? Math.round((l.actual / tg.value) * 100) : null;
                 const short = (v: number) => shortStat(i, r.unit, v);
+                // Variación: the month (its projection while it runs) against the person's own 12-month average.
+                const proj = future ? null : project(l.actual);
+                const vary = proj != null && l.avg12 != null && l.avg12 > 0 ? Math.round((proj / l.avg12 - 1) * 100) : null;
                 return (
                   <tr key={r.k} data-k={r.k}>
                     <th scope="row">{t(r.label.es, r.label.en)}</th>
@@ -116,7 +125,9 @@ export default function Bateo({ i, name, bat, coach, targets, company, matches, 
                     <td className="bt-best" data-l={H.best}>{l.best ? <>{show(r.unit, l.best.value)}<span className="src block">{monthLabel(i.es, l.best.month)}</span></> : "—"}</td>
                     <td className="bt-now" data-l={H.now}><b>{future ? "—" : show(r.unit, l.actual)}</b>
                       {!future && l.actual > 0 && l.best && l.actual > l.best.value && <span className="sig ok">{t("Nueva mejor marca", "New best mark")}</span>}
+                      {running && proj != null && <span className="src block" data-proj>{t("Proyección", "Projection")}: ≈ {r.unit === "usd" ? i.money(Math.round(proj)) : one.format(proj)}</span>}
                     </td>
+                    <td className="bt-vary" data-l={H.vary}>{vary == null ? "—" : <span className={vary > 0 ? "bt-arrow up" : vary < 0 ? "bt-arrow down" : "bt-arrow flat"}>{vary > 999 ? t("↑ más de 999 %", "↑ over 999 %") : <>{vary > 0 ? "↑ +" : vary < 0 ? "↓ " : "→ "}{vary} %</>}</span>}</td>
                     {!company && <td className="bt-done" data-l={H.done}>{share != null && !future ? (
                       <><b>{share} %</b><span className="bt-meter" role="img" aria-label={t(`${share} % de la meta`, `${share} % of the goal`)}><span style={{ width: `${Math.min(100, share)}%` }} /></span></>
                     ) : "—"}</td>}
@@ -164,6 +175,8 @@ export default function Bateo({ i, name, bat, coach, targets, company, matches, 
           {BAT_ROWS.map((r) => <li key={r.k}>{t(r.how.es, r.how.en)}</li>)}
           {SPEED_ROWS.map((r) => <li key={r.k}>{t(r.how.es, r.how.en)}</li>)}
           <li>{t("Tu velocidad: cada tiempo es el promedio de los casos que terminaron ese paso en el mes; «Promedio 12 meses» es el de los casos de los 12 meses anteriores. Menos es mejor.", "Your speed: each time is the average of the cases that finished that step in the month; «12-month average» is that of the cases of the 12 months before. Less is better.")}</li>
+          <li>{t(`Proyección: lo que llevas dividido entre los días hábiles que ya pasaron, por los días hábiles del mes («si sigue el ritmo actual»). Aparece desde el día hábil ${days.min} y solo en el mes en curso.`, `Projection: what you have so far divided by the working days already gone, times the month's working days («if the current pace holds»). It shows from working day ${days.min} and only for the current month.`)}</li>
+          <li>{t("Variación: la proyección del mes (o el mes completo, si ya cerró) frente a tu promedio de 12 meses.", "Change: the month's projection (or the whole month, once closed) against your 12-month average.")}</li>
           <li>{t("Mi mejor marca: tu mejor mes completo antes del que estás viendo, en toda tu historia en SOLU.", "My best mark: your best complete month before the one you are viewing, in all your history in SOLU.")}</li>
           <li>{t("Mes anterior y promedios: los meses completos antes del mes que estás viendo. El mes actual va hasta hoy.", "Previous month and averages: the complete months before the month you are viewing. The current month runs up to today.")}</li>
         </ul>

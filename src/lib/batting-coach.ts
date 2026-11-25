@@ -58,10 +58,32 @@ export const DEV_ROWS: { k: DevKey; unit: "n"; label: Txt; goal: Txt; how: Txt }
 
 export const ACC_PREFIX = "BAT_ACC:";
 export const POT_PREFIX = "BAT_POT:";
+/** Number of requests and of quotes expected from a customer in the month (approved 2026-11-25). */
+export const REQ_PREFIX = "BAT_ARQ:";
+export const QUO_PREFIX = "BAT_AQU:";
+const COMPANY_PREFIXES = [ACC_PREFIX, POT_PREFIX, REQ_PREFIX, QUO_PREFIX];
+const companyMetric = { OR: COMPANY_PREFIXES.map((p) => ({ metric: { startsWith: p } })) };
+
+/** Company goals carry forward (approved 2026-11-25): a month uses the goals of the latest month, up to itself, in
+ *  which the person saved any. Returns those rows per person, with the month they come from. */
+export async function companyGoalRows(period: string, userId?: string) {
+  const rows = await db.goalTarget.findMany({ where: { supersededAt: null, period: { lte: period }, ...(userId ? { userId } : {}), ...companyMetric }, select: { userId: true, metric: true, period: true, target: true } });
+  const latest = new Map<string, string>();
+  for (const r of rows) if ((latest.get(r.userId) ?? "") < r.period) latest.set(r.userId, r.period);
+  return { rows: rows.filter((r) => latest.get(r.userId) === r.period), latest };
+}
 export const OTHERS = "OTROS";
 export const POTENTIALS: Record<number, Txt> = { 3: { es: "Alto", en: "High" }, 2: { es: "Medio", en: "Medium" }, 1: { es: "Bajo", en: "Low" } };
-export type CompanyGoalRow = { id: string; name: string; avg12: number; actual: number; goal: number | null; potential: number | null; lastGoal: number | null };
-export type CompanyGoals = { rows: CompanyGoalRow[]; others: { avg12: number; actual: number; goal: number | null; lastGoal: number | null }; total: number | null; hidden: number };
+export type CompanyGoalRow = { id: string; name: string; avg12: number; actual: number; goal: number | null; potential: number | null; reqGoal: number | null; reqActual: number; quoGoal: number | null; quoActual: number };
+export type CompanyGoals = {
+  rows: CompanyGoalRow[];
+  others: { avg12: number; actual: number; goal: number | null; reqGoal: number | null; reqActual: number; quoGoal: number | null; quoActual: number };
+  /** Sums of the goals (null = none of that kind): sales, requests, quotes. */
+  total: number | null; reqTotal: number | null; quoTotal: number | null;
+  hidden: number;
+  /** The month the goals come from when it is not the chosen one (carried forward, not yet saved for this month). */
+  carriedFrom: string | null;
+};
 
 // ---------- result ----------
 
@@ -236,24 +258,34 @@ export async function loadCoach(userId: string, period: string, accountId: strin
   if (accountId) return { rates, bestOrder, quality, pipeline, trend, streak, buyers, companies: null, dev: null };
 
   // ---- 1 · goals per company ----
-  const prev = shiftMonth(period, -1);
-  const goalRows = await db.goalTarget.findMany({ where: { userId, supersededAt: null, period: { in: [period, prev] }, OR: [{ metric: { startsWith: ACC_PREFIX } }, { metric: { startsWith: POT_PREFIX } }] }, select: { metric: true, period: true, target: true } });
-  const gOf = (p: string, metric: string) => { const g = goalRows.find((x) => x.period === p && x.metric === metric); return g ? Number(g.target) : null; };
+  const cg = await companyGoalRows(period, userId);
+  const gOf = (metric: string) => { const g = cg.rows.find((x) => x.metric === metric); return g ? Number(g.target) : null; };
   const span = Math.max(1, history);
   const nameOf = new Map(deals.map((d) => [d.accountId, d.account.name]));
   const recent = new Set(cohort.filter((c) => win.has(monthOf(c.created))).map((c) => c.accountId));
+  const askedBy = new Map<string, number>(), quotedBy = new Map<string, number>();
+  for (const c of cohort) {
+    if (monthOf(c.created) === period) askedBy.set(c.accountId, (askedBy.get(c.accountId) ?? 0) + 1);
+    if (c.quoted && monthOf(c.quoted) === period) quotedBy.set(c.accountId, (quotedBy.get(c.accountId) ?? 0) + 1);
+  }
   const every = accountIds.map((id): CompanyGoalRow => {
     const m = poByAcc.get(id);
-    return { id, name: nameOf.get(id) ?? "—", avg12: history ? Math.round(prior.reduce((s, x) => s + (m?.get(x) ?? 0), 0) / span) : 0, actual: Math.round(m?.get(period) ?? 0), goal: gOf(period, ACC_PREFIX + id), potential: gOf(period, POT_PREFIX + id) ?? gOf(prev, POT_PREFIX + id), lastGoal: gOf(prev, ACC_PREFIX + id) };
+    return { id, name: nameOf.get(id) ?? "—", avg12: history ? Math.round(prior.reduce((s, x) => s + (m?.get(x) ?? 0), 0) / span) : 0, actual: Math.round(m?.get(period) ?? 0), goal: gOf(ACC_PREFIX + id), potential: gOf(POT_PREFIX + id), reqGoal: gOf(REQ_PREFIX + id), reqActual: askedBy.get(id) ?? 0, quoGoal: gOf(QUO_PREFIX + id), quoActual: quotedBy.get(id) ?? 0 };
   });
-  const shownRows = every.filter((r) => r.goal != null || r.lastGoal != null || r.avg12 > 0 || r.actual > 0 || recent.has(r.id)).sort((a, b) => (b.goal ?? b.lastGoal ?? 0) - (a.goal ?? a.lastGoal ?? 0) || b.avg12 - a.avg12 || a.name.localeCompare(b.name, "es"));
+  const hasGoal = (r: CompanyGoalRow) => r.goal != null || r.reqGoal != null || r.quoGoal != null;
+  const shownRows = every.filter((r) => hasGoal(r) || r.avg12 > 0 || r.actual > 0 || recent.has(r.id)).sort((a, b) => (b.goal ?? 0) - (a.goal ?? 0) || b.avg12 - a.avg12 || a.name.localeCompare(b.name, "es"));
   const rows = shownRows.slice(0, 40);
-  const withGoal = rows.filter((r) => r.goal != null);
   const allAvg = history ? Math.round(total("poUsd", prior) / span) : 0, allActual = Math.round(v("poUsd", period));
-  const othersGoal = gOf(period, ACC_PREFIX + OTHERS);
-  const others = { avg12: Math.max(0, allAvg - withGoal.reduce((s, r) => s + r.avg12, 0)), actual: Math.max(0, allActual - withGoal.reduce((s, r) => s + r.actual, 0)), goal: othersGoal, lastGoal: gOf(prev, ACC_PREFIX + OTHERS) };
-  const anyGoal = withGoal.length > 0 || othersGoal != null;
-  const companies: CompanyGoals = { rows, others, total: anyGoal ? withGoal.reduce((s, r) => s + (r.goal ?? 0), 0) + (othersGoal ?? 0) : null, hidden: shownRows.length - rows.length };
+  // "Otros" holds whatever has no goal of its own of that kind.
+  const rest = (allOf: number, has: (r: CompanyGoalRow) => boolean, val: (r: CompanyGoalRow) => number) => Math.max(0, allOf - rows.filter(has).reduce((s, r) => s + val(r), 0));
+  const others = {
+    avg12: rest(allAvg, (r) => r.goal != null, (r) => r.avg12), actual: rest(allActual, (r) => r.goal != null, (r) => r.actual), goal: gOf(ACC_PREFIX + OTHERS),
+    reqGoal: gOf(REQ_PREFIX + OTHERS), reqActual: rest(v("req", period), (r) => r.reqGoal != null, (r) => r.reqActual),
+    quoGoal: gOf(QUO_PREFIX + OTHERS), quoActual: rest(v("quoteN", period), (r) => r.quoGoal != null, (r) => r.quoActual),
+  };
+  const sumOf = (pick: (r: CompanyGoalRow) => number | null, other: number | null) => { const xs = [...rows.map(pick), other].filter((x): x is number => x != null); return xs.length ? xs.reduce((s, x) => s + x, 0) : null; };
+  const goalsFrom = cg.latest.get(userId) ?? null;
+  const companies: CompanyGoals = { rows, others, total: sumOf((r) => r.goal, others.goal), reqTotal: sumOf((r) => r.reqGoal, others.reqGoal), quoTotal: sumOf((r) => r.quoGoal, others.quoGoal), hidden: shownRows.length - rows.length, carriedFrom: goalsFrom && goalsFrom !== period ? goalsFrom : null };
 
   // ---- 9 · portfolio development ----
   const inMonth = { gte: from, lt: to };

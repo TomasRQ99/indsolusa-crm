@@ -480,7 +480,7 @@
   "why": "See how you are doing this month in requests, quotes, purchase orders and Eságara against your goal, your averages and your best mark, what percentage you convert and how fast you respond; and see the same for a single company.",
   "steps": [
    "Open [[COMERCIAL]] and click [[Mis metas]]. Below the recipe is the “BATTING TABLE” block with your name.",
-   "Read each row: “Month goal”, “Previous month”, “3-month average”, “6-month average”, “12-month average”, “My best mark”, “This month” and “Achievement”. “My best mark” is your best earlier month, with its date. On the right, the chart “Last 12 months and this one” shows this month in dark and the month goal as a dashed line.",
+   "Read each row: “Month goal”, “Previous month”, “3-month average”, “6-month average”, “12-month average”, “My best mark”, “This month”, “Change” and “Achievement”. “My best mark” is your best earlier month, with its date. Under the “This month” figure is the month's “Projection” if the pace holds, and “Change” compares it with your 12-month average. On the right, the chart “Last 12 months and this one” shows this month in dark and the month goal as a dashed line.",
    "To type your goals, go down to the boxes, from “# Requests goal for the month” to “Goal Quote → PO (days)”, and click [[Guardar metas de la tabla]]. For the times you type the maximum: less is better.",
    "To see a single company: at the top of the page, next to the month, choose the company in the “Company” list and click [[Ver empresa]]. SOLU goes down to the table, now with that company only. If the company is not in the list, type its name in “Search company”, inside the block, and click “Search”.",
    "To go back to your whole table, choose “All companies” in the same list, or click “See all companies”."
@@ -504,12 +504,13 @@
   "why": "So your month's goal is not a figure handed down from above: each customer has its goal, the sum is yours and everyone's sum is the team's.",
   "steps": [
    "Open [[COMERCIAL]] and click [[Mis metas]]. Click “Goals per company ↓”, next to the month, or go down to the “GOALS PER COMPANY” block.",
-   "For each company look at the “Average monthly sale (12 months)” and what it has under “This month”.",
-   "Choose the “Potential” (High, Medium or Low) and type each company's “Month goal (USD)”. Don't take it from the average alone: think history, potential, trend and strategy. In grey you see last month's goal.",
-   "On the “Others” row type the goal for everything without its own goal.",
+   "For each company look at the “Average monthly sale (12 months)” and what it has under “Month sales”.",
+   "Choose the “Potential” (High, Medium or Low) and type each company's “Month sales goal (USD)”. Don't take it from the average alone: think history, potential, trend and strategy.",
+   "If you want, also type how many requests and quotes you expect from each company under “Month # Requests goal” and “Month # Quotes goal”; under each box, “so far” says how many it has.",
+   "On the “Others” row type the goals for everything without its own goal.",
    "Click [[Guardar metas por empresa]]."
   ],
-  "expect": "SOLU confirms “Goals per company saved.” The “Total” row adds up your goals, and that sum becomes your “$ Purchase orders” goal in the batting table (it says “sum of your goals per company”), in the scoreboard and in the coverage, unless you typed another one in “$ Purchase orders goal for the month”. “Achievement” compares the month's purchase orders with each company's goal. The company's name opens the batting table for that company only. In EQUIPO → Mi equipo → Organizar metas del equipo, the “Sum of goals per company” column shows each person's and the “Team total”. A month already closed doesn't change."
+  "expect": "SOLU confirms “Goals per company saved.” The “Total” row adds up your goals, and those sums become your “$ Purchase orders”, “# Requests” and “# Quotes” goals in the batting table (it says “sum of your goals per company”), in the scoreboard and in the coverage, unless you typed another one in the batting table's boxes. What you save stays in force the following months: the new month says “These goals come from…” until you save that month's. “Achievement” compares the month's purchase orders with each company's goal. The company's name opens the batting table for that company only. In EQUIPO → Mi equipo → Organizar metas del equipo, the “Sum of goals per company” column shows each person's and the “Team total”. A month already closed doesn't change."
  },
  "desarrollo-cartera": {
   "t": "Portfolio development: reactivate, deepen and open opportunities",

@@ -63,6 +63,8 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
     const typed = b.targets.find((x) => x.metric === k);
     if (typed) batTargets[k] = { value: Number(typed.target), fromRecipe: false };
     else if (k === "BAT_PO_USD" && coach.companies?.total) batTargets[k] = { value: coach.companies.total, fromRecipe: false, fromCompanies: true };
+    else if (k === "BAT_REQ_N" && coach.companies?.reqTotal) batTargets[k] = { value: coach.companies.reqTotal, fromRecipe: false, fromCompanies: true };
+    else if (k === "BAT_QUOTE_N" && coach.companies?.quoTotal) batTargets[k] = { value: coach.companies.quoTotal, fromRecipe: false, fromCompanies: true };
     else if (fromRecipe[k]) batTargets[k] = { value: fromRecipe[k]!, fromRecipe: true };
   }
 
@@ -77,6 +79,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
   };
   // Scoreboard: coverage, required pace and diagnosis use the effective goals above.
   const typedPo = b.targets.find((x) => x.metric === "BAT_PO_USD");
+  const typedOf = (k: string) => { const g = b.targets.find((x) => x.metric === k); return g ? Number(g.target) : null; };
   const isCurrent = period === monthOf(now) && !company;
   const cover = coverOf(batTargets.BAT_PO_USD?.value ?? null, bat.lines.BAT_PO_USD.actual, coach.pipeline);
   const days = b.paces.VALUE_CONTACTS;
@@ -180,11 +183,11 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
 
       {!company && <Marcador i={i} name={person.name} bat={bat} coach={coach} goals={batTargets} cover={cover} paces={paces} findings={findings} future={future} isCurrent={isCurrent} />}
 
-      <Bateo i={i} name={person.name} bat={bat} coach={coach} targets={batTargets} company={company} matches={matches} q={q} future={future} closed={closed} canEdit={own || manage}
+      <Bateo i={i} name={person.name} bat={bat} coach={coach} days={{ elapsed: days.elapsedDays, total: days.totalDays, min: GOAL_RULES.projectionMinDays }} targets={batTargets} company={company} matches={matches} q={q} future={future} closed={closed} canEdit={own || manage}
         action={saveBatTargets.bind(null, personId, period)} baseHref={`/comercial/metas?p=${period}${own ? "" : `&u=${personId}`}`} hidden={{ p: period, ...(own ? {} : { u: personId }) }}
         statsHref={company ? `/accounts/${company.id}/estadisticas` : null} />
 
-      {!company && <MetasEmpresa i={i} name={person.name} coach={coach} typedGoal={typedPo ? Number(typedPo.target) : null} future={future} closed={closed} canEdit={own || manage} action={saveCompanyGoals.bind(null, personId, period)} statsBase={`/comercial/metas?p=${period}${own ? "" : `&u=${personId}`}`} />}
+      {!company && <MetasEmpresa i={i} name={person.name} coach={coach} typed={{ po: typedPo ? Number(typedPo.target) : null, req: typedOf("BAT_REQ_N"), quo: typedOf("BAT_QUOTE_N") }} future={future} closed={closed} canEdit={own || manage} action={saveCompanyGoals.bind(null, personId, period)} statsBase={`/comercial/metas?p=${period}${own ? "" : `&u=${personId}`}`} />}
       {!company && <Desarrollo i={i} name={person.name} coach={coach} goals={batTargets} future={future} closed={closed} canEdit={own || manage} action={saveBatTargets.bind(null, personId, period)} />}
 
       <div className="goal-grid">{METRIC_KEYS.map((k) => <Card key={k} k={k} p={b.paces[k]} />)}</div>

@@ -8,7 +8,7 @@ import { sumMoney } from "@/lib/money";
 import { isClosed, paceOf, periodBounds, periodOf, shiftPeriod, validPeriod } from "@/lib/goal-rules";
 import { recipeOf, shortMoney } from "@/lib/goal-recipe";
 import { recipeActuals } from "@/lib/goal-recipe-data";
-import { ACC_PREFIX } from "@/lib/batting-coach";
+import { ACC_PREFIX, companyGoalRows } from "@/lib/batting-coach";
 import Recetario from "../../comercial/metas/Recetario";
 import { saveTeamRecipe } from "../../comercial/metas/actions";
 
@@ -35,7 +35,7 @@ export default async function TeamGoalsPage({ searchParams }: { searchParams: Pr
     db.goalRecipe.findMany({ where: { period } }),
     db.quote.findMany({ where: { status: "ACCEPTED", decidedAt: { gte: start, lt: end }, deal: { internal: false } }, select: { protSale: true, deal: { select: { ownerId: true } } } }),
     // Metas por empresa: each person's customer goals add up to their goal, and everyone's to the team's.
-    db.goalTarget.findMany({ where: { period, supersededAt: null, metric: { startsWith: ACC_PREFIX } }, select: { userId: true, target: true } }),
+    companyGoalRows(period).then((x) => x.rows.filter((g) => g.metric.startsWith(ACC_PREFIX))),
   ]);
   const byCompanies = (id: string) => { const xs = accGoals.filter((g) => g.userId === id); return xs.length ? sumMoney(xs.map((g) => g.target)) : null; };
   const recipeBy = new Map(recipes.map((r) => [r.userId, r]));

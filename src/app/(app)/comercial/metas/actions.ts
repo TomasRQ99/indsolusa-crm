@@ -9,7 +9,7 @@ import { money2, sameMoney } from "@/lib/money";
 import { METRIC_KEYS, isClosed, validPeriod } from "@/lib/goal-rules";
 import { RATIO_MAX, RECIPE_DEFAULTS } from "@/lib/goal-recipe";
 import { BAT_GOAL_FIELDS } from "@/lib/batting";
-import { ACC_PREFIX, OTHERS, POT_PREFIX, POTENTIALS } from "@/lib/batting-coach";
+import { ACC_PREFIX, OTHERS, POT_PREFIX, POTENTIALS, QUO_PREFIX, REQ_PREFIX } from "@/lib/batting-coach";
 
 // Comercial C7 · Gerencia / Director Comercial set a person's monthly targets (decision C-15). Each change supersedes
 // the current row and keeps it as history; a closed month never changes (AC5).
@@ -76,12 +76,16 @@ export async function saveCompanyGoals(userId: string, period: string, fd: FormD
   const entries: { metric: string; target: number | null }[] = [];
   for (const [key, val] of fd.entries()) {
     const isAcc = key.startsWith("acc_"), isPot = key.startsWith("pot_");
-    if (!isAcc && !isPot) continue;
+    const count = key.startsWith("req_") ? REQ_PREFIX : key.startsWith("quo_") ? QUO_PREFIX : null;
+    if (!isAcc && !isPot && !count) continue;
     const id = key.slice(4);
     if (id !== OTHERS && !mine.has(id)) continue;
     const raw = String(val ?? "").replace(/,/g, "").trim();
     const n = raw === "" ? null : Number(raw);
-    if (isAcc) {
+    if (count) {
+      if (n != null && (!Number.isInteger(n) || n < 0 || n > 1e6)) back("err=bateo-valor");
+      entries.push({ metric: count + id, target: n == null || n === 0 ? null : n });
+    } else if (isAcc) {
       if (n != null && (!Number.isFinite(n) || n < 0 || n > 1e9)) back("err=bateo-valor");
       entries.push({ metric: ACC_PREFIX + id, target: n == null || n === 0 ? null : money2(n) });
     } else if (id !== OTHERS) {

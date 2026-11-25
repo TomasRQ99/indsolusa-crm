@@ -167,21 +167,26 @@ export function BateoMas({ i, coach, future }: { i: Fmt; coach: Coach; future: b
 
 // ---------- 1 · goals per company ----------
 
-export function MetasEmpresa({ i, name, coach, typedGoal, future, closed, canEdit, action, statsBase }: {
-  i: Fmt; name: string; coach: Coach; typedGoal: number | null; future: boolean; closed: boolean; canEdit: boolean; action: (fd: FormData) => void | Promise<void>; statsBase: string;
+export function MetasEmpresa({ i, name, coach, typed, future, closed, canEdit, action, statsBase }: {
+  i: Fmt; name: string; coach: Coach; typed: { po: number | null; req: number | null; quo: number | null }; future: boolean; closed: boolean; canEdit: boolean; action: (fd: FormData) => void | Promise<void>; statsBase: string;
 }) {
   const t = tx(i);
   const c = coach.companies;
   if (!c) return null;
   const edit = canEdit && !closed;
   const done = (actual: number, goal: number | null) => (goal && goal > 0 && !future ? `${Math.round((actual / goal) * 100)} %` : "—");
-  const H = { avg: t("Promedio mensual de venta (12 meses)", "Average monthly sale (12 months)"), pot: t("Potencial", "Potential"), goal: t("Meta del mes (USD)", "Month goal (USD)"), now: t("Mes actual", "This month"), done: t("Cumplimiento", "Achievement") };
+  const H = { avg: t("Promedio mensual de venta (12 meses)", "Average monthly sale (12 months)"), pot: t("Potencial", "Potential"), goal: t("Meta de ventas del mes (USD)", "Month sales goal (USD)"), now: t("Ventas del mes", "Month sales"), done: t("Cumplimiento", "Achievement"), req: t("Meta # Solicitudes del mes", "Month # Requests goal"), quo: t("Meta # Cotizaciones del mes", "Month # Quotes goal") };
   const totalAvg = c.rows.filter((r) => r.goal != null).reduce((s, r) => s + r.avg12, 0) + c.others.avg12;
   const totalNow = c.rows.filter((r) => r.goal != null).reduce((s, r) => s + r.actual, 0) + c.others.actual;
+  const sumNow = (pick: "reqActual" | "quoActual", has: "reqGoal" | "quoGoal") => c.rows.filter((r) => r[has] != null).reduce((s, r) => s + r[pick], 0) + c.others[pick];
+  // A count goal with what happened so far beside it: "meta · van N".
+  const countCell = (label: string, field: string, who: string, goal: number | null, actual: number) => (
+    <td data-l={label} className="bt-pair">{edit ? <input name={field} type="number" min={0} step="1" defaultValue={goal ?? ""} aria-label={`${label} · ${who}`} /> : goal != null ? <b>{i.n(goal)}</b> : <span className="muted">—</span>}<span className="src block">{t("van", "so far")} {future ? "—" : i.n(actual)}</span></td>
+  );
   const body = (
     <div className="bt-scroll">
       <table className="bt-table bt-co">
-        <thead><tr><th>{t("Empresa", "Company")}</th><th>{H.avg}</th><th>{H.pot}</th><th>{H.goal}</th><th>{H.now}</th><th>{H.done}</th></tr></thead>
+        <thead><tr><th>{t("Empresa", "Company")}</th><th>{H.avg}</th><th>{H.pot}</th><th>{H.goal}</th><th>{H.now}</th><th>{H.done}</th><th>{H.req}</th><th>{H.quo}</th></tr></thead>
         <tbody>
           {c.rows.map((r) => (
             <tr key={r.id} data-a={r.id}>
@@ -190,42 +195,51 @@ export function MetasEmpresa({ i, name, coach, typedGoal, future, closed, canEdi
               <td data-l={H.pot}>{edit ? (
                 <select name={`pot_${r.id}`} defaultValue={r.potential ?? ""} aria-label={`${H.pot} · ${r.name}`}><option value="">—</option>{[3, 2, 1].map((p) => <option key={p} value={p}>{t(POTENTIALS[p].es, POTENTIALS[p].en)}</option>)}</select>
               ) : r.potential && POTENTIALS[r.potential] ? t(POTENTIALS[r.potential].es, POTENTIALS[r.potential].en) : "—"}</td>
-              <td data-l={H.goal}>{edit ? <input name={`acc_${r.id}`} type="number" min={0} step="0.01" defaultValue={r.goal ?? ""} placeholder={r.lastGoal != null ? String(r.lastGoal) : undefined} aria-label={`${H.goal} · ${r.name}`} /> : r.goal != null ? i.money(r.goal) : <span className="muted">{t("Sin meta", "No goal")}</span>}</td>
+              <td data-l={H.goal}>{edit ? <input name={`acc_${r.id}`} type="number" min={0} step="0.01" defaultValue={r.goal ?? ""} aria-label={`${H.goal} · ${r.name}`} /> : r.goal != null ? i.money(r.goal) : <span className="muted">{t("Sin meta", "No goal")}</span>}</td>
               <td data-l={H.now}>{future ? "—" : i.money(r.actual)}</td>
               <td data-l={H.done}>{done(r.actual, r.goal)}</td>
+              {countCell(H.req, `req_${r.id}`, r.name, r.reqGoal, r.reqActual)}
+              {countCell(H.quo, `quo_${r.id}`, r.name, r.quoGoal, r.quoActual)}
             </tr>
           ))}
           <tr data-a={OTHERS}>
             <th scope="row">{t("Otros", "Others")}<span className="src block bt-how">{t("Todo lo que no tiene meta propia arriba.", "Everything without its own goal above.")}</span></th>
             <td data-l={H.avg}>{i.money(c.others.avg12)}</td>
             <td data-l={H.pot}>—</td>
-            <td data-l={H.goal}>{edit ? <input name={`acc_${OTHERS}`} type="number" min={0} step="0.01" defaultValue={c.others.goal ?? ""} placeholder={c.others.lastGoal != null ? String(c.others.lastGoal) : undefined} aria-label={`${H.goal} · ${t("Otros", "Others")}`} /> : c.others.goal != null ? i.money(c.others.goal) : <span className="muted">{t("Sin meta", "No goal")}</span>}</td>
+            <td data-l={H.goal}>{edit ? <input name={`acc_${OTHERS}`} type="number" min={0} step="0.01" defaultValue={c.others.goal ?? ""} aria-label={`${H.goal} · ${t("Otros", "Others")}`} /> : c.others.goal != null ? i.money(c.others.goal) : <span className="muted">{t("Sin meta", "No goal")}</span>}</td>
             <td data-l={H.now}>{future ? "—" : i.money(c.others.actual)}</td>
             <td data-l={H.done}>{done(c.others.actual, c.others.goal)}</td>
+            {countCell(H.req, `req_${OTHERS}`, t("Otros", "Others"), c.others.reqGoal, c.others.reqActual)}
+            {countCell(H.quo, `quo_${OTHERS}`, t("Otros", "Others"), c.others.quoGoal, c.others.quoActual)}
           </tr>
           <tr className="bt-total" data-a="TOTAL">
             <th scope="row">{t(`Total ${name}`, `Total ${name}`)}</th>
             <td data-l={H.avg}>{i.money(totalAvg)}</td>
             <td data-l={H.pot} />
-            <td data-l={H.goal}><b>{c.total != null ? i.money(c.total) : t("Sin metas por empresa", "No goals per company")}</b></td>
+            <td data-l={H.goal}><b>{c.total != null ? i.money(c.total) : t("Sin metas", "No goals")}</b></td>
             <td data-l={H.now}>{future ? "—" : i.money(totalNow)}</td>
             <td data-l={H.done}>{done(totalNow, c.total)}</td>
+            <td data-l={H.req} className="bt-pair"><b>{c.reqTotal != null ? i.n(c.reqTotal) : "—"}</b><span className="src block">{t("van", "so far")} {future ? "—" : i.n(sumNow("reqActual", "reqGoal"))}</span></td>
+            <td data-l={H.quo} className="bt-pair"><b>{c.quoTotal != null ? i.n(c.quoTotal) : "—"}</b><span className="src block">{t("van", "so far")} {future ? "—" : i.n(sumNow("quoActual", "quoGoal"))}</span></td>
           </tr>
         </tbody>
       </table>
     </div>
   );
+  const clash = [typed.po != null && c.total != null ? t("«$ Meta Órdenes de Compra Mes»", "«$ Purchase orders goal for the month»") : null, typed.req != null && c.reqTotal != null ? t("«# Meta Solicitudes Mes»", "«# Requests goal for the month»") : null, typed.quo != null && c.quoTotal != null ? t("«# Meta Cotizaciones Mes»", "«# Quotes goal for the month»") : null].filter(Boolean);
+  const any = c.total != null || c.reqTotal != null || c.quoTotal != null;
   return (
     <section className="card bt" id="empresas">
       <div className="bt-head"><span className="rc-pill">{t("METAS POR EMPRESA", "GOALS PER COMPANY")} · {name.toUpperCase()}</span><span className="src">{t("Meta de cada cliente → suma la meta del negociador → suma la meta del equipo.", "Each customer's goal → adds up to the negotiator's goal → adds up to the team's goal.")}</span></div>
+      {c.carriedFrom && <p className="note" data-carried>{t(`Estas metas vienen de ${monthLabel(i.es, c.carriedFrom)}: siguen valiendo hasta que guardes las de este mes.`, `These goals come from ${monthLabel(i.es, c.carriedFrom)}: they stay in force until you save this month's.`)}{edit ? t(" Cámbialas si hace falta y haz clic en «Guardar metas por empresa».", " Change them if needed and click «Save goals per company».") : ""}</p>}
       {edit ? (
         <form action={action} className="bt-coform">
           {body}
           <button type="submit">{t("Guardar metas por empresa", "Save goals per company")}</button>
-          <span className="src block">{t("La meta es de ventas del mes (valor de órdenes de compra, USD). No salga solo del promedio: piensa en histórico, potencial, tendencia y estrategia. Vacío o cero = sin meta; en gris, la meta del mes pasado. Cada mes tiene sus metas.", "The goal is the month's sales (purchase-order value, USD). Don't take it from the average alone: think history, potential, trend and strategy. Empty or zero = no goal; in grey, last month's goal. Each month has its own goals.")}</span>
+          <span className="src block">{t("La meta de ventas es el valor de órdenes de compra del mes, en USD. No salga solo del promedio: piensa en histórico, potencial, tendencia y estrategia. En solicitudes y cotizaciones escribe cuántas esperas de ese cliente; al lado ves cuántas van. Vacío o cero = sin meta. Lo que guardes sigue valiendo los meses siguientes hasta que lo cambies.", "The sales goal is the month's purchase-order value, in USD. Don't take it from the average alone: think history, potential, trend and strategy. For requests and quotes type how many you expect from that customer; beside it you see how many so far. Empty or zero = no goal. What you save stays in force the following months until you change it.")}</span>
         </form>
       ) : body}
-      {c.total != null && <p className="src" data-sum>{typedGoal != null ? t(`La suma de tus metas por empresa es ${i.money(c.total)}. En la tabla de bateo escribiste ${i.money(typedGoal)} como «$ Meta Órdenes de Compra Mes»: esa es la que cuenta. Deja esa casilla vacía para que SOLU use la suma.`, `Your goals per company add up to ${i.money(c.total)}. In the batting table you typed ${i.money(typedGoal)} as «$ Purchase orders goal for the month»: that one counts. Leave that box empty for SOLU to use the sum.`) : t(`La suma, ${i.money(c.total)}, es tu meta de «$ Órdenes de compra» en la tabla de bateo, el marcador y la cobertura.`, `The sum, ${i.money(c.total)}, is your «$ Purchase orders» goal in the batting table, the scoreboard and the coverage.`)}</p>}
+      {any && <p className="src" data-sum>{t("Las sumas son tus metas de «$ Órdenes de compra», «# Solicitudes» y «# Cotizaciones» en la tabla de bateo, el marcador y la cobertura.", "The sums are your «$ Purchase orders», «# Requests» and «# Quotes» goals in the batting table, the scoreboard and the coverage.")}{clash.length > 0 && <> {t(`Ojo: en la tabla de bateo escribiste ${clash.join(", ")}; ahí cuenta lo que escribiste. Deja esas casillas vacías para que SOLU use las sumas.`, `Note: in the batting table you typed ${clash.join(", ")}; there what you typed counts. Leave those boxes empty for SOLU to use the sums.`)}</>}</p>}
       {c.hidden > 0 && <p className="src">{t(`Hay ${c.hidden} empresas más sin movimiento reciente: entran en «Otros».`, `There are ${c.hidden} more companies with no recent movement: they are in «Others».`)}</p>}
       <p className="src">{t("Aparecen las empresas con Necesidades tuyas en los últimos 12 meses, con órdenes de compra o con meta. El nombre abre la tabla de bateo solo de esa empresa. La suma de todo el equipo está en EQUIPO → Mi equipo → Organizar metas del equipo.", "The companies with Needs of yours in the last 12 months, with purchase orders or with a goal are shown. The name opens the batting table for that company only. The whole team's sum is in EQUIPO → Mi equipo → Organizar metas del equipo.")}</p>
     </section>

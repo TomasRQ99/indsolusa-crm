@@ -783,7 +783,7 @@
    "why": "Ver cómo vas este mes en solicitudes, cotizaciones, órdenes de compra y Eságara frente a tu meta, a tus promedios y a tu mejor marca, qué porcentaje conviertes y qué tan rápido respondes; y ver lo mismo de una sola empresa.",
    "steps": [
     "Abre [[COMERCIAL]] y haz clic en [[Mis metas]]. Debajo del recetario está el bloque «TABLA DE BATEO» con tu nombre.",
-    "Lee cada fila: «Meta del mes», «Mes anterior», «Promedio 3 meses», «Promedio 6 meses», «Promedio 12 meses», «Mi mejor marca», «Mes actual» y «Cumplimiento». «Mi mejor marca» es tu mejor mes anterior, con su fecha. A la derecha, la gráfica «Últimos 12 meses y este» muestra el mes actual en oscuro y la meta del mes como una línea punteada.",
+    "Lee cada fila: «Meta del mes», «Mes anterior», «Promedio 3 meses», «Promedio 6 meses», «Promedio 12 meses», «Mi mejor marca», «Mes actual», «Variación» y «Cumplimiento». «Mi mejor marca» es tu mejor mes anterior, con su fecha. Debajo de la cifra del «Mes actual» está la «Proyección» del mes si sigue el ritmo, y «Variación» la compara con tu promedio de 12 meses. A la derecha, la gráfica «Últimos 12 meses y este» muestra el mes actual en oscuro y la meta del mes como una línea punteada.",
     "Para escribir tus metas, baja a las casillas, de «# Meta Solicitudes Mes» a «Meta Cotización → OC (días)», y haz clic en [[Guardar metas de la tabla]]. En las de tiempo se escribe el máximo: menos es mejor.",
     "Para ver una sola empresa: arriba de la página, junto al mes, elige la empresa en la lista «Empresa» y haz clic en [[Ver empresa]]. SOLU baja a la tabla, ya solo con esa empresa. Si la empresa no está en la lista, escribe su nombre en «Buscar empresa», dentro del bloque, y haz clic en «Buscar».",
     "Para volver a tu tabla completa, elige «Todas las empresas» en la misma lista, o haz clic en «Ver todas las empresas»."
@@ -813,12 +813,13 @@
    "why": "Que tu meta del mes no sea una cifra que llega desde arriba: cada cliente tiene su meta, la suma es la tuya y la suma de todos es la del equipo.",
    "steps": [
     "Abre [[COMERCIAL]] y haz clic en [[Mis metas]]. Haz clic en «Metas por empresa ↓», junto al mes, o baja hasta el bloque «METAS POR EMPRESA».",
-    "Mira en cada empresa el «Promedio mensual de venta (12 meses)» y lo que lleva en «Mes actual».",
-    "Elige el «Potencial» (Alto, Medio o Bajo) y escribe la «Meta del mes (USD)» de cada empresa. No la saques solo del promedio: piensa en histórico, potencial, tendencia y estrategia. En gris ves la meta del mes pasado.",
-    "En la fila «Otros» escribe la meta de todo lo que no tiene meta propia.",
+    "Mira en cada empresa el «Promedio mensual de venta (12 meses)» y lo que lleva en «Ventas del mes».",
+    "Elige el «Potencial» (Alto, Medio o Bajo) y escribe la «Meta de ventas del mes (USD)» de cada empresa. No la saques solo del promedio: piensa en histórico, potencial, tendencia y estrategia.",
+    "Si quieres, escribe también cuántas solicitudes y cotizaciones esperas de cada empresa en «Meta # Solicitudes del mes» y «Meta # Cotizaciones del mes»; debajo de cada casilla, «van» dice cuántas lleva.",
+    "En la fila «Otros» escribe las metas de todo lo que no tiene meta propia.",
     "Haz clic en [[Guardar metas por empresa]]."
    ],
-   "expect": "SOLU confirma «Metas por empresa guardadas.» La fila «Total» suma tus metas, y esa suma pasa a ser tu meta de «$ Órdenes de compra» en la tabla de bateo (dice «suma de tus metas por empresa»), en el marcador y en la cobertura, salvo que hayas escrito otra en «$ Meta Órdenes de Compra Mes». «Cumplimiento» compara las órdenes de compra del mes con la meta de cada empresa. El nombre de la empresa abre la tabla de bateo solo de esa empresa. En EQUIPO → Mi equipo → Organizar metas del equipo, la columna «Suma de metas por empresa» muestra la de cada persona y el «Total del equipo». Un mes que ya cerró no se cambia."
+   "expect": "SOLU confirma «Metas por empresa guardadas.» La fila «Total» suma tus metas, y esas sumas pasan a ser tus metas de «$ Órdenes de compra», «# Solicitudes» y «# Cotizaciones» en la tabla de bateo (dice «suma de tus metas por empresa»), en el marcador y en la cobertura, salvo que hayas escrito otra en las casillas de la tabla de bateo. Lo que guardas sigue valiendo los meses siguientes: el mes nuevo dice «Estas metas vienen de…» hasta que guardes las de ese mes. «Cumplimiento» compara las órdenes de compra del mes con la meta de cada empresa. El nombre de la empresa abre la tabla de bateo solo de esa empresa. En EQUIPO → Mi equipo → Organizar metas del equipo, la columna «Suma de metas por empresa» muestra la de cada persona y el «Total del equipo». Un mes que ya cerró no se cambia."
   },
   {
    "id": "desarrollo-cartera",

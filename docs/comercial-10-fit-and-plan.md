@@ -141,3 +141,10 @@ Owner: "sigue en orden de lo que no has construido, todo esto es esencial". Buil
 - **My defaults, unconfirmed:** DORMANT_DAYS 180; HEALTHY_COVER 3; "low" = under 85 % of the goal (or 12-month average) pro rata to working days; margin drop 3 points; trend arrow at ±5 %; best batting month needs 3 decided quotes; pipeline = every undecided presented quote on an open Need (no probability); definitions of deepened customer, new areas and new opportunities (see DEV_ROWS).
 - **Not built:** per-indicator "variación" and "proyección" columns named at the end of the document; company goals for requests / quotes; carrying company goals to the next month automatically; separate teams in the roll-up.
 - **Not verified:** repurchase, reactivation and coverage with real values on screen (sample data gives "sin casos" / 0; checked by the data test); the live site.
+## Mis metas, after the owner's approval (2026-11-25)
+
+Owner, after reading the list of my defaults for the document's wave: "apruebo, por favor proceder".
+
+- **Approved (were my defaults):** dormant customer = 180 days without a PO; coverage counts every undecided presented quote, healthy from 3X; diagnosis "low" = under 85 % pro rata (12-month average when there is no goal); a company goal is sales measured in POs received, written by the person (managers too), and a typed total wins over the sum; potential is only a mark; deepened customer = had bought and asked through a new person; new areas / opportunities come from Mercado records.
+- **Built after it:** "Variación" column and "Proyección" under the month in the batting table; company goals for # requests and # quotes (`BAT_ARQ:`, `BAT_AQU:`); company goals carry forward (`companyGoalRows`: the latest month ≤ the viewed one in which the person saved any, as a whole set).
+- **Still my defaults:** repurchase and reactivation definitions, margin −3 points, trend arrow ±5 %, best batting month needs 3 decided quotes, Variación against the 12-month average, projection from working day 5.

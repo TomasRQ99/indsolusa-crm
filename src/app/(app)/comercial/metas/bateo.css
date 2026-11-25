@@ -79,3 +79,8 @@
 }
 @media (prefers-color-scheme: dark) { .bt-bar.now { fill: #3b9ae1; } .bt-key.now { background: #3b9ae1; } }
 .bt-co thead th:first-child { text-align: left; }
+.bt-vary { font-weight: 600; }
+.bt-pair { white-space: nowrap; }
+.bt-pair input[type="number"] { width: 64px; }
+.bt-table td > .src.block { white-space: normal; }
+.bt-table:not(.bt-speed):not(.bt-co) td > .src.block { max-width: 120px; margin-left: auto; }
