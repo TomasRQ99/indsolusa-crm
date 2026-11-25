@@ -130,3 +130,14 @@ The owner sent a 12-point document (written for "Rodrigo", about ImportSolucione
 - **My defaults, unconfirmed:** best mark = all history, current month excluded; first action = first CALL / EMAIL / MEETING on the Need (notes don't count); follow-up = next such contact at least one hour after the first presentation; won = a non-rejected PO or an accepted quote, decided = won or a declined quote; the document's example speed goals are not pre-filled.
 - **Not built, from the same document:** goals per company rolling up (1); the other batting percentages (2); quality: average ticket, Eságara per PO, margin (5); goal coverage by open pipeline (6); SOLU's diagnosis of the type of problem (7); required pace for POs / Eságara (8, exists for the five C7 goals only); portfolio development (9); five-marker scoreboard (10); consistency and trend (12).
 - **Not verified:** speed values on screen (the sample data has no POs and no contacts dated after the Need was created; checked by the data test only); the live site.
+## Mis metas, the rest of the document (2026-11-25)
+
+Owner: "sigue en orden de lo que no has construido, todo esto es esencial". Built in one wave, in `src/lib/batting-coach.ts` and `metas/Coach.tsx`:
+
+- **1 Metas por empresa** (`#empresas`): GoalTarget keys `BAT_ACC:<accountId>`, `BAT_ACC:OTROS`, `BAT_POT:<accountId>` (3/2/1). Their sum is the effective BAT_PO_USD goal unless one is typed (order: typed > companies > recipe). Roll-up column and team total on `/equipo/metas`.
+- **2 Batting percentages** (7, cohort-based), **5 Quality** (5), **12 Consistency** (trend of 3 months, streaks) inside the batting block (`BateoMas`).
+- **10 Scoreboard, 7 Diagnosis, 8 Required pace, 6 Coverage** in `#marcador` (`diagnose`, `coverOf` are pure).
+- **9 Portfolio development** (`#desarrollo`), goals `BAT_DEV_*`, saved by `saveBatTargets` with `grp=desarrollo`.
+- **My defaults, unconfirmed:** DORMANT_DAYS 180; HEALTHY_COVER 3; "low" = under 85 % of the goal (or 12-month average) pro rata to working days; margin drop 3 points; trend arrow at ±5 %; best batting month needs 3 decided quotes; pipeline = every undecided presented quote on an open Need (no probability); definitions of deepened customer, new areas and new opportunities (see DEV_ROWS).
+- **Not built:** per-indicator "variación" and "proyección" columns named at the end of the document; company goals for requests / quotes; carrying company goals to the next month automatically; separate teams in the roll-up.
+- **Not verified:** repurchase, reactivation and coverage with real values on screen (sample data gives "sin casos" / 0; checked by the data test); the live site.

@@ -40,6 +40,25 @@
 .bt-key.goal { height: 0; width: 16px; border-radius: 0; background: none; border-top: 2px dashed var(--ink-2); }
 .bt-rates { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; background: var(--surface-sunken); }
 .bt-rates > span b { font-variant-numeric: tabular-nums; }
+/* Scoreboard, diagnosis, pace, coverage, percentages, goals per company (2026-11-25, second document wave). */
+.bt-score { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.bt-score article { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border: 1px solid var(--line); border-top: 4px solid var(--navy); border-radius: 8px; background: var(--surface); min-width: 0; }
+.bt-score article > b { font-size: 11px; letter-spacing: .06em; color: var(--ink-2); }
+.bt-score article > span { font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+.bt-score article > span > b { font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.bt-diag { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 8px; background: var(--surface-sunken); }
+.bt-diag ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bt-diag li { max-width: 100ch; }
+.bt-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+.bt-box { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+.bt-how { font-weight: 400; text-transform: none; letter-spacing: 0; white-space: normal; max-width: 62ch; }
+.bt-speed th[scope="row"] { white-space: normal; }
+.bt-arrow.up { color: var(--ok); } .bt-arrow.down { color: var(--risk); } .bt-arrow.flat { color: var(--ink-3); }
+.bt-co input[type="number"] { width: 130px; text-align: right; }
+.bt-co select { min-width: 90px; }
+.bt-total th, .bt-total td { border-top: 2px solid var(--line-strong); background: var(--surface-sunken); font-weight: 600; }
+.bt-coform { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.bt-coform .bt-scroll { align-self: stretch; }
 /* Phone: each figure becomes a card with its columns listed, so nothing needs sideways scrolling. */
 @media (max-width: 760px) {
   .bt-table thead { display: none; }
@@ -59,3 +78,4 @@
   .bt-find input[type="search"] { min-width: 0; width: 100%; }
 }
 @media (prefers-color-scheme: dark) { .bt-bar.now { fill: #3b9ae1; } .bt-key.now { background: #3b9ae1; } }
+.bt-co thead th:first-child { text-align: left; }

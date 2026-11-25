@@ -485,7 +485,41 @@
    "To see a single company: at the top of the page, next to the month, choose the company in the “Company” list and click [[Ver empresa]]. SOLU goes down to the table, now with that company only. If the company is not in the list, type its name in “Search company”, inside the block, and click “Search”.",
    "To go back to your whole table, choose “All companies” in the same list, or click “See all companies”."
   ],
-  "expect": "SOLU confirms “Batting table goals saved.” “Achievement” shows the percentage of the goal, and “New best mark” appears when this month beats your best month. The goal of “$ Eságara” is the “Eságara won” set by Management or the Commercial Director. “Your batting” is measured by origin group: of the period's requests, those you already quoted; and of the period's quotes that already have a decision, those you won, with the number of cases beside it. “Your speed” shows how long each step takes this month and on a 12-month average, and says “Within the goal” or “Above the goal”. With a company chosen, “Only” and its name appear, the “Month goal” and “Achievement” columns and the goal boxes are hidden, and a link leads to “Company statistics”. If you leave the quotes and purchase-order goals empty, SOLU uses those of your recipe for the month and says so with “from your recipe”. “How the batting table is counted” explains each figure. A month already closed doesn't change. Management and the Commercial Director can view and write another person's table by picking them under “Person”."
+  "expect": "SOLU confirms “Batting table goals saved.” “Achievement” shows the percentage of the goal, and “New best mark” appears when this month beats your best month. The goal of “$ Eságara” is the “Eságara won” set by Management or the Commercial Director. “Your batting” has seven percentages measured by origin group (Request → Quote, Quote → PO, Request → PO, by value, by Eságara, repurchase and reactivation), with their cases beside them, this month and in 12 months. “Batting quality” shows the average ticket, the Eságara per purchase order, the margin and the average value and Eságara per quote. “Consistency” shows the last three months with their arrow and how many months in a row you are above your average and meeting the goal. “Your speed” shows how long each step takes this month and on a 12-month average, and says “Within the goal” or “Above the goal”. With a company chosen, “Only” and its name appear, the “Month goal” and “Achievement” columns and the goal boxes are hidden, and a link leads to “Company statistics”. If you leave the quotes and purchase-order goals empty, SOLU uses those of your recipe for the month and says so with “from your recipe”. “How the batting table is counted” explains each figure. A month already closed doesn't change. Management and the Commercial Director can view and write another person's table by picking them under “Person”."
+ },
+ "marcador": {
+  "t": "My scoreboard: result, batting, production, speed and coverage, with SOLU's diagnosis",
+  "why": "See at a glance how you are doing against yourself and where to work: not just “you are at 82 %”, but why.",
+  "steps": [
+   "Open [[COMERCIAL]] and click [[Mis metas]]. Below the recipe is “MY SCOREBOARD” with your name; the button “My scoreboard ↓”, next to the month, goes straight down.",
+   "Read the five boxes: “RESULT” (sales and Eságara against the goal), “BATTING” (Quote → PO this month, your 12-month personal average and your best ever), “PRODUCTION” (requests and quotes), “SPEED” (time to quote against your average) and “COVERAGE”.",
+   "Read “SOLU diagnosis”: each line says what kind of problem you have this month (batting, volume of opportunities, economic quality or sustainability) and what to work on. “Work here” marks the most important.",
+   "Under “Required pace” see how much you need to produce per working day in purchase orders and in Eságara to meet the goal.",
+   "Under “Goal coverage” compare what is missing of your sales goal with your quotes presented without a decision. Under 100 % means you need to generate new opportunities; from 3X, your work is to convert them."
+  ],
+  "expect": "The scoreboard is not filled in: it comes from what is recorded in SOLU and from your goals. Without goals it says “no goal” and the pace and coverage do not show: type your goals in the batting table or in “GOALS PER COMPANY”. The diagnosis, the pace and the coverage show only for the current month. They come from fixed rules, with no AI; “How the scoreboard is counted” explains them. It never compares you with another person."
+ },
+ "metas-empresa": {
+  "t": "Goals per company: each customer's sales goal",
+  "why": "So your month's goal is not a figure handed down from above: each customer has its goal, the sum is yours and everyone's sum is the team's.",
+  "steps": [
+   "Open [[COMERCIAL]] and click [[Mis metas]]. Click “Goals per company ↓”, next to the month, or go down to the “GOALS PER COMPANY” block.",
+   "For each company look at the “Average monthly sale (12 months)” and what it has under “This month”.",
+   "Choose the “Potential” (High, Medium or Low) and type each company's “Month goal (USD)”. Don't take it from the average alone: think history, potential, trend and strategy. In grey you see last month's goal.",
+   "On the “Others” row type the goal for everything without its own goal.",
+   "Click [[Guardar metas por empresa]]."
+  ],
+  "expect": "SOLU confirms “Goals per company saved.” The “Total” row adds up your goals, and that sum becomes your “$ Purchase orders” goal in the batting table (it says “sum of your goals per company”), in the scoreboard and in the coverage, unless you typed another one in “$ Purchase orders goal for the month”. “Achievement” compares the month's purchase orders with each company's goal. The company's name opens the batting table for that company only. In EQUIPO → Mi equipo → Organizar metas del equipo, the “Sum of goals per company” column shows each person's and the “Team total”. A month already closed doesn't change."
+ },
+ "desarrollo-cartera": {
+  "t": "Portfolio development: reactivate, deepen and open opportunities",
+  "why": "So the month does not depend only on the requests that arrive by themselves: measure what you do so that more exist.",
+  "steps": [
+   "Open [[COMERCIAL]], click [[Mis metas]] and go down to “PORTFOLIO DEVELOPMENT”.",
+   "Read the six rows: “Customers reactivated”, “Customers deepened”, “New contacts”, “New decision makers”, “New areas explored” and “New opportunities generated”. Under each name it says how it is counted.",
+   "Type your month's goal in the boxes below and click [[Guardar metas de desarrollo]]."
+  ],
+  "expect": "SOLU confirms “Development goals saved.” and “Achievement” shows the percentage of each goal. Only what is recorded in SOLU counts: contacts, Needs, and the plants, areas, white spaces and future opportunities of Mercado. A customer counts as reactivated when its previous Need was 180 days ago or more."
  },
  "cobertura": {
   "t": "Coverage during absence",
@@ -1074,7 +1108,7 @@
    "Type the “Sales goal for the month (USD)” and “Your average sale (USD)”, and check the four ratios. The chart changes as you type.",
    "Click [[Guardar el recetario]]."
   ],
-  "expect": "SOLU confirms “Recipe saved.” and the person's row shows the new figures and your name under “Saved by”. The person sees that recipe in COMERCIAL → Mis metas and can change it. “Previous month” and “Next month” change the month; a month already closed doesn't change. Whoever is not in Management, Administration or Commercial Direction doesn't see this tab."
+  "expect": "SOLU confirms “Recipe saved.” and the person's row shows the new figures and your name under “Saved by”. The person sees that recipe in COMERCIAL → Mis metas and can change it. “Previous month” and “Next month” change the month; a month already closed doesn't change. Whoever is not in Management, Administration or Commercial Direction doesn't see this tab. The “Sum of goals per company” column and the “Team total” row add up what each person set customer by customer in “GOALS PER COMPANY”."
  },
  "eq-miequipo": {
   "t": "My team's development (for those who lead)",

@@ -8,6 +8,7 @@ import { sumMoney } from "@/lib/money";
 import { isClosed, paceOf, periodBounds, periodOf, shiftPeriod, validPeriod } from "@/lib/goal-rules";
 import { recipeOf, shortMoney } from "@/lib/goal-recipe";
 import { recipeActuals } from "@/lib/goal-recipe-data";
+import { ACC_PREFIX } from "@/lib/batting-coach";
 import Recetario from "../../comercial/metas/Recetario";
 import { saveTeamRecipe } from "../../comercial/metas/actions";
 
@@ -29,11 +30,14 @@ export default async function TeamGoalsPage({ searchParams }: { searchParams: Pr
   const workdays = paceOf(null, 0, period, now).totalDays;
   const monthName = new Intl.DateTimeFormat(i.es ? "es-CO" : "en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(start).replace(/^./, (c) => c.toUpperCase());
 
-  const [people, recipes, accepted] = await Promise.all([
+  const [people, recipes, accepted, accGoals] = await Promise.all([
     db.user.findMany({ where: { active: true, role: { not: "JUNTA" } }, orderBy: { name: "asc" }, select: { id: true, name: true, role: true } }),
     db.goalRecipe.findMany({ where: { period } }),
     db.quote.findMany({ where: { status: "ACCEPTED", decidedAt: { gte: start, lt: end }, deal: { internal: false } }, select: { protSale: true, deal: { select: { ownerId: true } } } }),
+    // Metas por empresa: each person's customer goals add up to their goal, and everyone's to the team's.
+    db.goalTarget.findMany({ where: { period, supersededAt: null, metric: { startsWith: ACC_PREFIX } }, select: { userId: true, target: true } }),
   ]);
+  const byCompanies = (id: string) => { const xs = accGoals.filter((g) => g.userId === id); return xs.length ? sumMoney(xs.map((g) => g.target)) : null; };
   const recipeBy = new Map(recipes.map((r) => [r.userId, r]));
   const input = (r: (typeof recipes)[number]) => ({ salesGoal: Number(r.salesGoal), avgSale: Number(r.avgSale), quotesPerClose: r.quotesPerClose, meetingsPerQuote: r.meetingsPerQuote, pitchesPerMeeting: r.pitchesPerMeeting, activitiesPerPitch: r.activitiesPerPitch });
   const soldBy = (id: string) => sumMoney(accepted.filter((q) => q.deal.ownerId === id).map((q) => q.protSale));
@@ -90,6 +94,7 @@ export default async function TeamGoalsPage({ searchParams }: { searchParams: Pr
           <thead><tr>
             <th>{t("Persona", "Person")}</th>
             <th className="n">{t("Meta de ventas", "Sales goal")}</th>
+            <th className="n">{t("Suma de metas por empresa", "Sum of goals per company")}</th>
             <th className="n">{t("Lleva", "So far")}</th>
             <th className="n">{t("Venta promedio", "Average sale")}</th>
             <th className="n">{t("Negocios", "Deals")}</th>
@@ -103,12 +108,15 @@ export default async function TeamGoalsPage({ searchParams }: { searchParams: Pr
               const r = recipeBy.get(p.id);
               const calc = r ? recipeOf(input(r), workdays) : null;
               const sold = future ? null : soldBy(p.id);
+              const co = byCompanies(p.id);
+              const coCell = <td className="n mono" data-co>{co == null ? "—" : canManageAll(user) ? <Link href={`/comercial/metas?p=${period}&u=${p.id}#empresas`} title={`USD ${n0.format(co)}`}>{shortMoney(co)}</Link> : <span title={`USD ${n0.format(co)}`}>{shortMoney(co)}</span>}</td>;
               return (
                 <tr key={p.id} data-u={p.id} className={person?.id === p.id ? "on" : undefined}>
                   <td><b>{p.name}</b><span className="src block">{t(ROLE_LABEL[p.role].es, ROLE_LABEL[p.role].en)}</span></td>
                   {calc ? (
                     <>
                       <td className="n mono" title={`USD ${n0.format(calc.salesGoal)}`}>{shortMoney(calc.salesGoal)}</td>
+                      {coCell}
                       <td className="n mono">{sold == null ? "—" : shortMoney(sold)}</td>
                       <td className="n mono">{shortMoney(calc.avgSale)}</td>
                       <td className="n mono">{n0.format(calc.closes)}</td>
@@ -119,6 +127,7 @@ export default async function TeamGoalsPage({ searchParams }: { searchParams: Pr
                   ) : (
                     <>
                       <td className="n"><span className="sig wait">{t("Sin recetario", "No recipe")}</span></td>
+                      {coCell}
                       <td className="n mono">{sold == null ? "—" : shortMoney(sold)}</td>
                       <td colSpan={5} />
                     </>
@@ -128,8 +137,15 @@ export default async function TeamGoalsPage({ searchParams }: { searchParams: Pr
               );
             })}
           </tbody>
+          <tfoot><tr data-total>
+            <td><b>{t("Total del equipo", "Team total")}</b></td>
+            <td className="n mono"><b>{shortMoney(sumMoney(recipes.filter((r) => people.some((p) => p.id === r.userId)).map((r) => r.salesGoal)))}</b></td>
+            <td className="n mono"><b>{accGoals.some((g) => people.some((p) => p.id === g.userId)) ? shortMoney(sumMoney(accGoals.filter((g) => people.some((p) => p.id === g.userId)).map((g) => g.target))) : "—"}</b></td>
+            <td className="n mono"><b>{future ? "—" : shortMoney(sumMoney(accepted.filter((q) => people.some((p) => p.id === q.deal.ownerId)).map((q) => q.protSale)))}</b></td>
+            <td colSpan={6} />
+          </tr></tfoot>
         </table></div>
-        <p className="src">{t("«Lleva» son las cotizaciones aceptadas en el mes, en las Necesidades que la persona lleva. Negocios, cotizaciones y actividades por día salen del recetario. Cada persona también puede escribir el suyo en COMERCIAL → Mis metas. Un mes que ya cerró no se cambia.", "«So far» is the quotes accepted this month on the Needs the person carries. Deals, quotes and activities per day come from the recipe. Each person can also write their own in COMERCIAL → Mis metas. A month already closed doesn't change.")}</p>
+        <p className="src">{t("«Lleva» son las cotizaciones aceptadas en el mes, en las Necesidades que la persona lleva. «Suma de metas por empresa» es lo que cada persona fijó cliente por cliente en COMERCIAL → Mis metas → METAS POR EMPRESA (solo Gerencia y Dirección Comercial pueden abrir ese enlace); la suma de todos es la meta del equipo. Negocios, cotizaciones y actividades por día salen del recetario. Cada persona también puede escribir el suyo en COMERCIAL → Mis metas. Un mes que ya cerró no se cambia.", "«So far» is the quotes accepted this month on the Needs the person carries. «Sum of goals per company» is what each person set customer by customer in COMERCIAL → Mis metas → GOALS PER COMPANY (only Management and the Commercial Director can open that link); everyone's sum is the team's goal. Deals, quotes and activities per day come from the recipe. Each person can also write their own in COMERCIAL → Mis metas. A month already closed doesn't change.")}</p>
       </section>
     </div>
   );

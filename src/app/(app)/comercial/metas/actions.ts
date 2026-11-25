@@ -8,7 +8,8 @@ import { refreshApp } from "@/lib/revalidate";
 import { money2, sameMoney } from "@/lib/money";
 import { METRIC_KEYS, isClosed, validPeriod } from "@/lib/goal-rules";
 import { RATIO_MAX, RECIPE_DEFAULTS } from "@/lib/goal-recipe";
-import { BAT_GOAL_FIELDS, BAT_KEYS } from "@/lib/batting";
+import { BAT_GOAL_FIELDS } from "@/lib/batting";
+import { ACC_PREFIX, OTHERS, POT_PREFIX, POTENTIALS } from "@/lib/batting-coach";
 
 // Comercial C7 · Gerencia / Director Comercial set a person's monthly targets (decision C-15). Each change supersedes
 // the current row and keeps it as history; a closed month never changes (AC5).
@@ -54,25 +55,67 @@ async function writeRecipe(userId: string, period: string, fd: FormData, team: b
 /** Tabla de bateo: the person (or a manager for them) writes the month's goals for requests, quotes and purchase
  *  orders. Stored as GoalTarget rows with the BAT_ keys; a change supersedes the row and keeps it. */
 export async function saveBatTargets(userId: string, period: string, fd: FormData) {
+  const grp = fd.get("grp") === "desarrollo" ? "desarrollo" : "tabla";
+  const fields = BAT_GOAL_FIELDS.filter((r) => r.grp === grp);
+  const { p, back } = await goalWriter(userId, period, grp === "desarrollo" ? "desarrollo" : "bateo");
+  const entries: { metric: string; target: number | null }[] = [];
+  for (const row of fields) {
+    const raw = String(fd.get(row.k) ?? "").replace(/,/g, "").trim();
+    const n = raw === "" ? null : Number(raw);
+    if (n != null && (!Number.isFinite(n) || n < 0 || n > 1e9 || (row.unit === "n" && !Number.isInteger(n)))) back("err=bateo-valor");
+    entries.push({ metric: row.k, target: n == null || n === 0 ? null : money2(n) });
+  }
+  await writeGoals(userId, p, entries, (m) => fields.some((r) => r.k === m), back, grp === "desarrollo" ? "ok=desarrollo" : "ok=bateo");
+}
+
+/** Metas por empresa (document, point 1): the month's sales goal for each customer of this person, its potential
+ *  and "Otros". Their sum is the person's purchase-order goal when they typed none. Same versioned GoalTarget rows. */
+export async function saveCompanyGoals(userId: string, period: string, fd: FormData) {
+  const { p, back } = await goalWriter(userId, period, "empresas");
+  const mine = new Set((await db.deal.findMany({ where: { ownerId: userId, internal: false }, distinct: ["accountId"], select: { accountId: true } })).map((d) => d.accountId));
+  const entries: { metric: string; target: number | null }[] = [];
+  for (const [key, val] of fd.entries()) {
+    const isAcc = key.startsWith("acc_"), isPot = key.startsWith("pot_");
+    if (!isAcc && !isPot) continue;
+    const id = key.slice(4);
+    if (id !== OTHERS && !mine.has(id)) continue;
+    const raw = String(val ?? "").replace(/,/g, "").trim();
+    const n = raw === "" ? null : Number(raw);
+    if (isAcc) {
+      if (n != null && (!Number.isFinite(n) || n < 0 || n > 1e9)) back("err=bateo-valor");
+      entries.push({ metric: ACC_PREFIX + id, target: n == null || n === 0 ? null : money2(n) });
+    } else if (id !== OTHERS) {
+      if (n != null && !POTENTIALS[n]) back("err=bateo-valor");
+      entries.push({ metric: POT_PREFIX + id, target: n });
+    }
+  }
+  const sent = new Set(entries.map((e) => e.metric));
+  await writeGoals(userId, p, entries, (m) => sent.has(m), back, "ok=empresas");
+}
+
+/** Who may write these goals and where the answer goes back to. */
+async function goalWriter(userId: string, period: string, anchor: string) {
   const user = await requireUser();
   const p = validPeriod(period) ? period : "";
-  const back = (qs: string): never => { refreshApp(); redirect(`/comercial/metas?p=${p || period}${userId !== user.id ? `&u=${userId}` : ""}&${qs}#bateo`); };
+  const back = (qs: string): never => { refreshApp(); redirect(`/comercial/metas?p=${p || period}${userId !== user.id ? `&u=${userId}` : ""}&${qs}#${anchor}`); };
   if (userId !== user.id && !canManageAll(user)) back("err=permiso-bateo");
   if (!p) back("err=periodo");
   if (isClosed(p, new Date())) back("err=cerrado");
   const person = await db.user.findUnique({ where: { id: userId }, select: { active: true } });
   if (!person?.active) back("err=persona");
-  const current = await db.goalTarget.findMany({ where: { userId, period: p, supersededAt: null, metric: { in: BAT_KEYS } } });
+  return { p, back, by: user.name };
+}
+
+/** Writes a set of goals: a change supersedes the row and keeps it; an emptied goal is closed. */
+async function writeGoals(userId: string, p: string, entries: { metric: string; target: number | null }[], covers: (metric: string) => boolean, back: (qs: string) => never, done: string) {
+  const user = await requireUser();
+  const current = (await db.goalTarget.findMany({ where: { userId, period: p, supersededAt: null, metric: { startsWith: "BAT_" } } })).filter((c) => covers(c.metric));
   const changes: { metric: string; target: number | null; prev: (typeof current)[number] | null }[] = [];
-  for (const row of BAT_GOAL_FIELDS) {
-    const raw = String(fd.get(row.k) ?? "").replace(/,/g, "").trim();
-    const n = raw === "" ? null : Number(raw);
-    if (n != null && (!Number.isFinite(n) || n < 0 || n > 1e9 || (row.unit === "n" && !Number.isInteger(n)))) back("err=bateo-valor");
-    const target = n == null || n === 0 ? null : money2(n);
-    const prev = current.find((c) => c.metric === row.k) ?? null;
-    if (target == null && !prev) continue;
-    if (prev && target != null && sameMoney(prev.target, target)) continue;
-    changes.push({ metric: row.k, target, prev });
+  for (const e of entries) {
+    const prev = current.find((c) => c.metric === e.metric) ?? null;
+    if (e.target == null && !prev) continue;
+    if (prev && e.target != null && sameMoney(prev.target, e.target)) continue;
+    changes.push({ ...e, prev });
   }
   if (!changes.length) back("ok=sin-cambios");
   await db.$transaction(async (tx) => {
@@ -81,7 +124,7 @@ export async function saveBatTargets(userId: string, period: string, fd: FormDat
       if (c.target != null) await tx.goalTarget.create({ data: { userId, metric: c.metric, period: p, target: c.target, setByName: user.name, version: (c.prev?.version ?? 0) + 1 } });
     }
   });
-  back("ok=bateo");
+  back(done);
 }
 
 export async function saveTargets(userId: string, period: string, fd: FormData) {

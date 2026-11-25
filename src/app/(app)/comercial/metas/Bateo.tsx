@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { BAT_GOAL_FIELDS, BAT_GROUPS, BAT_ROWS, SPEED_ROWS, type Batting } from "@/lib/batting";
 import { fmtStat, monthLabel, shortStat } from "@/lib/customer-stats";
+import type { Coach } from "@/lib/batting-coach";
+import { BateoMas } from "./Coach";
 import "./bateo.css";
 
 // Tabla de bateo (owner, 2026-11-25): requests, quotes and purchase orders of the month against the goal and against
 // the person's own past, with the same figures for one company when they search it. Server component.
 
 type Fmt = { es: boolean; n: (v: unknown) => string; money: (v: unknown) => string };
-export type BatTarget = { value: number; fromRecipe: boolean };
+export type BatTarget = { value: number; fromRecipe: boolean; fromCompanies?: boolean };
 
 /** Thirteen months of one figure: bars from zero, the chosen month darker, the goal as a dashed line. */
 function Spark({ months, goal, title, short, es }: { months: { key: string; value: number }[]; goal: number | null; title: string; short: (v: number) => string; es: boolean }) {
@@ -39,8 +41,8 @@ function Spark({ months, goal, title, short, es }: { months: { key: string; valu
   );
 }
 
-export default function Bateo({ i, name, bat, targets, company, matches, q, future, closed, canEdit, action, baseHref, hidden, statsHref }: {
-  i: Fmt; name: string; bat: Batting; targets: Partial<Record<string, BatTarget>>; company: { id: string; name: string } | null;
+export default function Bateo({ i, name, bat, coach, targets, company, matches, q, future, closed, canEdit, action, baseHref, hidden, statsHref }: {
+  i: Fmt; name: string; bat: Batting; coach: Coach; targets: Partial<Record<string, BatTarget>>; company: { id: string; name: string } | null;
   matches: { id: string; name: string }[] | null; q: string; future: boolean; closed: boolean; canEdit: boolean;
   action: (fd: FormData) => void | Promise<void>; baseHref: string; hidden: Record<string, string>; statsHref: string | null;
 }) {
@@ -106,7 +108,7 @@ export default function Bateo({ i, name, bat, targets, company, matches, q, futu
                 return (
                   <tr key={r.k} data-k={r.k}>
                     <th scope="row">{t(r.label.es, r.label.en)}</th>
-                    {!company && <td data-l={H.goal}>{tg ? <>{show(r.unit, tg.value)}{tg.fromRecipe && <span className="src block">{t("de tu recetario", "from your recipe")}</span>}</> : <span className="muted">{t("Sin meta", "No goal")}</span>}</td>}
+                    {!company && <td data-l={H.goal}>{tg ? <>{show(r.unit, tg.value)}{tg.fromRecipe && <span className="src block">{t("de tu recetario", "from your recipe")}</span>}{tg.fromCompanies && <span className="src block">{t("suma de tus metas por empresa", "sum of your goals per company")}</span>}</> : <span className="muted">{t("Sin meta", "No goal")}</span>}</td>}
                     <td data-l={H.prev}>{show(r.unit, l.prev)}</td>
                     <td data-l={H.a3}>{avg(r.unit, l.avg3)}</td>
                     <td data-l={H.a6}>{avg(r.unit, l.avg6)}</td>
@@ -129,11 +131,7 @@ export default function Bateo({ i, name, bat, targets, company, matches, q, futu
 
       <p className="bt-legend src"><span className="bt-key now" /> {t("Mes actual", "This month")} <span className="bt-key" /> {t("Meses anteriores", "Earlier months")}{!company && <> <span className="bt-key goal" /> {t("Meta del mes", "Month goal")}</>}</p>
 
-      <div className="bt-rates">
-        <b>{t("Tu bateo", "Your batting")}</b>
-        <span>{t("Solicitud → Cotización: de las solicitudes del periodo, las que ya cotizaste.", "Request → Quote: of the period's requests, those you already quoted.")} <b>{rate("quoteMonth")}</b> {t("este mes", "this month")} · <b>{rate("quoteYear")}</b> {t("en 12 meses", "in 12 months")}</span>
-        <span>{t("Cotización → OC: de las cotizaciones del periodo que ya tienen decisión, las que ganaste.", "Quote → PO: of the period's quotes that already have a decision, those you won.")} <b>{rate("orderMonth")}</b> {t("este mes", "this month")} · <b>{rate("orderYear")}</b> {t("en 12 meses", "in 12 months")}</span>
-      </div>
+      <BateoMas i={i} coach={coach} future={future} />
 
       <div className="bt-scroll" id="velocidad">
         <table className="bt-table bt-speed">
@@ -168,19 +166,19 @@ export default function Bateo({ i, name, bat, targets, company, matches, q, futu
           <li>{t("Tu velocidad: cada tiempo es el promedio de los casos que terminaron ese paso en el mes; «Promedio 12 meses» es el de los casos de los 12 meses anteriores. Menos es mejor.", "Your speed: each time is the average of the cases that finished that step in the month; «12-month average» is that of the cases of the 12 months before. Less is better.")}</li>
           <li>{t("Mi mejor marca: tu mejor mes completo antes del que estás viendo, en toda tu historia en SOLU.", "My best mark: your best complete month before the one you are viewing, in all your history in SOLU.")}</li>
           <li>{t("Mes anterior y promedios: los meses completos antes del mes que estás viendo. El mes actual va hasta hoy.", "Previous month and averages: the complete months before the month you are viewing. The current month runs up to today.")}</li>
-          <li>{t("Tu bateo se mide por grupo de origen, no mes contra mes: «Solicitud → Cotización» toma las solicitudes creadas en el periodo y cuenta cuántas ya tienen cotización presentada; «Cotización → OC» toma las Necesidades cotizadas por primera vez en el periodo que ya tienen decisión (orden de compra, aceptada o rechazada) y cuenta las ganadas. Las que siguen sin decisión no entran todavía.", "Your batting is measured by origin group, not month against month: «Request → Quote» takes the requests created in the period and counts how many already have a quote presented; «Quote → PO» takes the Needs first quoted in the period that already have a decision (purchase order, accepted or declined) and counts those won. Those still undecided are not in yet.")}</li>
         </ul>
       </details>
 
       {!company && canEdit && !closed && (
         <form action={action} className="qa-form cols rc-form">
-          {BAT_GOAL_FIELDS.map((r) => (
+          <input type="hidden" name="grp" value="tabla" />
+          {BAT_GOAL_FIELDS.filter((r) => r.grp === "tabla").map((r) => (
             <label key={r.k}>{t(r.goal.es, r.goal.en)}
               <input name={r.k} type="number" min={0} step={r.unit === "n" ? "1" : r.unit === "usd" ? "0.01" : "0.1"} defaultValue={targets[r.k] && !targets[r.k]!.fromRecipe ? targets[r.k]!.value : ""} placeholder={targets[r.k]?.fromRecipe ? String(targets[r.k]!.value) : undefined} />
             </label>
           ))}
           <button type="submit">{t("Guardar metas de la tabla", "Save table goals")}</button>
-          <span className="src block wide">{t("Vacío o cero = sin meta. Si dejas vacías las de cotizaciones y órdenes de compra, SOLU usa las de tu recetario del mes. La meta de Eságara es la «Eságara ganada» que fijan Gerencia o la Dirección Comercial. En las de tiempo, la meta es el máximo: menos es mejor.", "Empty or zero = no goal. If you leave the quotes and purchase-order ones empty, SOLU uses those of your recipe for the month. The Eságara goal is the «Eságara won» set by Management or the Commercial Director. For the times, the goal is the maximum: less is better.")}</span>
+          <span className="src block wide">{t("Vacío o cero = sin meta. Si dejas vacía la de «$ Órdenes de compra», SOLU usa la suma de tus metas por empresa; si no hay, y para cotizaciones y número de órdenes, las de tu recetario del mes. La meta de Eságara es la «Eságara ganada» que fijan Gerencia o la Dirección Comercial. En las de tiempo, la meta es el máximo: menos es mejor.", "Empty or zero = no goal. If you leave the «$ Purchase orders» one empty, SOLU uses the sum of your goals per company; if there is none, and for quotes and number of orders, those of your recipe for the month. The Eságara goal is the «Eságara won» set by Management or the Commercial Director. For the times, the goal is the maximum: less is better.")}</span>
         </form>
       )}
     </section>

@@ -5,12 +5,16 @@ import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { goalBoard } from "@/lib/goals";
 import { GOAL_METRICS, GOAL_RULES, METRIC_KEYS, VALUE_KINDS, isClosed, periodBounds, periodOf, shiftPeriod, validPeriod, type Pace, type PaceStatus } from "@/lib/goal-rules";
-import { saveBatTargets, saveRecipe, saveTargets } from "./actions";
+import { saveBatTargets, saveCompanyGoals, saveRecipe, saveTargets } from "./actions";
 import { recipeActuals, recipeFor } from "@/lib/goal-recipe-data";
 import { recipeOf } from "@/lib/goal-recipe";
 import { BAT_KEYS, findCompanies, loadBatting } from "@/lib/batting";
 import Recetario from "./Recetario";
 import Bateo, { type BatTarget } from "./Bateo";
+import { Desarrollo, Marcador, MetasEmpresa, type PaceLine } from "./Coach";
+import { coverOf, diagnose, loadCoach } from "@/lib/batting-coach";
+import { monthOf } from "@/lib/customer-stats";
+import { paceOf } from "@/lib/goal-rules";
 
 // Comercial C7 · Goals & Future Creation (v1.1 §37–42, §50). One person and one month at a time.
 // Decided C-01 / C-15: the person sees their own goals; Gerencia / Director Comercial pick one person to review
@@ -33,6 +37,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
   const matches = !picked && q ? await findCompanies(q) : null;
   const company = picked ?? (matches?.length === 1 ? matches[0] : null);
   const [b, recipe, ra, bat] = await Promise.all([goalBoard(personId, period, now), recipeFor(personId, period), recipeActuals(personId, period, now), loadBatting(personId, period, company?.id ?? null)]);
+  const coach = await loadCoach(personId, period, company?.id ?? null);
   // The companies this person has Needs with: the list offered at the top to narrow the batting table.
   const mine = await db.deal.findMany({ where: { ownerId: personId, internal: false }, distinct: ["accountId"], select: { account: { select: { id: true, name: true } } } });
   const companies = mine.map((d) => d.account).filter((a): a is { id: string; name: string } => !!a).sort((a, b) => a.name.localeCompare(b.name, "es"));
@@ -57,6 +62,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
   for (const k of BAT_KEYS) {
     const typed = b.targets.find((x) => x.metric === k);
     if (typed) batTargets[k] = { value: Number(typed.target), fromRecipe: false };
+    else if (k === "BAT_PO_USD" && coach.companies?.total) batTargets[k] = { value: coach.companies.total, fromRecipe: false, fromCompanies: true };
     else if (fromRecipe[k]) batTargets[k] = { value: fromRecipe[k]!, fromRecipe: true };
   }
 
@@ -69,7 +75,16 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
     BEHIND: ["Detrás del ritmo", "Behind pace", "risk"],
     EARLY: ["El mes no empieza", "Month not started", "wait"],
   };
-  const okMsg: Record<string, string> = { bateo: t("Metas de la tabla de bateo guardadas.", "Batting table goals saved."), recetario: t("Recetario guardado.", "Recipe saved."), guardado: t("Metas guardadas. La versión anterior queda en el historial.", "Targets saved. The previous version stays in history."), "sin-cambios": t("No había cambios que guardar.", "There were no changes to save.") };
+  // Scoreboard: coverage, required pace and diagnosis use the effective goals above.
+  const typedPo = b.targets.find((x) => x.metric === "BAT_PO_USD");
+  const isCurrent = period === monthOf(now) && !company;
+  const cover = coverOf(batTargets.BAT_PO_USD?.value ?? null, bat.lines.BAT_PO_USD.actual, coach.pipeline);
+  const days = b.paces.VALUE_CONTACTS;
+  const paces: PaceLine[] = ([["BAT_PO_USD", "Órdenes de compra (valor)", "Purchase orders (value)", "usd"], ["BAT_PO_N", "Órdenes de compra (número)", "Purchase orders (number)", "n"], ["BAT_ESAGARA", "Eságara", "Eságara", "usd"]] as const)
+    .filter(([k]) => batTargets[k]).map(([k, es, en, unit]) => { const pc = paceOf(batTargets[k]!.value, bat.lines[k].actual, period, now); return { k, es, en, unit, remaining: pc.remaining ?? 0, perDay: pc.perDayNeeded, days: pc.remainingDays }; });
+  const goalValues = Object.fromEntries(Object.entries(batTargets).map(([k, g]) => [k, g!.value]));
+  const findings = diagnose({ bat, coach, cover, goals: goalValues, share: days.totalDays ? Math.min(1, days.elapsedDays / days.totalDays) : 1, money: (x) => i.money(x) });
+  const okMsg: Record<string, string> = { empresas: t("Metas por empresa guardadas.", "Goals per company saved."), desarrollo: t("Metas de desarrollo guardadas.", "Development goals saved."), bateo: t("Metas de la tabla de bateo guardadas.", "Batting table goals saved."), recetario: t("Recetario guardado.", "Recipe saved."), guardado: t("Metas guardadas. La versión anterior queda en el historial.", "Targets saved. The previous version stays in history."), "sin-cambios": t("No había cambios que guardar.", "There were no changes to save.") };
   const errMsg: Record<string, string> = {
     permiso: t("Solo Gerencia o la Dirección Comercial fijan metas.", "Only Management or the Commercial Director set targets."),
     cerrado: t("Ese mes ya cerró: sus metas no cambian.", "That month is closed: its targets don't change."),
@@ -132,7 +147,9 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
         <b className="goal-month">{monthName}</b>
         {closed && <span className="sig wait">{t("Cerrado", "Closed")}</span>}
         <Link className="qa-btn" href={href(shiftPeriod(period, 1))}>{t("Mes siguiente", "Next month")} →</Link>
+        <a className="qa-btn" href="#marcador">{t("Mi marcador ↓", "My scoreboard ↓")}</a>
         <a className="qa-btn" href="#bateo">{t("Tabla de bateo ↓", "Batting table ↓")}</a>
+        <a className="qa-btn" href="#empresas">{t("Metas por empresa ↓", "Goals per company ↓")}</a>
         <span className="grow" />
         <form method="get" action="/comercial/metas#bateo" className="goal-pick" id="empresa">
           <input type="hidden" name="p" value={period} />
@@ -161,9 +178,14 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
         saved={recipe ? { salesGoal: Number(recipe.salesGoal), avgSale: Number(recipe.avgSale), quotesPerClose: recipe.quotesPerClose, meetingsPerQuote: recipe.meetingsPerQuote, pitchesPerMeeting: recipe.pitchesPerMeeting, activitiesPerPitch: recipe.activitiesPerPitch } : null}
         savedBy={recipe?.setByName ?? null} actual={future ? {} : ra.actual} avg12={ra.avg12} action={saveRecipe.bind(null, personId, period)} key={`${personId}-${period}-${recipe?.updatedAt.getTime() ?? 0}`} />
 
-      <Bateo i={i} name={person.name} bat={bat} targets={batTargets} company={company} matches={matches} q={q} future={future} closed={closed} canEdit={own || manage}
+      {!company && <Marcador i={i} name={person.name} bat={bat} coach={coach} goals={batTargets} cover={cover} paces={paces} findings={findings} future={future} isCurrent={isCurrent} />}
+
+      <Bateo i={i} name={person.name} bat={bat} coach={coach} targets={batTargets} company={company} matches={matches} q={q} future={future} closed={closed} canEdit={own || manage}
         action={saveBatTargets.bind(null, personId, period)} baseHref={`/comercial/metas?p=${period}${own ? "" : `&u=${personId}`}`} hidden={{ p: period, ...(own ? {} : { u: personId }) }}
         statsHref={company ? `/accounts/${company.id}/estadisticas` : null} />
+
+      {!company && <MetasEmpresa i={i} name={person.name} coach={coach} typedGoal={typedPo ? Number(typedPo.target) : null} future={future} closed={closed} canEdit={own || manage} action={saveCompanyGoals.bind(null, personId, period)} statsBase={`/comercial/metas?p=${period}${own ? "" : `&u=${personId}`}`} />}
+      {!company && <Desarrollo i={i} name={person.name} coach={coach} goals={batTargets} future={future} closed={closed} canEdit={own || manage} action={saveBatTargets.bind(null, personId, period)} />}
 
       <div className="goal-grid">{METRIC_KEYS.map((k) => <Card key={k} k={k} p={b.paces[k]} />)}</div>
 

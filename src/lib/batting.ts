@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { monthOf, monthRange } from "./customer-stats";
+import { DEV_ROWS } from "./batting-coach";
 
 // Tabla de bateo (owner, 2026-11-25): each person sees their requests, quotes and purchase orders of the month
 // against their goal and against their own past (previous month, average of 3 / 6 / 12 months), and can narrow the
@@ -39,7 +40,12 @@ export const SPEED_ROWS: { k: SpeedKey; unit: "hours" | "days"; label: Txt; goal
 ];
 export type SpeedLine = { actual: number | null; n: number; avg12: number | null; n12: number };
 /** Every goal the person types under the table: the five counts and amounts, then the four times. */
-export const BAT_GOAL_FIELDS: { k: string; unit: "n" | "usd" | "hours" | "days"; goal: Txt }[] = [...BAT_GOAL_ROWS, ...SPEED_ROWS];
+/** `grp`: which form writes it: "tabla" (the batting table) or "desarrollo" (portfolio development). */
+export const BAT_GOAL_FIELDS: { k: string; unit: "n" | "usd" | "hours" | "days"; goal: Txt; grp: "tabla" | "desarrollo" }[] = [
+  ...BAT_GOAL_ROWS.map((r) => ({ k: r.k as string, unit: r.unit, goal: r.goal, grp: "tabla" as const })),
+  ...SPEED_ROWS.map((r) => ({ k: r.k as string, unit: r.unit, goal: r.goal, grp: "tabla" as const })),
+  ...DEV_ROWS.map((r) => ({ k: r.k as string, unit: r.unit, goal: r.goal, grp: "desarrollo" as const })),
+];
 export const BAT_KEYS = BAT_GOAL_FIELDS.map((r) => r.k);
 const ALL_KEYS = BAT_ROWS.map((r) => r.k);
 
