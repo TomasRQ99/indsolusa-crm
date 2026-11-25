@@ -47,9 +47,10 @@
    "Paste a WhatsApp message or a call summary and click [[Guardar y que SOLU lo lea]].",
    "Check the \"SOLU understood\" panel: facts and inferences are marked. Click [[Guardar]] to keep an item or [[Descartar]] if it does not apply.",
    "Link the conversation to a Need with [[Vincular]] (or choose \"New Need\").",
+   "To have AI build the Need from the whole email or message, click [[Crear Necesidad con IA]]: “New Need” opens with the conversation already in place. Click [[Armar la Necesidad]], review and create the Need; the conversation stays linked to it.",
    "Answer with [[Enviar desde el correo de la empresa]], or close it with [[Nada más que hacer aquí]]."
   ],
-  "expect": "Urgent or unanswered conversations also show in My Day. Emails go out from sales@indsolusa.com."
+  "expect": "Urgent or unanswered conversations also show in My Day. Emails go out from sales@indsolusa.com. “Fetch customer emails” brings the emails that reached the company mailbox in the last 14 days, only from people or companies already registered as customers. “Create Need with AI” appears when the AI key is connected and the conversation has no Need yet."
  },
  "email": {
   "t": "Email from the company address",

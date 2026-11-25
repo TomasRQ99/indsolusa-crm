@@ -14,9 +14,11 @@ type Contact = { id: string; accountId: string; name: string; email: string | nu
 type PartOpt = { code: string; name: string };
 type Machine = { accountId: string; name: string };
 
-export function NewNeedForm({ lang, action, accounts, contacts, parts, machines, defaultFollowUp, aiReady = false }: {
+export function NewNeedForm({ lang, action, accounts, contacts, parts, machines, defaultFollowUp, aiReady = false, aiSeed = null }: {
   lang: "ES" | "EN"; action: (fd: FormData) => void | Promise<void>;
   accounts: Opt[]; contacts: Contact[]; parts: PartOpt[]; machines: Machine[]; defaultFollowUp: string; aiReady?: boolean;
+  /** A conversation from MI DÍA → Comunicación to build the Need from: its text, and the customer it belongs to. */
+  aiSeed?: { threadId: string; text: string; from: string; accountId: string | null; contactId: string | null } | null;
 }) {
   const t = (es: string, en: string) => (lang === "EN" ? en : es);
   const [accountId, setAccountId] = useState("");
@@ -27,7 +29,9 @@ export function NewNeedForm({ lang, action, accounts, contacts, parts, machines,
   // What "Crear Necesidad con IA" understood: it only fills these boxes; the person reviews them and creates the Need.
   const [ai, setAi] = useState<NeedAiFill | null>(null);
   const useAi = (r: NeedAiFill) => {
-    setAi(r); setAccountId(r.accountId ?? ""); setContactId(r.contactId ?? "");
+    // The conversation already knows its customer: that one wins over the name the AI read.
+    const acc = aiSeed?.accountId ?? r.accountId;
+    setAi({ ...r, accountId: acc }); setAccountId(acc ?? ""); setContactId((aiSeed?.accountId ? aiSeed.contactId : r.contactId) ?? "");
     setCode(r.draft.itemCode ?? ""); setDesc(r.draft.itemDescription ?? "");
   };
   const g = ai?.draft;
@@ -48,10 +52,11 @@ export function NewNeedForm({ lang, action, accounts, contacts, parts, machines,
           <h2>{t("Nueva Necesidad", "New Need")}</h2>
           <p>{t("Empieza aquí cuando un cliente pide algo. Con esto queda registrada la solicitud, se le confirma al cliente por correo y queda la fecha del próximo contacto.", "Start here when a customer asks for something. This records the request, confirms it to the customer by email and sets the date of the next contact.")}</p>
         </div>
-        <AiNeedButton lang={lang} configured={aiReady} onUse={useAi} />
+        <AiNeedButton lang={lang} configured={aiReady} onUse={useAi} seed={aiSeed ? { text: aiSeed.text, from: aiSeed.from } : null} />
       </div>
       {ai && <p className="note attn nn-ai" role="status"><b>{t("Llenado con IA.", "Filled in with AI.")}</b> {t("Revisa cada casilla antes de crear la Necesidad: nombres, números de parte y cantidades.", "Check every box before creating the Need: names, part numbers and quantities.")}{!ai.accountId ? ` ${t("Falta elegir el cliente.", "The customer still has to be picked.")}` : ""}</p>}
       <form key={ai ? JSON.stringify(ai.draft).length + ai.draft.title : "manual"} action={action} className="nn-form">
+        {ai && aiSeed && <input type="hidden" name="threadId" value={aiSeed.threadId} />}
         {g?.replyBody && <><input type="hidden" name="aiSubject" value={g.replySubject ?? ""} /><input type="hidden" name="aiBody" value={g.replyBody} /></>}
         <div className="nn-col">
           <b className="nn-step">1 · {t("Quién pide", "Who is asking")}</b>

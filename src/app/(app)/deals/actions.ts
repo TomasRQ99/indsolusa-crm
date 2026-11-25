@@ -466,6 +466,9 @@ export async function createNeed(fd: FormData) {
     return deal;
   });
   await storeFiles(created.id, fd, user.name);
+  // Built from a conversation in Comunicación: that conversation now belongs to this Need.
+  const threadId = String(fd.get("threadId") ?? "").slice(0, 40);
+  if (threadId) await db.commThread.updateMany({ where: { id: threadId, dealId: null, OR: [{ accountId }, { accountId: null }] }, data: { dealId: created.id, accountId } });
   refreshApp();
   if (fd.get("sendAck") !== "1") redirect(`/deals/${created.id}?tab=need&ok=creada`);
   // The reply "Crear Necesidad con IA" prepared travels with the form: it opens in the email as a draft to review.

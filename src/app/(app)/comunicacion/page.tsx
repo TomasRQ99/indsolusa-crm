@@ -8,6 +8,7 @@ import { draftReply, missingInfo } from "@/lib/comm";
 import { mailConfig } from "@/lib/mail";
 import { Popovers } from "@/components/Popovers";
 import { applyToJourney, closeThread, decideItem, linkContact, registerMessage, sendReply, syncEmails } from "./actions";
+import { aiConfigured } from "@/lib/ai";
 import { reserveTime } from "../mi-dia/actions";
 
 // Communication Intelligence: not an inbox and not surveillance. Three zones:
@@ -56,6 +57,7 @@ export default async function ComunicacionPage({ searchParams }: { searchParams:
   const selectedId = sp.t && rows.some((r) => r.id === sp.t) ? sp.t : needYou[0]?.id ?? rows[0]?.id ?? null;
   const [th, openDeals] = selectedId ? (selectedId === sp.t && early ? early : await loadThread(selectedId)) : [null, []];
   const graph = mailConfig().provider === "graph";
+  const aiOn = aiConfigured();
 
   const fieldLabel: Record<string, string> = {
     product: t("Producto candidato", "Candidate product"),
@@ -339,6 +341,9 @@ export default async function ComunicacionPage({ searchParams }: { searchParams:
                   <ul>{missing.map((m) => <li key={m.field}>{i.es ? m.es : m.en}</li>)}</ul>
                   <span className="src">{t("La respuesta sugerida ya pregunta esto.", "The suggested reply already asks for this.")}</span>
                 </div>
+              )}
+              {aiOn && !th.dealId && (
+                <p className="ci-ai"><Link className="btn secondary ai-need-btn" href={`/deals?conv=${th.id}`}><span aria-hidden>✦</span> {t("Crear Necesidad con IA", "Create Need with AI")}</Link> <span className="src">{t("Lleva esta conversación al formulario «Nueva Necesidad»: la IA lo llena, dice qué falta preguntar y prepara la respuesta. Tú revisas antes de crear.", "It takes this conversation to the “New Need” form: AI fills it in, says what still needs asking and prepares the reply. You review before creating.")}</span></p>
               )}
               {ctaValue ? (
                 <form action={applyToJourney.bind(null, th.id)} className="ci-cta">

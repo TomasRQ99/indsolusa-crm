@@ -189,9 +189,10 @@
     "Pega un mensaje de WhatsApp o el resumen de una llamada y haz clic en [[Guardar y que SOLU lo lea]].",
     "Revisa el panel \"SOLU entendió\": hechos e inferencias están marcados. Haz clic en [[Guardar]] para conservar un punto o en [[Descartar]] si no aplica.",
     "Vincula la conversación a una Necesidad con [[Vincular]] (o elige \"Nueva Necesidad\").",
+    "Para que la IA arme la Necesidad con todo el correo o el mensaje, haz clic en [[Crear Necesidad con IA]]: se abre «Nueva Necesidad» con la conversación ya puesta. Haz clic en [[Armar la Necesidad]], revisa y crea la Necesidad; la conversación queda enlazada a ella.",
     "Responde con [[Enviar desde el correo de la empresa]], o ciérrala con [[Nada más que hacer aquí]]."
    ],
-   "expect": "Las conversaciones urgentes o sin responder también aparecen en Mi Día. Los correos salen desde sales@indsolusa.com."
+   "expect": "Las conversaciones urgentes o sin responder también aparecen en Mi Día. Los correos salen desde sales@indsolusa.com. «Traer correos de clientes» trae los correos que llegaron al buzón de la empresa en los últimos 14 días, solo de personas o empresas ya registradas como clientes. «Crear Necesidad con IA» aparece cuando la llave de IA está conectada y la conversación aún no tiene Necesidad."
   },
   {
    "id": "email",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { draftNeedWithAi, type NeedAiResult } from "@/app/(app)/deals/ai-actions";
 
 // "Crear Necesidad con IA" (owner, 2026-11-24): the person tells the case by voice or text; SOLU takes what matters,
@@ -14,11 +14,13 @@ export type NeedAiFill = Extract<NeedAiResult, { ok: true }>;
 type Recognizer = { lang: string; continuous: boolean; interimResults: boolean; start: () => void; stop: () => void; onresult: ((e: { resultIndex: number; results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null; onend: (() => void) | null; onerror: (() => void) | null };
 const recognizerClass = () => (typeof window === "undefined" ? null : ((window as unknown as Record<string, unknown>).SpeechRecognition ?? (window as unknown as Record<string, unknown>).webkitSpeechRecognition ?? null)) as (new () => Recognizer) | null;
 
-export function AiNeedButton({ lang, configured, onUse }: { lang: "ES" | "EN"; configured: boolean; onUse?: (r: NeedAiFill) => void }) {
+export function AiNeedButton({ lang, configured, onUse, seed }: { lang: "ES" | "EN"; configured: boolean; onUse?: (r: NeedAiFill) => void; seed?: { text: string; from: string } | null }) {
   const t = (es: string, en: string) => (lang === "EN" ? en : es);
   const ref = useRef<HTMLDialogElement>(null);
   const rec = useRef<Recognizer | null>(null);
-  const [text, setText] = useState("");
+  const [text, setText] = useState(seed?.text ?? "");
+  // Coming from a conversation in Comunicación: the window opens by itself with that conversation as the case.
+  useEffect(() => { if (seed && configured && !ref.current?.open) ref.current?.showModal(); }, [seed, configured]);
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -90,6 +92,7 @@ export function AiNeedButton({ lang, configured, onUse }: { lang: "ES" | "EN"; c
               <label className="ai-need-l">{t("Cuenta el caso como se lo contarías a un compañero", "Tell the case as you would tell a colleague")}
                 <textarea rows={7} maxLength={8000} value={text} onChange={(e) => setText(e.target.value)} disabled={busy} autoFocus placeholder={t("Ej.: Me llamó Jorge de Lácteos del Valle. Se les dañó el variador de la envasadora de la línea 3, un Siemens G120C de 7,5 kW. Necesitan uno cuanto antes porque la línea está parada.", "E.g.: Jorge from Lácteos del Valle called. The drive on the line 3 filler failed, a 7.5 kW Siemens G120C. They need one as soon as possible because the line is stopped.")} />
               </label>
+              {seed && <p className="ai-need-msg">{t(`Este es el texto de la conversación con ${seed.from}. Puedes agregar lo que sepas del caso antes de armar la Necesidad.`, `This is the text of the conversation with ${seed.from}. You can add what you know about the case before building the Need.`)}</p>}
               <p className="src">{canDictate ? t("Puedes escribir o dictar. El dictado lo hace tu navegador; revisa los números de parte, que al dictar suelen quedar mal.", "You can type or dictate. Dictation is done by your browser; check part numbers, which often come out wrong when dictated.") : t("Escribe el caso. El dictado funciona en Chrome y Edge.", "Type the case. Dictation works in Chrome and Edge.")}</p>
               {err && <p className="note attn" role="alert">{err}</p>}
               <div className="ai-need-act">

@@ -45,6 +45,18 @@ export async function aiGate(): Promise<AiGate> {
   return { ok: true };
 }
 
+/** Optional fields are written in the schemas as type ["string", "null"]. The API's documented way to say "this or
+ *  null" is anyOf, so every schema is sent in that form. */
+export function apiSchema(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(apiSchema);
+  if (!node || typeof node !== "object") return node;
+  const o = node as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(o)) if (k !== "type" || !Array.isArray(v)) out[k] = k === "enum" || k === "required" ? v : apiSchema(v);
+  if (Array.isArray(o.type)) out.anyOf = (o.type as string[]).map((t) => ({ type: t }));
+  return out;
+}
+
 let client: Anthropic | null = null;
 const getClient = () => (client ??= new Anthropic({ apiKey: aiKey(), timeout: 60_000, maxRetries: 1 }));
 
@@ -68,7 +80,7 @@ export async function aiJson<T>(opts: { feature: string; userName?: string; syst
       max_tokens: Math.max(opts.maxTokens ?? 0, 8000),
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default", // if a safety check declines, the API retries on a suitable model automatically
-      output_config: { effort: "low", format: { type: "json_schema", schema: opts.schema } },
+      output_config: { effort: "low", format: { type: "json_schema", schema: apiSchema(opts.schema) as Record<string, unknown> } },
       system: opts.system,
       messages: [{ role: "user", content: opts.content }],
     });
