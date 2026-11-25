@@ -8,7 +8,7 @@ import { GOAL_METRICS, GOAL_RULES, METRIC_KEYS, VALUE_KINDS, isClosed, periodBou
 import { saveBatTargets, saveRecipe, saveTargets } from "./actions";
 import { recipeActuals, recipeFor } from "@/lib/goal-recipe-data";
 import { recipeOf } from "@/lib/goal-recipe";
-import { BAT_KEYS, findCompanies, loadBatting, type BatKey } from "@/lib/batting";
+import { BAT_KEYS, findCompanies, loadBatting } from "@/lib/batting";
 import Recetario from "./Recetario";
 import Bateo, { type BatTarget } from "./Bateo";
 
@@ -49,8 +49,11 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
   const own = personId === user.id;
   // Goals of the batting table: the ones typed; without them, quotes and orders come from the month's recipe.
   const rec = recipe ? recipeOf({ salesGoal: Number(recipe.salesGoal), avgSale: Number(recipe.avgSale), quotesPerClose: recipe.quotesPerClose, meetingsPerQuote: recipe.meetingsPerQuote, pitchesPerMeeting: recipe.pitchesPerMeeting, activitiesPerPitch: recipe.activitiesPerPitch }, b.paces.VALUE_CONTACTS.totalDays) : null;
-  const fromRecipe: Partial<Record<BatKey, number>> = rec ? { BAT_QUOTE_N: rec.quotes, BAT_PO_N: rec.closes, BAT_PO_USD: rec.salesGoal } : {};
-  const batTargets: Partial<Record<BatKey, BatTarget>> = {};
+  const fromRecipe: Partial<Record<string, number>> = rec ? { BAT_QUOTE_N: rec.quotes, BAT_PO_N: rec.closes, BAT_PO_USD: rec.salesGoal } : {};
+  const batTargets: Partial<Record<string, BatTarget>> = {};
+  // The Eságara row takes the month's «Eságara ganada» goal, set by management below.
+  const esaGoal = b.tOf("ESAGARA_AMOUNT");
+  if (esaGoal) batTargets.BAT_ESAGARA = { value: Number(esaGoal.target), fromRecipe: false };
   for (const k of BAT_KEYS) {
     const typed = b.targets.find((x) => x.metric === k);
     if (typed) batTargets[k] = { value: Number(typed.target), fromRecipe: false };

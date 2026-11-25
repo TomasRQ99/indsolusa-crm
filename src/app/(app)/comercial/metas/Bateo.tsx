@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { BAT_GROUPS, BAT_ROWS, type BatKey, type Batting } from "@/lib/batting";
-import { monthLabel, shortStat } from "@/lib/customer-stats";
+import { BAT_GOAL_FIELDS, BAT_GROUPS, BAT_ROWS, SPEED_ROWS, type Batting } from "@/lib/batting";
+import { fmtStat, monthLabel, shortStat } from "@/lib/customer-stats";
 import "./bateo.css";
 
 // Tabla de bateo (owner, 2026-11-25): requests, quotes and purchase orders of the month against the goal and against
@@ -40,7 +40,7 @@ function Spark({ months, goal, title, short, es }: { months: { key: string; valu
 }
 
 export default function Bateo({ i, name, bat, targets, company, matches, q, future, closed, canEdit, action, baseHref, hidden, statsHref }: {
-  i: Fmt; name: string; bat: Batting; targets: Partial<Record<BatKey, BatTarget>>; company: { id: string; name: string } | null;
+  i: Fmt; name: string; bat: Batting; targets: Partial<Record<string, BatTarget>>; company: { id: string; name: string } | null;
   matches: { id: string; name: string }[] | null; q: string; future: boolean; closed: boolean; canEdit: boolean;
   action: (fd: FormData) => void | Promise<void>; baseHref: string; hidden: Record<string, string>; statsHref: string | null;
 }) {
@@ -49,10 +49,11 @@ export default function Bateo({ i, name, bat, targets, company, matches, q, futu
   // An average of counts keeps one decimal (1,3 requests a month), a count of the month is a whole number.
   const one = new Intl.NumberFormat(i.es ? "es-CO" : "en-US", { maximumFractionDigits: 1 });
   const avg = (unit: "n" | "usd", v: number | null) => (v == null ? "—" : unit === "usd" ? i.money(v) : one.format(v));
-  const H = { goal: t("Meta del mes", "Month goal"), now: t("Mes actual", "This month"), prev: t("Mes anterior", "Previous month"), a3: t("Promedio 3 meses", "3-month average"), a6: t("Promedio 6 meses", "6-month average"), a12: t("Promedio 12 meses", "12-month average"), plot: t("Últimos 12 meses y este", "Last 12 months and this one") };
-  const rate = (v: number | null) => (v == null ? "—" : String(v));
+  const H = { goal: t("Meta del mes", "Month goal"), now: t("Mes actual", "This month"), prev: t("Mes anterior", "Previous month"), a3: t("Promedio 3 meses", "3-month average"), a6: t("Promedio 6 meses", "6-month average"), a12: t("Promedio 12 meses", "12-month average"), best: t("Mi mejor marca", "My best mark"), done: t("Cumplimiento", "Achievement"), plot: t("Últimos 12 meses y este", "Last 12 months and this one") };
+  // "27 % (4 de 15)": the percentage with its hits and at-bats, so nobody reads much into two cases.
+  const rate = (k: "quoteMonth" | "orderMonth" | "quoteYear" | "orderYear") => (bat.rates[k] == null ? t("— (sin casos)", "— (no cases)") : `${bat.rates[k]} % (${bat.rates.n[k][0]} ${t("de", "of")} ${bat.rates.n[k][1]})`);
   const groups = Object.keys(BAT_GROUPS) as (keyof typeof BAT_GROUPS)[];
-  const cols = company ? 7 : 8;
+  const cols = company ? 8 : 10;
 
   return (
     <section className="card bt" id="bateo">
@@ -84,11 +85,13 @@ export default function Bateo({ i, name, bat, targets, company, matches, q, futu
             <tr>
               <th />
               {!company && <th>{H.goal}</th>}
-              <th>{H.now}</th>
               <th>{H.prev}</th>
               <th>{H.a3}</th>
               <th>{H.a6}</th>
               <th>{H.a12}</th>
+              <th>{H.best}</th>
+              <th>{H.now}</th>
+              {!company && <th>{H.done}</th>}
               <th>{H.plot}</th>
             </tr>
           </thead>
@@ -104,16 +107,17 @@ export default function Bateo({ i, name, bat, targets, company, matches, q, futu
                   <tr key={r.k} data-k={r.k}>
                     <th scope="row">{t(r.label.es, r.label.en)}</th>
                     {!company && <td data-l={H.goal}>{tg ? <>{show(r.unit, tg.value)}{tg.fromRecipe && <span className="src block">{t("de tu recetario", "from your recipe")}</span>}</> : <span className="muted">{t("Sin meta", "No goal")}</span>}</td>}
-                    <td className="bt-now" data-l={H.now}><b>{future ? "—" : show(r.unit, l.actual)}</b>
-                      {share != null && !future && (
-                        <><span className="bt-meter" role="img" aria-label={t(`${share} % de la meta`, `${share} % of the goal`)}><span style={{ width: `${Math.min(100, share)}%` }} /></span>
-                          <span className="src block">{t(`${share} % de la meta`, `${share} % of the goal`)}</span></>
-                      )}
-                    </td>
                     <td data-l={H.prev}>{show(r.unit, l.prev)}</td>
                     <td data-l={H.a3}>{avg(r.unit, l.avg3)}</td>
                     <td data-l={H.a6}>{avg(r.unit, l.avg6)}</td>
                     <td data-l={H.a12}>{avg(r.unit, l.avg12)}</td>
+                    <td className="bt-best" data-l={H.best}>{l.best ? <>{show(r.unit, l.best.value)}<span className="src block">{monthLabel(i.es, l.best.month)}</span></> : "—"}</td>
+                    <td className="bt-now" data-l={H.now}><b>{future ? "—" : show(r.unit, l.actual)}</b>
+                      {!future && l.actual > 0 && l.best && l.actual > l.best.value && <span className="sig ok">{t("Nueva mejor marca", "New best mark")}</span>}
+                    </td>
+                    {!company && <td className="bt-done" data-l={H.done}>{share != null && !future ? (
+                      <><b>{share} %</b><span className="bt-meter" role="img" aria-label={t(`${share} % de la meta`, `${share} % of the goal`)}><span style={{ width: `${Math.min(100, share)}%` }} /></span></>
+                    ) : "—"}</td>}
                     <td className="bt-plot" data-l={H.plot}><Spark months={l.months} goal={tg?.value ?? null} es={i.es} short={short} title={t(`${r.label.es}: últimos 12 meses y este`, `${r.label.en}: last 12 months and this one`)} /></td>
                   </tr>
                 );
@@ -127,8 +131,30 @@ export default function Bateo({ i, name, bat, targets, company, matches, q, futu
 
       <div className="bt-rates">
         <b>{t("Tu bateo", "Your batting")}</b>
-        <span>{t("Cotizaciones por cada 100 solicitudes:", "Quotes per 100 requests:")} <b>{rate(bat.rates.quoteMonth)}</b> {t("este mes", "this month")} · <b>{rate(bat.rates.quoteYear)}</b> {t("en 12 meses", "in 12 months")}</span>
-        <span>{t("Órdenes de compra por cada 100 cotizaciones:", "Purchase orders per 100 quotes:")} <b>{rate(bat.rates.orderMonth)}</b> {t("este mes", "this month")} · <b>{rate(bat.rates.orderYear)}</b> {t("en 12 meses", "in 12 months")}</span>
+        <span>{t("Solicitud → Cotización: de las solicitudes del periodo, las que ya cotizaste.", "Request → Quote: of the period's requests, those you already quoted.")} <b>{rate("quoteMonth")}</b> {t("este mes", "this month")} · <b>{rate("quoteYear")}</b> {t("en 12 meses", "in 12 months")}</span>
+        <span>{t("Cotización → OC: de las cotizaciones del periodo que ya tienen decisión, las que ganaste.", "Quote → PO: of the period's quotes that already have a decision, those you won.")} <b>{rate("orderMonth")}</b> {t("este mes", "this month")} · <b>{rate("orderYear")}</b> {t("en 12 meses", "in 12 months")}</span>
+      </div>
+
+      <div className="bt-scroll" id="velocidad">
+        <table className="bt-table bt-speed">
+          <thead><tr><th>{t("Tu velocidad", "Your speed")}</th>{!company && <th>{H.goal}</th>}<th>{H.now}</th><th>{H.a12}</th></tr></thead>
+          <tbody>
+            {SPEED_ROWS.map((r) => {
+              const l = bat.speed[r.k];
+              const tg = company ? null : targets[r.k] ?? null;
+              const tone = tg && l.actual != null && !future ? (l.actual <= tg.value ? "ok" : "risk") : null;
+              const cases = (n: number) => (n ? <span className="src block">{t(`${n} ${n === 1 ? "caso" : "casos"}`, `${n} ${n === 1 ? "case" : "cases"}`)}</span> : null);
+              return (
+                <tr key={r.k} data-k={r.k}>
+                  <th scope="row">{t(r.label.es, r.label.en)}</th>
+                  {!company && <td data-l={H.goal}>{tg ? `< ${fmtStat(i, r.unit, tg.value)}` : <span className="muted">{t("Sin meta", "No goal")}</span>}</td>}
+                  <td className="bt-now" data-l={H.now}><b>{future ? "—" : fmtStat(i, r.unit, l.actual)}</b>{tone && <span className={`sig ${tone}`}>{tone === "ok" ? t("Dentro de la meta", "Within the goal") : t("Por encima de la meta", "Above the goal")}</span>}{!future && cases(l.n)}</td>
+                  <td data-l={H.a12}>{fmtStat(i, r.unit, l.avg12)}{cases(l.n12)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       {bat.history < 12 && <p className="src">{bat.history === 0 ? t("Todavía no hay meses anteriores con registros: los promedios aparecen desde el segundo mes.", "There are no earlier months with records yet: the averages show from the second month.") : t(`SOLU tiene ${bat.history} ${bat.history === 1 ? "mes anterior" : "meses anteriores"} con registros: los promedios se calculan con esos meses.`, `SOLU has ${bat.history} earlier ${bat.history === 1 ? "month" : "months"} with records: the averages use those months.`)}</p>}
@@ -138,20 +164,23 @@ export default function Bateo({ i, name, bat, targets, company, matches, q, futu
         <summary className="small">{t("Cómo se cuenta la tabla de bateo", "How the batting table is counted")}</summary>
         <ul className="mk-ul small">
           {BAT_ROWS.map((r) => <li key={r.k}>{t(r.how.es, r.how.en)}</li>)}
+          {SPEED_ROWS.map((r) => <li key={r.k}>{t(r.how.es, r.how.en)}</li>)}
+          <li>{t("Tu velocidad: cada tiempo es el promedio de los casos que terminaron ese paso en el mes; «Promedio 12 meses» es el de los casos de los 12 meses anteriores. Menos es mejor.", "Your speed: each time is the average of the cases that finished that step in the month; «12-month average» is that of the cases of the 12 months before. Less is better.")}</li>
+          <li>{t("Mi mejor marca: tu mejor mes completo antes del que estás viendo, en toda tu historia en SOLU.", "My best mark: your best complete month before the one you are viewing, in all your history in SOLU.")}</li>
           <li>{t("Mes anterior y promedios: los meses completos antes del mes que estás viendo. El mes actual va hasta hoy.", "Previous month and averages: the complete months before the month you are viewing. The current month runs up to today.")}</li>
-          <li>{t("Tu bateo: cotizaciones frente a solicitudes y órdenes de compra frente a cotizaciones, contadas en el mes en que pasó cada una.", "Your batting: quotes against requests and purchase orders against quotes, each counted in the month it happened.")}</li>
+          <li>{t("Tu bateo se mide por grupo de origen, no mes contra mes: «Solicitud → Cotización» toma las solicitudes creadas en el periodo y cuenta cuántas ya tienen cotización presentada; «Cotización → OC» toma las Necesidades cotizadas por primera vez en el periodo que ya tienen decisión (orden de compra, aceptada o rechazada) y cuenta las ganadas. Las que siguen sin decisión no entran todavía.", "Your batting is measured by origin group, not month against month: «Request → Quote» takes the requests created in the period and counts how many already have a quote presented; «Quote → PO» takes the Needs first quoted in the period that already have a decision (purchase order, accepted or declined) and counts those won. Those still undecided are not in yet.")}</li>
         </ul>
       </details>
 
       {!company && canEdit && !closed && (
         <form action={action} className="qa-form cols rc-form">
-          {BAT_ROWS.map((r) => (
+          {BAT_GOAL_FIELDS.map((r) => (
             <label key={r.k}>{t(r.goal.es, r.goal.en)}
-              <input name={r.k} type="number" min={0} step={r.unit === "usd" ? "0.01" : "1"} defaultValue={targets[r.k] && !targets[r.k]!.fromRecipe ? targets[r.k]!.value : ""} placeholder={targets[r.k]?.fromRecipe ? String(targets[r.k]!.value) : undefined} />
+              <input name={r.k} type="number" min={0} step={r.unit === "n" ? "1" : r.unit === "usd" ? "0.01" : "0.1"} defaultValue={targets[r.k] && !targets[r.k]!.fromRecipe ? targets[r.k]!.value : ""} placeholder={targets[r.k]?.fromRecipe ? String(targets[r.k]!.value) : undefined} />
             </label>
           ))}
           <button type="submit">{t("Guardar metas de la tabla", "Save table goals")}</button>
-          <span className="src block wide">{t("Vacío o cero = sin meta. Si dejas vacías las de cotizaciones y órdenes de compra, SOLU usa las de tu recetario del mes.", "Empty or zero = no goal. If you leave the quotes and purchase-order ones empty, SOLU uses those of your recipe for the month.")}</span>
+          <span className="src block wide">{t("Vacío o cero = sin meta. Si dejas vacías las de cotizaciones y órdenes de compra, SOLU usa las de tu recetario del mes. La meta de Eságara es la «Eságara ganada» que fijan Gerencia o la Dirección Comercial. En las de tiempo, la meta es el máximo: menos es mejor.", "Empty or zero = no goal. If you leave the quotes and purchase-order ones empty, SOLU uses those of your recipe for the month. The Eságara goal is the «Eságara won» set by Management or the Commercial Director. For the times, the goal is the maximum: less is better.")}</span>
         </form>
       )}
     </section>

@@ -8,7 +8,7 @@ import { refreshApp } from "@/lib/revalidate";
 import { money2, sameMoney } from "@/lib/money";
 import { METRIC_KEYS, isClosed, validPeriod } from "@/lib/goal-rules";
 import { RATIO_MAX, RECIPE_DEFAULTS } from "@/lib/goal-recipe";
-import { BAT_KEYS, BAT_ROWS } from "@/lib/batting";
+import { BAT_GOAL_FIELDS, BAT_KEYS } from "@/lib/batting";
 
 // Comercial C7 · Gerencia / Director Comercial set a person's monthly targets (decision C-15). Each change supersedes
 // the current row and keeps it as history; a closed month never changes (AC5).
@@ -64,7 +64,7 @@ export async function saveBatTargets(userId: string, period: string, fd: FormDat
   if (!person?.active) back("err=persona");
   const current = await db.goalTarget.findMany({ where: { userId, period: p, supersededAt: null, metric: { in: BAT_KEYS } } });
   const changes: { metric: string; target: number | null; prev: (typeof current)[number] | null }[] = [];
-  for (const row of BAT_ROWS) {
+  for (const row of BAT_GOAL_FIELDS) {
     const raw = String(fd.get(row.k) ?? "").replace(/,/g, "").trim();
     const n = raw === "" ? null : Number(raw);
     if (n != null && (!Number.isFinite(n) || n < 0 || n > 1e9 || (row.unit === "n" && !Number.isInteger(n)))) back("err=bateo-valor");
