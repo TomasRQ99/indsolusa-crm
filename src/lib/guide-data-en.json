@@ -1856,7 +1856,7 @@
    "On the form, check every box: names, part numbers and quantities. If SOLU did not find the customer on the list, pick it yourself.",
    "Click [[Crear Necesidad y revisar el correo]]: the email opens with the reply the AI prepared. Read it, change it and click [[Enviar correo]]."
   ],
-  "expect": "The form is filled in and reads “Filled in with AI.” at the top. What still needs asking and the proposal go into “Notes (internal use)”, which never reach the customer. AI does not make things up: what you did not say stays empty. Dictated part numbers often come out wrong: always compare them. Until the company connects its AI key, the button opens the notice “Needs the AI key (API key).”"
+  "expect": "The form is filled in and reads “Filled in with AI.” at the top. What still needs asking and the proposal go into “Notes (internal use)”, which never reach the customer. AI does not make things up: what you did not say stays empty. Dictated part numbers often come out wrong: always compare them. Until the company connects its AI key, the button opens the notice “Needs the AI key (API key).” The window closes only with the “×” in the corner or on moving to the form: a click outside does not close it. If you close it with the “×”, what you wrote is still there when you open it again."
  },
  "aviso-retraso": {
   "t": "Delay notice: tell the customer and give a new date",

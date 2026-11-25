@@ -436,7 +436,7 @@
     "En el formulario, revisa cada casilla: nombres, números de parte y cantidades. Si SOLU no encontró al cliente en la lista, elígelo tú.",
     "Haz clic en [[Crear Necesidad y revisar el correo]]: se abre el correo con la respuesta que preparó la IA. Léela, cámbiala y haz clic en [[Enviar correo]]."
    ],
-   "expect": "El formulario queda lleno y arriba dice «Llenado con IA.» Lo que falta preguntar y la propuesta quedan en «Observaciones (uso interno)», que nunca salen al cliente. La IA no inventa: lo que no dijiste queda vacío. Al dictar, los números de parte suelen quedar mal: compáralos siempre. Mientras la empresa no conecte su llave de IA, el botón abre el aviso «Necesita la llave de IA (API key).»"
+   "expect": "El formulario queda lleno y arriba dice «Llenado con IA.» Lo que falta preguntar y la propuesta quedan en «Observaciones (uso interno)», que nunca salen al cliente. La IA no inventa: lo que no dijiste queda vacío. Al dictar, los números de parte suelen quedar mal: compáralos siempre. Mientras la empresa no conecte su llave de IA, el botón abre el aviso «Necesita la llave de IA (API key).» La ventana solo se cierra con la «×» de la esquina o al pasar al formulario: un clic afuera no la cierra. Si la cierras con la «×», lo que escribiste sigue ahí al abrirla de nuevo."
   },
   {
    "id": "journey",

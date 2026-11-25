@@ -20,7 +20,10 @@ export function AiNeedButton({ lang, configured, onUse, seed }: { lang: "ES" | "
   const rec = useRef<Recognizer | null>(null);
   const [text, setText] = useState(seed?.text ?? "");
   // Coming from a conversation in Comunicación: the window opens by itself with that conversation as the case.
-  useEffect(() => { if (seed && configured && !ref.current?.open) ref.current?.showModal(); }, [seed, configured]);
+  // Once only: the parent hands a new "seed" object on every render, and reopening on each one sent the person back
+  // to this window right after "Pasar al formulario" (owner's report, 2026-11-25).
+  const autoOpened = useRef(false);
+  useEffect(() => { if (seed && configured && !autoOpened.current) { autoOpened.current = true; ref.current?.showModal(); } }, [seed, configured]);
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -78,9 +81,14 @@ export function AiNeedButton({ lang, configured, onUse, seed }: { lang: "ES" | "
       <button type="button" className="btn secondary ai-need-btn" onClick={() => ref.current?.showModal()}>
         <span aria-hidden>✦</span> {t("Crear Necesidad con IA", "Create Need with AI")}
       </button>
-      <dialog ref={ref} className={`ai-need-dlg${configured ? " wide" : ""}`} aria-labelledby="ai-need-h" onClose={stop} onClick={(e) => { if (e.target === ref.current && !busy) close(); }}>
+      <dialog ref={ref} className={`ai-need-dlg${configured ? " wide" : ""}`} aria-labelledby="ai-need-h" onClose={stop} onCancel={(e) => e.preventDefault()}>
         <div className="ai-need-box">
-          <h2 id="ai-need-h"><span aria-hidden>✦</span> {t("Crear Necesidad con IA", "Create Need with AI")}</h2>
+          {/* It closes only with the × or when the process ends: a click outside or Esc must not lose the work. What was
+              written, and what SOLU understood, are still there when it is opened again. */}
+          <div className="ai-need-top">
+            <h2 id="ai-need-h"><span aria-hidden>✦</span> {t("Crear Necesidad con IA", "Create Need with AI")}</h2>
+            <button type="button" className="ai-need-x" onClick={close} disabled={busy} aria-label={t("Cerrar", "Close")} title={t("Cerrar", "Close")}>×</button>
+          </div>
           {!configured ? (
             <>
               <p className="ai-need-msg"><b>{t("Necesita la llave de IA (API key).", "Needs the AI key (API key).")}</b> {t("Todavía no está conectada. Gerencia la conecta en Render, en la variable ANTHROPIC_API_KEY. Mientras tanto, usa el formulario «Nueva Necesidad».", "It is not connected yet. Management connects it in Render, in the ANTHROPIC_API_KEY variable. Meanwhile, use the «New Need» form.")}</p>
@@ -98,7 +106,6 @@ export function AiNeedButton({ lang, configured, onUse, seed }: { lang: "ES" | "
               <div className="ai-need-act">
                 {canDictate && <button type="button" className={`btn secondary${listening ? " on" : ""}`} onClick={dictate} disabled={busy}>{listening ? t("Detener el dictado", "Stop dictating") : t("Dictar", "Dictate")}</button>}
                 <span className="grow" />
-                <button type="button" className="btn secondary" onClick={close} disabled={busy}>{t("Cancelar", "Cancel")}</button>
                 <button type="button" className="btn" onClick={run} disabled={busy || text.trim().length < 20}>{busy ? t("Armando la Necesidad…", "Building the Need…") : t("Armar la Necesidad", "Build the Need")}</button>
               </div>
             </>

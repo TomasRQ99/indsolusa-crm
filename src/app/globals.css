@@ -3150,6 +3150,10 @@ p.pj-table { margin: 0 0 8px; }
 .ai-need-act { display: flex; justify-content: flex-end; }
 @media (max-width: 760px) { .nn-head { flex-wrap: wrap; } .nn-head .ai-need-btn { margin-left: 46px; } }
 .ai-need-dlg.wide { width: min(640px, calc(100vw - 32px)); max-width: none; max-height: calc(100vh - 32px); overflow: auto; }
+.ai-need-top { display: flex; align-items: flex-start; gap: 12px; }
+.ai-need-top h2 { flex: 1; }
+.ai-need-x { flex: none; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 20px; line-height: 1; cursor: pointer; padding: 0; }
+.ai-need-x:hover { background: var(--ai-soft); color: var(--ai); border-color: var(--ai); }
 .ai-need-l { display: grid; gap: 6px; font-weight: 600; }
 .ai-need-l textarea { width: 100%; font-weight: 400; resize: vertical; }
 .ai-need-act { gap: 8px; flex-wrap: wrap; align-items: center; }
