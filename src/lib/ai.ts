@@ -15,7 +15,15 @@ const PRICES: Record<string, [number, number]> = {
 };
 const priceOf = (model: string) => PRICES[model] ?? [10, 50];
 
-export const aiConfigured = () => !!process.env.ANTHROPIC_API_KEY;
+// The key is expected in ANTHROPIC_API_KEY. A key saved under a close name (CLAUDE_API_KEY…) or pasted with spaces or
+// quotes around it is accepted too, so a small slip in Render does not leave the AI off.
+const KEY_NAMES = ["ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "ANTHROPIC_KEY", "CLAUDE_KEY"];
+const cleanKey = (v: string | undefined) => (v ?? "").trim().replace(/^["']+|["']+$/g, "").trim();
+export const aiKey = () => { for (const n of KEY_NAMES) { const v = cleanKey(process.env[n]); if (v) return v; } return ""; };
+export const aiConfigured = () => !!aiKey();
+/** For the AI page when the key is not seen: the NAMES (never the values) of the variables on this server that look
+ *  like an AI key, and whether each one is empty. */
+export const aiKeyHints = () => Object.keys(process.env).filter((n) => /anthropic|claude/i.test(n) && /key|token/i.test(n)).sort().map((n) => ({ name: n, empty: !cleanKey(process.env[n]), accepted: KEY_NAMES.includes(n) }));
 export const monthlyCap = () => {
   const v = Number(process.env.AI_MONTHLY_CAP_USD ?? "20");
   return Number.isFinite(v) && v >= 0 ? v : 20;
@@ -38,7 +46,7 @@ export async function aiGate(): Promise<AiGate> {
 }
 
 let client: Anthropic | null = null;
-const getClient = () => (client ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 60_000, maxRetries: 1 }));
+const getClient = () => (client ??= new Anthropic({ apiKey: aiKey(), timeout: 60_000, maxRetries: 1 }));
 
 export class AiError extends Error {
   constructor(public code: "OFF" | "CAP" | "REFUSED" | "BAD_OUTPUT" | "RATE" | "AUTH" | "API", message?: string) { super(message ?? code); }

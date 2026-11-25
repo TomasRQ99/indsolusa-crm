@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { canManageAll } from "@/lib/permissions";
-import { aiConfigured, aiSpentThisMonth, aiUsageByFeature, monthlyCap } from "@/lib/ai";
+import { aiConfigured, aiKeyHints, aiSpentThisMonth, aiUsageByFeature, monthlyCap } from "@/lib/ai";
 import { testAiConnection } from "./actions";
 
 // Inteligencia artificial: is the company's AI key connected, does it work, how much it has spent this month, and
@@ -25,6 +25,7 @@ export default async function AiPage({ searchParams }: { searchParams: Promise<{
   const cap = monthlyCap();
   const [spent, usage] = await Promise.all([aiSpentThisMonth(), aiUsageByFeature()]);
   const paused = on && spent.usd + 0.1 > cap;
+  const hints = on ? [] : aiKeyHints();
   const usd = (v: number) => `USD ${v.toFixed(2)}`;
   const of = (keys: string[]) => usage.filter((u) => keys.includes(u.feature)).reduce((a, u) => ({ calls: a.calls + u.calls, usd: a.usd + u.usd }), { calls: 0, usd: 0 });
   const test = of(["PING"]);
@@ -51,6 +52,15 @@ export default async function AiPage({ searchParams }: { searchParams: Promise<{
         <div><span className="k">{t("Tope del mes", "Month's cap")}</span><span className="v">{usd(cap)}</span><span className="s">{t("al llegar, la IA se pausa hasta el mes siguiente", "on reaching it, AI pauses until next month")}</span></div>
       </section>
 
+      {!on && can && (
+        <div className="note attn" role="status">
+          <b>{t("Este servidor no ve ninguna llave.", "This server sees no key.")}</b>{" "}
+          {hints.length === 0
+            ? t("No hay ninguna variable con nombre de llave de IA en el servicio que está corriendo. Revisa en Render que la variable se llame exactamente ANTHROPIC_API_KEY, que esté en este servicio (no en otro ni en un grupo sin enlazar) y que se haya guardado con «Save, rebuild, and deploy».", "There is no variable named like an AI key on the running service. Check in Render that the variable is called exactly ANTHROPIC_API_KEY, that it is on this service (not another one or an unlinked group) and that it was saved with “Save, rebuild, and deploy”.")
+            : hints.map((h) => h.empty ? t(`La variable ${h.name} existe, pero está vacía: pega la llave en su valor y guarda.`, `The variable ${h.name} exists, but it is empty: paste the key into its value and save.`) : t(`Hay una variable ${h.name} con valor, pero SOLU espera ANTHROPIC_API_KEY: cámbiale el nombre en Render.`, `There is a variable ${h.name} with a value, but SOLU expects ANTHROPIC_API_KEY: rename it in Render.`)).join(" ")}
+          <span className="src block">{t("Después de guardar en Render, espera a que el despliegue termine (dice «Live») y recarga esta página.", "After saving in Render, wait for the deploy to finish (it says “Live”) and reload this page.")}</span>
+        </div>
+      )}
       <section className="jblock loc-sec">
         <div className="jbh"><b>{t("PRUEBA DE LA LLAVE", "KEY TEST")}</b></div>
         {can ? (
