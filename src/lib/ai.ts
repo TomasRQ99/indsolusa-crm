@@ -55,7 +55,9 @@ export async function aiJson<T>(opts: { feature: string; userName?: string; syst
   try {
     res = await getClient().beta.messages.create({
       model: AI_MODEL,
-      max_tokens: opts.maxTokens ?? 4000,
+      // The model's thinking counts against this limit too, so a tight limit can cut the JSON short. It is a
+      // ceiling, not a spend: the bill is only for the tokens actually produced.
+      max_tokens: Math.max(opts.maxTokens ?? 0, 8000),
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default", // if a safety check declines, the API retries on a suitable model automatically
       output_config: { effort: "low", format: { type: "json_schema", schema: opts.schema } },
@@ -80,4 +82,28 @@ export async function aiJson<T>(opts: { feature: string; userName?: string; syst
   if (refused) throw new AiError("REFUSED");
   if (!parsed) throw new AiError("BAD_OUTPUT", res.stop_reason ?? undefined);
   return parsed;
+}
+
+/** "Probar la conexión": one very small paid request (a fraction of a cent) that proves the key works end to end. */
+export async function aiPing(userName?: string): Promise<{ ok: true } | { ok: false; code: AiError["code"]; message: string }> {
+  try {
+    await aiJson<{ ok: boolean }>({
+      feature: "PING", userName,
+      system: "Connection test. Reply with ok set to true.",
+      content: [{ type: "text", text: "ping" }],
+      schema: { type: "object", properties: { ok: { type: "boolean" } }, required: ["ok"], additionalProperties: false },
+    });
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof AiError) return { ok: false, code: e.code, message: e.message === e.code ? "" : e.message.slice(0, 300) };
+    return { ok: false, code: "API", message: e instanceof Error ? e.message.slice(0, 300) : "" };
+  }
+}
+
+/** This month's calls by feature, for the AI page. */
+export async function aiUsageByFeature() {
+  const now = new Date();
+  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const rows = await db.aiUsage.groupBy({ by: ["feature"], where: { createdAt: { gte: from } }, _sum: { costUsd: true }, _count: true, _max: { createdAt: true } });
+  return rows.map((r) => ({ feature: r.feature, calls: r._count, usd: Number(r._sum.costUsd ?? 0), last: r._max.createdAt })).sort((a, b) => b.usd - a.usd);
 }

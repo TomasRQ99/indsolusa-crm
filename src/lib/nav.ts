@@ -131,6 +131,7 @@ export const MODULES: NavModule[] = [
       { href: "/administracion/contabilidad", es: "Contabilidad", en: "Accounting", group: "cierre", roles: FIN },
       { href: "/administracion/politicas", es: "Políticas", en: "Policies", group: "ajustes" },
       { href: "/administracion/causas-retraso", es: "Causas de retraso", en: "Delay causes", group: "ajustes" },
+      { href: "/administracion/ia", es: "Inteligencia artificial", en: "Artificial intelligence", group: "ajustes" },
       { href: "/administracion/eventos", es: "Eventos", en: "Events", group: "ajustes", roles: FIN },
       { href: "/administracion/historial", es: "Historial de cambios", en: "Change history", group: "ajustes", managerOnly: true },
     ],

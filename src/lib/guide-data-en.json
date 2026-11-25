@@ -1833,13 +1833,17 @@
  },
  "necesidad-ia": {
   "t": "Create Need with AI",
-  "why": "Dictate or type the case and let SOLU build the Need, ask for what is missing, propose what to do and draft the reply to the customer. It waits for the company's AI key.",
+  "why": "Tell the case by voice or in writing and let SOLU fill in the Need, say what still needs asking, propose what to do and prepare the reply to the customer. Nothing is created or sent until you review it.",
   "steps": [
    "Open [[COMERCIAL]] and the [[Necesidades]] tab.",
    "In the “New Need” box, to the right of the title, click [[Crear Necesidad con IA]].",
-   "Read the notice and click [[Entendido]]. Meanwhile, record the case with the “New Need” form."
+   "Type the case as you would tell a colleague: who is asking, what they need and what for. In Chrome and Edge you can also click [[Dictar]] and speak; when you finish, [[Detener el dictado]].",
+   "Click [[Armar la Necesidad]]. SOLU shows what it understood, “What still needs asking the customer” and “What SOLU proposes”.",
+   "If it is right, click [[Pasar al formulario]]. If not, [[Volver a contar el caso]].",
+   "On the form, check every box: names, part numbers and quantities. If SOLU did not find the customer on the list, pick it yourself.",
+   "Click [[Crear Necesidad y revisar el correo]]: the email opens with the reply the AI prepared. Read it, change it and click [[Enviar correo]]."
   ],
-  "expect": "Until the company connects its AI key, the notice says “Needs the AI key (API key).” Management connects it in Render, in the ANTHROPIC_API_KEY variable."
+  "expect": "The form is filled in and reads “Filled in with AI.” at the top. What still needs asking and the proposal go into “Notes (internal use)”, which never reach the customer. AI does not make things up: what you did not say stays empty. Dictated part numbers often come out wrong: always compare them. Until the company connects its AI key, the button opens the notice “Needs the AI key (API key).”"
  },
  "aviso-retraso": {
   "t": "Delay notice: tell the customer and give a new date",
@@ -1863,5 +1867,16 @@
    "Click [[Guardar las causas de retraso]]."
   ],
   "expect": "The new list is what people see in “Delay notice” from that moment. Management, the Commercial Director or Administration change it; everyone else sees it without being able to edit it. The text for the customer must not name or blame a supplier or carrier."
+ },
+ "ia-llave": {
+  "t": "Artificial intelligence: connect and test the key",
+  "why": "Know whether the company's AI key is connected and working, how much it has spent this month and which options it turns on.",
+  "steps": [
+   "Open [[ADMINISTRACIÓN]], then [[Configuración]] and [[Inteligencia artificial]].",
+   "At the top, “AI key” reads “Connected”, “Not connected” or “Paused”. If it reads “Not connected”, follow the three steps under “HOW TO CONNECT THE KEY”, at the bottom of the page.",
+   "With the key connected, click [[Probar la conexión]]. It costs less than one US cent.",
+   "Under “WHAT THE KEY TURNS ON” check each option, where it is, how many times it was used and what it cost this month."
+  ],
+  "expect": "If the test goes well, it reads “The test went well: the key works and the AI options are on.” If it fails, a red box says why: key not accepted, account without credit or the month's cap spent. On reaching the month's cap, AI pauses by itself until next month. The key is never typed into SOLU: it lives in Render. The test is run by Management, the Commercial Director or Administration."
  }
 }

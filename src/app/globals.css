@@ -3149,3 +3149,19 @@ p.pj-table { margin: 0 0 8px; }
 .ai-need-box .src { margin: 0; }
 .ai-need-act { display: flex; justify-content: flex-end; }
 @media (max-width: 760px) { .nn-head { flex-wrap: wrap; } .nn-head .ai-need-btn { margin-left: 46px; } }
+.ai-need-dlg.wide { width: min(640px, calc(100vw - 32px)); max-width: none; max-height: calc(100vh - 32px); overflow: auto; }
+.ai-need-l { display: grid; gap: 6px; font-weight: 600; }
+.ai-need-l textarea { width: 100%; font-weight: 400; resize: vertical; }
+.ai-need-act { gap: 8px; flex-wrap: wrap; align-items: center; }
+.ai-need-act .grow { flex: 1; }
+.ai-need-act .btn.on { color: var(--ai); border-color: var(--ai); background: var(--ai-soft); }
+.ai-need-dl { margin: 0; display: grid; gap: 6px; }
+.ai-need-dl > div { display: grid; grid-template-columns: minmax(120px, 34%) 1fr; gap: 10px; }
+.ai-need-dl dt { color: var(--ink-2); font-size: 13px; }
+.ai-need-dl dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ai-need-sec ul { margin: 4px 0 0; padding-left: 18px; }
+.ai-need-sec summary { cursor: pointer; color: var(--ai); font-weight: 600; }
+.ai-need-reply { white-space: pre-wrap; margin: 8px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--ai-soft); }
+.nn-ai { margin: 0 0 12px; }
+.ia-steps { margin: 0 0 8px; padding-left: 20px; display: grid; gap: 6px; }
+@media (max-width: 520px) { .ai-need-dl > div { grid-template-columns: 1fr; gap: 0; } }

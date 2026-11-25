@@ -410,13 +410,17 @@
    "m": "comercial",
    "t": "Crear Necesidad con IA",
    "path": "COMERCIAL → Necesidades · Nueva Necesidad",
-   "why": "Dictar o escribir el caso y que SOLU arme la Necesidad, pregunte lo que falta, proponga qué hacer y prepare la respuesta al cliente. Espera la llave de IA de la empresa.",
+   "why": "Contar el caso por voz o por escrito y que SOLU llene la Necesidad, diga qué falta preguntar, proponga qué hacer y prepare la respuesta al cliente. Nada se crea ni se envía hasta que tú lo revisas.",
    "steps": [
     "Abre [[COMERCIAL]] y la pestaña [[Necesidades]].",
     "En el recuadro «Nueva Necesidad», a la derecha del título, haz clic en [[Crear Necesidad con IA]].",
-    "Lee el aviso y haz clic en [[Entendido]]. Mientras tanto, registra el caso con el formulario «Nueva Necesidad»."
+    "Escribe el caso como se lo contarías a un compañero: quién pide, qué necesita y para qué. En Chrome y Edge también puedes hacer clic en [[Dictar]] y hablar; al terminar, [[Detener el dictado]].",
+    "Haz clic en [[Armar la Necesidad]]. SOLU muestra lo que entendió, «Lo que falta preguntar al cliente» y «Qué propone SOLU».",
+    "Si está bien, haz clic en [[Pasar al formulario]]. Si no, [[Volver a contar el caso]].",
+    "En el formulario, revisa cada casilla: nombres, números de parte y cantidades. Si SOLU no encontró al cliente en la lista, elígelo tú.",
+    "Haz clic en [[Crear Necesidad y revisar el correo]]: se abre el correo con la respuesta que preparó la IA. Léela, cámbiala y haz clic en [[Enviar correo]]."
    ],
-   "expect": "Mientras la empresa no conecte su llave de IA, el aviso dice «Necesita la llave de IA (API key).» Gerencia la conecta en Render, en la variable ANTHROPIC_API_KEY."
+   "expect": "El formulario queda lleno y arriba dice «Llenado con IA.» Lo que falta preguntar y la propuesta quedan en «Observaciones (uso interno)», que nunca salen al cliente. La IA no inventa: lo que no dijiste queda vacío. Al dictar, los números de parte suelen quedar mal: compáralos siempre. Mientras la empresa no conecte su llave de IA, el botón abre el aviso «Necesita la llave de IA (API key).»"
   },
   {
    "id": "journey",
@@ -2146,6 +2150,20 @@
     "Haz clic en [[Guardar las causas de retraso]]."
    ],
    "expect": "La lista nueva es la que ven las personas en «Aviso de retraso» desde ese momento. La cambian Gerencia, Dirección Comercial o Administración; los demás la ven sin poder editarla. El texto para el cliente no debe nombrar ni culpar a un proveedor o transportador."
+  },
+  {
+   "id": "ia-llave",
+   "m": "administracion",
+   "t": "Inteligencia artificial: conectar y probar la llave",
+   "path": "ADMINISTRACIÓN → Configuración → Inteligencia artificial",
+   "why": "Saber si la llave de IA de la empresa está conectada y funciona, cuánto ha gastado este mes y qué opciones enciende.",
+   "steps": [
+    "Abre [[ADMINISTRACIÓN]], luego [[Configuración]] y [[Inteligencia artificial]].",
+    "Arriba, «Llave de IA» dice «Conectada», «Sin conectar» o «En pausa». Si dice «Sin conectar», sigue los tres pasos de «CÓMO CONECTAR LA LLAVE», al final de la página.",
+    "Con la llave conectada, haz clic en [[Probar la conexión]]. Cuesta menos de un centavo de dólar.",
+    "En «QUÉ ENCIENDE LA LLAVE» revisa cada opción, dónde está, cuántas veces se usó y cuánto costó este mes."
+   ],
+   "expect": "Si la prueba sale bien, dice «La prueba salió bien: la llave funciona y las opciones de IA están encendidas.» Si falla, un recuadro rojo dice por qué: llave no aceptada, cuenta sin saldo o tope del mes gastado. Al llegar al tope del mes, la IA se pausa sola hasta el mes siguiente. La llave nunca se escribe en SOLU: vive en Render. La prueba la hacen Gerencia, Dirección Comercial o Administración."
   },
   {
    "id": "auth-rangos",

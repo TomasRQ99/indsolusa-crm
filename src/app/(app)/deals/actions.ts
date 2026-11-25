@@ -14,6 +14,7 @@ import { linesTotal, sumMoney } from "@/lib/money";
 import { remindQuoteAdjust } from "@/lib/quote-reminder";
 import { partKey } from "@/lib/parts";
 import { addWorkingDays } from "@/lib/holidays";
+import { AI_MODEL } from "@/lib/ai";
 
 const stage = z.enum(["LEAD", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON", "LOST"]);
 const money = z.coerce.number().min(0).max(1e12);
@@ -466,7 +467,11 @@ export async function createNeed(fd: FormData) {
   });
   await storeFiles(created.id, fd, user.name);
   refreshApp();
-  redirect(fd.get("sendAck") === "1" ? `/correo/nuevo?tpl=ACK&id=${created.id}` : `/deals/${created.id}?tab=need&ok=creada`);
+  if (fd.get("sendAck") !== "1") redirect(`/deals/${created.id}?tab=need&ok=creada`);
+  // The reply "Crear Necesidad con IA" prepared travels with the form: it opens in the email as a draft to review.
+  const aiBody = String(fd.get("aiBody") ?? "").trim().slice(0, 6000);
+  const draft = aiBody ? await db.aiDraft.create({ data: { dealId: created.id, kind: "ACK", lang: user.lang === "EN" ? "EN" : "ES", subject: `${(txt(fd, "aiSubject", 220) ?? "Recibimos su solicitud").replace(/\s+/g, " ")} (${created.code})`, body: aiBody, model: AI_MODEL, createdById: user.id, createdByName: user.name }, select: { id: true } }) : null;
+  redirect(`/correo/nuevo?tpl=ACK&id=${created.id}${draft ? `&lang=${user.lang === "EN" ? "EN" : "ES"}&borrador=${draft.id}` : ""}`);
 }
 
 export async function addNeedFiles(id: string, fd: FormData) {

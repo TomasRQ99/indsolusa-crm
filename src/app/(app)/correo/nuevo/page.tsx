@@ -25,7 +25,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
   const meta = TEMPLATES[tpl];
   // A draft written with AI for this same Need opens in the text box; the person reads and edits it before sending.
   const aiKind = tpl === "PROGRESS" || tpl === "OFFER";
-  const draft = aiKind && sp.borrador && c.dealId ? await db.aiDraft.findFirst({ where: { id: sp.borrador.slice(0, 40), dealId: c.dealId, kind: tpl }, select: { subject: true, body: true, createdByName: true } }) : null;
+  const draft = (aiKind || tpl === "ACK") && sp.borrador && c.dealId ? await db.aiDraft.findFirst({ where: { id: sp.borrador.slice(0, 40), dealId: c.dealId, kind: tpl }, select: { subject: true, body: true, createdByName: true } }) : null;
   const aiOn = aiConfigured();
   const other = c.lang === "EN" ? "ES" : "EN";
   const langHref = `/correo/nuevo?${new URLSearchParams({ tpl, id: sp.id!, lang: other })}`;
@@ -72,6 +72,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
         </section>
       )}
 
+      {draft && !aiKind && <p className="note attn">{t(`Respuesta preparada por IA a pedido de ${draft.createdByName}. Léela completa antes de enviar: revisa nombres, números de parte y lo que se le pide al cliente. SOLU agrega el número de la Necesidad en el asunto.`, `Reply prepared by AI at ${draft.createdByName}'s request. Read all of it before sending: check names, part numbers and what the customer is asked for. SOLU adds the Need number to the subject.`)}</p>}
       <form key={`${c.lang}-${sp.borrador ?? ""}`} action={sendComposed} className="stack">
         <input type="hidden" name="tpl" value={tpl} />
         <input type="hidden" name="id" value={sp.id} />
