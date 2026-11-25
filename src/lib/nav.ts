@@ -153,6 +153,7 @@ export const MODULES: NavModule[] = [
       { href: "/equipo/perfil", es: "Mi 360", en: "My 360", group: "yo" },
       { href: "/equipo/reuniones", es: "Conversaciones", en: "Conversations", group: "yo" },
       { href: "/equipo/feedback", es: "Feedback 360", en: "Feedback 360", group: "yo" },
+      { href: "/equipo/metas", es: "Organizar metas del equipo", en: "Organise team goals", group: "miequipo", roles: ["GERENCIA", "ADMINISTRACION", "DIRECTOR_COMERCIAL"] },
       { href: "/equipo/mi-equipo", es: "Desarrollo de mi equipo", en: "My team's development", group: "miequipo" },
       { href: "/equipo/claridad", es: "Claridad de roles", en: "Role clarity", group: "miequipo" },
       { href: "/equipo/continuidad", es: "Continuidad y sucesión", en: "Continuity and succession", group: "miequipo" },

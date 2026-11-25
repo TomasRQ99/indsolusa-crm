@@ -773,7 +773,7 @@
     "Mira la gráfica: cambia mientras escribes. Baja de la meta de ventas hasta las «Actividades de prospección diaria», con los días hábiles del mes.",
     "Haz clic en [[Guardar mi recetario]]."
    ],
-   "expect": "SOLU confirma «Recetario guardado.» A la derecha de cada barra, «Llevas» dice lo que ya pasó este mes según lo registrado en SOLU, y en la última barra «Hoy» cuenta las actividades de hoy; «Cómo se cuenta lo que llevas», debajo de la gráfica, explica cada cifra. Cada mes tiene su propio recetario; un mes que ya cerró no se cambia. Gerencia y Dirección Comercial pueden ver y escribir el recetario de otra persona eligiéndola en «Persona»."
+   "expect": "SOLU confirma «Recetario guardado.» A la derecha de cada barra, «Llevas» dice lo que ya pasó este mes según lo registrado en SOLU, y en la última barra «Hoy» cuenta las actividades de hoy; «Cómo se cuenta lo que llevas», debajo de la gráfica, explica cada cifra. Cada mes tiene su propio recetario; un mes que ya cerró no se cambia. Gerencia y Dirección Comercial pueden ver y escribir el recetario de otra persona eligiéndola en «Persona». Gerencia, Administración y Dirección Comercial también lo escriben en EQUIPO → Mi equipo → Organizar metas del equipo."
   },
   {
    "id": "tabla-bateo",
@@ -1550,6 +1550,21 @@
     "En un feedback recibido, abre [[Convertir en oportunidad de desarrollo]]."
    ],
    "expect": "Hay que escribir al menos una de las cuatro partes. El feedback lleva el nombre de quien lo da. Lo leen la persona y su líder."
+  },
+  {
+   "id": "metas-equipo",
+   "m": "equipo",
+   "t": "Organizar metas del equipo: el recetario mensual de cada persona",
+   "path": "EQUIPO → Mi equipo → Organizar metas del equipo (Gerencia, Administración y Dirección Comercial)",
+   "why": "Ver el recetario del mes de cada persona en una sola lista, y escribirlo o cambiarlo por ella.",
+   "steps": [
+    "Abre [[EQUIPO]], luego [[Mi equipo]] y haz clic en [[Organizar metas del equipo]].",
+    "Lee la lista «RECETARIO DE CADA PERSONA»: meta de ventas, lo que lleva, venta promedio, negocios, cotizaciones y actividades por día. Quien no tiene recetario este mes dice «Sin recetario».",
+    "En la fila de la persona, haz clic en «Escribir recetario» (o «Cambiar recetario» si ya tiene uno). Arriba se abre su «RECETARIO MENSUAL».",
+    "Escribe la «Meta de ventas del mes (USD)» y el «Valor de tu venta promedio (USD)», y revisa las cuatro proporciones. La gráfica cambia mientras escribes.",
+    "Haz clic en [[Guardar el recetario]]."
+   ],
+   "expect": "SOLU confirma «Recetario guardado.» y la fila de la persona muestra las cifras nuevas y tu nombre en «Guardado por». La persona ve ese recetario en COMERCIAL → Mis metas y puede cambiarlo. Con «Mes anterior» y «Mes siguiente» cambias de mes; un mes que ya cerró no se cambia. Quien no es de Gerencia, Administración o Dirección Comercial no ve esta pestaña."
   },
   {
    "id": "eq-miequipo",

@@ -40,6 +40,11 @@ export function canManageAll(u: U) {
   return u.role === "GERENCIA" || u.role === "DIRECTOR_COMERCIAL";
 }
 
+/** EQUIPO → Organizar metas del equipo (owner, 2026-11-25): Gerencia and Administración write each person's monthly
+ *  recipe; Dirección Comercial keeps the right it already had from Mis metas. */
+export const GOAL_ORGANIZER_ROLES = ["GERENCIA", "ADMINISTRACION", "DIRECTOR_COMERCIAL"];
+export const canOrganizeGoals = (u: U) => GOAL_ORGANIZER_ROLES.includes(u.role);
+
 /** Owner, management, or (Comercial C8b) someone covering the owner's absence right now. */
 export function canEdit(u: U, ownerId: string) {
   return canManageAll(u) || u.id === ownerId || (u.covering?.includes(ownerId) ?? false);

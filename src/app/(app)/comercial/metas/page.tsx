@@ -74,7 +74,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
     valor: t("Las metas son números de cero en adelante.", "Targets are numbers from zero up."),
     periodo: t("Mes no válido.", "Invalid month."),
     persona: t("Esa persona no está activa.", "That person isn't active."),
-    "permiso-recetario": t("El recetario lo escribe la propia persona, Gerencia o la Dirección Comercial.", "The recipe is written by the person, Management or the Commercial Director."),
+    "permiso-recetario": t("El recetario lo escribe la propia persona, Gerencia, Administración o la Dirección Comercial.", "The recipe is written by the person, Management, Administration or the Commercial Director."),
     "permiso-bateo": t("Las metas de la tabla de bateo las escribe la propia persona, Gerencia o la Dirección Comercial.", "The batting table goals are written by the person, Management or the Commercial Director."),
     "bateo-valor": t("Las metas de la tabla son números de cero en adelante; las de cantidad (#), enteros.", "The table goals are numbers from zero up; the count ones (#), whole numbers."),
     "recetario-valor": t("Escribe la meta de ventas y el valor de tu venta promedio, mayores que cero.", "Type the sales goal and your average sale, above zero."),

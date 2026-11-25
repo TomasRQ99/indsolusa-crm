@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canManageAll } from "@/lib/permissions";
+import { canManageAll, canOrganizeGoals } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { money2, sameMoney } from "@/lib/money";
 import { METRIC_KEYS, isClosed, validPeriod } from "@/lib/goal-rules";
@@ -17,10 +17,22 @@ const go = (u: string, p: string, qs: string): never => { refreshApp(); redirect
 
 /** Recetario mensual: the person writes their own recipe (or a manager for them). Editing replaces the month's row. */
 export async function saveRecipe(userId: string, period: string, fd: FormData) {
+  return writeRecipe(userId, period, fd, false);
+}
+
+/** The same recipe, written from EQUIPO → Organizar metas del equipo (owner, 2026-11-25): back to that page. */
+export async function saveTeamRecipe(userId: string, period: string, fd: FormData) {
+  return writeRecipe(userId, period, fd, true);
+}
+
+async function writeRecipe(userId: string, period: string, fd: FormData, team: boolean) {
   const user = await requireUser();
   const p = validPeriod(period) ? period : "";
-  const back = (qs: string): never => { refreshApp(); redirect(`/comercial/metas?p=${p || period}${userId !== user.id ? `&u=${userId}` : ""}&${qs}#recetario`); };
-  if (userId !== user.id && !canManageAll(user)) back("err=permiso-recetario");
+  const back = (qs: string): never => {
+    refreshApp();
+    redirect(team ? `/equipo/metas?p=${p || period}&u=${userId}&${qs}#recetario` : `/comercial/metas?p=${p || period}${userId !== user.id ? `&u=${userId}` : ""}&${qs}#recetario`);
+  };
+  if (userId !== user.id && !canOrganizeGoals(user)) back("err=permiso-recetario");
   if (!p) back("err=periodo");
   if (isClosed(p, new Date())) back("err=cerrado");
   const person = await db.user.findUnique({ where: { id: userId }, select: { active: true } });

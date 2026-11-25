@@ -115,3 +115,10 @@ Owner's request, with the Recetario picture: every person should see a chart of 
 - **My defaults, unconfirmed:** the person writes these goals (managers too), no reason asked; a closed month does not change; when the quote / PO goals are empty the month's Recetario fills them (quotes, closes, sales goal) marked "de tu recetario"; the company view counts only the viewed person's Needs with that company; visible to the person and to Gerencia / Dirección Comercial (C-01).
 - **Not built:** goals per company; opening the records behind a figure from this table (the customer Estadísticas page does that); a team-wide batting table.
 - **Not verified:** the live site; a person with purchase orders in the local data (the sample negotiator had none, so PO figures were checked by the data test only).
+## Organizar metas del equipo (2026-11-25)
+
+Owner: "el recetario mensual de cada empleado puede ser editado por gerencia y administración, la opción para hacerlo debería estar en equipo", then the name: "organizar metas del equipo".
+
+- **Built:** tab EQUIPO → Mi equipo → Organizar metas del equipo (`/equipo/metas`, roles GERENCIA, ADMINISTRACION, DIRECTOR_COMERCIAL via `canOrganizeGoals`). One row per active person: sales goal, sold so far, average sale, deals, quotes, activities per day, saved by. "Escribir / Cambiar recetario" opens that person's Recetario on the same page (`saveTeamRecipe`, button "Guardar el recetario").
+- **My defaults, unconfirmed:** Dirección Comercial keeps the right; the person can still write their own in Mis metas; the page covers the recipe only (not the batting-table goals nor the five C7 goals); Administración sees each person's sales so far on this page.
+- **Tested:** browser, local build, with Gerencia, a temporary Administración user and a Negociador (who is sent away and sees no tab). Not on the live site.

@@ -8,7 +8,9 @@ import { RATIO_FIELDS, RATIO_MAX, RECIPE_DEFAULTS, RECIPE_ROWS, recipeOf, shortM
 
 type Saved = { salesGoal: number; avgSale: number; quotesPerClose: number; meetingsPerQuote: number; pitchesPerMeeting: number; activitiesPerPitch: number } | null;
 
-export default function Recetario({ es, name, saved, actual, avg12, workdays, canEdit, closed, action, savedBy }: {
+export default function Recetario({ es, name, saved, actual, avg12, workdays, canEdit, closed, action, savedBy, forOther }: {
+  /** Written for someone else from EQUIPO → Organizar metas del equipo: the button doesn't say "mi". */
+  forOther?: boolean;
   es: boolean; name: string; saved: Saved; actual: Partial<Record<RecipeKey, number>>; avg12: number | null; workdays: number;
   canEdit: boolean; closed: boolean; action: (fd: FormData) => void | Promise<void>; savedBy: string | null;
 }) {
@@ -86,7 +88,7 @@ export default function Recetario({ es, name, saved, actual, avg12, workdays, ca
             </label>
           ))}
           {avg12 != null && <span className="src block wide rc-avg">{t(`Tu venta promedio real de los últimos 12 meses: USD ${fmtN.format(avg12)}`, `Your real average sale over the last 12 months: USD ${fmtN.format(avg12)}`)} · <button type="button" className="linklike" onClick={() => setV({ ...v, avgSale: String(avg12) })}>{t("Usar este valor", "Use this value")}</button></span>}
-          <button type="submit">{t("Guardar mi recetario", "Save my recipe")}</button>
+          <button type="submit">{forOther ? t("Guardar el recetario", "Save the recipe") : t("Guardar mi recetario", "Save my recipe")}</button>
           <span className="src block wide">{t("La gráfica cambia mientras escribes. Las cuatro proporciones vienen en 2, 2, 3 y 3; cámbialas por las tuyas. Cada mes tiene su propio recetario.", "The chart changes as you type. The four ratios start at 2, 2, 3 and 3; change them to yours. Each month has its own recipe.")}</span>
         </form>
       )}
