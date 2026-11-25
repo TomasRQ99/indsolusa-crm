@@ -195,6 +195,21 @@
    "expect": "Las conversaciones urgentes o sin responder también aparecen en Mi Día. Los correos salen desde sales@indsolusa.com. «Traer correos de clientes» trae los correos que llegaron al buzón de la empresa en los últimos 14 días, solo de personas o empresas ya registradas como clientes. «Crear Necesidad con IA» aparece cuando la llave de IA está conectada y la conversación aún no tiene Necesidad."
   },
   {
+   "id": "buzon-necesidad",
+   "m": "midia",
+   "t": "Correos del buzón: crear una Necesidad desde un correo enviado o recibido",
+   "path": "MI DÍA → Comunicación · Correos del buzón",
+   "why": "Tomar un correo que ya está en tu buzón o en el de la empresa, enviado o recibido, y que la IA arme la Necesidad con su texto, sin copiar ni pegar.",
+   "steps": [
+    "Abre [[MI DÍA]], la pestaña [[Comunicación]] y haz clic en [[Correos del buzón]].",
+    "En «1 · QUÉ BUZÓN» elige [[Mi buzón]] o [[Buzón de la empresa]], y [[Enviados]] o [[Recibidos]].",
+    "En «2 · ELIGE EL CORREO», busca el correo y haz clic en [[Crear Necesidad con IA]] en su fila.",
+    "Se abre «Nueva Necesidad» con el texto del correo. Agrega lo que sepas del caso y haz clic en [[Armar la Necesidad]].",
+    "Revisa lo que entendió SOLU y haz clic en [[Pasar al formulario]]. Elige el cliente si SOLU no lo reconoció, revisa cada casilla y crea la Necesidad."
+   ],
+   "expect": "Se ven los 30 correos más recientes de la carpeta. Aquí solo se lee: no se mueve, no se marca y no se guarda ningún correo. «Mi buzón» es el correo con el que entras a SOLU; nadie abre el buzón de otra persona. Si Microsoft no encuentra el buzón, la página lo dice: SOLU solo lee buzones de la misma cuenta de Microsoft 365 que el correo de la empresa."
+  },
+  {
    "id": "email",
    "m": "midia",
    "t": "Correo desde la dirección de la empresa",

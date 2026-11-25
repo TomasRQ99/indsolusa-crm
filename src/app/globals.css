@@ -3166,5 +3166,10 @@ p.pj-table { margin: 0 0 8px; }
 .ci-ai { margin: 0 0 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .ci-ai .ai-need-btn { color: var(--ai); border-color: var(--ai); background: var(--ai-soft); flex: none; }
 .ci-ai .src { flex: 1 1 260px; }
+.mb-pick { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+.mb-pick .chip { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); text-decoration: none; font-size: 13px; }
+.mb-pick .chip.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.mb-sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+.rp-list .mb-go { flex: none; color: var(--ai); border-color: var(--ai); background: var(--ai-soft); white-space: nowrap; }
 .ia-steps { margin: 0 0 8px; padding-left: 20px; display: grid; gap: 6px; }
 @media (max-width: 520px) { .ai-need-dl > div { grid-template-columns: 1fr; gap: 0; } }

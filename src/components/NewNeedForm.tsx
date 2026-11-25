@@ -56,7 +56,7 @@ export function NewNeedForm({ lang, action, accounts, contacts, parts, machines,
       </div>
       {ai && <p className="note attn nn-ai" role="status"><b>{t("Llenado con IA.", "Filled in with AI.")}</b> {t("Revisa cada casilla antes de crear la Necesidad: nombres, números de parte y cantidades.", "Check every box before creating the Need: names, part numbers and quantities.")}{!ai.accountId ? ` ${t("Falta elegir el cliente.", "The customer still has to be picked.")}` : ""}</p>}
       <form key={ai ? JSON.stringify(ai.draft).length + ai.draft.title : "manual"} action={action} className="nn-form">
-        {ai && aiSeed && <input type="hidden" name="threadId" value={aiSeed.threadId} />}
+        {ai && aiSeed?.threadId && <input type="hidden" name="threadId" value={aiSeed.threadId} />}
         {g?.replyBody && <><input type="hidden" name="aiSubject" value={g.replySubject ?? ""} /><input type="hidden" name="aiBody" value={g.replyBody} /></>}
         <div className="nn-col">
           <b className="nn-step">1 · {t("Quién pide", "Who is asking")}</b>

@@ -52,6 +52,18 @@
   ],
   "expect": "Urgent or unanswered conversations also show in My Day. Emails go out from sales@indsolusa.com. “Fetch customer emails” brings the emails that reached the company mailbox in the last 14 days, only from people or companies already registered as customers. “Create Need with AI” appears when the AI key is connected and the conversation has no Need yet."
  },
+ "buzon-necesidad": {
+  "t": "Mailbox emails: create a Need from an email you sent or received",
+  "why": "Take an email that is already in your mailbox or the company's, sent or received, and let AI build the Need from its text, with no copying and pasting.",
+  "steps": [
+   "Open [[MI DÍA]], the [[Comunicación]] tab and click [[Correos del buzón]].",
+   "Under “1 · WHICH MAILBOX” choose [[Mi buzón]] or [[Buzón de la empresa]], and [[Enviados]] or [[Recibidos]].",
+   "Under “2 · PICK THE EMAIL”, find the email and click [[Crear Necesidad con IA]] on its row.",
+   "“New Need” opens with the text of the email. Add what you know about the case and click [[Armar la Necesidad]].",
+   "Review what SOLU understood and click [[Pasar al formulario]]. Pick the customer if SOLU did not recognise it, check every box and create the Need."
+  ],
+  "expect": "You see the 30 most recent emails of the folder. This only reads: no email is moved, marked or stored. “My mailbox” is the email you log in to SOLU with; nobody opens another person's mailbox. If Microsoft does not find the mailbox, the page says so: SOLU only reads mailboxes of the same Microsoft 365 account as the company email."
+ },
  "email": {
   "t": "Email from the company address",
   "why": "Send emails from sales@indsolusa.com with the company templates, in Spanish or English, without leaving SOLU.",

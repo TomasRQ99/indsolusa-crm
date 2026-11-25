@@ -13,13 +13,14 @@ import { createNeed, moveDealStage } from "./actions";
 import { NewNeedForm } from "@/components/NewNeedForm";
 import { addWorkingDays } from "@/lib/holidays";
 import { aiConfigured } from "@/lib/ai";
+import { boxAddress, getMail, mailAsCase } from "@/lib/mailbox";
 import { canManageAll } from "@/lib/permissions";
 
-export default async function DealsPage({ searchParams }: { searchParams: Promise<{ mine?: string; err?: string; conv?: string }> }) {
+export default async function DealsPage({ searchParams }: { searchParams: Promise<{ mine?: string; err?: string; conv?: string; mail?: string; box?: string; f?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
-  const { mine, err, conv } = await searchParams;
+  const { mine, err, conv, mail, box, f } = await searchParams;
   // "Crear Necesidad con IA" from a conversation in MI DÍA → Comunicación: its text becomes the case.
   const th = conv ? await db.commThread.findUnique({ where: { id: conv.slice(0, 40) }, select: { id: true, subject: true, partyName: true, partyAddr: true, accountId: true, contactId: true, account: { select: { ownerId: true, name: true } }, messages: { orderBy: { sentAt: "asc" }, take: 30, select: { direction: true, authorName: true, body: true, sentAt: true } } } }) : null;
   const aiSeed = th && (!th.account || canManageAll(user) || th.account.ownerId === user.id) ? {
@@ -28,6 +29,18 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
       ...th.messages.map((m) => `[${m.sentAt.toISOString().slice(0, 10)} · ${m.direction === "IN" ? "el cliente" : "nosotros"} · ${m.authorName}]\n${m.body.trim()}`)].filter((x) => x !== null).join("\n").slice(0, 7800),
   } : null;
   const now = today();
+  // "Crear Necesidad con IA" from one email picked in MI DÍA → Comunicación → Correos del buzón (own or company mailbox).
+  let mailSeed: { threadId: string; text: string; from: string; accountId: string | null; contactId: string | null } | null = null;
+  let mailErr = false;
+  if (mail && !conv) {
+    const folder = f === "in" ? "in" as const : "out" as const;
+    const address = boxAddress(box === "empresa" ? "empresa" : "mio", user);
+    try {
+      if (!address) throw new Error("no mailbox");
+      const m = await getMail(address, mail.slice(0, 400), folder);
+      mailSeed = { threadId: "", text: mailAsCase(m, folder), from: (folder === "out" ? m.to : m.from) || m.subject, accountId: null, contactId: null };
+    } catch { mailErr = true; }
+  }
 
   // The board shows working Journeys: closed ones and losses older than 90 days stay in history
   // (Customer 360, Insights), so this page doesn't grow forever.
@@ -74,7 +87,8 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
       </div>
 
       {err === "nueva" && <p className="note risk">{t("Para crear la Necesidad faltan el cliente y el asunto.", "To create the Need, the customer and the subject are missing.")}</p>}
-      <NewNeedForm lang={user.lang} action={createNeed} accounts={accounts} contacts={contacts.flatMap((c) => (c.accountId ? [{ id: c.id, accountId: c.accountId, name: `${c.firstName} ${c.lastName}`.trim(), email: c.email }] : []))} parts={parts.map((x) => ({ code: x.mpn, name: x.name }))} machines={machines} defaultFollowUp={dayInput(addWorkingDays(now, 2))} aiReady={aiConfigured()} aiSeed={aiSeed} />
+      <NewNeedForm lang={user.lang} action={createNeed} accounts={accounts} contacts={contacts.flatMap((c) => (c.accountId ? [{ id: c.id, accountId: c.accountId, name: `${c.firstName} ${c.lastName}`.trim(), email: c.email }] : []))} parts={parts.map((x) => ({ code: x.mpn, name: x.name }))} machines={machines} defaultFollowUp={dayInput(addWorkingDays(now, 2))} aiReady={aiConfigured()} aiSeed={aiSeed ?? mailSeed} />
+      {mailErr && <p className="note risk">{t("No se pudo abrir ese correo del buzón. Vuelve a «Correos del buzón» y elígelo otra vez.", "That mailbox email could not be opened. Go back to “Mailbox emails” and pick it again.")}</p>}
 
       <section className="sum">
         <div data-tone={mineNow.length > 0 ? "info" : undefined}><span className="k">{t("Tu paso ahora", "Your step now")}</span><span className="v">{mineNow.length}</span><span className="s">{t("Necesidades con un paso nuestro para hoy", "Needs with a step of ours for today")}</span>{mineNow[0] && <Link className="go" href={`/deals/${mineNow[0].id}`}>{t("Abrir el primero", "Open the first one")} →</Link>}</div>

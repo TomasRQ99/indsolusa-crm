@@ -226,6 +226,7 @@ export default async function ComunicacionPage({ searchParams }: { searchParams:
         </div>
         <span className="grow" />
         <QA label={t("+ Registrar mensaje", "+ Record message")} wide right><RegisterForm /></QA>
+        {graph && <Link className="btn secondary" href="/comunicacion/buzon">{t("Correos del buzón", "Mailbox emails")}</Link>}
         {graph && (
           <form action={syncEmails}>
             {selectedId && <input type="hidden" name="t" value={selectedId} />}
