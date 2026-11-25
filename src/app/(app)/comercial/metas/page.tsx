@@ -33,6 +33,10 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
   const matches = !picked && q ? await findCompanies(q) : null;
   const company = picked ?? (matches?.length === 1 ? matches[0] : null);
   const [b, recipe, ra, bat] = await Promise.all([goalBoard(personId, period, now), recipeFor(personId, period), recipeActuals(personId, period, now), loadBatting(personId, period, company?.id ?? null)]);
+  // The companies this person has Needs with: the list offered at the top to narrow the batting table.
+  const mine = await db.deal.findMany({ where: { ownerId: personId, internal: false }, distinct: ["accountId"], select: { account: { select: { id: true, name: true } } } });
+  const companies = mine.map((d) => d.account).filter((a): a is { id: string; name: string } => !!a).sort((a, b) => a.name.localeCompare(b.name, "es"));
+  if (company && !companies.some((a) => a.id === company.id)) companies.unshift(company);
   const closed = isClosed(period, now);
   const future = period > periodOf(now);
   const monthName = new Intl.DateTimeFormat(i.es ? "es-CO" : "en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(periodBounds(period).start).replace(/^./, (c) => c.toUpperCase());
@@ -125,7 +129,19 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
         <b className="goal-month">{monthName}</b>
         {closed && <span className="sig wait">{t("Cerrado", "Closed")}</span>}
         <Link className="qa-btn" href={href(shiftPeriod(period, 1))}>{t("Mes siguiente", "Next month")} →</Link>
+        <a className="qa-btn" href="#bateo">{t("Tabla de bateo ↓", "Batting table ↓")}</a>
         <span className="grow" />
+        <form method="get" action="/comercial/metas#bateo" className="goal-pick" id="empresa">
+          <input type="hidden" name="p" value={period} />
+          {personId !== user.id && <input type="hidden" name="u" value={personId} />}
+          <label>{t("Empresa", "Company")}
+            <select name="c" defaultValue={company?.id ?? ""} key={company?.id ?? "all"}>
+              <option value="">{t("Todas las empresas", "All companies")}</option>
+              {companies.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </label>
+          <button type="submit" className="secondary">{t("Ver empresa", "View company")}</button>
+        </form>
         {manage && (
           <form method="get" className="goal-pick">
             <input type="hidden" name="p" value={period} />

@@ -785,8 +785,8 @@
     "Abre [[COMERCIAL]] y haz clic en [[Mis metas]]. Debajo del recetario está el bloque «TABLA DE BATEO» con tu nombre.",
     "Lee cada fila: «Meta del mes», «Mes actual», «Mes anterior», «Promedio 3 meses», «Promedio 6 meses» y «Promedio 12 meses». A la derecha, la gráfica «Últimos 12 meses y este» muestra el mes actual en oscuro y la meta del mes como una línea punteada.",
     "Para escribir tus metas, baja a las casillas «# Meta Solicitudes Mes», «# Meta Cotizaciones Mes», «$ Meta Cotizaciones Mes (USD)», «# Meta Órdenes de Compra Mes» y «$ Meta Órdenes de Compra Mes (USD)» y haz clic en [[Guardar metas de la tabla]].",
-    "Para ver una sola empresa, escribe su nombre en «Buscar empresa» y haz clic en «Buscar». Si varias empresas tienen ese texto en el nombre, elige una de la lista.",
-    "Para volver a tu tabla completa, haz clic en «Ver todas las empresas»."
+    "Para ver una sola empresa: arriba de la página, junto al mes, elige la empresa en la lista «Empresa» y haz clic en [[Ver empresa]]. SOLU baja a la tabla, ya solo con esa empresa. Si la empresa no está en la lista, escribe su nombre en «Buscar empresa», dentro del bloque, y haz clic en «Buscar».",
+    "Para volver a tu tabla completa, elige «Todas las empresas» en la misma lista, o haz clic en «Ver todas las empresas»."
    ],
    "expect": "SOLU confirma «Metas de la tabla de bateo guardadas.» Debajo de la cifra del «Mes actual» aparece el porcentaje de la meta. «Tu bateo» dice cuántas cotizaciones salen por cada 100 solicitudes y cuántas órdenes de compra por cada 100 cotizaciones, este mes y en 12 meses. Con una empresa elegida aparece «Solo» y su nombre, la columna «Meta del mes» y las casillas de metas se ocultan, y un enlace lleva a «Estadísticas de la empresa». Si dejas vacías las metas de cotizaciones y órdenes de compra, SOLU usa las de tu recetario del mes y lo dice con «de tu recetario». «Cómo se cuenta la tabla de bateo» explica cada cifra. Un mes que ya cerró no se cambia. Gerencia y Dirección Comercial pueden ver y escribir la tabla de otra persona eligiéndola en «Persona»."
   },
