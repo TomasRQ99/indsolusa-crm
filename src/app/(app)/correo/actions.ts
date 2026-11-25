@@ -102,3 +102,23 @@ export async function recheckDomain(fd: FormData) {
   await domainReport({ force: true, domain: ok ? d : undefined });
   redirect(`/correo/entrega${ok ? `?d=${encodeURIComponent(d)}` : ""}`);
 }
+/** "Guardar solo interno, sin enviar": the text on screen is kept on the Need as an internal note, and nothing goes
+ *  to the customer. For the emails that belong to a Need's own steps (received, progress). */
+export async function saveInternal(fd: FormData) {
+  const user = await requireUser();
+  const tpl = String(fd.get("tpl") ?? "") as TemplateKey;
+  const id = String(fd.get("id") ?? "").slice(0, 40);
+  const lang: MailLang = fd.get("lang") === "ES" ? "ES" : "EN";
+  if ((tpl !== "ACK" && tpl !== "PROGRESS") || !id) redirect("/");
+  const qs = (extra: string) => `/correo/nuevo?${new URLSearchParams({ tpl, id, lang })}&${extra}`;
+  const c = await composeFrom({ tpl, id, lang }, user, mailConfig().from ?? "sales@indsolusa.com");
+  if (!c || !c.dealId) redirect("/");
+  if (!c!.canSend) redirect(qs("err=permiso"));
+  const pick = String(fd.get("subject") ?? "");
+  const custom = String(fd.get("customSubject") ?? "").trim().slice(0, 250);
+  const subject = ((pick === "custom" ? custom : c!.mail.subjects[Number(pick)]) || c!.mail.subjects[0]).slice(0, 250);
+  const body = String(fd.get("body") ?? "").replace(/\r\n/g, "\n").trim().slice(0, 20000) || c!.mail.text;
+  await db.activity.create({ data: { type: "NOTE", subject: `${TEMPLATES[tpl].es} (interno, no enviado al cliente): ${subject}`.slice(0, 200), body: `No se envió al cliente. Texto guardado para uso interno:\n\n${body}`.slice(0, 4000), userId: user.id, accountId: c!.accountId, dealId: c!.dealId, phase: PHASE[tpl], source: "Plantillas de correo" } });
+  refreshApp();
+  redirect(`${c!.back}${c!.back.includes("?") ? "&" : "?"}ok=correo-interno`);
+}

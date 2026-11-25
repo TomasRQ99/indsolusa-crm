@@ -144,6 +144,7 @@ export default async function JourneyPage({
     "orden-descartada": t("Borrador de orden al proveedor descartado. Quedó anotado en esta Necesidad.", "Draft supplier order discarded. It was noted on this Need."),
     creada: t("Necesidad creada. Completa el resultado deseado y, cuando sepas de dónde conseguirlo, sigue con la pestaña Fuente.", "Need created. Complete the desired result and, once you know where to get it, continue with the Source tab."),
     correo: t("Correo enviado al cliente desde la cuenta de la empresa. Quedó registrado en la Necesidad.", "Email sent to the customer from the company account. It's logged on the Need."),
+    "correo-interno": t("Guardado solo para uso interno: quedó como nota en la historia de la Necesidad. Al cliente no se le envió nada.", "Kept for internal use only: it is a note in the Need's history. Nothing was sent to the customer."),
     archivos: t("Archivos guardados en la Necesidad.", "Files saved on the Need."),
     "archivos-parte": t("Se guardaron algunos archivos. Los demás no: solo fotos o PDF de hasta 5 MB.", "Some files were saved. The rest weren't: only photos or PDFs up to 5 MB."),
     "archivos-nada": t("No se guardó ningún archivo: solo fotos o PDF de hasta 5 MB, máximo 20 por Necesidad.", "No file was saved: only photos or PDFs up to 5 MB, 20 per Need at most."),

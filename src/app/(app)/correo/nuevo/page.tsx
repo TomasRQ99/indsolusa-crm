@@ -5,7 +5,7 @@ import { makeI18n } from "@/lib/i18n";
 import { mailConfig } from "@/lib/mail";
 import { composeFrom } from "@/lib/email-compose";
 import { TEMPLATES, type TemplateKey } from "@/lib/email-templates";
-import { sendComposed } from "../actions";
+import { saveInternal, sendComposed } from "../actions";
 import MailBodyHints from "@/components/MailBodyHints";
 import { db } from "@/lib/db";
 import { aiConfigured } from "@/lib/ai";
@@ -138,8 +138,10 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
           </section>
         )}
 
+        {(tpl === "ACK" || tpl === "PROGRESS") && c.dealId && <p className="src">{t("«Guardar solo interno, sin enviar» deja este texto en la historia de la Necesidad como nota interna. El cliente no recibe nada, y puedes enviarle el correo más adelante desde la Necesidad.", "“Keep internal only, don't send” leaves this text in the Need's history as an internal note. The customer receives nothing, and you can send them the email later from the Need.")}</p>}
         <div className="loc-rowacts">
           <button type="submit" disabled={!c.canSend}>{t("Enviar correo", "Send email")}</button>
+          {(tpl === "ACK" || tpl === "PROGRESS") && c.dealId && <button type="submit" className="secondary" formAction={saveInternal} formNoValidate disabled={!c.canSend}>{t("Guardar solo interno, sin enviar", "Keep internal only, don't send")}</button>}
           <Link className="btn secondary" href={c.back}>{t("Cancelar", "Cancel")}</Link>
         </div>
       </form>
