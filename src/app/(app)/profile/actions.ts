@@ -48,6 +48,17 @@ export async function setLanguage(formData: FormData) {
   refreshApp();
 }
 
+/** The person changes their own name (owner, 2026-11-26). It is the name colleagues see and the one that signs
+ *  what goes out from now on; records that already kept a copy of the name keep the earlier one. */
+export async function setName(formData: FormData) {
+  const user = await requireUser();
+  const name = String(formData.get("name") ?? "").replace(/\s+/g, " ").trim();
+  if (name.length < 2 || name.length > 80) redirect("/profile?err=nombre#nombre");
+  if (name !== user.name) await db.user.update({ where: { id: user.id }, data: { name } });
+  refreshApp();
+  redirect("/profile?ok=nombre#nombre");
+}
+
 /** On-screen guide (training) on or off, for this person only. */
 export async function setGuide(formData: FormData) {
   const user = await requireUser();

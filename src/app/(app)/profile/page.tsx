@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { OutlookNote } from "@/components/OutlookNote";
 import { PasswordForm } from "./PasswordForm";
-import { connectOutlook, disconnectOutlook, setGuide, setTestMode, setWorkday } from "./actions";
+import { connectOutlook, disconnectOutlook, setGuide, setName, setTestMode, setWorkday } from "./actions";
 import { canManageAll } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { saveProjectAlerts } from "../proyectos/actions";
@@ -21,6 +21,17 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <div className="ph"><div><h1>{t("Mi perfil", "My profile")}</h1><p>{user.name} · {user.email} · <span className="badge">{user.role}</span></p></div></div>
       <OutlookNote code={cal} t={t} />
       <div className="grid cols-2">
+        <div className="card" id="nombre">
+          <h2>{t("Mi nombre", "My name")}</h2>
+          {ok === "nombre" && <p className="small"><span className="sig ok">{t("Nombre guardado.", "Name saved.")}</span></p>}
+          {err === "nombre" && <p className="note risk" role="alert">{t("Escribe tu nombre (entre 2 y 80 letras).", "Type your name (between 2 and 80 letters).")}</p>}
+          <p className="small muted" style={{ marginBottom: 10 }}>{t("Así te ven tus compañeros en SOLU y así firmas los correos que envías desde SOLU.", "This is how your colleagues see you in SOLU and how you sign the emails you send from SOLU.")}</p>
+          <form action={setName} className="qa-form">
+            <label>{t("Nombre completo", "Full name")}<input name="name" type="text" defaultValue={user.name} minLength={2} maxLength={80} autoComplete="name" required /></label>
+            <button type="submit" className="sm" style={{ alignSelf: "flex-start" }}>{t("Guardar nombre", "Save name")}</button>
+          </form>
+          <p className="src" style={{ marginTop: 8 }}>{t("El correo con el que ingresas y tu rol no cambian. Lo que ya quedó registrado con tu nombre anterior lo conserva.", "The email you sign in with and your role do not change. What was already recorded under your earlier name keeps it.")}</p>
+        </div>
         <div className="card" id="pendientes">
           <h2>{t("Pendientes por aprobar", "Pending approvals")}</h2>
           <p className="small muted" style={{ marginBottom: 12 }}>{t("La lista de todo lo que espera una decisión tuya (autorizar una compra, aceptar la OC de un cliente, liberar una orden, aprobar un pago), cada cosa con el botón que te lleva a donde se aprueba.", "The list of everything that waits for a decision of yours (authorize a purchase, accept a customer's PO, release an order, approve a payment), each with the button that takes you to where it is approved.")}</p>

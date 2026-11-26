@@ -1172,13 +1172,24 @@
  },
  "profile": {
   "t": "My profile",
-  "why": "Your details, language and calendar connection.",
+  "why": "Your name, your working day and the calendar connection.",
   "steps": [
-   "Update your details, your language and your working hours, and [[Guardar]].",
+   "Under “My name” you can change how you appear in SOLU: type your “Full name” and click [[Guardar nombre]].",
+   "Under “My working day” type your “Hours per day” and click [[Guardar]].",
    "Click [[Conectar mi calendario]] and sign in with your own Microsoft account.",
    "Under “On-screen guide (training)” you can turn the search-bar guide off or on."
   ],
   "expect": "The connected calendar is only your own Outlook mailbox. After connecting it, your agenda blocks show in Outlook."
+ },
+ "cambiar-nombre": {
+  "t": "Change your name",
+  "why": "Correct or change the name you appear with in SOLU and that signs the emails you send from SOLU.",
+  "steps": [
+   "Open TEAM → Settings → My profile. The first box is “My name”.",
+   "Under “Full name” delete the name that is there and type yours.",
+   "Click [[Guardar nombre]]."
+  ],
+  "expect": "“Name saved.” appears and your new name shows right away at the top, next to your email. This is how your colleagues see you and how you sign the emails you send from SOLU. The email you sign in with and your role do not change. What was already recorded under your earlier name keeps it. If you leave the box empty or with a single letter, SOLU says: “Type your name (between 2 and 80 letters).”"
  },
  "firmas-correo": {
   "t": "Email signatures: upload the picture of your signature and choose which one to use",

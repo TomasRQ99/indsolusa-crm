@@ -1691,13 +1691,27 @@
    "m": "equipo",
    "t": "Mi perfil",
    "path": "EQUIPO → Configuración → Mi perfil",
-   "why": "Tus datos, idioma y conexión del calendario.",
+   "why": "Tu nombre, tu jornada y la conexión del calendario.",
    "steps": [
-    "Actualiza tus datos, tu idioma y tu jornada, y [[Guardar]].",
+    "En «Mi nombre» puedes cambiar cómo apareces en SOLU: escribe tu «Nombre completo» y haz clic en [[Guardar nombre]].",
+    "En «Mi jornada» escribe tus «Horas por día» y haz clic en [[Guardar]].",
     "Haz clic en [[Conectar mi calendario]] e inicia sesión con tu propia cuenta de Microsoft.",
     "En «Guía en pantalla (entrenamiento)» puedes apagar o encender la guía de la barra de búsqueda."
    ],
    "expect": "El calendario conectado es solo el de tu propio buzón de Outlook. Después de conectarlo, los bloques de tu agenda aparecen en Outlook."
+  },
+  {
+   "id": "cambiar-nombre",
+   "m": "equipo",
+   "t": "Cambiar tu nombre",
+   "path": "EQUIPO → Configuración → Mi perfil → Mi nombre",
+   "why": "Corregir o cambiar el nombre con el que apareces en SOLU y con el que firmas los correos que envías desde SOLU.",
+   "steps": [
+    "Abre EQUIPO → Configuración → Mi perfil. El primer recuadro es «Mi nombre».",
+    "En «Nombre completo» borra el nombre que hay y escribe el tuyo.",
+    "Haz clic en [[Guardar nombre]]."
+   ],
+   "expect": "Aparece «Nombre guardado.» y tu nombre nuevo se ve enseguida arriba, junto a tu correo. Así te ven tus compañeros y así firmas los correos que envíes desde SOLU. El correo con el que ingresas y tu rol no cambian. Lo que ya quedó registrado con tu nombre anterior lo conserva. Si dejas el espacio vacío o con una sola letra, SOLU dice: «Escribe tu nombre (entre 2 y 80 letras).»"
   },
   {
    "id": "firmas-correo",
