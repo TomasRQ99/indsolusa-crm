@@ -13,6 +13,7 @@ import { sendTracked, syncReplies } from "@/lib/mail-replies";
 import { domainReport, linkIssues, stripTracking } from "@/lib/mail-health";
 import { TEMPLATES, textToHtml, type MailLang, type TemplateKey } from "@/lib/email-templates";
 import { quotePdf } from "@/lib/quote-pdf";
+import { companyKey } from "@/lib/company";
 
 const PHASE: Record<TemplateKey, string> = { RFQ: "source", FOLLOWUP: "source", NEGOTIATE: "source", DELIVERY: "execute", OFFER: "quote", PAYMENT: "finance", ACK: "need", PROGRESS: "source", SELLER: "source" };
 const emailOk = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
@@ -24,12 +25,13 @@ export async function sendComposed(fd: FormData) {
   const tpl = String(fd.get("tpl") ?? "") as TemplateKey;
   const id = String(fd.get("id") ?? "").slice(0, 40);
   const lang: MailLang = fd.get("lang") === "ES" ? "ES" : "EN";
+  const co = companyKey(fd.get("co"));
   if (!(tpl in TEMPLATES) || tpl === "RFQ" || !id) redirect("/");
-  const qs = (extra: string) => `/correo/nuevo?${new URLSearchParams({ tpl, id, lang })}&${extra}`;
+  const qs = (extra: string) => `/correo/nuevo?${new URLSearchParams({ tpl, id, lang, co })}&${extra}`;
   const cfg = mailConfig();
   if (!cfg.configured && process.env.MAIL_DRY_RUN !== "1") redirect(qs("err=correo"));
   const from = cfg.from ?? "sales@indsolusa.com";
-  const c = await composeFrom({ tpl, id, lang }, user, from);
+  const c = await composeFrom({ tpl, id, lang, co }, user, from);
   if (!c) redirect("/");
   if (!c.canSend) redirect(qs("err=permiso"));
 
@@ -114,9 +116,10 @@ export async function saveInternal(fd: FormData) {
   const tpl = String(fd.get("tpl") ?? "") as TemplateKey;
   const id = String(fd.get("id") ?? "").slice(0, 40);
   const lang: MailLang = fd.get("lang") === "ES" ? "ES" : "EN";
+  const co = companyKey(fd.get("co"));
   if ((tpl !== "ACK" && tpl !== "PROGRESS" && tpl !== "SELLER") || !id) redirect("/");
-  const qs = (extra: string) => `/correo/nuevo?${new URLSearchParams({ tpl, id, lang })}&${extra}`;
-  const c = await composeFrom({ tpl, id, lang }, user, mailConfig().from ?? "sales@indsolusa.com");
+  const qs = (extra: string) => `/correo/nuevo?${new URLSearchParams({ tpl, id, lang, co })}&${extra}`;
+  const c = await composeFrom({ tpl, id, lang, co }, user, mailConfig().from ?? "sales@indsolusa.com");
   if (!c || !c.dealId) redirect("/");
   if (!c!.canSend) redirect(qs("err=permiso"));
   const pick = String(fd.get("subject") ?? "");

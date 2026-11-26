@@ -4,7 +4,14 @@
 // short paragraphs; 2–3 subject suggestions with the part/order number; Spanish for LatAm, simple
 // English otherwise. Never: bank details (only from the verified profile), customer name or our
 // margin in supplier emails.
-import { COMPANY } from "./company";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { COMPANIES, type CompanyKey } from "./company";
+
+// Which of the two company names an email is written as (owner, 2026-11-26: "una opción donde puedo escoger… si quiero
+// enviarlo desde Industry o desde indsolusa"). It is set around the building of one email and read by every template.
+const voice = new AsyncLocalStorage<CompanyKey>();
+export const asCompany = <T>(key: CompanyKey, fn: () => T): T => voice.run(key, fn);
+const co = () => COMPANIES[voice.getStore() ?? "IND"];
 
 export type MailLang = "EN" | "ES";
 export type ItemRow = { qty: number; code: string; brand?: string | null; description: string; unitPrice?: number | null };
@@ -59,8 +66,8 @@ function render(blocks: Block[], lang: MailLang): { text: string; html: string }
     }
     if ("addresses" in b) {
       const en = b.lang === "EN";
-      const bill = [COMPANY.billTo.name, ...COMPANY.billTo.lines, `${en ? "Phone" : "Teléfono"}: ${COMPANY.billTo.phone}`, COMPANY.billTo.email];
-      const ship = [COMPANY.shipTo.name, ...COMPANY.shipTo.lines, `${en ? "Phone" : "Teléfono"}: ${COMPANY.shipTo.phone}`];
+      const bill = [co().billTo.name, ...co().billTo.lines, `${en ? "Phone" : "Teléfono"}: ${co().billTo.phone}`, co().billTo.email];
+      const ship = [co().shipTo.name, ...co().shipTo.lines, `${en ? "Phone" : "Teléfono"}: ${co().shipTo.phone}`];
       const bt = en ? "BILL TO:" : "FACTURAR A:"; const st = en ? "SHIP TO (WAREHOUSE):" : "ENVIAR A (BODEGA):";
       T.push(bt, ...bill, "", st, ...ship, "");
       const who = (x: string[]) => `<b>${esc(x[0])}</b><br>${x.slice(1).map(esc).join("<br>")}`;
@@ -72,7 +79,7 @@ function render(blocks: Block[], lang: MailLang): { text: string; html: string }
 }
 
 function signature(lang: MailLang, sender: string, from: string): Block[] {
-  return [{ p: lang === "EN" ? "Best regards," : "Saludos cordiales," }, { p: `${sender}\n${COMPANY.legalName}\n${from} · ${COMPANY.phone}` }];
+  return [{ p: lang === "EN" ? "Best regards," : "Saludos cordiales," }, { p: `${sender}\n${co().legalName}\n${from} · ${co().phone}` }];
 }
 const sigFix = (r: { text: string; html: string }) => ({ text: r.text, html: r.html.replace(/\n/g, "<br>") });
 const more = (items: ItemRow[]) => (items.length > 1 ? ` +${items.length - 1}` : "");
@@ -87,7 +94,7 @@ export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; nee
   const ask = (base: string[]) => [...base.filter((_, k) => !(o.skipWeight && k === 3)), ...(o.extra ?? []).map((x) => `${x}:`)];
   const blocks: Block[] = en ? [
     { p: "Dear Sirs," },
-    { p: `${COMPANY.legalName} is a company with offices in Miami and New York. We serve all 50 U.S. states and Puerto Rico. Our mission is to help our customers with their urgent requests and to ensure all spare parts are delivered in a timely manner.` },
+    { p: `${co().legalName} is a company with offices in Miami and New York. We serve all 50 U.S. states and Puerto Rico. Our mission is to help our customers with their urgent requests and to ensure all spare parts are delivered in a timely manner.` },
     { p: o.urgent ? "We have just received an URGENT request from a special customer for the following product(s):" : "We have just received a request from a customer for the following product(s):" },
     { items: o.items },
     { p: "Please send us pictures, a diagram or the technical data sheet of the quoted items, so we can double-check with our customer and avoid any mistakes." },
@@ -97,13 +104,13 @@ export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; nee
     ...(o.notes ? [{ p: o.notes }] : []),
     { p: "For quoting and invoicing purposes, please find our complete information below:" },
     { addresses: true, lang: "EN" },
-    { p: `We will do our best to close the sale. If we receive the order from our customer, please note that our company's payment policy is to ${COMPANY.supplierPayment.EN}.` },
+    { p: `We will do our best to close the sale. If we receive the order from our customer, please note that our company's payment policy is to ${co().supplierPayment.EN}.` },
     { p: "We look forward to hearing from you and building a strong relationship with you." },
     { p: `Our reference: ${o.code}` },
     ...signature("EN", o.sender, o.from),
   ] : [
     { p: "Estimados señores:" },
-    { p: `${COMPANY.legalName} es una empresa con oficinas en Miami y Nueva York. Atendemos los 50 estados de EE. UU. y Puerto Rico. Nuestra misión es ayudar a nuestros clientes con sus solicitudes urgentes y asegurar que todos los repuestos se entreguen a tiempo.` },
+    { p: `${co().legalName} es una empresa con oficinas en Miami y Nueva York. Atendemos los 50 estados de EE. UU. y Puerto Rico. Nuestra misión es ayudar a nuestros clientes con sus solicitudes urgentes y asegurar que todos los repuestos se entreguen a tiempo.` },
     { p: o.urgent ? "En este momento recibimos una solicitud URGENTE de un cliente especial para el/los siguiente(s) producto(s):" : "En este momento recibimos una solicitud de un cliente para el/los siguiente(s) producto(s):" },
     { items: o.items },
     { p: "Por favor envíennos fotos, un diagrama o la ficha técnica de los ítems cotizados, para confirmarlos con nuestro cliente y evitar errores." },
@@ -113,15 +120,15 @@ export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; nee
     ...(o.notes ? [{ p: o.notes }] : []),
     { p: "Para efectos de cotización y facturación, estos son nuestros datos completos:" },
     { addresses: true, lang: "ES" },
-    { p: `Haremos todo lo posible por cerrar la venta. Si recibimos la orden de nuestro cliente, tengan en cuenta que la política de pago de nuestra empresa es ${COMPANY.supplierPayment.ES}.` },
+    { p: `Haremos todo lo posible por cerrar la venta. Si recibimos la orden de nuestro cliente, tengan en cuenta que la política de pago de nuestra empresa es ${co().supplierPayment.ES}.` },
     { p: "Quedamos atentos a su respuesta y esperamos construir una relación sólida con ustedes." },
     { p: `Nuestra referencia: ${o.code}` },
     ...signature("ES", o.sender, o.from),
   ];
   const q = o.items[0].qty;
   const subjects = en
-    ? [`${o.urgent ? "URGENT RFQ" : "Quote request"} ${o.code} – ${q} x ${first(o.items)}${more(o.items)}`, `Request for quotation – ${first(o.items)}${more(o.items)} – ${o.code}`, `Price and availability: ${c0(o.items)}${more(o.items)} – ${COMPANY.shortName}`]
-    : [`${o.urgent ? "URGENTE: s" : "S"}olicitud de cotización ${o.code} – ${q} x ${first(o.items)}${more(o.items)}`, `Solicitud de cotización – ${first(o.items)}${more(o.items)} – ${o.code}`, `Precio y disponibilidad: ${c0(o.items)}${more(o.items)} – ${COMPANY.shortName}`];
+    ? [`${o.urgent ? "URGENT RFQ" : "Quote request"} ${o.code} – ${q} x ${first(o.items)}${more(o.items)}`, `Request for quotation – ${first(o.items)}${more(o.items)} – ${o.code}`, `Price and availability: ${c0(o.items)}${more(o.items)} – ${co().shortName}`]
+    : [`${o.urgent ? "URGENTE: s" : "S"}olicitud de cotización ${o.code} – ${q} x ${first(o.items)}${more(o.items)}`, `Solicitud de cotización – ${first(o.items)}${more(o.items)} – ${o.code}`, `Precio y disponibilidad: ${c0(o.items)}${more(o.items)} – ${co().shortName}`];
   return { subjects, ...sigFix(render(blocks, o.lang)) };
 }
 
@@ -156,8 +163,8 @@ export function negotiateMail(o: { lang: MailLang; theirRef: string | null; item
   const en = o.lang === "EN";
   const ref = o.theirRef ? (en ? `your quotation ${o.theirRef}` : `su cotización ${o.theirRef}`) : (en ? "your offer" : "su oferta");
   const asks = en
-    ? [o.asks.price && (o.target ? `Price: our customer's budget is close to ${o.target}. Can you get nearer to that?` : "Price: is this your best resale price for this quantity?"), o.asks.lead && "Lead time: can you shorten it, or ship partially from stock?", o.asks.payment && `Payment: our policy is ${COMPANY.supplierPayment.EN}; any discount for advance payment is welcome.`].filter(Boolean) as string[]
-    : [o.asks.price && (o.target ? `Precio: el presupuesto de nuestro cliente está cerca de ${o.target}. ¿Pueden acercarse?` : "Precio: ¿es su mejor precio de reventa para esta cantidad?"), o.asks.lead && "Plazo: ¿pueden reducirlo o despachar parcialmente desde inventario?", o.asks.payment && `Pago: nuestra política es ${COMPANY.supplierPayment.ES}; cualquier descuento por pago anticipado es bienvenido.`].filter(Boolean) as string[];
+    ? [o.asks.price && (o.target ? `Price: our customer's budget is close to ${o.target}. Can you get nearer to that?` : "Price: is this your best resale price for this quantity?"), o.asks.lead && "Lead time: can you shorten it, or ship partially from stock?", o.asks.payment && `Payment: our policy is ${co().supplierPayment.EN}; any discount for advance payment is welcome.`].filter(Boolean) as string[]
+    : [o.asks.price && (o.target ? `Precio: el presupuesto de nuestro cliente está cerca de ${o.target}. ¿Pueden acercarse?` : "Precio: ¿es su mejor precio de reventa para esta cantidad?"), o.asks.lead && "Plazo: ¿pueden reducirlo o despachar parcialmente desde inventario?", o.asks.payment && `Pago: nuestra política es ${co().supplierPayment.ES}; cualquier descuento por pago anticipado es bienvenido.`].filter(Boolean) as string[];
   const blocks: Block[] = en ? [
     { p: "Dear Sirs," },
     { p: `Thank you for ${ref}. We are working to close this order with our customer and would like to review a few points:` },
@@ -237,8 +244,8 @@ export function ackMail(o: { lang: MailLang; code: string | null; contactName: s
   ];
   const what = o.items.length ? `${first(o.items)}${more(o.items)}` : o.need.slice(0, 70);
   const subjects = en
-    ? [`We received your request${ref ? ` ${ref}` : ""} – ${what}`, `Your request${ref ? ` ${ref}` : ""}: we are working on it – ${COMPANY.shortName}`, `${o.customer}: request received${ref ? ` (${ref})` : ""}`]
-    : [`Recibimos su solicitud${ref ? ` ${ref}` : ""} – ${what}`, `Su solicitud${ref ? ` ${ref}` : ""}: ya estamos trabajando en ella – ${COMPANY.shortName}`, `${o.customer}: solicitud recibida${ref ? ` (${ref})` : ""}`];
+    ? [`We received your request${ref ? ` ${ref}` : ""} – ${what}`, `Your request${ref ? ` ${ref}` : ""}: we are working on it – ${co().shortName}`, `${o.customer}: request received${ref ? ` (${ref})` : ""}`]
+    : [`Recibimos su solicitud${ref ? ` ${ref}` : ""} – ${what}`, `Su solicitud${ref ? ` ${ref}` : ""}: ya estamos trabajando en ella – ${co().shortName}`, `${o.customer}: solicitud recibida${ref ? ` (${ref})` : ""}`];
   return { subjects, ...sigFix(render(blocks, o.lang)) };
 }
 
@@ -277,8 +284,8 @@ export function progressMail(o: { lang: MailLang; code: string | null; contactNa
   ];
   const what = o.items.length ? `${first(o.items)}${more(o.items)}` : o.need.slice(0, 70);
   const subjects = en
-    ? [`Progress on your request${ref ? ` ${ref}` : ""} – ${what}`, `Your request${ref ? ` ${ref}` : ""}: where we are – ${COMPANY.shortName}`, `${o.customer}: update on ${what}`]
-    : [`Avance de su solicitud${ref ? ` ${ref}` : ""} – ${what}`, `Su solicitud${ref ? ` ${ref}` : ""}: en qué vamos – ${COMPANY.shortName}`, `${o.customer}: avance de ${what}`];
+    ? [`Progress on your request${ref ? ` ${ref}` : ""} – ${what}`, `Your request${ref ? ` ${ref}` : ""}: where we are – ${co().shortName}`, `${o.customer}: update on ${what}`]
+    : [`Avance de su solicitud${ref ? ` ${ref}` : ""} – ${what}`, `Su solicitud${ref ? ` ${ref}` : ""}: en qué vamos – ${co().shortName}`, `${o.customer}: avance de ${what}`];
   return { subjects, ...sigFix(render(blocks, o.lang)) };
 }
 
@@ -315,8 +322,8 @@ export function offerMail(o: { lang: MailLang; quoteNumber: string; contactName:
     ...signature("ES", o.sender, o.from),
   ];
   const subjects = en
-    ? [`Quotation ${o.quoteNumber} – ${first(o.items)}${more(o.items)}`, `Your quote ${o.quoteNumber} – ${o.leadText ? `lead time ${o.leadText}` : "ready to order"}`, `${c0(o.items)}: price and lead time – ${COMPANY.shortName}`]
-    : [`Cotización ${o.quoteNumber} – ${first(o.items)}${more(o.items)}`, `Su cotización ${o.quoteNumber} – ${o.leadText ? `plazo ${o.leadText}` : "lista para ordenar"}`, `${c0(o.items)}: precio y plazo – ${COMPANY.shortName}`];
+    ? [`Quotation ${o.quoteNumber} – ${first(o.items)}${more(o.items)}`, `Your quote ${o.quoteNumber} – ${o.leadText ? `lead time ${o.leadText}` : "ready to order"}`, `${c0(o.items)}: price and lead time – ${co().shortName}`]
+    : [`Cotización ${o.quoteNumber} – ${first(o.items)}${more(o.items)}`, `Su cotización ${o.quoteNumber} – ${o.leadText ? `plazo ${o.leadText}` : "lista para ordenar"}`, `${c0(o.items)}: precio y plazo – ${co().shortName}`];
   return { subjects, ...sigFix(render(blocks, o.lang)) };
 }
 
@@ -331,7 +338,7 @@ export function paymentMail(o: { lang: MailLang; invoiceNumber: string; contactN
       : `This is a friendly reminder that invoice ${o.invoiceNumber}${o.customerPo ? ` (your P.O. ${o.customerPo})` : ""} is due on ${longDay(o.dueAt, "EN")}.` },
     ...(o.promisedFor ? [{ p: `We had noted that the payment would arrive on ${longDay(o.promisedFor, "EN")}, and we don't see it in our bank yet; it may be on its way.` }] : []),
     { p: "Could you confirm the expected payment date? If it is already paid, please send us the payment receipt so we can apply it.", strong: true },
-    { p: `Please pay only with the instructions printed on the invoice. ${COMPANY.shortName} never changes its bank details by email; if in doubt, call us at ${COMPANY.phone}.` },
+    { p: `Please pay only with the instructions printed on the invoice. ${co().shortName} never changes its bank details by email; if in doubt, call us at ${co().phone}.` },
     ...signature("EN", o.sender, o.from),
   ] : [
     { p: o.contactName ? `Estimado(a) ${o.contactName}:` : "Estimados señores:" },
@@ -340,7 +347,7 @@ export function paymentMail(o: { lang: MailLang; invoiceNumber: string; contactN
       : `Le recordamos amablemente que la factura ${o.invoiceNumber}${o.customerPo ? ` (su orden de compra ${o.customerPo})` : ""} vence el ${longDay(o.dueAt, "ES")}.` },
     ...(o.promisedFor ? [{ p: `Teníamos registrado que el pago llegaría el ${longDay(o.promisedFor, "ES")} y aún no lo vemos en el banco; puede que esté en camino.` }] : []),
     { p: "¿Nos confirma la fecha estimada de pago? Si ya fue pagada, por favor envíenos el comprobante para aplicarlo.", strong: true },
-    { p: `Pague únicamente con las instrucciones impresas en la factura. ${COMPANY.shortName} nunca cambia sus datos bancarios por correo; si tiene dudas, llámenos al ${COMPANY.phone}.` },
+    { p: `Pague únicamente con las instrucciones impresas en la factura. ${co().shortName} nunca cambia sus datos bancarios por correo; si tiene dudas, llámenos al ${co().phone}.` },
     ...signature("ES", o.sender, o.from),
   ];
   const subjects = en
@@ -407,7 +414,7 @@ export function followUpsMail(o: { lang: MailLang; contactName: string | null; c
     ...sections,
     { p: one ? "Could you let us know how it is going? You can simply reply to this email." : "Could you let us know how each one is going? You can simply reply to this email, point by point.", strong: true },
     ...(quotes.length ? [{ p: "If anything in a quotation needs to change (quantity, model or date), tell us and we will adjust it the same day." } as Block] : []),
-    ...(invoices.length ? [{ p: `If an invoice is already paid, please send us the payment receipt so we can apply it. Pay only with the instructions printed on the invoice: ${COMPANY.shortName} never changes its bank details by email.` } as Block] : []),
+    ...(invoices.length ? [{ p: `If an invoice is already paid, please send us the payment receipt so we can apply it. Pay only with the instructions printed on the invoice: ${co().shortName} never changes its bank details by email.` } as Block] : []),
     ...signature("EN", o.sender, o.from),
   ] : [
     { p: o.contactName ? `Buen día ${o.contactName}:` : "Buen día:" },
@@ -415,7 +422,7 @@ export function followUpsMail(o: { lang: MailLang; contactName: string | null; c
     ...sections,
     { p: one ? "¿Nos puede contar cómo va? Puede responder este mismo correo." : "¿Nos puede contar cómo va cada uno? Puede responder este mismo correo, punto por punto.", strong: true },
     ...(quotes.length ? [{ p: "Si algo de una cotización debe cambiar (cantidad, modelo o fecha), díganos y la ajustamos el mismo día." } as Block] : []),
-    ...(invoices.length ? [{ p: `Si alguna factura ya fue pagada, por favor envíenos el comprobante para aplicarlo. Pague únicamente con las instrucciones impresas en la factura: ${COMPANY.shortName} nunca cambia sus datos bancarios por correo.` } as Block] : []),
+    ...(invoices.length ? [{ p: `Si alguna factura ya fue pagada, por favor envíenos el comprobante para aplicarlo. Pague únicamente con las instrucciones impresas en la factura: ${co().shortName} nunca cambia sus datos bancarios por correo.` } as Block] : []),
     ...signature("ES", o.sender, o.from),
   ];
   const label = (l: FollowUpLine) => l.kind === "QUOTE" ? (en ? `quotation ${l.number}` : `cotización ${l.number}`) : l.kind === "INVOICE" ? (en ? `invoice ${l.number}` : `factura ${l.number}`)
@@ -425,8 +432,8 @@ export function followUpsMail(o: { lang: MailLang; contactName: string | null; c
   const list = firsts.length > 1 ? `${firsts.slice(0, -1).join(", ")} ${en ? "and" : "y"} ${firsts[firsts.length - 1]}` : firsts[0] ?? "";
   const rest = o.lines.length - firsts.length;
   const subjects = en
-    ? [one ? `Follow-up: ${list} – ${o.customer}` : `Follow-up with ${o.customer}: ${o.lines.length} pending matters`, `${o.customer}: ${list}${rest > 0 ? ` (+${rest})` : ""}`, `Pending matters with ${COMPANY.shortName} – ${o.customer}`]
-    : [one ? `Seguimiento: ${list} – ${o.customer}` : `Seguimiento ${o.customer}: ${o.lines.length} temas pendientes`, `${o.customer}: ${list}${rest > 0 ? ` (+${rest})` : ""}`, `Temas pendientes con ${COMPANY.shortName} – ${o.customer}`];
+    ? [one ? `Follow-up: ${list} – ${o.customer}` : `Follow-up with ${o.customer}: ${o.lines.length} pending matters`, `${o.customer}: ${list}${rest > 0 ? ` (+${rest})` : ""}`, `Pending matters with ${co().shortName} – ${o.customer}`]
+    : [one ? `Seguimiento: ${list} – ${o.customer}` : `Seguimiento ${o.customer}: ${o.lines.length} temas pendientes`, `${o.customer}: ${list}${rest > 0 ? ` (+${rest})` : ""}`, `Temas pendientes con ${co().shortName} – ${o.customer}`];
   return { subjects, ...sigFix(render(blocks, o.lang)) };
 }
 

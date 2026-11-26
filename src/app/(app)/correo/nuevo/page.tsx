@@ -13,15 +13,17 @@ import { draftWithAi, rewriteWithAi } from "../ai-actions";
 import { REWRITE_PRESETS } from "@/lib/mail-ai";
 import { mySignatures } from "@/lib/signatures";
 import { imapAllowed, imapBox } from "@/lib/mailbox-imap";
+import { COMPANIES, COMPANY_PICK, companyKey, type CompanyKey } from "@/lib/company";
 
-export default async function ComposeMail({ searchParams }: { searchParams: Promise<{ tpl?: string; id?: string; lang?: string; err?: string; msg?: string; borrador?: string; ok?: string; to?: string; cc?: string; bcc?: string }> }) {
+export default async function ComposeMail({ searchParams }: { searchParams: Promise<{ tpl?: string; id?: string; lang?: string; err?: string; msg?: string; borrador?: string; ok?: string; co?: string; to?: string; cc?: string; bcc?: string }> }) {
   const user = await requireUser();
   const { t } = makeI18n(user.lang);
   const sp = await searchParams;
   const tpl = (sp.tpl ?? "") as TemplateKey;
   const cfg = mailConfig();
+  const co = companyKey(sp.co);
   const from = cfg.from ?? "sales@indsolusa.com";
-  const c = tpl in TEMPLATES && tpl !== "RFQ" && sp.id ? await composeFrom({ tpl, id: sp.id, lang: sp.lang === "ES" || sp.lang === "EN" ? sp.lang : null }, user, from) : null;
+  const c = tpl in TEMPLATES && tpl !== "RFQ" && sp.id ? await composeFrom({ tpl, id: sp.id, lang: sp.lang === "ES" || sp.lang === "EN" ? sp.lang : null, co }, user, from) : null;
   if (!c) {
     return <div className="card"><p>{t("No se encontró el registro para este correo.", "The record for this email wasn't found.")} <Link href="/">{t("Volver", "Back")}</Link></p></div>;
   }
@@ -36,7 +38,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
   const sigDefault = sigs.find((s) => s.isDefault) ?? null;
   const ownBox = imapAllowed(user) && imapBox().ready ? imapBox().address : null;
   const other = c.lang === "EN" ? "ES" : "EN";
-  const langHref = `/correo/nuevo?${new URLSearchParams({ tpl, id: sp.id!, lang: other })}`;
+  const langHref = `/correo/nuevo?${new URLSearchParams({ tpl, id: sp.id!, lang: other, co })}`;
   const errs: Record<string, string> = {
     correo: t("El correo de la empresa no está configurado.", "Company email isn't configured."),
     permiso: t("Solo el responsable de la Necesidad (o un administrador) puede enviar este correo.", "Only the Need owner (or an admin) can send this email."),
@@ -70,7 +72,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
           <div className="jbh"><b>{t("REDACTAR CON IA", "DRAFT WITH AI")}</b><span className="grow" />{draft ? <span className="sig ok">{t("Borrador de IA cargado abajo", "AI draft loaded below")}</span> : aiOn ? <span className="sig info">{t("Disponible", "Available")}</span> : <span className="sig wait">{t("IA sin conectar", "AI not connected")}</span>}</div>
           {aiOn ? (
             <form action={draftWithAi} className="qa-row" style={{ alignItems: "center", flexWrap: "wrap" }}>
-              <input type="hidden" name="tpl" value={tpl} /><input type="hidden" name="id" value={sp.id} /><input type="hidden" name="lang" value={c.lang} />
+              <input type="hidden" name="tpl" value={tpl} /><input type="hidden" name="id" value={sp.id} /><input type="hidden" name="lang" value={c.lang} /><input type="hidden" name="co" value={co} />
               <button type="submit" className="secondary" disabled={!c.canSend} style={{ flex: "0 0 auto" }}>{draft ? t("Redactar otra versión con IA", "Draft another version with AI") : t("Redactar con IA", "Draft with AI")}</button>
               <span className="src" style={{ flex: "1 1 320px" }}>{t("Escribe un correo personalizado con lo que SOLU sabe de esta Necesidad: qué pidió el cliente, qué quiere lograr, la pieza, el plazo y lo que sigue. Nunca nombra al proveedor ni menciona costos. No envía nada: tú lo lees, lo cambias y lo envías.", "It writes a personalised email from what SOLU knows about this Need: what the customer asked for, what they want to achieve, the piece, the lead time and what comes next. It never names the supplier or mentions costs. It sends nothing: you read it, change it and send it.")}</span>
             </form>
@@ -83,10 +85,20 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
 
       {sp.ok === "reescrito" && draft && <p className="note okn" role="status">{t("La IA reescribió el correo: el texto nuevo está en «MENSAJE». Léelo antes de enviar; puedes pedirle otro cambio.", "AI rewrote the email: the new text is under “MESSAGE”. Read it before sending; you can ask for another change.")}</p>}
       {draft && !aiKind && sp.ok !== "reescrito" && <p className="note attn">{t(`Respuesta preparada por IA a pedido de ${draft.createdByName}. Léela completa antes de enviar: revisa nombres, números de parte y lo que se le pide al cliente. SOLU agrega el número de la Necesidad en el asunto.`, `Reply prepared by AI at ${draft.createdByName}'s request. Read all of it before sending: check names, part numbers and what the customer is asked for. SOLU adds the Need number to the subject.`)}</p>}
-      <form key={`${c.lang}-${sp.borrador ?? ""}`} action={sendComposed} className="stack">
+      <section className="jblock loc-sec" id="empresa">
+        <div className="jbh"><b>{t("ESCRIBIR COMO", "WRITE AS")}</b><span className="grow" /><span className="src">{t("elige con cuál nombre de la empresa sale este correo", "pick which company name this email goes out under")}</span></div>
+        <div className="co-pick" role="group" aria-label={t("Empresa que firma el correo", "Company the email is written as")}>
+          {(Object.keys(COMPANY_PICK) as CompanyKey[]).map((k) => k === co
+            ? <span key={k} className="co-opt on" aria-current="true"><b>{COMPANY_PICK[k]}</b><span className="src">{COMPANIES[k].legalName}{toSupplier ? ` · ${COMPANIES[k].billTo.email}` : ""}</span></span>
+            : <Link key={k} className="co-opt" href={`/correo/nuevo?${new URLSearchParams({ tpl, id: sp.id!, lang: c.lang, co: k })}`}><b>{COMPANY_PICK[k]}</b><span className="src">{COMPANIES[k].legalName}{toSupplier ? ` · ${COMPANIES[k].billTo.email}` : ""}</span></Link>)}
+        </div>
+        <span className="src">{t("Cambia el nombre de la empresa en el texto, en la firma y en el asunto", "It changes the company name in the text, the signature and the subject")}{toSupplier ? t(", y los datos de «BILL TO / SHIP TO»", ", and the “BILL TO / SHIP TO” details") : ""}. {t("Elígelo antes de editar el mensaje: al cambiarlo, el texto vuelve al de la plantilla. No cambia el buzón desde el que sale el correo", "Pick it before editing the message: changing it puts the template text back. It does not change the mailbox the email is sent from")} ({from}).</span>
+      </section>
+      <form key={`${c.lang}-${co}-${sp.borrador ?? ""}`} action={sendComposed} className="stack">
         <input type="hidden" name="tpl" value={tpl} />
         <input type="hidden" name="id" value={sp.id} />
         <input type="hidden" name="lang" value={c.lang} />
+        <input type="hidden" name="co" value={co} />
         <input type="hidden" name="idem" value={randomUUID()} />
         <section className="jblock loc-sec">
           <div className="jbh"><b>{t("PARA", "TO")}</b><span className="grow" />

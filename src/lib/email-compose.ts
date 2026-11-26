@@ -4,17 +4,17 @@
 import { db } from "./db";
 import { addWorkingDays } from "./holidays";
 import { addDays, today } from "./domain";
-import { spanishCountry } from "./company";
+import { companyKey, spanishCountry, type CompanyKey } from "./company";
 import { canEdit, canEditMoney } from "./permissions";
 import { quoteNo } from "./quote";
 import type { SessionUser } from "./auth";
 import type { RfqItem } from "./rfq";
 import { journeyUrgency } from "./urgency";
 import { quotePdfName } from "./quote-pdf";
-import { rfqMail, progressMail, ackMail, deliveryMail, followUpMail, negotiateMail, offerMail, paymentMail, type Mail, type MailLang, type TemplateKey } from "./email-templates";
+import { asCompany, rfqMail, progressMail, ackMail, deliveryMail, followUpMail, negotiateMail, offerMail, paymentMail, type Mail, type MailLang, type TemplateKey } from "./email-templates";
 import { linesTotal } from "./money";
 
-export type ComposeCtx = { tpl: TemplateKey; id: string; lang?: MailLang | null };
+export type ComposeCtx = { tpl: TemplateKey; id: string; lang?: MailLang | null; co?: CompanyKey | string | null };
 export type Composed = {
   mail: Mail; lang: MailLang; to: string | null; toName: string; about: string;
   dealId: string | null; accountId: string | null; back: string; warn: string | null; canSend: boolean;
@@ -30,7 +30,12 @@ const workingDaysAhead = (n: number) => addWorkingDays(today(), n);
 const emailOk = (s: string | null | undefined) => !!s && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
 const pickLang = (forced: MailLang | null | undefined, auto: MailLang): MailLang => forced ?? auto;
 
-export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: string): Promise<Composed | null> {
+/** Builds the email written as the company name the person picked ("Industry Solutions USA" unless told otherwise). */
+export function composeFrom(ctx: ComposeCtx, user: SessionUser, from: string): Promise<Composed | null> {
+  return asCompany(companyKey(ctx.co), () => composeInner(ctx, user, from));
+}
+
+async function composeInner(ctx: ComposeCtx, user: SessionUser, from: string): Promise<Composed | null> {
   const sender = user.name;
   const ui = user.lang === "EN"; // warnings shown to the person in their own language
   const replyBy = workingDaysAhead(2);
