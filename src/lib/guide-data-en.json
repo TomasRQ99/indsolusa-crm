@@ -512,7 +512,7 @@
    "To see a single company: at the top of the page, next to the month, choose the company in the “Company” list and click [[Ver empresa]]. SOLU goes down to the table, now with that company only. If the company is not in the list, type its name in “Search company”, inside the block, and click “Search”.",
    "To go back to your whole table, choose “All companies” in the same list, or click “See all companies”."
   ],
-  "expect": "SOLU confirms “Batting table goals saved.” “Achievement” shows the percentage of the goal, and “New best mark” appears when this month beats your best month. The goal of “$ Eságara” is the “Eságara won” set by Management or the Commercial Director. “Your batting” has seven percentages measured by origin group (Request → Quote, Quote → PO, Request → PO, by value, by Eságara, repurchase and reactivation), with their cases beside them, this month and in 12 months. “Batting quality” shows the average ticket, the Eságara per purchase order, the margin and the average value and Eságara per quote. “Consistency” shows the last three months with their arrow and how many months in a row you are above your average and meeting the goal. “Your speed” shows how long each step takes this month and on a 12-month average, and says “Within the goal” or “Above the goal”. With a company chosen, “Only” and its name appear, the “Month goal” and “Achievement” columns and the goal boxes are hidden, and a link leads to “Company statistics”. If you leave the quotes and purchase-order goals empty, SOLU uses those of your recipe for the month and says so with “from your recipe”. “How the batting table is counted” explains each figure. A month already closed doesn't change. Management and the Commercial Director can view and write another person's table by picking them under “Person”."
+  "expect": "SOLU confirms “Batting table goals saved.” “Achievement” shows the percentage of the goal, and “New best mark” appears when this month beats your best month. The goal of “$ Eságara” is the “Eságara won” set by Management or the Commercial Director. “Your batting” has seven percentages measured by origin group (Request → Quote, Quote → PO, Request → PO, by value, by Eságara, repurchase and reactivation), with their cases beside them, this month and in 12 months. “Batting quality” shows the average ticket, the Eságara per purchase order, the margin and the average value and Eságara per quote. “Consistency” shows the last three months with their arrow and how many months in a row you are above your average and meeting the goal. “Your speed” shows how long each step takes this month and on a 12-month average, and says “Within the goal” or “Above the goal”. With a company chosen, “Only” and its name appear, the “Month goal” and “Achievement” columns and the goal boxes are hidden, and a link leads to “Company statistics”. If you have an approved commercial budget for the month and leave the goals for requests, quotes and purchase orders empty, SOLU uses that budget's and says so with “from the approved commercial budget” (the value, turned into dollars at today's TRM). Otherwise, if you leave the quotes and purchase-order goals empty, SOLU uses those of your recipe for the month and says so with “from your recipe”. “How the batting table is counted” explains each figure. A month already closed doesn't change. Management and the Commercial Director can view and write another person's table by picking them under “Person”."
  },
  "marcador": {
   "t": "My scoreboard: result, batting, production, speed and coverage, with SOLU's diagnosis",
@@ -562,6 +562,28 @@
    "Click [[Guardar borrador]] to continue later, or [[Enviar a aprobación]] when it is ready."
   ],
   "expect": "SOLU confirms “Draft saved.” or “Proposal sent for approval.” and the state goes from “Not started” to “Draft” and to “Submitted”. Purchase orders and invoicing are two separate budgets: one is not copied from the other. “Annual” is always the sum of the twelve months. Where SOLU has too few cases it says “not enough basis” and asks you to type the figure. If the “Justification” is missing, SOLU says so, marks the box in red and keeps the draft saved. A submitted proposal doesn't change: “Withdraw the submission” makes it a draft again. The line “Reactivations and prospects” is for what you expect to sell to companies without their own budget: it has no history and no suggestion. Management and the Commercial Director can write another person's proposal by choosing them under “Negotiator”."
+ },
+ "presupuesto-sedes": {
+  "t": "Commercial budget: spread a company's goal over its sites or plants",
+  "why": "Know how much of a company's goal is expected from each site or plant, and how much each has really brought, while still budgeting the company as a whole.",
+  "steps": [
+   "Open [[COMERCIAL]], click [[Presupuesto comercial]] and, on the company's row, [[Presupuestar]].",
+   "Go down to “SITES OR PLANTS OF…”. If the site is missing, open “+ Add a site or plant”, type the “Site name” and click [[Agregar sede]].",
+   "With the proposal in draft, type under “% of the goal” the part of the annual purchase-order goal you expect from each site and click [[Guardar reparto por sede]].",
+   "So that real figures show by site, go down to “NEEDS OF…: SITE AND SHARED SALE”, choose the “Site” of each Need and click [[Guardar sede]]."
+  ],
+  "expect": "SOLU confirms “Split by site saved.” The table shows, per site, last year's purchase orders, this year's real ones, invoicing, its goal and the “Progress of the year”. What is not given to a site stays under “No site assigned”. The percentages cannot add up to more than 100. The budget is still the company's: approval, consolidation and achievement do not change. The split is changed while the proposal is a draft; an approved one needs a new version, which keeps it. Plants recorded in MARKET show here by themselves. History loaded from before SOLU has no site."
+ },
+ "presupuesto-venta-compartida": {
+  "t": "Commercial budget: share a sale between two negotiators",
+  "why": "When two negotiators bring in the same sale, split its value between them without counting it twice.",
+  "steps": [
+   "Management or the Commercial Director: open [[COMERCIAL]], click [[Presupuesto comercial]] and open the company with [[Presupuestar]].",
+   "Go down to “NEEDS OF…: SITE AND SHARED SALE” and find the Need.",
+   "Under “Sale shared with”, open “Share this sale”, choose “With whom”, type “Their share (%)” and, if you like, the “Reason”. Click [[Compartir venta]].",
+   "To undo it, click “Remove” next to the person's name."
+  ],
+  "expect": "SOLU confirms “Sale shared. Its figures are now split between the two people.” That Need's peso figures (quoted, purchase orders, Eságara and invoicing) are split by that percentage in the budget, achievement, reforecast and consolidation; whoever leads the Need keeps the rest and it always adds up to 100 %. The number of requests, quotes and orders stays whole with whoever leads it. Whoever leads the Need must keep at least 1 %. The split applies to the commercial budget: it does not change commissions or the batting table."
  },
  "presupuesto-aprobar": {
   "t": "Commercial budget: approve or return the proposal of someone on your team, and correct an approved budget",
@@ -634,7 +656,19 @@
    "Read “REVIEW BEFORE SAVING”: “Rows read”, “Rows to be saved”, “Rows with something to fix” and the sum by year. “Rows that are not saved” says, row by row, what to fix. Compare the sum with your file's total.",
    "Click [[Guardar historial]]. If something does not add up, click [[Descartar revisión]], fix the Excel and paste again."
   ],
-  "expect": "SOLU confirms “History saved. It now feeds each company's history and suggestion.” and the load shows under “SAVED LOADS”; “Remove load” takes it out with all its figures. A loaded figure counts as real only in the months before that company's first Need in SOLU; from that month on SOLU's own records count, so nothing is counted twice. A new load of the same origin replaces the earlier figure for the same company, month and indicator. Dollars are turned into pesos with the month's average official TRM. For invoicing, Siigo's figure replaces the earlier system's. “INVOICING: SOLU AGAINST SIIGO” compares, month by month, SOLU's invoices with the Siigo invoicing loaded and names the companies that differ. SOLU does not read Siigo directly. From an Excel file it reads the first sheet."
+  "expect": "SOLU confirms “History saved. It now feeds each company's history and suggestion.” and the load shows under “SAVED LOADS”; “Remove load” takes it out with all its figures. A loaded figure counts as real only in the months before that company's first Need in SOLU; from that month on SOLU's own records count, so nothing is counted twice. A new load of the same origin replaces the earlier figure for the same company, month and indicator. Dollars are turned into pesos with the month's average official TRM. For invoicing, Siigo's figure replaces the earlier system's. “INVOICING: SOLU AGAINST SIIGO” compares, month by month, SOLU's invoices with the Siigo invoicing loaded and names the companies that differ. With Siigo's credentials connected, “READ SIIGO'S INVOICING” brings it without copying anything. From an Excel file it reads the first sheet."
+ },
+ "presupuesto-siigo": {
+  "t": "Commercial budget: bring Siigo's invoicing and compare it with SOLU",
+  "why": "Compare what SOLU says was invoiced with what Siigo says, without copying figures by hand.",
+  "steps": [
+   "Open [[COMERCIAL]], click [[Presupuesto comercial]] and then [[Historial]]. Go down to “READ SIIGO'S INVOICING”.",
+   "If it says “Not connected”, Management follows the three steps shown there to put Siigo's credentials in Render. They are never typed into SOLU.",
+   "With “Connected”, choose “From month” and “To month” (12 months at most) and click [[Traer de Siigo y revisar]].",
+   "Read “REVIEW BEFORE SAVING” and compare the sum with Siigo's total. If it matches, click [[Guardar historial]].",
+   "Go down to “INVOICING: SOLU AGAINST SIIGO” to see, month by month, where they match and which companies do not."
+  ],
+  "expect": "SOLU only reads from Siigo: sales invoices and credit notes, added up by customer (tax ID) and month, before VAT and net of credit notes; annulled ones do not count. It saves nothing by itself: it goes through the same review a pasted load gets. A Siigo customer whose tax ID is not in SOLU shows under “Rows that are not saved”. If Siigo does not accept the credentials, limits requests or does not answer, a red box says so and nothing is saved. This connection has not been tried with a real Siigo account yet: the first reading must be checked carefully."
  },
  "cobertura": {
   "t": "Coverage during absence",

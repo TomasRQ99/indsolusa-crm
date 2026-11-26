@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { budgetGoalsOf } from "@/lib/sales-budget-goals";
 import { requireUser } from "@/lib/auth";
 import { canManageAll } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
@@ -59,9 +60,14 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
   // The Eságara row takes the month's «Eságara ganada» goal, set by management below.
   const esaGoal = b.tOf("ESAGARA_AMOUNT");
   if (esaGoal) batTargets.BAT_ESAGARA = { value: Number(esaGoal.target), fromRecipe: false };
+  // The approved commercial budget of the month (pesos; turned into dollars at today's TRM) comes before the goals
+  // per company and the recipe, and after what the person typed.
+  const fromBudget = company ? null : await budgetGoalsOf(personId, period, now);
   for (const k of BAT_KEYS) {
     const typed = b.targets.find((x) => x.metric === k);
+    const bg = fromBudget?.[k as "BAT_PO_USD" | "BAT_PO_N" | "BAT_QUOTE_N" | "BAT_REQ_N"];
     if (typed) batTargets[k] = { value: Number(typed.target), fromRecipe: false };
+    else if (bg) batTargets[k] = { value: bg.value, fromRecipe: false, fromBudget: k === "BAT_PO_USD" ? t(`del presupuesto comercial aprobado: $ ${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(bg.cop / 1e6)} M a la TRM de hoy (${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(bg.rate)})`, `from the approved commercial budget: $ ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(bg.cop / 1e6)} M at today's TRM (${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(bg.rate)})`) : t("del presupuesto comercial aprobado", "from the approved commercial budget") };
     else if (k === "BAT_PO_USD" && coach.companies?.total) batTargets[k] = { value: coach.companies.total, fromRecipe: false, fromCompanies: true };
     else if (k === "BAT_REQ_N" && coach.companies?.reqTotal) batTargets[k] = { value: coach.companies.reqTotal, fromRecipe: false, fromCompanies: true };
     else if (k === "BAT_QUOTE_N" && coach.companies?.quoTotal) batTargets[k] = { value: coach.companies.quoTotal, fromRecipe: false, fromCompanies: true };

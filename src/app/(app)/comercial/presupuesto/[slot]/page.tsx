@@ -10,6 +10,7 @@ import { KPIS, PROSPECTS, defaultAssumptions, isEditable, marginOf, readAssumpti
 import { approverIdsOf, basisFor, basisPick, budgetScope, budgetYears, canWriteBudget, historyHref, lastMonths, loadFacts, matrixOf, numbers, readYear, totals, yearRow } from "@/lib/sales-budget";
 import { askReconcile, decideBudget, discardDraft, newVersion, saveBudget, withdrawBudget } from "../actions";
 import Editor, { type EditorSaved } from "../Editor";
+import Sitios from "../Sitios";
 import { BudgetNav, StateChip, budgetFmt } from "../ui";
 import "../presupuesto.css";
 
@@ -88,7 +89,9 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
     guardado: t("Borrador guardado.", "Draft saved."), enviado: t("Propuesta enviada a aprobación.", "Proposal sent for approval."), aprobado: t("Presupuesto aprobado. Queda bloqueado: un cambio necesita una versión nueva.", "Budget approved. It is locked: a change needs a new version."),
     devuelto: t("Propuesta devuelta al negociador con tu motivo.", "Proposal returned to the negotiator with your reason."), retirado: t("Envío retirado: la propuesta vuelve a borrador.", "Submission withdrawn: the proposal is a draft again."),
     version: t("Versión nueva abierta como borrador. La versión aprobada sigue vigente hasta que se apruebe esta.", "New version opened as a draft. The approved version stays in force until this one is approved."),
-    descartado: t("Borrador descartado.", "Draft discarded."), conciliar: t("Conciliación pedida. El negociador y su líder la ven en esta pantalla.", "Reconciliation requested. The negotiator and their leader see it on this screen."),
+    descartado: t("Borrador descartado.", "Draft discarded."),
+    sede: t("Sede agregada.", "Site added."), sedes: t("Reparto por sede guardado.", "Split by site saved."), "sede-necesidad": t("Sede de la Necesidad guardada.", "Site of the Need saved."),
+    compartida: t("Venta compartida. Sus valores ya se reparten entre las dos personas.", "Sale shared. Its figures are now split between the two people."), "compartida-quitada": t("Parte quitada: la venta vuelve completa a quien lleva la Necesidad.", "Share removed: the sale goes back whole to whoever leads the Need."), conciliar: t("Conciliación pedida. El negociador y su líder la ven en esta pantalla.", "Reconciliation requested. The negotiator and their leader see it on this screen."),
   };
   const errMsg: Record<string, string> = {
     permiso: t("La propuesta la escribe su negociador, Gerencia o la Dirección Comercial.", "The proposal is written by its negotiator, Management or the Commercial Director."),
@@ -105,6 +108,13 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
     "motivo-devolver": t("Falta el motivo: para devolver, escribe qué debe revisar el negociador.", "The reason is missing: to return it, write what the negotiator must review."),
     "motivo-version": t("Falta el motivo de la versión nueva.", "The reason for the new version is missing."), "ya-hay-version": t("Ya hay una versión más nueva en curso.", "A newer version is already in progress."),
     "motivo-conciliar": t("Falta escribir qué se debe conciliar.", "Write what must be reconciled."),
+    "sede-nombre": t("Falta el «Nombre de la sede».", "The «Site name» is missing."), "sede-repetida": t("Esa empresa ya tiene una sede con ese nombre.", "That company already has a site with that name."),
+    "sede-pct": t("Falta corregir un «% de la meta»: es un número entre 0 y 100.", "A «% of the goal» needs fixing: a number between 0 and 100."), "sede-suma": t("Los «% de la meta» de las sedes suman más de 100.", "The sites' «% of the goal» add up to more than 100."),
+    "permiso-sede": t("La sede de una Necesidad la cambia quien la lleva, Gerencia o la Dirección Comercial.", "The site of a Need is changed by whoever leads it, Management or the Commercial Director."),
+    "permiso-compartir": t("Una venta la comparten Gerencia o la Dirección Comercial.", "A sale is shared by Management or the Commercial Director."),
+    "compartir-persona": t("Falta «Con quién»: elige una persona activa distinta de quien lleva la Necesidad.", "«With whom» is missing: choose an active person other than whoever leads the Need."),
+    "compartir-pct": t("Falta «Su parte (%)»: un número entre 1 y 99.", "«Their share (%)» is missing: a number between 1 and 99."),
+    "compartir-suma": t("Las partes suman demasiado: quien lleva la Necesidad debe conservar al menos 1 %.", "The shares add up to too much: whoever leads the Need must keep at least 1 %."),
   };
   const bad = sp.err && ["valor", "numero", "supuesto", "vacio", "justificacion"].includes(sp.err) ? sp.err : null;
   const val = (kpi: Kpi, v: number) => (KPIS[kpi].unit === "cop" ? f.bare(v) : i.n(v));
@@ -185,6 +195,8 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
           )}
         </section>
       )}
+
+      {!prospects && account && <Sitios i={i} year={year} accountId={account.id} accountName={account.name} personId={personId} viewerId={user.id} write={write} manage={canManageAll(user)} budget={chosen && chosen.id === latest?.id ? { id: chosen.id, editable, ocGoal: sum(numbers(m.OC_COP)), factGoal: sum(numbers(m.FACT_COP)) } : null} set={set} pick={pick} people={everyone.map((p) => ({ id: p.id, name: p.name }))} />}
 
       <section className="card" id="editor">
         <b>{t(`PROPUESTA ${year}`, `PROPOSAL ${year}`)}{chosen && chosen.id !== latest?.id ? t(` · versión ${chosen.version} (anterior)`, ` · version ${chosen.version} (earlier)`) : ""}</b>

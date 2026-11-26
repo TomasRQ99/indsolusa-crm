@@ -52,7 +52,7 @@ Asked by the owner: "completa lo que está pendiente por construir"; then, seein
 
 | # | Default taken in wave 3 (NOT confirmed) |
 |---|---|
-| PC-18 | An invoice of the owner's files is read as its purchase order too (same month, same value), in a separate removable load named as an approximation. |
+| PC-18 | **Confirmed by the owner 2026-11-26.** An invoice of the owner's files is read as its purchase order too (same month, same value), in a separate removable load named as an approximation. |
 | PC-19 | Customers created by the automatic load belong to the first Gerencia user; a seller who is not a SOLU user leaves the figure to the company's owner. |
 | PC-20 | Reforecast uses no probabilities: real + typed. Only during the year in course. Sums include only companies with a reforecast. |
 | PC-21 | Evening email: working days from 17:00 Bogotá, once a day, to each person with a budget of the year, with customer names and figures (unlike the Gerencia close email, which carries only counts). Off until Gerencia or Dirección Comercial turn it on. |
@@ -62,6 +62,26 @@ Asked by the owner: "completa lo que está pendiente por construir"; then, seein
 Checked on 2026-11-26: 37 rule/data checks, 10 checks of the automatic load (run, rerun, undo) on the local database, browser checks on a production build. Not checked: the AI path with a real key (no key on this PC), a real email, the live site.
 
 Not built: sites / plants, split attribution, feeding Mis metas, delivery value, glossary terms, Siigo read live.
+
+## Wave 4 (2026-11-26): sites, shared sales, budget → Mis metas, Siigo read live
+
+Asked by the owner, who also **confirmed PC-18** ("dejamos la factura como aproximación de la orden de compra").
+
+- **Sites or plants** (`Sitios.tsx`, `sitios-actions.ts`, table `SalesBudgetSite`): inside a company's budget, its plants (Mercado's `Plant`, addable here), the share of the annual PO goal each carries, and real figures by plant (a fact carries its Need's `plantId`). Each Need can name its plant. The company stays the unit: approval and roll-up do not change.
+- **Shared sale** (table `SalesShare`, spec §3 "Asignación", AT-13): Gerencia / Dirección Comercial give a percent of a Need to another person. `loadFacts` splits the Need's money facts (owner keeps the remainder to the peso) and loads a person's part of Needs led by others. Counts stay whole with the owner.
+- **Approved budget → Mis metas** (`src/lib/sales-budget-goals.ts`): the month's official budget becomes the batting table's goals when none were typed (PO value and number, quotes, requests).
+- **Siigo read live** (`src/lib/siigo.ts`, action `pullFromSiigo`): invoices and credit notes of up to 12 months, per tax ID and month, before VAT, into the same review as a pasted load. Off until `SIIGO_USERNAME` / `SIIGO_ACCESS_KEY` are set. **Never run against a real Siigo account**; token request and list parameters follow Siigo's commonly published usage (their docs pages for those could not be read), so every document is re-checked against the span by its own date.
+
+| # | Default taken in wave 4 (NOT confirmed) |
+|---|---|
+| PC-24 | Sites split only the PO goal, in percent of the annual figure; "Avance del año" compares with the whole year's goal. Loaded history has no site. |
+| PC-25 | A shared sale splits money, not counts; the owner keeps at least 1 %; it applies to the commercial budget screens only (not commissions, batting table, customer statistics). Only Gerencia / Dirección Comercial share. |
+| PC-26 | Mis metas: typed goal > approved budget > goals per company > recipe. Pesos → dollars at today's official TRM (so the dollar goal moves a little each day). Drafts and waiting proposals are not goals. |
+| PC-27 | Siigo: value before VAT = lines' quantity × price − discount (the document total only when it has no lines); foreign currency × its exchange rate; annulled documents skipped; credit notes subtracted in their own month. |
+
+Checked on 2026-11-26: 21 data checks (split to the peso, goals feed, Siigo against a stand-in server: token, both header forms, paging, rate limit, annulled, credit notes, dollars), browser checks on a production build.
+
+Not built: delivery value, invoice-by-invoice Siigo match, glossary terms.
 
 ## How each figure is counted
 
@@ -103,7 +123,7 @@ Not built: sites / plants, split attribution, feeding Mis metas, delivery value,
 | 10 approved locked; correction = version | met | browser |
 | 11 Siigo reconciliation | partly | wave 2: by month and company from a loaded Siigo file; no live reading, no invoice-by-invoice match, no separate credit notes |
 | 12 current month by working days | met | rules test + browser |
-| 13 attribution 100 % | met by construction | one owner per Need |
+| 13 attribution 100 % | met | wave 4: shared Needs split to the peso (data test) |
 | 14 prospects not a company's history | met | browser + data test |
 | 15 AI mail only with figures and links | met by construction, AI path untested | wave 3: priorities are radar detections; the AI cannot add one |
 

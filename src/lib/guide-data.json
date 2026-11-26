@@ -826,7 +826,7 @@
     "Para ver una sola empresa: arriba de la página, junto al mes, elige la empresa en la lista «Empresa» y haz clic en [[Ver empresa]]. SOLU baja a la tabla, ya solo con esa empresa. Si la empresa no está en la lista, escribe su nombre en «Buscar empresa», dentro del bloque, y haz clic en «Buscar».",
     "Para volver a tu tabla completa, elige «Todas las empresas» en la misma lista, o haz clic en «Ver todas las empresas»."
    ],
-   "expect": "SOLU confirma «Metas de la tabla de bateo guardadas.» «Cumplimiento» muestra el porcentaje de la meta, y «Nueva mejor marca» aparece cuando el mes actual supera tu mejor mes. La meta de «$ Eságara» es la «Eságara ganada» que fijan Gerencia o la Dirección Comercial. «Tu bateo» tiene siete porcentajes medidos por grupo de origen (Solicitud → Cotización, Cotización → OC, Solicitud → OC, por valor, por Eságara, recompra y reactivación), con sus casos al lado, este mes y en 12 meses. «Calidad del bateo» muestra el ticket promedio, la Eságara por orden de compra, el margen y el valor y la Eságara promedio por cotización. «Consistencia» muestra los tres últimos meses con su flecha y cuántos meses seguidos llevas sobre tu promedio y cumpliendo la meta. «Tu velocidad» muestra cuánto tarda cada paso este mes y en promedio de 12 meses, y dice «Dentro de la meta» o «Por encima de la meta». Con una empresa elegida aparece «Solo» y su nombre, las columnas «Meta del mes» y «Cumplimiento» y las casillas de metas se ocultan, y un enlace lleva a «Estadísticas de la empresa». Si dejas vacías las metas de cotizaciones y órdenes de compra, SOLU usa las de tu recetario del mes y lo dice con «de tu recetario». «Cómo se cuenta la tabla de bateo» explica cada cifra. Un mes que ya cerró no se cambia. Gerencia y Dirección Comercial pueden ver y escribir la tabla de otra persona eligiéndola en «Persona»."
+   "expect": "SOLU confirma «Metas de la tabla de bateo guardadas.» «Cumplimiento» muestra el porcentaje de la meta, y «Nueva mejor marca» aparece cuando el mes actual supera tu mejor mes. La meta de «$ Eságara» es la «Eságara ganada» que fijan Gerencia o la Dirección Comercial. «Tu bateo» tiene siete porcentajes medidos por grupo de origen (Solicitud → Cotización, Cotización → OC, Solicitud → OC, por valor, por Eságara, recompra y reactivación), con sus casos al lado, este mes y en 12 meses. «Calidad del bateo» muestra el ticket promedio, la Eságara por orden de compra, el margen y el valor y la Eságara promedio por cotización. «Consistencia» muestra los tres últimos meses con su flecha y cuántos meses seguidos llevas sobre tu promedio y cumpliendo la meta. «Tu velocidad» muestra cuánto tarda cada paso este mes y en promedio de 12 meses, y dice «Dentro de la meta» o «Por encima de la meta». Con una empresa elegida aparece «Solo» y su nombre, las columnas «Meta del mes» y «Cumplimiento» y las casillas de metas se ocultan, y un enlace lleva a «Estadísticas de la empresa». Si tienes un presupuesto comercial aprobado para el mes y dejas vacías las metas de solicitudes, cotizaciones y órdenes de compra, SOLU usa las de ese presupuesto y lo dice con «del presupuesto comercial aprobado» (el valor, pasado a dólares con la TRM de hoy). Si no, usa las de tu recetario del mes y lo dice con «de tu recetario». «Cómo se cuenta la tabla de bateo» explica cada cifra. Un mes que ya cerró no se cambia. Gerencia y Dirección Comercial pueden ver y escribir la tabla de otra persona eligiéndola en «Persona»."
   },
   {
    "id": "marcador",
@@ -888,6 +888,34 @@
     "Haz clic en [[Guardar borrador]] para seguir después, o en [[Enviar a aprobación]] cuando esté lista."
    ],
    "expect": "SOLU confirma «Borrador guardado.» o «Propuesta enviada a aprobación.» y el estado pasa de «Sin iniciar» a «Borrador» y a «Enviado». Las órdenes de compra y la facturación son dos presupuestos separados: uno no se copia del otro. El «Anual» siempre es la suma de los doce meses. Donde SOLU no tiene casos suficientes dice «sin base suficiente» y te pide escribir el dato. Si falta la «Justificación», SOLU lo dice, marca la casilla en rojo y deja el borrador guardado. Una propuesta enviada no se cambia: con «Retirar el envío» vuelve a borrador. La línea «Reactivaciones y prospectos» es para lo que esperas vender a empresas sin presupuesto propio: no tiene historial ni sugerencia. Gerencia y la Dirección Comercial pueden escribir la propuesta de otra persona eligiéndola en «Negociador»."
+  },
+  {
+   "id": "presupuesto-sedes",
+   "m": "comercial",
+   "t": "Presupuesto comercial: repartir la meta de una empresa entre sus sedes o plantas",
+   "path": "COMERCIAL → Presupuesto comercial · Mis empresas → una empresa · SEDES O PLANTAS",
+   "why": "Saber cuánto de la meta de una empresa se espera de cada sede o planta, y cuánto ha traído cada una de verdad, sin dejar de presupuestar la empresa como un todo.",
+   "steps": [
+    "Abre [[COMERCIAL]], haz clic en [[Presupuesto comercial]] y, en la fila de la empresa, en [[Presupuestar]].",
+    "Baja a «SEDES O PLANTAS DE…». Si la sede no está, abre «+ Agregar una sede o planta», escribe el «Nombre de la sede» y haz clic en [[Agregar sede]].",
+    "Con la propuesta en borrador, escribe en «% de la meta» la parte de la meta anual de órdenes de compra que esperas de cada sede y haz clic en [[Guardar reparto por sede]].",
+    "Para que lo real se vea por sede, baja a «NECESIDADES DE…: SEDE Y VENTA COMPARTIDA», elige la «Sede» de cada Necesidad y haz clic en [[Guardar sede]]."
+   ],
+   "expect": "SOLU confirma «Reparto por sede guardado.» La tabla muestra, por sede, las órdenes de compra del año anterior, las reales de este año, la facturación, su meta y el «Avance del año». Lo que no se le da a una sede queda en «Sin sede asignada». Los porcentajes no pueden sumar más de 100. El presupuesto sigue siendo de la empresa: la aprobación, la consolidación y el cumplimiento no cambian. El reparto se cambia mientras la propuesta es un borrador; una aprobada necesita una versión nueva, que lo conserva. Las plantas registradas en MERCADO aparecen aquí solas. El historial cargado de antes de SOLU no tiene sede."
+  },
+  {
+   "id": "presupuesto-venta-compartida",
+   "m": "comercial",
+   "t": "Presupuesto comercial: compartir una venta entre dos negociadores",
+   "path": "COMERCIAL → Presupuesto comercial · Mis empresas → una empresa · NECESIDADES DE…",
+   "why": "Cuando dos negociadores sacan adelante una misma venta, repartir su valor entre los dos sin contarla dos veces.",
+   "steps": [
+    "Gerencia o la Dirección Comercial: abre [[COMERCIAL]], haz clic en [[Presupuesto comercial]] y abre la empresa con [[Presupuestar]].",
+    "Baja a «NECESIDADES DE…: SEDE Y VENTA COMPARTIDA» y busca la Necesidad.",
+    "En «Venta compartida con», abre «Compartir esta venta», elige «Con quién», escribe «Su parte (%)» y, si quieres, el «Motivo». Haz clic en [[Compartir venta]].",
+    "Para deshacerlo, haz clic en «Quitar» junto al nombre de la persona."
+   ],
+   "expect": "SOLU confirma «Venta compartida. Sus valores ya se reparten entre las dos personas.» Los valores en pesos de esa Necesidad (cotizado, órdenes de compra, Eságara y facturación) se reparten con ese porcentaje en el presupuesto, el cumplimiento, el reforecast y la consolidación; quien lleva la Necesidad conserva el resto y siempre suma 100 %. El número de solicitudes, cotizaciones y órdenes sigue completo con quien la lleva. Quien lleva la Necesidad debe conservar al menos 1 %. El reparto vale para el presupuesto comercial: no cambia las comisiones ni la tabla de bateo."
   },
   {
    "id": "presupuesto-aprobar",
@@ -978,7 +1006,22 @@
     "Lee «REVISIÓN ANTES DE GUARDAR»: «Filas leídas», «Filas que se guardarán», «Filas con algo por corregir» y la suma por año. «Filas que no se guardan» dice, fila por fila, qué corregir. Compara la suma con el total de tu archivo.",
     "Haz clic en [[Guardar historial]]. Si algo no cuadra, haz clic en [[Descartar revisión]], corrige el Excel y vuelve a pegar."
    ],
-   "expect": "SOLU confirma «Historial guardado. Ya entra en el historial y en la sugerencia de cada empresa.» y la carga aparece en «CARGAS GUARDADAS»; «Quitar carga» la retira con todas sus cifras. Lo cargado cuenta como real solo en los meses anteriores a la primera Necesidad de esa empresa en SOLU; desde ese mes cuenta lo registrado en SOLU, así nada se cuenta dos veces. Una carga nueva del mismo origen reemplaza la cifra anterior de la misma empresa, mes e indicador. Los dólares se pasan a pesos con la TRM oficial promedio del mes. En facturación, la cifra de Siigo reemplaza a la del sistema anterior. «FACTURACIÓN: SOLU FRENTE A SIIGO» compara, mes a mes, las facturas de SOLU con la facturación cargada de Siigo y nombra las empresas que no coinciden. SOLU no lee Siigo directamente. De un archivo de Excel lee la primera hoja."
+   "expect": "SOLU confirma «Historial guardado. Ya entra en el historial y en la sugerencia de cada empresa.» y la carga aparece en «CARGAS GUARDADAS»; «Quitar carga» la retira con todas sus cifras. Lo cargado cuenta como real solo en los meses anteriores a la primera Necesidad de esa empresa en SOLU; desde ese mes cuenta lo registrado en SOLU, así nada se cuenta dos veces. Una carga nueva del mismo origen reemplaza la cifra anterior de la misma empresa, mes e indicador. Los dólares se pasan a pesos con la TRM oficial promedio del mes. En facturación, la cifra de Siigo reemplaza a la del sistema anterior. «FACTURACIÓN: SOLU FRENTE A SIIGO» compara, mes a mes, las facturas de SOLU con la facturación cargada de Siigo y nombra las empresas que no coinciden. Con las credenciales de Siigo conectadas, «LEER LA FACTURACIÓN DE SIIGO» la trae sin copiar nada. De un archivo de Excel lee la primera hoja."
+  },
+  {
+   "id": "presupuesto-siigo",
+   "m": "comercial",
+   "t": "Presupuesto comercial: traer la facturación de Siigo y compararla con SOLU",
+   "path": "COMERCIAL → Presupuesto comercial · Historial · LEER LA FACTURACIÓN DE SIIGO",
+   "why": "Comparar lo que SOLU dice que se facturó con lo que dice Siigo, sin copiar cifras a mano.",
+   "steps": [
+    "Abre [[COMERCIAL]], haz clic en [[Presupuesto comercial]] y luego en [[Historial]]. Baja a «LEER LA FACTURACIÓN DE SIIGO».",
+    "Si dice «Sin conectar», Gerencia sigue los tres pasos que aparecen ahí para poner las credenciales de Siigo en Render. Nunca se escriben en SOLU.",
+    "Con «Conectado», elige «Desde el mes» y «Hasta el mes» (máximo 12 meses) y haz clic en [[Traer de Siigo y revisar]].",
+    "Lee «REVISIÓN ANTES DE GUARDAR» y compara la suma con el total de Siigo. Si cuadra, haz clic en [[Guardar historial]].",
+    "Baja a «FACTURACIÓN: SOLU FRENTE A SIIGO» para ver, mes a mes, dónde coinciden y qué empresas no."
+   ],
+   "expect": "SOLU solo lee de Siigo: facturas de venta y notas crédito, sumadas por cliente (NIT) y mes, sin IVA y ya descontadas las notas crédito; las anuladas no cuentan. No guarda nada por su cuenta: pasa por la misma revisión de una carga pegada. Un cliente de Siigo cuyo NIT no está en SOLU aparece en «Filas que no se guardan». Si Siigo no acepta las credenciales, limita las consultas o no responde, un recuadro rojo lo dice y no se guarda nada. Esta conexión todavía no se ha probado con una cuenta real de Siigo: la primera lectura hay que revisarla con cuidado."
   },
   {
    "id": "cobertura",

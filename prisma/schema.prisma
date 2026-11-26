@@ -404,6 +404,7 @@ model Deal {
   exploration           Exploration? @relation(fields: [explorationId], references: [id], onDelete: SetNull)
   plantId               String?
   plant                 Plant?       @relation(fields: [plantId], references: [id], onDelete: SetNull)
+  salesShares           SalesShare[]
   /// note:<id> | future:<id> | signal:<id> — the evidence the Need was confirmed from
   originRef             String?
   /// Frozen copy of the inherited context at confirmation (items with their source ids).
@@ -2004,9 +2005,10 @@ model WhiteSpace {
 
 /// An operating site of a company (not just an address).
 model Plant {
-  id             String   @id @default(cuid())
+  id             String            @id @default(cuid())
   accountId      String
-  account        Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account        Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  budgetSites    SalesBudgetSite[]
   name           String
   city           String?
   country        String?
@@ -2015,10 +2017,10 @@ model Plant {
   sourceType     String
   sourceRef      String?
   observedAt     DateTime
-  confidence     String   @default("REPORTED")
+  confidence     String            @default("REPORTED")
   capturedByName String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   signals     MarketSignal[]
   gaps        KnowledgeGap[]
@@ -6018,6 +6020,7 @@ model SalesBudget {
 
   lines  SalesBudgetLine[]
   events SalesBudgetEvent[]
+  sites  SalesBudgetSite[]
 
   @@unique([year, slot, userId, version])
   @@index([year, userId])
@@ -6187,11 +6190,42 @@ model SalesInsight {
 
 /// Switches of the commercial budget (a single row, id "main").
 model SalesBudgetSetting {
-  id            String   @id @default("main")
+  id            String    @id @default("main")
   /// The evening email with the day's results and priorities: off until Gerencia or Dirección Comercial turn it on.
-  eveningMail   Boolean  @default(false)
+  eveningMail   Boolean   @default(false)
   /// When the owner's 2025–2026 sales were loaded into the history by SOLU itself (done once, never repeated).
   historyBootAt DateTime?
   updatedByName String?
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime  @updatedAt
+}
+
+/// A sale shared between two negotiators (spec §3 "Asignación", AT-13): the part of a Need's money figures that
+/// belongs to someone other than its owner. The owner keeps what is left, so a document always adds up to 100 %.
+/// Counts (requests, quotes, orders) stay whole with the owner: half a quote does not exist.
+model SalesShare {
+  id        String   @id @default(cuid())
+  dealId    String
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  userId    String
+  /// Percent of the Need's money figures (1–99)
+  pct       Decimal  @db.Decimal(5, 2)
+  reason    String?
+  byName    String
+  createdAt DateTime @default(now())
+
+  @@unique([dealId, userId])
+  @@index([userId])
+}
+
+/// How a company's budget is spread over its sites or plants: the share of the annual goals each one carries.
+/// Optional; what is not given to a site stays with the company as a whole.
+model SalesBudgetSite {
+  id       String      @id @default(cuid())
+  budgetId String
+  budget   SalesBudget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  plantId  String
+  plant    Plant       @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  pct      Decimal     @db.Decimal(5, 2)
+
+  @@unique([budgetId, plantId])
 }

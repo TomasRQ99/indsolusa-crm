@@ -6,7 +6,8 @@ import { KPIS, MONTHS, type Kpi } from "@/lib/sales-budget-rules";
 import { budgetScope, loadFacts, readYear } from "@/lib/sales-budget";
 import { canLoadHistory, checkBatch, countedRows, firstNeedMonths, loadedRows } from "@/lib/sales-history";
 import { COLUMNS, PROBLEM_TXT, SOURCE_TXT, UNITS, UNIT_TXT, VALUE_COLUMNS, type HistorySource } from "@/lib/sales-history-rules";
-import { applyHistory, checkHistory, removeHistory } from "./actions";
+import { siigoConfigured } from "@/lib/siigo";
+import { applyHistory, checkHistory, pullFromSiigo, removeHistory } from "./actions";
 import { BudgetNav, budgetFmt } from "../ui";
 import "../presupuesto.css";
 
@@ -83,6 +84,14 @@ export default async function BudgetHistory({ searchParams }: { searchParams: Pr
     excel: t("No se pudo leer ese archivo. SOLU lee Excel .xlsx y CSV; si es un .xls antiguo, ábrelo y guárdalo como .xlsx, o copia las celdas y pégalas en «Filas copiadas de Excel».", "That file could not be read. SOLU reads Excel .xlsx and CSV; if it is an old .xls, open it and save it as .xlsx, or copy the cells and paste them into «Rows copied from Excel»."),
     grande: t("Son demasiadas filas para una sola carga (máximo 5 MB). Divídela por años.", "Too many rows for one load (5 MB at most). Split it by year."),
     estado: t("Esa carga ya se guardó o se descartó.", "That load was already saved or discarded."),
+    "siigo-off": t("Siigo no está conectado: faltan las credenciales de Siigo en el servidor.", "Siigo is not connected: Siigo's credentials are missing on the server."),
+    "siigo-auth": t("Siigo no aceptó las credenciales. Revisa el usuario y la llave de acceso (SIIGO_USERNAME y SIIGO_ACCESS_KEY) en Render.", "Siigo did not accept the credentials. Check the user and the access key (SIIGO_USERNAME and SIIGO_ACCESS_KEY) in Render."),
+    "siigo-rate": t("Siigo está limitando las consultas en este momento. Espera un minuto y vuelve a intentarlo.", "Siigo is limiting requests right now. Wait a minute and try again."),
+    "siigo-api": t("Siigo no respondió bien. Vuelve a intentarlo en unos minutos; no se guardó nada.", "Siigo did not answer properly. Try again in a few minutes; nothing was saved."),
+    "siigo-shape": t("Siigo respondió con un formato que SOLU no esperaba. No se guardó nada: avisa para revisar la conexión.", "Siigo answered in a format SOLU did not expect. Nothing was saved: report it so the connection can be checked."),
+    "siigo-meses": t("Falta elegir «Desde el mes» y «Hasta el mes», en ese orden.", "Choose «From month» and «To month», in that order."),
+    "siigo-rango": t("Son más de 12 meses: trae un año a la vez.", "That is more than 12 months: bring one year at a time."),
+    "siigo-vacio": t("Siigo no tiene facturas en esos meses.", "Siigo has no invoices in those months."),
     nada: t("Ninguna fila se pudo leer: no hay nada que guardar. Corrige lo que se indica abajo y vuelve a cargar.", "No row could be read: there is nothing to save. Fix what is listed below and load again."),
   };
   const H = { mes: t("Mes", "Month"), origen: t("Origen", "Origin"), neg: t("Negociador", "Negotiator"), cuenta: t("¿Cuenta como real?", "Counts as real?") };
@@ -228,10 +237,31 @@ export default async function BudgetHistory({ searchParams }: { searchParams: Pr
         </section>
       )}
 
+      {load && (
+        <section className="card" id="leer-siigo">
+          <b>{t("LEER LA FACTURACIÓN DE SIIGO", "READ SIIGO'S INVOICING")}</b>
+          <p className="small">{t("Estado", "State")}: {siigoConfigured() ? <span className="sig ok">{t("Conectado", "Connected")}</span> : <span className="sig wait">{t("Sin conectar", "Not connected")}</span>}</p>
+          {siigoConfigured() ? (
+            <form action={pullFromSiigo} className="pc-bar">
+              <label>{t("Desde el mes", "From month")} *<input type="month" name="from" /></label>
+              <label>{t("Hasta el mes", "To month")} *<input type="month" name="to" /></label>
+              <button type="submit">{t("Traer de Siigo y revisar", "Bring from Siigo and review")}</button>
+            </form>
+          ) : (
+            <ol className="small" style={{ margin: "6px 0", paddingLeft: 20 }}>
+              <li>{t("En Siigo Nube, busca la credencial del API (suele estar en Alianzas → Mi credencial API) y copia el usuario y la llave de acceso (Access Key).", "In Siigo Nube, find the API credential (usually under Alliances → My API credential) and copy the user and the access key.")}</li>
+              <li>{t("En Render → el servicio de SOLU → Environment, agrega SIIGO_USERNAME (el usuario) y SIIGO_ACCESS_KEY (la llave). Nunca se escriben en SOLU ni en un chat.", "In Render → SOLU's service → Environment, add SIIGO_USERNAME (the user) and SIIGO_ACCESS_KEY (the key). They are never typed into SOLU or a chat.")}</li>
+              <li>{t("Guarda. Render reinicia SOLU y aquí aparece «Conectado».", "Save. Render restarts SOLU and «Connected» shows here.")}</li>
+            </ol>
+          )}
+          <p className="src">{t("SOLU solo lee: facturas de venta y notas crédito de hasta 12 meses, sumadas por cliente (NIT) y mes, sin IVA y ya descontadas las notas crédito; las anuladas no cuentan. No guarda nada por su cuenta: abre la misma revisión de una carga pegada, y ahí decides. Esta conexión todavía no se ha probado con una cuenta real de Siigo: revisa con cuidado la primera lectura contra el total de Siigo.", "SOLU only reads: sales invoices and credit notes of up to 12 months, added up by customer (tax ID) and month, before VAT and net of credit notes; annulled ones do not count. It saves nothing by itself: it opens the same review a pasted load gets, and you decide there. This connection has not been tried with a real Siigo account yet: check the first reading carefully against Siigo's total.")}</p>
+        </section>
+      )}
+
       {canCompare && (
         <section className="card" id="siigo">
           <b>{t("FACTURACIÓN: SOLU FRENTE A SIIGO", "INVOICING: SOLU AGAINST SIIGO")}{cy ? ` · ${cy}` : ""}</b>
-          {!cy ? <p className="small muted">{t("Para comparar, carga la facturación de Siigo por empresa y mes (origen «Siigo»). SOLU no lee Siigo directamente: compara lo que se carga aquí con sus propias facturas.", "To compare, load Siigo's invoicing by company and month (origin «Siigo»). SOLU does not read Siigo directly: it compares what is loaded here with its own invoices.")}</p> : (
+          {!cy ? <p className="small muted">{t("Para comparar, carga la facturación de Siigo por empresa y mes (origen «Siigo»). También se puede leer de Siigo, arriba, cuando esté conectado.", "To compare, load Siigo's invoicing by company and month (origin «Siigo»). It can also be read from Siigo, above, once connected.")}</p> : (
             <>
               {siigoYears.length > 1 && <p className="pc-years" style={{ margin: "6px 0" }}><span className="src">{t("Año", "Year")}</span>{siigoYears.map((y) => <Link key={y} href={`/comercial/presupuesto/historial?cy=${y}#siigo`} className={y === cy ? "on" : ""}>{y}</Link>)}</p>}
               <div className="pc-scroll">

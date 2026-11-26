@@ -9,7 +9,7 @@ import "./bateo.css";
 // the person's own past, with the same figures for one company when they search it. Server component.
 
 type Fmt = { es: boolean; n: (v: unknown) => string; money: (v: unknown) => string };
-export type BatTarget = { value: number; fromRecipe: boolean; fromCompanies?: boolean };
+export type BatTarget = { value: number; fromRecipe: boolean; fromCompanies?: boolean; /** From the approved commercial budget: what it says, for the note under the figure. */ fromBudget?: string };
 
 /** Thirteen months of one figure: bars from zero, the chosen month darker, the goal as a dashed line. */
 function Spark({ months, goal, title, short, es }: { months: { key: string; value: number }[]; goal: number | null; title: string; short: (v: number) => string; es: boolean }) {
@@ -117,7 +117,7 @@ export default function Bateo({ i, name, bat, coach, days, targets, company, mat
                 return (
                   <tr key={r.k} data-k={r.k}>
                     <th scope="row">{t(r.label.es, r.label.en)}</th>
-                    {!company && <td data-l={H.goal}>{tg ? <>{show(r.unit, tg.value)}{tg.fromRecipe && <span className="src block">{t("de tu recetario", "from your recipe")}</span>}{tg.fromCompanies && <span className="src block">{t("suma de tus metas por empresa", "sum of your goals per company")}</span>}</> : <span className="muted">{t("Sin meta", "No goal")}</span>}</td>}
+                    {!company && <td data-l={H.goal}>{tg ? <>{show(r.unit, tg.value)}{tg.fromRecipe && <span className="src block">{t("de tu recetario", "from your recipe")}</span>}{tg.fromCompanies && <span className="src block">{t("suma de tus metas por empresa", "sum of your goals per company")}</span>}{tg.fromBudget && <span className="src block" data-from="budget">{tg.fromBudget}</span>}</> : <span className="muted">{t("Sin meta", "No goal")}</span>}</td>}
                     <td data-l={H.prev}>{show(r.unit, l.prev)}</td>
                     <td data-l={H.a3}>{avg(r.unit, l.avg3)}</td>
                     <td data-l={H.a6}>{avg(r.unit, l.avg6)}</td>
@@ -187,11 +187,11 @@ export default function Bateo({ i, name, bat, coach, days, targets, company, mat
           <input type="hidden" name="grp" value="tabla" />
           {BAT_GOAL_FIELDS.filter((r) => r.grp === "tabla").map((r) => (
             <label key={r.k}>{t(r.goal.es, r.goal.en)}
-              <input name={r.k} type="number" min={0} step={r.unit === "n" ? "1" : r.unit === "usd" ? "0.01" : "0.1"} defaultValue={targets[r.k] && !targets[r.k]!.fromRecipe ? targets[r.k]!.value : ""} placeholder={targets[r.k]?.fromRecipe ? String(targets[r.k]!.value) : undefined} />
+              <input name={r.k} type="number" min={0} step={r.unit === "n" ? "1" : r.unit === "usd" ? "0.01" : "0.1"} defaultValue={targets[r.k] && !targets[r.k]!.fromRecipe && !targets[r.k]!.fromBudget ? targets[r.k]!.value : ""} placeholder={targets[r.k]?.fromRecipe || targets[r.k]?.fromBudget ? String(targets[r.k]!.value) : undefined} />
             </label>
           ))}
           <button type="submit">{t("Guardar metas de la tabla", "Save table goals")}</button>
-          <span className="src block wide">{t("Vacío o cero = sin meta. Si dejas vacía la de «$ Órdenes de compra», SOLU usa la suma de tus metas por empresa; si no hay, y para cotizaciones y número de órdenes, las de tu recetario del mes. La meta de Eságara es la «Eságara ganada» que fijan Gerencia o la Dirección Comercial. En las de tiempo, la meta es el máximo: menos es mejor.", "Empty or zero = no goal. If you leave the «$ Purchase orders» one empty, SOLU uses the sum of your goals per company; if there is none, and for quotes and number of orders, those of your recipe for the month. The Eságara goal is the «Eságara won» set by Management or the Commercial Director. For the times, the goal is the maximum: less is better.")}</span>
+          <span className="src block wide">{t("Vacío o cero = sin meta. Si tienes un presupuesto comercial aprobado para este mes y dejas vacías las metas de solicitudes, cotizaciones y órdenes de compra, SOLU usa las de ese presupuesto (el valor, pasado a dólares con la TRM de hoy). Si no, y dejas vacía la de «$ Órdenes de compra», SOLU usa la suma de tus metas por empresa; si no hay, y para cotizaciones y número de órdenes, las de tu recetario del mes. La meta de Eságara es la «Eságara ganada» que fijan Gerencia o la Dirección Comercial. En las de tiempo, la meta es el máximo: menos es mejor.", "Empty or zero = no goal. If you have an approved commercial budget for this month and leave the goals for requests, quotes and purchase orders empty, SOLU uses that budget's (the value, turned into dollars at today's TRM). Otherwise, if you leave the «$ Purchase orders» one empty, SOLU uses the sum of your goals per company; if there is none, and for quotes and number of orders, those of your recipe for the month. The Eságara goal is the «Eságara won» set by Management or the Commercial Director. For the times, the goal is the maximum: less is better.")}</span>
         </form>
       )}
     </section>

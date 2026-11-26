@@ -8,7 +8,7 @@ import { trmLookup } from "./trm-store";
 import { historyFor, type FactScope } from "./sales-history";
 import { SOURCE_TXT } from "./sales-history-rules";
 import {
-  BUDGET_RULES, KPI_KEYS, PROSPECTS, attribute, catchAll, measured, monthKey, projectClose, seasonShares, zeros,
+  BUDGET_RULES, KPIS, KPI_KEYS, PROSPECTS, attribute, catchAll, measured, monthKey, projectClose, seasonShares, zeros,
   type Basis, type Kpi, type Measured,
 } from "./sales-budget-rules";
 
@@ -30,6 +30,10 @@ export type Fact = {
   loaded?: string;
   /** Cases behind a loaded month's total (its number of purchase orders); a SOLU record is always one case. */
   cases?: number;
+  /** The site or plant of the Need the record belongs to, when the Need names one. */
+  plantId?: string | null;
+  /** Set when the Need is shared between negotiators: the percent of the document this figure carries. */
+  sharePct?: number;
 };
 /** One Need as a cohort case for the batting rates. */
 export type Cohort = { accountId: string; ownerId: string; created: Date; quotedAt: Date | null; decided: boolean; won: boolean; cotCop: number | null; ocCop: number };
@@ -48,11 +52,13 @@ const MAX_SYNTH = 500;
 export async function loadFacts(scope: FactScope = {}): Promise<FactSet> {
   const or: Prisma.DealWhereInput[] = [];
   if (scope.accountIds) or.push({ accountId: { in: scope.accountIds } });
-  if (scope.ownerIds) or.push({ ownerId: { in: scope.ownerIds } });
+  // A person's figures include their part of the Needs someone else leads and shares with them.
+  if (scope.ownerIds) or.push({ ownerId: { in: scope.ownerIds } }, { salesShares: { some: { userId: { in: scope.ownerIds } } } });
   const [deals, history] = await Promise.all([db.deal.findMany({
     where: { internal: false, ...(or.length ? { OR: or } : {}) },
     select: {
-      id: true, code: true, title: true, accountId: true, ownerId: true, createdAt: true,
+      id: true, code: true, title: true, accountId: true, ownerId: true, createdAt: true, plantId: true,
+      salesShares: { select: { userId: true, pct: true } },
       quotes: { where: { presentedAt: { not: null } }, orderBy: { presentedAt: "asc" }, select: { id: true, number: true, presentedAt: true, protSale: true, protEsagra: true, status: true, currency: true, docFxRate: true } },
       customerPos: { where: { rejectedAt: null }, select: { id: true, number: true, currency: true, docFxRate: true, quoteId: true, acceptance: { select: { acceptedAt: true } }, lines: { select: { qty: true, unitPrice: true, docUnitPrice: true } } } },
       invoices: { select: { id: true, number: true, issuedAt: true, amount: true, docCurrency: true, quote: { select: { docFxRate: true } } } },
@@ -74,7 +80,17 @@ export async function loadFacts(scope: FactScope = {}): Promise<FactSet> {
   for (const d of deals) {
     const base = { accountId: d.accountId, ownerId: d.ownerId };
     const name = `${d.code ?? ""} ${d.title}`.trim();
-    const push = (kpi: Kpi, at: Date, f: Omit<Fact, "kpi" | "at" | "month" | "accountId" | "ownerId">) => facts.push({ kpi, at, month: monthOf(at), ...base, ...f });
+    // Shared Need (AT-13): its money figures are split by the agreed percentages; the owner keeps what is left, so
+    // the parts always add up to the document. Counts stay whole with the owner.
+    const others = d.salesShares.filter((x) => x.userId !== d.ownerId && Number(x.pct) > 0).map((x) => ({ userId: x.userId, pct: Number(x.pct) }));
+    const given = others.reduce((s, x) => s + x.pct, 0);
+    const shared = others.length > 0 && given < 100;
+    const split = (v: number) => { const parts = others.map((x) => ({ ownerId: x.userId, pct: x.pct, v: Math.round((v * x.pct) / 100) })); return [{ ownerId: d.ownerId, pct: Math.round((100 - given) * 100) / 100, v: v - parts.reduce((s, x) => s + x.v, 0) }, ...parts]; };
+    const push = (kpi: Kpi, at: Date, f: Omit<Fact, "kpi" | "at" | "month" | "accountId" | "ownerId">) => {
+      const common = { kpi, at, month: monthOf(at), accountId: d.accountId, plantId: d.plantId };
+      if (!shared || KPIS[kpi].unit === "n" || f.cop == null) { facts.push({ ...common, ownerId: d.ownerId, ...f }); return; }
+      for (const p of split(f.cop)) facts.push({ ...common, ownerId: p.ownerId, ...f, cop: p.v, orig: Math.round(f.orig * p.pct) / 100, text: `${f.text} · ${p.pct} %`, sharePct: p.pct });
+    };
     const one = { cop: 1, orig: 1, currency: "", rate: null, rateDay: null, rateSource: null };
     push("SOL_N", d.createdAt, { ...one, text: name, href: `/deals/${d.id}` });
     // Quotes: one per Need, in the month of the first presentation, valued at the last presented revision (AT-03).
@@ -115,7 +131,7 @@ export async function loadFacts(scope: FactScope = {}): Promise<FactSet> {
     }
     // Deliveries confirmed to the customer, on the real delivery date (a partial delivery is one delivery).
     for (const dl of d.deliveries) push("ENT_N", dl.deliveredAt, { ...one, text: `${dl.code} · ${name}`, href: `/deals/${d.id}` });
-    if (ocCop > factCop) backlog.push({ ...base, cop: ocCop - factCop });
+    if (ocCop > factCop) { if (shared) for (const p of split(ocCop - factCop)) backlog.push({ accountId: d.accountId, ownerId: p.ownerId, cop: p.v }); else backlog.push({ ...base, cop: ocCop - factCop }); }
     const won = accepted > 0 || d.quotes.some((q) => q.status === "ACCEPTED");
     cohorts.push({ ...base, created: d.createdAt, quotedAt: q0?.presentedAt ?? null, won, decided: won || d.quotes.some((q) => q.status === "DECLINED"), cotCop, ocCop });
   }

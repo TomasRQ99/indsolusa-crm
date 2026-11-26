@@ -154,6 +154,8 @@ export async function newVersion(id: string, fd: FormData) {
   await db.$transaction(async (tx) => {
     const n = await tx.salesBudget.create({ data: { year: b.year, slot: b.slot, accountId: b.accountId, userId: b.userId, version: b.version + 1, state: "DRAFT", assumptions: b.assumptions ?? {}, potential: b.potential, strategy: b.strategy, justification: b.justification, versionReason: reason, createdByName: user.name } });
     await tx.salesBudgetLine.createMany({ data: b.lines.map((l) => ({ budgetId: n.id, month: l.month, kpi: l.kpi, value: l.value, suggested: l.suggested, origin: l.origin })) });
+    const sites = await tx.salesBudgetSite.findMany({ where: { budgetId: b.id }, select: { plantId: true, pct: true } });
+    if (sites.length) await tx.salesBudgetSite.createMany({ data: sites.map((x) => ({ budgetId: n.id, plantId: x.plantId, pct: x.pct })) });
     await tx.salesBudgetEvent.create({ data: { budgetId: n.id, kind: "NEW_VERSION", byId: user.id, byName: user.name, note: reason, detail: { before: annual(b) } } });
   });
   back("ok=version", "#propuesta");

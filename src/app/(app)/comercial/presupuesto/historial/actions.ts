@@ -7,6 +7,7 @@ import { refreshApp } from "@/lib/revalidate";
 import { canLoadHistory, checkBatch } from "@/lib/sales-history";
 import { UNITS } from "@/lib/sales-history-rules";
 import { readXlsx } from "@/lib/sheet-read";
+import { SiigoFail, pullSiigo, siigoAsRows } from "@/lib/siigo";
 
 // Presupuesto comercial · Historial: loading the figures from before SOLU. Two steps on purpose: "Revisar" keeps the
 // pasted text and shows what SOLU understood (nothing counts yet); "Guardar historial" writes the rows that could be
@@ -47,6 +48,29 @@ export async function checkHistory(fd: FormData) {
   // A review that was never saved nor discarded is dropped after a day.
   await db.salesHistoryBatch.deleteMany({ where: { state: "CHECKED", createdAt: { lt: new Date(Date.now() - 864e5) } } });
   const b = await db.salesHistoryBatch.create({ data: { source, currency, unit, label, raw, createdById: user.id, createdByName: user.name } });
+  redirect(`${BASE}?b=${b.id}#revision`);
+}
+
+/** Reads Siigo's invoicing of a span of months and opens the same review a pasted file gets. Nothing is saved. */
+export async function pullFromSiigo(fd: FormData) {
+  const user = await requireUser();
+  if (!canLoadHistory(user)) redirect(`${BASE}?err=permiso`);
+  const from = String(fd.get("from") ?? ""), to = String(fd.get("to") ?? "");
+  const ok = (m: string) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m);
+  if (!ok(from) || !ok(to) || from > to) redirect(`${BASE}?err=siigo-meses#leer-siigo`);
+  const span = (Number(to.slice(0, 4)) - Number(from.slice(0, 4))) * 12 + Number(to.slice(5)) - Number(from.slice(5)) + 1;
+  if (span > 12) redirect(`${BASE}?err=siigo-rango#leer-siigo`);
+  let raw = "", note = "";
+  try {
+    const p = await pullSiigo(from, to);
+    if (!p.rows.length) redirect(`${BASE}?err=siigo-vacio#leer-siigo`);
+    raw = siigoAsRows(p);
+    note = `${p.invoices} facturas, ${p.creditNotes} notas crédito${p.annulled ? `, ${p.annulled} anuladas sin contar` : ""}`;
+  } catch (e) {
+    if (e instanceof SiigoFail) redirect(`${BASE}?err=siigo-${e.code.toLowerCase()}#leer-siigo`);
+    throw e;
+  }
+  const b = await db.salesHistoryBatch.create({ data: { source: "SIIGO", currency: "COP", unit: 1, label: `Siigo ${from} a ${to} (leído de Siigo: ${note})`.slice(0, 120), raw, createdById: user.id, createdByName: user.name } });
   redirect(`${BASE}?b=${b.id}#revision`);
 }
 
