@@ -3,6 +3,7 @@
 
 import { redirect } from "next/navigation";
 import { imapAllowed, imapBox } from "@/lib/mailbox-imap";
+import { SIGNATURE_CID, signatureToSend, withSignature } from "@/lib/signatures";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { refreshApp } from "@/lib/revalidate";
@@ -51,7 +52,10 @@ export async function sendComposed(fd: FormData) {
   if (bad.length) redirect(qs(`err=enlace&msg=${encodeURIComponent(bad[0].url.slice(0, 120))}`));
   if (!body) redirect(qs("err=texto"));
   // Unedited text keeps the formatted version (tables); edited text is sent as the person wrote it.
-  const html = body === c.mail.text.trim() ? c.mail.html : textToHtml(body);
+  const plainHtml = body === c.mail.text.trim() ? c.mail.html : textToHtml(body);
+  // "Firma": the picture of the person's own signature goes inside the email, below the text.
+  const sig = await signatureToSend(user.id, String(fd.get("signatureId") ?? ""));
+  const html = sig ? withSignature(plainHtml, sig.name) : plainHtml;
 
   // Files of the Need the person ticked go attached (photos, PDF): only files of that same Need, within the size the mailbox accepts.
   let attachments: MailAttachment[] = [];
@@ -68,6 +72,7 @@ export async function sendComposed(fd: FormData) {
     if (attachments.reduce((s2, x) => s2 + x.data.length, 0) > MAX_ATTACH_BYTES) redirect(qs("err=adjuntos"));
   }
 
+  if (sig) attachments = [...attachments, { name: `firma.${sig.mime === "image/png" ? "png" : sig.mime === "image/gif" ? "gif" : "jpg"}`, mime: sig.mime, data: sig.data, cid: SIGNATURE_CID }];
   // "Enviar desde": the owner of the connected mailbox may send from it instead of the company address.
   const viaOwnBox = fd.get("fromBox") === "externo" && imapAllowed(user) && imapBox().ready;
   // One key per compose screen: a double click or a browser resubmit never sends twice.

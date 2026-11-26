@@ -168,6 +168,23 @@ model User {
   projectMentions  ProjectMention[]    @relation("ProjectMentioned")
   projectNudges    ProjectNudge[]      @relation("ProjectNudgeTo")
   projectTeamSeats ProjectTeamMember[] @relation("ProjectTeamSeat")
+  mailSignatures   MailSignature[]
+}
+
+/// A person's email signature as a picture (owner, 2026-11-26): several per person, each with a name; one is the
+/// usual one. Only its owner sees and uses it. Binary content: not audited.
+model MailSignature {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  mime      String
+  size      Int
+  data      Bytes
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Account {

@@ -1044,6 +1044,18 @@
   ],
   "expect": "The connected calendar is only your own Outlook mailbox. After connecting it, your agenda blocks show in Outlook."
  },
+ "firmas-correo": {
+  "t": "Email signatures: upload the picture of your signature and choose which one to use",
+  "why": "Upload the picture of your signature once so it goes on the emails you send from SOLU; with several signatures, each with its name, you choose which goes on each email.",
+  "steps": [
+   "Open TEAM → Settings → My profile and go down to the “Email signatures” box.",
+   "Choose the picture of your signature (PNG, JPG or GIF, up to 500 KB), type a name (for example “Formal”) and click [[Subir firma]].",
+   "To keep several, upload another one with another name. The one marked “Usual one” comes chosen on every email; change it with [[Usar siempre esta]].",
+   "Change a name by typing it and clicking [[Guardar nombre]]. Remove a signature with [[Quitar]].",
+   "When sending a template email, below the message, under “Signature”, choose which one goes, or “No signature picture”."
+  ],
+  "expect": "The picture goes inside the email, below the text. Only you see and use your signatures. The first one you upload becomes the usual one. You can keep up to 8. If you remove the usual one, the oldest one left takes its place."
+ },
  "modo-prueba": {
   "t": "Test mode: show or hide the test information",
   "why": "To work with real information without the sample data and the test customers filling the lists, counts and totals. Nothing is deleted.",

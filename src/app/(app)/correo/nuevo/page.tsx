@@ -11,6 +11,7 @@ import { db } from "@/lib/db";
 import { aiConfigured } from "@/lib/ai";
 import { draftWithAi, rewriteWithAi } from "../ai-actions";
 import { REWRITE_PRESETS } from "@/lib/mail-ai";
+import { mySignatures } from "@/lib/signatures";
 import { imapAllowed, imapBox } from "@/lib/mailbox-imap";
 
 export default async function ComposeMail({ searchParams }: { searchParams: Promise<{ tpl?: string; id?: string; lang?: string; err?: string; msg?: string; borrador?: string; ok?: string; to?: string; cc?: string; bcc?: string }> }) {
@@ -29,6 +30,8 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
   const aiKind = tpl === "PROGRESS" || tpl === "OFFER";
   const draft = sp.borrador && c.dealId ? await db.aiDraft.findFirst({ where: { id: sp.borrador.slice(0, 40), dealId: c.dealId, kind: tpl }, select: { subject: true, body: true, createdByName: true } }) : null;
   const aiOn = aiConfigured();
+  const sigs = await mySignatures(user.id);
+  const sigDefault = sigs.find((s) => s.isDefault) ?? null;
   const ownBox = imapAllowed(user) && imapBox().ready ? imapBox().address : null;
   const other = c.lang === "EN" ? "ES" : "EN";
   const langHref = `/correo/nuevo?${new URLSearchParams({ tpl, id: sp.id!, lang: other })}`;
@@ -135,6 +138,17 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
               ) : <span className="src">{t("Se enciende cuando la empresa conecte su llave de IA.", "It turns on once the company connects its AI key.")}</span>}
             </div>
           )}
+          <div className="sg-pick" id="firma">
+            <label>{t("Firma", "Signature")}
+              <select name="signatureId" defaultValue={sigDefault?.id ?? ""}>
+                <option value="">{t("Sin imagen de firma", "No signature picture")}</option>
+                {sigs.map((s) => <option key={s.id} value={s.id}>{s.name}{s.isDefault ? t(" · la de siempre", " · usual one") : ""}</option>)}
+              </select>
+            </label>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {sigDefault && <img src={`/firma/${sigDefault.id}`} alt={sigDefault.name} className="sg-img sm" />}
+            <span className="src">{sigs.length ? t("La imagen va dentro del correo, debajo del texto. ", "The picture goes inside the email, below the text. ") : t("Todavía no has subido la imagen de tu firma. ", "You have not uploaded your signature picture yet. ")}<Link href="/profile#firmas">{sigs.length ? t("Subir otra o cambiarlas en Mi perfil", "Upload another or change them in My profile") : t("Súbela en Mi perfil", "Upload it in My profile")}</Link></span>
+          </div>
           <p className="src">{t("Si no cambias el texto, sale con formato (tabla de partes). Si lo editas, sale como texto simple con tus cambios.", "If you don't change the text, it goes out formatted (parts table). If you edit it, it goes out as plain text with your changes.")} {t("Si pegas enlaces, SOLU les quita los parámetros de rastreo (utm, fbclid…).", "If you paste links, SOLU removes their tracking parameters (utm, fbclid…).")}</p>
           <details className="loc-preview"><summary>{t("Ver cómo se verá con formato", "Preview with formatting")}</summary>
             <div className="mail-preview" dangerouslySetInnerHTML={{ __html: c.mail.html }} />

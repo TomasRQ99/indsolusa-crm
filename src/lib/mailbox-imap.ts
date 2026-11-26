@@ -106,7 +106,7 @@ export async function imapGet(folder: "in" | "out", id: string): Promise<ImapRow
 // ---------- sending from this mailbox ----------
 
 type Rcpt = string | { address: string; name?: string };
-export type OwnBoxMessage = { to: Rcpt; alsoTo?: string[]; cc?: string[]; bcc?: string[]; subject: string; text: string; html?: string; senderName?: string; attachments?: { name: string; mime: string; data: Uint8Array }[] };
+export type OwnBoxMessage = { to: Rcpt; alsoTo?: string[]; cc?: string[]; bcc?: string[]; subject: string; text: string; html?: string; senderName?: string; attachments?: { name: string; mime: string; data: Uint8Array; cid?: string }[] };
 
 /** Sends through the mailbox's own outgoing server, then leaves a copy in its sent folder (a copy that cannot be
  *  saved never fails the send: the email already went out). Errors from the send itself are thrown as they come. */
@@ -121,7 +121,7 @@ export async function ownBoxSend(m: OwnBoxMessage) {
     from: m.senderName ? { name: m.senderName, address: b.address } : b.address,
     to: m.alsoTo?.length ? [m.to, ...m.alsoTo] : m.to, cc: m.cc?.length ? m.cc : undefined, bcc: m.bcc?.length ? m.bcc : undefined,
     subject: m.subject, text: m.text, html: m.html,
-    attachments: m.attachments?.map((a) => ({ filename: a.name, content: Buffer.from(a.data), contentType: a.mime })),
+    attachments: m.attachments?.map((a) => ({ filename: a.name, content: Buffer.from(a.data), contentType: a.mime, ...(a.cid ? { cid: a.cid, contentDisposition: "inline" as const } : {}) })),
   };
   try { await transport.sendMail(message); } finally { transport.close(); }
   try {

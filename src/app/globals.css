@@ -3195,6 +3195,16 @@ p.pj-table { margin: 0 0 8px; }
 .ai-rw-l textarea { width: 100%; resize: vertical; }
 .ai-rw-act { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .ai-rw-act .ai-rw-go { color: #fff; background: var(--ai); border-color: var(--ai); }
+.sg-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sg-list li { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 10px; border: 1px solid var(--line); border-radius: 8px; }
+.sg-img { max-width: 220px; max-height: 90px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 4px; }
+.sg-img.sm { max-width: 160px; max-height: 56px; }
+.sg-body { display: grid; gap: 8px; flex: 1 1 220px; min-width: 0; }
+.sg-name, .sg-act { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.sg-name input { flex: 1 1 140px; min-width: 0; }
+.sg-pick { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin: 12px 0 6px; }
+.sg-pick label { display: grid; gap: 4px; flex: 0 1 260px; }
+.sg-pick .src { flex: 1 1 240px; }
 .mail-from { display: grid; gap: 4px; margin-bottom: 10px; max-width: 560px; }
 .mb-sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
 .rp-list .mb-go { flex: none; color: var(--ai); border-color: var(--ai); background: var(--ai-soft); white-space: nowrap; }

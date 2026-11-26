@@ -6,10 +6,13 @@ import { connectOutlook, disconnectOutlook, setGuide, setTestMode, setWorkday } 
 import { canManageAll } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { saveProjectAlerts } from "../proyectos/actions";
+import { mySignatures } from "@/lib/signatures";
+import { SignatureCard } from "@/components/SignatureCard";
 
-export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ cal?: string; ok?: string }> }) {
-  const { cal, ok } = await searchParams;
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ cal?: string; ok?: string; err?: string }> }) {
+  const { cal, ok, err } = await searchParams;
   const user = await requireUser();
+  const signatures = await mySignatures(user.id);
   const pj = await db.user.findUnique({ where: { id: user.id }, select: { projectAlerts: true, projectAsks: true } });
   const i = makeI18n(user.lang);
   const { t } = i;
@@ -90,6 +93,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           {canManageAll(user) && <p className="small" style={{ marginTop: 12 }}><a href="/profile/modo-prueba">{t("Elegir qué clientes y proveedores son de prueba", "Choose which customers and suppliers are test")} →</a></p>}
           <p className="src" style={{ marginTop: 8 }}>{t("Solo cambia para ti: cada persona lo decide en su perfil. Un registro de prueba que abras por su enlace directo se sigue abriendo.", "It only changes for you: each person decides it in their profile. A test record you open by its direct link still opens.")}</p>
         </div>
+        <SignatureCard lang={user.lang === "EN" ? "EN" : "ES"} list={signatures} ok={ok} err={err} />
         <div className="card" id="avisos-proyectos">
           <h2>{t("Avisos de mis proyectos", "Notices from my projects")}</h2>
           {ok === "avisos-proyectos" && <p className="small"><span className="sig ok">{t("Guardado", "Saved")}</span></p>}

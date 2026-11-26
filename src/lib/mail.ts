@@ -10,7 +10,8 @@ import { COMPANY_NAME } from "./brand";
 
 type Recipient = Mail.Address | string;
 /** A file sent with the email. Microsoft's simple send accepts about 3 MB in total, so callers keep to that. */
-export type MailAttachment = { name: string; mime: string; data: Uint8Array };
+/** `cid`: the file is a picture shown inside the email (the HTML refers to it as cid:<that name>), not a file to download. */
+export type MailAttachment = { name: string; mime: string; data: Uint8Array; cid?: string };
 export const MAX_ATTACH_BYTES = 3 * 1024 * 1024;
 
 class MailError extends Error {}
@@ -165,7 +166,7 @@ async function sendViaGraph(
         toRecipients: [{ emailAddress: toAddress(opts.to) }, ...(opts.alsoTo ?? []).map((address) => ({ emailAddress: { address } }))],
         ...(opts.cc?.length ? { ccRecipients: opts.cc.map((address) => ({ emailAddress: { address } })) } : {}),
         bccRecipients: [...new Set([...bccList(), ...(opts.bcc ?? [])])].map((address) => ({ emailAddress: { address } })),
-        ...(opts.attachments?.length ? { attachments: opts.attachments.map((a) => ({ "@odata.type": "#microsoft.graph.fileAttachment", name: a.name, contentType: a.mime, contentBytes: Buffer.from(a.data).toString("base64") })) } : {}),
+        ...(opts.attachments?.length ? { attachments: opts.attachments.map((a) => ({ "@odata.type": "#microsoft.graph.fileAttachment", name: a.name, contentType: a.mime, contentBytes: Buffer.from(a.data).toString("base64"), ...(a.cid ? { isInline: true, contentId: a.cid } : {}) })) } : {}),
       },
       saveToSentItems: true, // the email appears in the mailbox's Sent Items
     }),
@@ -219,7 +220,7 @@ async function sendViaSmtp(
     subject: opts.subject,
     text: opts.text,
     html: opts.html,
-    attachments: opts.attachments?.map((a) => ({ filename: a.name, content: Buffer.from(a.data), contentType: a.mime })),
+    attachments: opts.attachments?.map((a) => ({ filename: a.name, content: Buffer.from(a.data), contentType: a.mime, ...(a.cid ? { cid: a.cid, contentDisposition: "inline" as const } : {}) })),
   }); } catch (e) {
     const err = e as { code?: string; command?: string; responseCode?: number };
     if (err.command === "DATA" || (!err.responseCode && err.command !== "CONN" && /ETIMEDOUT|ECONNRESET|ESOCKET/.test(err.code ?? ""))) throw new MailUncertainError("The mail server stopped answering while sending: it may have gone out.");

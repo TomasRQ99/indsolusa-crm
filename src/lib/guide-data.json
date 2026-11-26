@@ -1530,6 +1530,21 @@
    "expect": "El calendario conectado es solo el de tu propio buzón de Outlook. Después de conectarlo, los bloques de tu agenda aparecen en Outlook."
   },
   {
+   "id": "firmas-correo",
+   "m": "equipo",
+   "t": "Firmas de correo: subir la imagen de tu firma y elegir cuál usar",
+   "path": "EQUIPO → Configuración → Mi perfil → Firmas de correo",
+   "why": "Subir la imagen de tu firma una sola vez para que salga en los correos que envías desde SOLU; con varias firmas, cada una con su nombre, eliges cuál va en cada correo.",
+   "steps": [
+    "Abre EQUIPO → Configuración → Mi perfil y baja al recuadro «Firmas de correo».",
+    "Elige la imagen de tu firma (PNG, JPG o GIF, hasta 500 KB), escribe un nombre (por ejemplo «Formal») y haz clic en [[Subir firma]].",
+    "Para tener varias, sube otra con otro nombre. La que dice «La de siempre» es la que viene elegida en cada correo; cámbiala con [[Usar siempre esta]].",
+    "Cambia un nombre escribiéndolo y haciendo clic en [[Guardar nombre]]. Quita una firma con [[Quitar]].",
+    "Al enviar un correo de plantilla, debajo del mensaje, en «Firma», elige cuál va, o «Sin imagen de firma»."
+   ],
+   "expect": "La imagen sale dentro del correo, debajo del texto. Solo tú ves y usas tus firmas. La primera que subes queda como la de siempre. Puedes tener hasta 8. Si quitas la de siempre, la más antigua que quede toma su lugar."
+  },
+  {
    "id": "modo-prueba",
    "m": "equipo",
    "t": "Modo prueba: ver u ocultar la información de prueba",
