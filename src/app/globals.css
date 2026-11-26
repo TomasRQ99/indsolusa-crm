@@ -3236,4 +3236,8 @@ p.pj-table { margin: 0 0 8px; }
 .wl-spin { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--brand); animation: wl-spin 0.9s linear infinite; }
 @keyframes wl-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .wl-spin { animation-duration: 3s; } }
-@media (max-width: 760px) { .wl-form { grid-template-columns: 1fr; } .wl-dl { grid-template-columns: 1fr; gap: 2px 0; } .wl-dl dd { margin-bottom: 6px; } }
+@media (max-width: 760px) { .wl-form { grid-template-columns: 1fr; } .wl-dl { grid-template-columns: 1fr; gap: 2px 0; } .wl-dl dd { margin-bottom: 6px; } }.wl-mail { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 10px 0 0; }
+.wl-contact { margin-top: 4px; }
+.wl-contact > summary { cursor: pointer; display: inline-block; }
+.wl-contact-f { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; margin: 8px 0 4px; }
+.wl-contact-f label { flex: 1 1 200px; min-width: 0; }

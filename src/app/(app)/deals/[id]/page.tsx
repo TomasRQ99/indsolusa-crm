@@ -64,7 +64,7 @@ export default async function JourneyPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; ok?: string; err?: string; cal?: string; t?: string; d?: string; prov?: string }>;
+  searchParams: Promise<{ tab?: string; ok?: string; err?: string; cal?: string; t?: string; d?: string; prov?: string; n?: string }>;
 }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
@@ -702,6 +702,8 @@ export default async function JourneyPage({
           <p className="src" style={{ marginTop: 8 }}>{t("¿No sabes el número de parte? Tómale una foto a la placa: en Localizar repuestos, «Leer placa desde foto» lee los números impresos.", "Don't know the part number? Take a photo of the nameplate: in Find parts, “Read nameplate from photo” reads the printed numbers.")} <Link href={`/localizar?deal=${deal.id}`}>{t("Abrir Localizar repuestos", "Open Find parts")} →</Link></p>
         </section>
 
+        <NeedWebLeads dealId={deal.id} t={t} n2={i.n2} day={i.day} editable={editable} tab="locate" searchFor={webSearchFor} qty={deal.items.find((x) => x.code?.trim())?.qty ?? deal.items[0]?.qty ?? null} ok={sp.ok} err={sp.err} n={sp.n} />
+
         <section className="jblock" id="fotos">
           <div className="jbh"><b>{t("2 · FOTOS", "2 · PHOTOS")}</b><span className="grow" />{hasPhoto ? <span className="sig ok">{deal.files.length}</span> : <span className={`sig ${hasCode ? "wait" : "risk"}`}>{hasCode ? t("Recomendado", "Recommended") : t("Falta: foto o número de parte", "Missing: photo or part number")}</span>}</div>
           <p className="small muted">{t("La placa del equipo, la pieza por varios lados, el plano o el manual. Sirven para confirmar con el proveedor que es exactamente la misma, y se pueden adjuntar al correo del cliente.", "The equipment's nameplate, the piece from several sides, the drawing or the manual. They confirm with the supplier that it is exactly the same one, and can be attached to the customer's email.")}</p>
@@ -753,8 +755,6 @@ export default async function JourneyPage({
           </p>
         </section>
 
-        <NeedWebLeads dealId={deal.id} t={t} n2={i.n2} day={i.day} editable={editable} tab="locate" searchFor={webSearchFor} ok={sp.ok} err={sp.err} />
-
         <section className={`jblock${deal.locatedAt ? "" : " loc-pending"}`} id="localizada">
           <div className="jbh"><b>{t("4 · ¿YA ESTÁ LOCALIZADA?", "4 · IS IT LOCATED?")}</b><span className="grow" />{deal.locatedAt ? <span className="sig ok">{t(`Localizada · ${i.day(deal.locatedAt)}`, `Located · ${i.day(deal.locatedAt)}`)}</span> : <span className="sig attn">{t("Sin localizar", "Not located")}</span>}</div>
           {deal.locatedAt ? (
@@ -795,7 +795,7 @@ export default async function JourneyPage({
         <div className="jbh"><b>{t("ABASTECIMIENTO", "SOURCING & SUPPLY")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/abastecimiento`}>{t("Abrir", "Open")}</Link></div>
         <p className="quiet-p">{t("Opciones de cada proveedor con la fuente de cada dato, comparación por alcance (no solo precio), formas de pago, logística e importación, y la base de suministro elegida.", "Each supplier's options with the source of every value, comparison by scope (not just price), payment methods, logistics and import, and the chosen supply basis.")}</p>
       </section>
-      <NeedWebLeads dealId={deal.id} t={t} n2={i.n2} day={i.day} editable={editable} tab="source" searchFor={webSearchFor} ok={sp.ok} err={sp.err} />
+      <NeedWebLeads dealId={deal.id} t={t} n2={i.n2} day={i.day} editable={editable} tab="source" searchFor={webSearchFor} qty={deal.items.find((x) => x.code?.trim())?.qty ?? deal.items[0]?.qty ?? null} ok={sp.ok} err={sp.err} n={sp.n} />
       <section className="jblock">
         <div className="jbh"><b>{t("CÓMO LO VAMOS A CONSEGUIR", "HOW WE WILL SOURCE IT")}</b></div>
         {editable ? (

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { closedText, confidenceLabel, kindLabel, reasonText } from "@/lib/web-hunt";
+import { findLeadContact, setLeadContact } from "@/app/(app)/localizar/internet/actions";
 
 export type WebLeadView = {
   id: string; seller: string; sellerKind: string; country: string | null; url: string; host: string; title: string | null;
@@ -13,7 +14,7 @@ type T = (es: string, en: string) => string;
 const TONE: Record<string, string> = { HIGH: "ok", MEDIUM: "attn", LOW: "wait" };
 
 /** One seller found on the internet: who it is, how sure SOLU is and why, the direct link, and how to reach them. */
-export function WebLeadCard({ l, t, n2, children }: { l: WebLeadView; t: T; n2: (v: number) => string; children?: ReactNode }) {
+export function WebLeadCard({ l, t, n2, mailedAt, day, from = "hunt", openContact, children }: { l: WebLeadView; t: T; n2: (v: number) => string; mailedAt?: Date | null; day?: (d: Date) => string; from?: string; openContact?: boolean; children?: ReactNode }) {
   const cond = l.condition === "REFURBISHED" ? t("reacondicionada", "refurbished") : l.condition === "USED" ? t("usada", "used") : l.condition === "NEW" ? t("nueva", "new") : null;
   return (
     <article className={`wl wl-${l.confidence.toLowerCase()}`} id={`l-${l.id}`}>
@@ -46,10 +47,30 @@ export function WebLeadCard({ l, t, n2, children }: { l: WebLeadView; t: T; n2: 
           {(l.email || l.phone) && l.contactUrl && " · "}
           {l.contactUrl && <a href={l.contactUrl} target="_blank" rel="noopener noreferrer nofollow">{t("Formulario de contacto", "Contact form")} ↗</a>}
           {!l.email && !l.phone && !l.contactUrl && <span className="muted">{t("No se vio correo, teléfono ni formulario: búscalo en el enlace directo.", "No email, phone or form was seen: look for it on the direct link.")}</span>}
-          {l.contactFrom === "PAGE" && <span className="src"> {t("leído por SOLU en la página", "read by SOLU on the page")}</span>}
+          {l.contactFrom === "PAGE" && <span className="src"> {t("leído por SOLU en el sitio del vendedor", "read by SOLU on the seller's site")}</span>}
+          {l.contactFrom === "MANUAL" && <span className="src"> {t("escrito por el equipo", "typed by the team")}</span>}
+          {(!l.email || !l.phone) && (
+            <details className="wl-contact" open={openContact}>
+              <summary className="link small">{l.email || l.phone ? t("Completar el contacto", "Complete the contact") : t("Buscar o escribir el contacto", "Find or type the contact")}</summary>
+              <form action={setLeadContact.bind(null, l.id)} className="wl-contact-f">
+                <input type="hidden" name="from" value={from} />
+                <label>{t("Correo del vendedor", "Seller's email")}<input name="email" type="text" inputMode="email" maxLength={120} defaultValue={l.email ?? ""} autoComplete="off" /></label>
+                <label>{t("Teléfono", "Phone")}<input name="phone" type="text" inputMode="tel" maxLength={40} defaultValue={l.phone ?? ""} autoComplete="off" /></label>
+                <button type="submit" className="secondary sm">{t("Guardar contacto", "Save contact")}</button>
+                <button type="submit" className="secondary sm" formAction={findLeadContact.bind(null, l.id)} formNoValidate>{t("Buscar en el sitio del vendedor", "Search the seller's site")}</button>
+              </form>
+              <span className="src">{t("«Buscar en el sitio del vendedor» abre su página de contacto y su página principal y toma el correo y el teléfono que estén escritos ahí. No usa IA ni cuesta. Si el sitio no deja leer, abre el enlace directo y escribe aquí lo que veas.", "“Search the seller's site” opens their contact page and home page and takes the email and phone written there. It uses no AI and costs nothing. If the site does not allow reading, open the direct link and type here what you see.")}</span>
+            </details>
+          )}
         </dd>
         {l.note && <><dt>{t("Nota", "Note")}</dt><dd>{l.note}</dd></>}
       </dl>
+      <p className="wl-mail">
+        <a className="btn secondary sm" href={`/correo/nuevo?tpl=SELLER&id=${l.id}`}>{t("Escribirle al vendedor", "Email the seller")}</a>{" "}
+        {mailedAt
+          ? <span className="sig ok">{t(`Correo enviado${day ? ` el ${day(mailedAt)}` : ""}`, `Email sent${day ? ` on ${day(mailedAt)}` : ""}`)}</span>
+          : <span className="src">{l.email ? t("abre el correo ya escrito con la pieza, para revisarlo antes de enviar", "opens the email already written with the piece, to review before sending") : t("no se vio su correo: el texto sale listo para pegarlo en su formulario de contacto", "their email was not seen: the text comes ready to paste into their contact form")}</span>}
+      </p>
       {children}
     </article>
   );

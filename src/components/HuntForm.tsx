@@ -5,9 +5,9 @@ type T = (es: string, en: string) => string;
 
 /** The questions asked before searching the internet for a piece. Only the piece itself is required: every answer
  *  is optional and only sharpens the search. */
-export function HuntForm({ t, q, dealId, partId, needs, answers, showQuery, state, cap }: {
+export function HuntForm({ t, q, dealId, partId, needs, answers, showQuery, fixedDeal, state, cap }: {
   t: T; q: string; dealId?: string | null; partId?: string | null; needs: { id: string; label: string }[];
-  answers?: HuntAnswers; showQuery?: boolean; state: "ON" | "OFF" | "CAP"; cap: number;
+  answers?: HuntAnswers; showQuery?: boolean; /** inside a Need: the search is always for that Need */ fixedDeal?: boolean; state: "ON" | "OFF" | "CAP"; cap: number;
 }) {
   if (state !== "ON") {
     return (
@@ -39,12 +39,14 @@ export function HuntForm({ t, q, dealId, partId, needs, answers, showQuery, stat
           <option value="1">{t("Sí, también equivalentes", "Yes, equivalents too")}</option>
         </select>
       </label>
-      <label>{t("¿Para qué Necesidad es? (opcional)", "Which Need is it for? (optional)")}
-        <select name="deal" defaultValue={dealId ?? ""}>
-          <option value="">{t("Todavía ninguna", "None yet")}</option>
-          {needs.map((n) => <option key={n.id} value={n.id}>{n.label}</option>)}
-        </select>
-      </label>
+      {fixedDeal && dealId ? <input type="hidden" name="deal" value={dealId} /> : (
+        <label>{t("¿Para qué Necesidad es? (opcional)", "Which Need is it for? (optional)")}
+          <select name="deal" defaultValue={dealId ?? ""}>
+            <option value="">{t("Todavía ninguna", "None yet")}</option>
+            {needs.map((n) => <option key={n.id} value={n.id}>{n.label}</option>)}
+          </select>
+        </label>
+      )}
       <label className="wide">{t("Datos que ayuden (voltaje, medidas, máquina donde va)", "Details that help (voltage, dimensions, the machine it goes in)")}<input name="details" maxLength={600} defaultValue={answers?.details ?? ""} /></label>
       <div className="wide wl-go">
         <button type="submit">{t("Buscar en internet", "Search the internet")}</button>

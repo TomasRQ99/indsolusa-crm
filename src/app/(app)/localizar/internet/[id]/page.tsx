@@ -5,13 +5,13 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { canManageAll } from "@/lib/permissions";
 import { aiConfigured, aiSpentThisMonth, monthlyCap } from "@/lib/ai";
-import { HUNT_STALE_MS, confidenceLabel, failText, needsToSaveOn, type HuntAnswers, type Understood } from "@/lib/web-hunt";
+import { HUNT_STALE_MS, contactNote, confidenceLabel, failText, leadsMailedAt, needsToSaveOn, type HuntAnswers, type Understood } from "@/lib/web-hunt";
 import { HuntWaiting } from "@/components/HuntWaiting";
 import { HuntForm } from "@/components/HuntForm";
 import { WebLeadCard } from "@/components/WebLeadCard";
 import { saveLead, startHunt } from "../actions";
 
-export default async function HuntPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; l?: string }> }) {
+export default async function HuntPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; l?: string; n?: string }> }) {
   const user = await requireUser();
   const i = makeI18n(user.lang);
   const { t } = i;
@@ -26,8 +26,9 @@ export default async function HuntPage({ params, searchParams }: { params: Promi
     },
   });
   if (!hunt) notFound();
-  const [needs, spent] = await Promise.all([needsToSaveOn(user), aiSpentThisMonth()]);
+  const [needs, spent, mailed] = await Promise.all([needsToSaveOn(user), aiSpentThisMonth(), leadsMailedAt(hunt.leads.map((l) => l.id))]);
   const cap = monthlyCap();
+  const cNote = contactNote(sp.ok, sp.err, sp.n, t);
   const aiState = !aiConfigured() ? "OFF" : spent.usd + 0.1 > cap ? "CAP" : "ON";
   const answers = (hunt.answers ?? {}) as HuntAnswers;
   const und = hunt.understood as Understood | null;
@@ -73,6 +74,9 @@ export default async function HuntPage({ params, searchParams }: { params: Promi
       )}
 
       {sp.ok === "guardada" && <p className="note okn" role="status">{t("Opción guardada en la Necesidad. La encuentras allá en «Localizar» y en «Fuente», bajo «OPCIONES ENCONTRADAS EN INTERNET».", "Option saved on the Need. You will find it there under “Locate” and “Source”, in “OPTIONS FOUND ON THE INTERNET”.")}</p>}
+      {sp.ok === "correo" && <p className="note okn" role="status">{t("Correo enviado al vendedor. Su respuesta aparecerá en MI DÍA → Respuestas; el vendedor queda marcado «Correo enviado».", "Email sent to the seller. Their reply will show under MY DAY → Replies; the seller is marked “Email sent”.")}</p>}
+      {sp.ok === "correo-interno" && <p className="note" role="status">{t("El texto quedó como nota interna en la Necesidad. Al vendedor no se le envió nada.", "The text was kept as an internal note on the Need. Nothing was sent to the seller.")}</p>}
+      {cNote && <p className={`note ${cNote.good ? "okn" : "attn"}`} role={cNote.good ? "status" : "alert"}>{cNote.text}</p>}
       {sp.err === "necesidad" && <p className="note attn" role="alert">{t("Falta elegir la Necesidad donde se guarda: escógela en la lista de esa opción y vuelve a guardar.", "The Need to save it on is missing: pick it in that option's list and save again.")}</p>}
       {sp.err === "permiso" && <p className="note attn" role="alert">{t("Solo el dueño de esa Necesidad, Gerencia o el Director Comercial pueden guardarle opciones.", "Only that Need's owner, Management or the Commercial Director can save options on it.")}</p>}
 
@@ -118,7 +122,7 @@ export default async function HuntPage({ params, searchParams }: { params: Promi
                   <div className="jbh"><b>{confidenceLabel(g.c, t).toUpperCase()}</b><span className="grow" /><span className="src">{HINT[g.c]}</span></div>
                   <div className="loc-list">
                     {g.leads.map((l) => (
-                      <WebLeadCard key={l.id} l={l} t={t} n2={i.n2}>
+                      <WebLeadCard key={l.id} l={l} t={t} n2={i.n2} mailedAt={mailed.get(l.id)} day={i.day} openContact={sp.l === l.id && !!sp.err?.startsWith("contacto")}>
                         {l.deal ? (
                           <p className="wl-saved">
                             <span className="sig ok">{l.supplier ? t("Es la fuente de la Necesidad", "It is the Need's source") : t("Guardada", "Saved")}</span>{" "}

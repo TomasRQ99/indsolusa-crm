@@ -168,6 +168,7 @@ export function templateReview(sender: string, from: string) {
   const items = [{ qty: 2, code: "6SL3210-1KE21-7UF1", brand: "Siemens", description: "SINAMICS G120C 7.5 kW", unitPrice: 1234.5 }, { qty: 1, code: "3RT2026-1BB40", brand: "Siemens", description: "Contactor 24 V DC", unitPrice: 88 }];
   const samples: Record<TemplateKey, Mail> = {
     RFQ: rfqMail({ lang: "EN", code: "RFQ-2611-0001", items, neededBy: day, notes: null, sender, from }),
+    SELLER: rfqMail({ lang: "EN", code: "J-2611-0001", items, neededBy: day, notes: "We saw this item listed on your website: https://www.example.com/item", sender, from }),
     FOLLOWUP: followUpMail({ lang: "EN", code: "RFQ-2611-0001", items, sentAt: new Date(), replyBy: day, sender, from }),
     NEGOTIATE: negotiateMail({ lang: "EN", theirRef: "Q-7781", items, currency: "USD", asks: { price: true, lead: true, payment: false }, target: null, replyBy: day, sender, from }),
     DELIVERY: deliveryMail({ lang: "EN", poCode: "SPO-2611-0001", proformaRef: "PF-1182", items, promised: day, issue: null, replyBy: day, sender, from }),

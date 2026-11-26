@@ -14,7 +14,9 @@ import zlib from "node:zlib";
 import { db } from "./db";
 
 export const BOT_NAME = "SOLU-Parts";
-const USER_AGENT = `${BOT_NAME}/1.0 (+https://indsolusa.com)`;
+// The usual form for an honest automated reader: many sites turn away anything that does not start like a browser,
+// and this still says plainly who is reading and where to find us. robots.txt is obeyed exactly as before.
+const USER_AGENT = `Mozilla/5.0 (compatible; ${BOT_NAME}/1.0; +https://indsolusa.com)`;
 
 /** Hosts we never read as pages: their terms forbid it, or they have an official API we use instead. */
 const BLOCKED_HOSTS: Record<string, string> = {

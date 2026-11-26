@@ -25,7 +25,7 @@ export default async function RepliesPage({ searchParams }: { searchParams: Prom
     OTHER: t("No se pudo revisar el buzón: ", "Couldn't check the mailbox: ") + (st?.message ?? ""),
   };
   const hrefFor = (m: (typeof r.waiting)[number]) =>
-    m.refKind === "RFQR" ? `/correo/nuevo?tpl=FOLLOWUP&id=${m.refId}` : m.refKind === "SPO" ? `/compras/${m.refId}` : m.refKind === "QUOTE" ? `/cotizaciones/${m.refId}` : m.refKind === "INVOICE" ? `/administracion/cobrar?f=${m.refId}` : m.refKind === "FOLLOWUPS" ? `/cotizaciones/seguimientos?a=${m.refId}` : m.supplierId ? `/suppliers/${m.supplierId}` : "#";
+    m.refKind === "RFQR" ? `/correo/nuevo?tpl=FOLLOWUP&id=${m.refId}` : m.refKind === "SPO" ? `/compras/${m.refId}` : m.refKind === "QUOTE" ? `/cotizaciones/${m.refId}` : m.refKind === "INVOICE" ? `/administracion/cobrar?f=${m.refId}` : m.refKind === "FOLLOWUPS" ? `/cotizaciones/seguimientos?a=${m.refId}` : m.refKind === "LEAD" ? `/correo/nuevo?tpl=SELLER&id=${m.refId}` : m.supplierId ? `/suppliers/${m.supplierId}` : "#";
 
   return (
     <>

@@ -9,10 +9,11 @@ import { COMPANY } from "./company";
 export type MailLang = "EN" | "ES";
 export type ItemRow = { qty: number; code: string; brand?: string | null; description: string; unitPrice?: number | null };
 export type Mail = { subjects: string[]; text: string; html: string };
-export type TemplateKey = "RFQ" | "FOLLOWUP" | "NEGOTIATE" | "DELIVERY" | "OFFER" | "PAYMENT" | "ACK" | "PROGRESS";
+export type TemplateKey = "RFQ" | "FOLLOWUP" | "NEGOTIATE" | "DELIVERY" | "OFFER" | "PAYMENT" | "ACK" | "PROGRESS" | "SELLER";
 
 export const TEMPLATES: Record<TemplateKey, { es: string; en: string; to: "SUPPLIER" | "CUSTOMER"; help: { es: string; en: string } }> = {
   RFQ: { es: "Solicitud de cotización", en: "Request for quotation", to: "SUPPLIER", help: { es: "Plantilla de la empresa para pedir precio a proveedores.", en: "Company template to ask suppliers for a price." } },
+  SELLER: { es: "Solicitud de precio a un vendedor", en: "Price request to a seller", to: "SUPPLIER", help: { es: "Escribirle a un vendedor encontrado en internet para pedirle precio, existencia y plazo de la pieza, con la plantilla de la empresa.", en: "Write to a seller found on the internet to ask for the price, stock and lead time of the piece, with the company template." } },
   FOLLOWUP: { es: "Seguimiento a proveedor", en: "Supplier follow-up", to: "SUPPLIER", help: { es: "Recordatorio amable cuando un proveedor no ha respondido.", en: "Friendly reminder when a supplier hasn't answered." } },
   NEGOTIATE: { es: "Negociación", en: "Negotiation", to: "SUPPLIER", help: { es: "Pedir mejor precio, plazo o forma de pago sobre su oferta.", en: "Ask for a better price, lead time or terms on their offer." } },
   DELIVERY: { es: "Problema de entrega", en: "Delivery issue", to: "SUPPLIER", help: { es: "Pedir fecha confirmada de despacho y guía de una orden.", en: "Ask for a confirmed ship date and tracking for an order." } },

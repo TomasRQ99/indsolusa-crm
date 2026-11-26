@@ -8,7 +8,7 @@ import { db } from "./db";
 import { describeMailError, forgetGraphToken, graphAccessToken, isMailUncertain, mailConfig, sendMail } from "./mail";
 
 export type OutboundInput = {
-  template: string; refKind: "RFQR" | "OFFER" | "SPO" | "QUOTE" | "INVOICE" | "NEED" | "FOLLOWUPS"; refId: string; refCode: string | null;
+  template: string; refKind: "RFQR" | "OFFER" | "SPO" | "QUOTE" | "INVOICE" | "NEED" | "FOLLOWUPS" | "LEAD"; refId: string; refCode: string | null;
   partyKind: "SUPPLIER" | "CUSTOMER"; supplierId?: string | null; accountId?: string | null; dealId?: string | null;
   toAddr: string; subject: string;
 };

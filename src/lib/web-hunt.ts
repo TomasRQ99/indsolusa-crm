@@ -76,7 +76,7 @@ The buyer will act on what you report, so accuracy matters more than volume:
 - "alternates": other numbers the same piece is sold under (superseded numbers, cross references, the manufacturer's order code), only when a page states the equivalence.
 - "questions": up to three short questions to the buyer whose answer would change which sellers fit (voltage, size, the machine it goes in, new or used). None if the piece is already unambiguous.
 
-You may open a few pages to confirm that the number is really there or to read a seller's contact page. When you are done, call the report_sources tool once. Do not write the findings as text.`;
+A seller the buyer cannot reach is of little use. For each seller you are going to report without an email or a phone, open their contact page, or run one search for the seller's name with "contact", "email" or "phone", before you finish. You may also open a few pages to confirm that the number is really there. When you are done, call the report_sources tool once. Do not write the findings as text.`;
 
 function prompt(q: string, a: HuntAnswers, known: string[], lang: string) {
   const lines = [
@@ -97,18 +97,30 @@ function prompt(q: string, a: HuntAnswers, known: string[], lang: string) {
 const s = (v: unknown, n: number) => (typeof v === "string" && v.trim() ? v.replace(/\s+/g, " ").trim().slice(0, n) : null);
 const httpUrl = (v: unknown): URL | null => { const t = s(v, 1000); if (!t) return null; try { const u = new URL(/^https?:\/\//i.test(t) ? t : `https://${t}`); return /^https?:$/.test(u.protocol) && u.hostname.includes(".") ? u : null; } catch { return null; } };
 const emailOf = (v: unknown) => { const t = s(v, 120)?.toLowerCase().replace(/^mailto:/, "") ?? ""; return /^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(t) && !/example\.|sentry|wixpress|\.(png|jpe?g|gif|webp|svg)$/.test(t) ? t : null; };
-const phoneOf = (v: unknown) => { const t = s(v, 40)?.replace(/^tel:/i, "") ?? ""; const digits = t.replace(/\D/g, ""); return /^[+\d][\d\s().\-/x]{5,}$/i.test(t) && digits.length >= 7 && digits.length <= 16 ? t : null; };
+const phoneOf = (v: unknown) => { const t = s(v, 40)?.replace(/^tel:/i, "") ?? ""; const digits = t.replace(/\D/g, ""); return /^[+\d(][\d\s().\-/x]{5,}$/i.test(t) && digits.length >= 7 && digits.length <= 16 ? t : null; };
 const hostOf = (u: URL) => u.hostname.toLowerCase().replace(/^www\./, "");
 const flatUrl = (u: string) => { try { const x = new URL(u); return (hostOf(x) + x.pathname.replace(/\/+$/, "") + x.search).toLowerCase(); } catch { return u.toLowerCase(); } };
 
 /** Contact data written on the page itself: a mailto, a tel, and the link to the contact page. */
 export function pageContacts(html: string, url: string): { email: string | null; phone: string | null; contactUrl: string | null } {
   const site = (() => { try { return hostOf(new URL(url)); } catch { return ""; } })();
-  const mails = [...html.matchAll(/href=["']mailto:([^"'?]+)/gi)].map((m) => emailOf(decodeURIComponent(m[1]))).filter((x): x is string => !!x);
+  const safe = (x: string) => { try { return decodeURIComponent(x); } catch { return x; } };
+  // What a person would read on the page: links first, then the site's own structured data, then visible text.
+  const visible = html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/g, " ").replace(/&#64;|&commat;/g, "@").replace(/\s+/g, " ");
+  const mails = [
+    ...[...html.matchAll(/href=["']mailto:([^"'?]+)/gi)].map((m) => safe(m[1])),
+    ...[...html.matchAll(/"email"\s*:\s*"([^"]{5,120})"/gi)].map((m) => m[1]),
+    ...[...visible.matchAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g)].map((m) => m[0].replace(/\.$/, "")),
+  ].map((x) => emailOf(x)).filter((x): x is string => !!x);
   // The seller's own domain first: a mailto to someone else (a web agency, a carrier) is not their contact.
   const base = site.split(".").slice(-2).join(".");
   const email = mails.find((m) => m.endsWith("@" + base) || m.endsWith("." + base)) ?? mails[0] ?? null;
-  const phone = [...html.matchAll(/href=["']tel:([^"']+)/gi)].map((m) => phoneOf(decodeURIComponent(m[1]))).find(Boolean) ?? null;
+  const phone = [
+    ...[...html.matchAll(/href=["']tel:([^"']+)/gi)].map((m) => safe(m[1])),
+    ...[...html.matchAll(/"telephone"\s*:\s*"([^"]{6,40})"/gi)].map((m) => m[1]),
+    // In plain text only when the page itself labels it as a phone, so a part number is never taken for one.
+    ...[...visible.matchAll(/(?:tel[eé]fono|tel|phone|call us|ll[aá]manos|whatsapp|m[oó]vil|celular)\s*[.:]?\s*(\+?[\d(][\d\s().\-/]{6,22}\d)/gi)].map((m) => m[1]),
+  ].map((x) => phoneOf(x.trim())).find(Boolean) ?? null;
   let contactUrl: string | null = null;
   for (const m of html.matchAll(/<a[^>]+href=["']([^"'#]+)["'][^>]*>([\s\S]{0,120}?)<\/a>/gi)) {
     if (!/contact|contacto|cont[aá]ctenos|kontakt|get-a-quote|request-a-quote|cotiza/i.test(m[1] + " " + m[2].replace(/<[^>]+>/g, " "))) continue;
@@ -116,6 +128,37 @@ export function pageContacts(html: string, url: string): { email: string | null;
     try { const u = new URL(m[1].replace(/&amp;/g, "&"), url); if (/^https?:$/.test(u.protocol)) { contactUrl = u.toString().slice(0, 500); break; } } catch { /* not a link */ }
   }
   return { email, phone, contactUrl };
+}
+
+export type SiteContact = { email: string | null; phone: string | null; contactUrl: string | null; pages: number; refused: boolean };
+/** Looks for a seller's email and phone on their own site: the contact page the product page links to, the usual
+ *  contact addresses, and the home page. A few polite reads at most, and it stops as soon as there is an email. */
+export async function siteContacts(url: string, hint?: string | null): Promise<SiteContact> {
+  const out: SiteContact = { email: null, phone: null, contactUrl: hint ?? null, pages: 0, refused: false };
+  let origin: string;
+  try { origin = new URL(url).origin; } catch { return out; }
+  const tried = new Set<string>();
+  const queue = [hint, `${origin}/contact`, `${origin}/contact-us`, `${origin}/contacto`, `${origin}/`, `${origin}/about`].filter((x): x is string => !!x);
+  let failures = 0;
+  while (queue.length && out.pages + failures < 5 && !out.email) {
+    const next = queue.shift()!;
+    const key = flatUrl(next);
+    if (tried.has(key)) continue;
+    tried.add(key);
+    const page = await politeFetch(next, { accept: /html|xml|text\/plain/i, maxBytes: 2 * 1024 * 1024 }).catch(() => null);
+    if (!page || !page.ok) {
+      failures++;
+      // The site itself turns automated readers away: there is no point knocking on its other doors.
+      if (page && (page.fail === "ROBOTS" || page.fail === "BLOCKED" || page.fail === "PRIVATE" || page.fail === "NETWORK" || (page.fail === "HTTP" && (page.status === 403 || page.status === 429 || page.status === 503)))) { out.refused = true; break; }
+      continue;
+    }
+    out.pages++;
+    const c = pageContacts(page.body, page.url);
+    out.email ??= c.email; out.phone ??= c.phone;
+    // A contact page found on the way is read next, ahead of the guesses.
+    if (c.contactUrl && !tried.has(flatUrl(c.contactUrl))) { out.contactUrl ??= c.contactUrl; queue.unshift(c.contactUrl); }
+  }
+  return out;
 }
 
 /** The confidence of one lead, by rule. HIGH only when the exact number was really seen on the page. */
@@ -148,7 +191,7 @@ export async function runHunt(id: string): Promise<void> {
     const out = await aiResearch<AiReport>({
       feature: HUNT_FEATURE, userName: hunt.userName, system: SYSTEM, prompt: prompt(hunt.query, answers, known, hunt.lang),
       report: { name: "report_sources", description: "Hand the sellers found for this piece back to the buyer's system. Call it exactly once, when the search is finished.", schema: REPORT_SCHEMA },
-      maxSearches: 6, maxFetches: 4,
+      maxSearches: 8, maxFetches: 6,
     });
     const r = out.report;
     const understood: Understood = {
@@ -187,14 +230,21 @@ export async function runHunt(id: string): Promise<void> {
       const page = await politeFetch(l.url, { accept: /html|xml|text\/plain/i, maxBytes: 2 * 1024 * 1024 });
       if (!page.ok) return { checked: "CLOSED", why: page.fail as string, facts: null, contacts: null };
       const facts = keys.length ? pageFacts(page.body, page.url, keys) : null;
-      return { checked: facts?.matched ? "SEEN" : "NOT_SEEN", why: null as string | null, facts, contacts: pageContacts(page.body, page.url) };
+      return { checked: facts?.matched ? "SEEN" : "NOT_SEEN", why: null as string | null, facts, contacts: pageContacts(page.body, page.url) as { email: string | null; phone: string | null; contactUrl: string | null } | null };
     })().catch(() => ({ checked: "CLOSED", why: "NETWORK", facts: null, contacts: null })), 30_000, { checked: "CLOSED", why: "TIMEOUT", facts: null, contacts: null })));
+    // No email yet (from the AI or from the product page): look on the seller's contact and home pages too.
+    await Promise.all(cleaned.map((l, n) => withTimeout((async () => {
+      const ck = checks[n];
+      if (l.email || ck.contacts?.email || ck.why === "ROBOTS" || ck.why === "BLOCKED" || ck.why === "PRIVATE") return;
+      const sc = await siteContacts(l.url, l.contactUrl ?? ck.contacts?.contactUrl);
+      ck.contacts = { email: sc.email, phone: ck.contacts?.phone ?? sc.phone, contactUrl: ck.contacts?.contactUrl ?? sc.contactUrl };
+    })().catch(() => {}), 40_000, undefined)));
 
     const rank: Record<Confidence, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
     const leads = cleaned.map((l, n) => {
       const ck = checks[n];
       const g = grade({ match: l.match, sellerKind: l.sellerKind, checked: ck.checked, aiFetched: l.aiFetched, linkKnown: l.linkKnown });
-      const fromPage = !l.email && !l.phone && !l.contactUrl && !!(ck.contacts?.email || ck.contacts?.phone || ck.contacts?.contactUrl);
+      const fromPage = !l.email && !l.phone && !!(ck.contacts?.email || ck.contacts?.phone || (!l.contactUrl && ck.contacts?.contactUrl));
       const { aiFetched: _a, ...rest } = l; void _a;
       return {
         ...rest, confidence: g.confidence, reasons: g.reasons as string[], checked: ck.checked, checkedWhy: ck.why,
@@ -202,7 +252,7 @@ export async function runHunt(id: string): Promise<void> {
         // The page's own figures fill what the AI left empty; they never overwrite what it read.
         price: l.price ?? (ck.checked === "SEEN" ? ck.facts?.price ?? null : null), currency: l.currency ?? (ck.checked === "SEEN" && !l.price ? ck.facts?.currency ?? null : null),
         email: l.email ?? ck.contacts?.email ?? null, phone: l.phone ?? ck.contacts?.phone ?? null, contactUrl: l.contactUrl ?? ck.contacts?.contactUrl ?? null,
-        contactFrom: l.email || l.phone || l.contactUrl ? "AI" : fromPage ? "PAGE" : null,
+        contactFrom: fromPage ? "PAGE" : l.email || l.phone || l.contactUrl ? "AI" : null,
       };
     }).sort((a, b) => rank[a.confidence as Confidence] - rank[b.confidence as Confidence] || Number(b.reasons.includes("OFFICIAL")) - Number(a.reasons.includes("OFFICIAL")) || Number(!!b.price) - Number(!!a.price));
 
@@ -234,6 +284,15 @@ export async function needsToSaveOn(user: { id: string; role: string; covering?:
   return rows.map((d) => ({ id: d.id, label: `${d.code ?? ""} · ${d.title} (${d.account.name})`.replace(/^ · /, "").slice(0, 110) }));
 }
 
+/** When each of these sellers was last written to from SOLU (the price-request email), by lead id. */
+export async function leadsMailedAt(ids: string[]): Promise<Map<string, Date>> {
+  const out = new Map<string, Date>();
+  if (!ids.length) return out;
+  const rows = await db.outboundMail.findMany({ where: { refKind: "LEAD", refId: { in: ids }, status: { in: ["SENT", "UNCERTAIN"] } }, orderBy: { sentAt: "asc" }, select: { refId: true, sentAt: true } });
+  for (const r of rows) if (r.sentAt) out.set(r.refId, r.sentAt);
+  return out;
+}
+
 // ---------- words for the screen ----------
 type T = (es: string, en: string) => string;
 export const confidenceLabel = (c: string, t: T) => (c === "HIGH" ? t("Confianza alta", "High confidence") : c === "MEDIUM" ? t("Confianza media", "Medium confidence") : t("Confianza baja", "Low confidence"));
@@ -255,8 +314,21 @@ export const closedText = (why: string | null, t: T) => ({
   ROBOTS: t("el sitio no permite lectura automática", "the site does not allow automated reading"),
   BLOCKED: t("los términos del sitio no permiten lectura automática", "the site's terms do not allow automated reading"),
   TIMEOUT: t("el sitio tardó demasiado", "the site took too long"),
-  HTTP: t("el sitio rechazó la lectura", "the site refused the read"),
+  HTTP: t("el sitio rechaza a los lectores automáticos", "the site turns automated readers away"),
+  TYPE: t("el enlace es un archivo, por ejemplo un PDF, no una página", "the link is a file, for example a PDF, not a page"),
+  NETWORK: t("el sitio no respondió", "the site did not answer"),
 }[why ?? ""] ?? t("no se pudo abrir", "it could not be opened"));
+/** What to tell the person after they typed, or asked SOLU to look for, a seller's contact. */
+export function contactNote(ok: string | undefined, err: string | undefined, n: string | undefined, t: T): { good: boolean; text: string } | null {
+  if (ok === "contacto") return { good: true, text: t("Contacto guardado en ese vendedor.", "Contact saved on that seller.") };
+  if (ok === "contacto-hallado") return { good: true, text: t("SOLU encontró el contacto en el sitio del vendedor y lo guardó. Compruébalo antes de escribirle.", "SOLU found the contact on the seller's site and saved it. Check it before writing to them.") };
+  if (err === "contacto-vacio") return { good: false, text: t("Escribe el correo o el teléfono del vendedor antes de guardar.", "Type the seller's email or phone before saving.") };
+  if (err === "contacto-correo") return { good: false, text: t("Ese correo no está bien escrito: revisa que tenga @ y el dominio. No se guardó.", "That email is not written correctly: check the @ and the domain. It was not saved.") };
+  if (err === "contacto-cerrado") return { good: false, text: t("El sitio de ese vendedor no deja que SOLU lo lea. Abre el «Enlace directo», busca su correo o teléfono y escríbelo en «Buscar o escribir el contacto».", "That seller's site does not let SOLU read it. Open the “Direct link”, look for their email or phone and type it under “Find or type the contact”.") };
+  if (err === "contacto-nada") return { good: false, text: t(`SOLU abrió ${n ?? 0} página(s) del sitio de ese vendedor y no encontró un correo ni un teléfono escritos. Puede estar solo en un formulario: ábrelo en el «Enlace directo».`, `SOLU opened ${n ?? 0} page(s) of that seller's site and found no email or phone written there. They may only have a form: open it from the “Direct link”.`) };
+  return null;
+}
+
 export const failText = (code: string | null, t: T) => ({
   OFF: t("La inteligencia artificial no está conectada.", "The AI is not connected."),
   CAP: t("Se alcanzó el tope mensual de la inteligencia artificial.", "The AI's monthly cap was reached."),

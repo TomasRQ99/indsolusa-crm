@@ -14,7 +14,7 @@ import { domainReport, linkIssues, stripTracking } from "@/lib/mail-health";
 import { TEMPLATES, textToHtml, type MailLang, type TemplateKey } from "@/lib/email-templates";
 import { quotePdf } from "@/lib/quote-pdf";
 
-const PHASE: Record<TemplateKey, string> = { RFQ: "source", FOLLOWUP: "source", NEGOTIATE: "source", DELIVERY: "execute", OFFER: "quote", PAYMENT: "finance", ACK: "need", PROGRESS: "source" };
+const PHASE: Record<TemplateKey, string> = { RFQ: "source", FOLLOWUP: "source", NEGOTIATE: "source", DELIVERY: "execute", OFFER: "quote", PAYMENT: "finance", ACK: "need", PROGRESS: "source", SELLER: "source" };
 const emailOk = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
 
 /** Sends a template email from the company mailbox (sales@). The template is rebuilt here from the record;
@@ -114,7 +114,7 @@ export async function saveInternal(fd: FormData) {
   const tpl = String(fd.get("tpl") ?? "") as TemplateKey;
   const id = String(fd.get("id") ?? "").slice(0, 40);
   const lang: MailLang = fd.get("lang") === "ES" ? "ES" : "EN";
-  if ((tpl !== "ACK" && tpl !== "PROGRESS") || !id) redirect("/");
+  if ((tpl !== "ACK" && tpl !== "PROGRESS" && tpl !== "SELLER") || !id) redirect("/");
   const qs = (extra: string) => `/correo/nuevo?${new URLSearchParams({ tpl, id, lang })}&${extra}`;
   const c = await composeFrom({ tpl, id, lang }, user, mailConfig().from ?? "sales@indsolusa.com");
   if (!c || !c.dealId) redirect("/");
@@ -123,7 +123,7 @@ export async function saveInternal(fd: FormData) {
   const custom = String(fd.get("customSubject") ?? "").trim().slice(0, 250);
   const subject = ((pick === "custom" ? custom : c!.mail.subjects[Number(pick)]) || c!.mail.subjects[0]).slice(0, 250);
   const body = String(fd.get("body") ?? "").replace(/\r\n/g, "\n").trim().slice(0, 20000) || c!.mail.text;
-  await db.activity.create({ data: { type: "NOTE", subject: `${TEMPLATES[tpl].es} (interno, no enviado al cliente): ${subject}`.slice(0, 200), body: `No se envió al cliente. Texto guardado para uso interno:\n\n${body}`.slice(0, 4000), userId: user.id, accountId: c!.accountId, dealId: c!.dealId, phase: PHASE[tpl], source: "Plantillas de correo" } });
+  await db.activity.create({ data: { type: "NOTE", subject: `${TEMPLATES[tpl].es} (interno, no enviado al ${tpl === "SELLER" ? "vendedor" : "cliente"}): ${subject}`.slice(0, 200), body: `No se envió al ${tpl === "SELLER" ? "vendedor" : "cliente"}. Texto guardado para uso interno:\n\n${body}`.slice(0, 4000), userId: user.id, accountId: c!.accountId, dealId: c!.dealId, phase: PHASE[tpl], source: "Plantillas de correo" } });
   refreshApp();
   redirect(`${c!.back}${c!.back.includes("?") ? "&" : "?"}ok=correo-interno`);
 }

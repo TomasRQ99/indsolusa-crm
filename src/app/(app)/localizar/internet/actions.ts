@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { canEdit } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { aiGate } from "@/lib/ai";
-import { launchHunt, type HuntAnswers } from "@/lib/web-hunt";
+import { launchHunt, siteContacts, type HuntAnswers } from "@/lib/web-hunt";
 
 const txt = (fd: FormData, k: string, max = 300) => {
   const v = String(fd.get(k) ?? "").trim().slice(0, max);
@@ -39,6 +39,37 @@ export async function startHunt(fd: FormData) {
   const hunt = await db.webHunt.create({ data: { query: q!, answers, lang: user.lang === "EN" ? "EN" : "ES", dealId: deal?.id ?? null, partId: part?.id ?? null, userId: user.id, userName: user.name } });
   launchHunt(hunt.id);
   redirect(`/localizar/internet/${hunt.id}`);
+}
+
+const backOf = (l: { id: string; huntId: string; dealId: string | null }, fd: FormData, q: string) => {
+  const from = String(fd.get("from") ?? "");
+  return from.startsWith("deal:") && l.dealId ? `/deals/${l.dealId}?tab=${from === "deal:locate" ? "locate" : "source"}&${q}#internet` : `/localizar/internet/${l.huntId}?l=${l.id}&${q}#l-${l.id}`;
+};
+
+/** The contact of a found seller, typed by a person (they called, or read it on the site themselves). */
+export async function setLeadContact(leadId: string, fd: FormData) {
+  await requireUser();
+  const l = await db.webLead.findUniqueOrThrow({ where: { id: leadId }, select: { id: true, huntId: true, dealId: true, email: true, phone: true, supplierId: true } });
+  const email = (txt(fd, "email", 120) ?? "").toLowerCase();
+  const phone = txt(fd, "phone", 40);
+  if (!email && !phone) redirect(backOf(l, fd, "err=contacto-vacio"));
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) redirect(backOf(l, fd, "err=contacto-correo"));
+  await db.webLead.update({ where: { id: l.id }, data: { email: email || l.email, phone: phone ?? l.phone, contactFrom: "MANUAL" } });
+  // The supplier this seller already became gets what it was missing.
+  if (l.supplierId) { const s = await db.supplier.findUnique({ where: { id: l.supplierId }, select: { email: true, phone: true } }); if (s) await db.supplier.update({ where: { id: l.supplierId }, data: { email: s.email ?? (email || null), phone: s.phone ?? phone } }); }
+  refreshApp();
+  redirect(backOf(l, fd, "ok=contacto"));
+}
+
+/** Looks again on the seller's own site (contact page, home page) for an email and a phone. No AI, no cost. */
+export async function findLeadContact(leadId: string, fd: FormData) {
+  await requireUser();
+  const l = await db.webLead.findUniqueOrThrow({ where: { id: leadId }, select: { id: true, huntId: true, dealId: true, url: true, email: true, phone: true, contactUrl: true } });
+  const sc = await siteContacts(l.url, l.contactUrl);
+  const found = (!l.email && sc.email) || (!l.phone && sc.phone) || (!l.contactUrl && sc.contactUrl);
+  if (found) await db.webLead.update({ where: { id: l.id }, data: { email: l.email ?? sc.email, phone: l.phone ?? sc.phone, contactUrl: l.contactUrl ?? sc.contactUrl, contactFrom: "PAGE" } });
+  refreshApp();
+  redirect(backOf(l, fd, found && (sc.email || sc.phone) ? "ok=contacto-hallado" : sc.refused && sc.pages === 0 ? "err=contacto-cerrado" : `err=contacto-nada&n=${sc.pages}`));
 }
 
 const leadLine = (l: { seller: string; country: string | null; url: string; price: unknown; currency: string | null; email: string | null; phone: string | null; contactUrl: string | null }) =>

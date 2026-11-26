@@ -11,7 +11,7 @@ import type { SessionUser } from "./auth";
 import type { RfqItem } from "./rfq";
 import { journeyUrgency } from "./urgency";
 import { quotePdfName } from "./quote-pdf";
-import { progressMail, ackMail, deliveryMail, followUpMail, negotiateMail, offerMail, paymentMail, type Mail, type MailLang, type TemplateKey } from "./email-templates";
+import { rfqMail, progressMail, ackMail, deliveryMail, followUpMail, negotiateMail, offerMail, paymentMail, type Mail, type MailLang, type TemplateKey } from "./email-templates";
 import { linesTotal } from "./money";
 
 export type ComposeCtx = { tpl: TemplateKey; id: string; lang?: MailLang | null };
@@ -19,7 +19,7 @@ export type Composed = {
   mail: Mail; lang: MailLang; to: string | null; toName: string; about: string;
   dealId: string | null; accountId: string | null; back: string; warn: string | null; canSend: boolean;
   /** E2: what this email is about, to match its reply later. */
-  ref: { kind: "RFQR" | "OFFER" | "SPO" | "QUOTE" | "INVOICE" | "NEED"; id: string; code: string | null; party: "SUPPLIER" | "CUSTOMER"; supplierId: string | null };
+  ref: { kind: "RFQR" | "OFFER" | "SPO" | "QUOTE" | "INVOICE" | "NEED" | "LEAD"; id: string; code: string | null; party: "SUPPLIER" | "CUSTOMER"; supplierId: string | null };
   /** Files of the Need that can go attached to this email (photos, PDF). */
   files?: { id: string; name: string; size: number; mime: string }[];
   /** The quote's own PDF, offered as an attachment (ticked by default) on the email that sends the quote. */
@@ -121,6 +121,33 @@ export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: stri
       to: c?.email ?? null, toName: c ? `${c.firstName} ${c.lastName}`.trim() : d.account.name, about: `${d.code ?? ""} · ${d.account.name}`.replace(/^ · /, ""),
       dealId: d.id, accountId: d.accountId, back: `/deals/${d.id}?tab=locate`, ref: { kind: "NEED", id: d.id, code: d.code, party: "CUSTOMER", supplierId: null },
       warn: null, canSend: canEdit(user, d.ownerId), files: d.files,
+    };
+  }
+
+  // A seller found by the internet search (Localizar repuestos): the company's request-for-quotation template, with
+  // the piece of the Need the seller was saved on (or the piece that was searched) and where we saw it on their site.
+  if (ctx.tpl === "SELLER") {
+    const l = await db.webLead.findUnique({ where: { id: ctx.id }, include: { hunt: { select: { id: true, query: true, answers: true, understood: true, dealId: true } } } });
+    if (!l) return null;
+    const dealId = l.dealId ?? l.hunt.dealId;
+    const d = dealId ? await db.deal.findUnique({ where: { id: dealId }, select: { id: true, code: true, ownerId: true, accountId: true, items: { select: { qty: true, code: true, description: true } }, files: { orderBy: { createdAt: "asc" }, select: { id: true, name: true, size: true, mime: true } } } }) : null;
+    const lang = pickLang(ctx.lang, spanishCountry(l.country) ? "ES" : "EN");
+    const und = (l.hunt.understood ?? {}) as { partNumber?: string | null; brand?: string | null; what?: string };
+    const qty = Math.max(1, Math.round(Number(String((l.hunt.answers as { qty?: string } | null)?.qty ?? "").replace(/[^\d.]/g, "")) || 1));
+    const searched = [{ qty, code: l.mpnSeen ?? und.partNumber ?? "", brand: und.brand ?? null, description: (und.what || l.hunt.query).slice(0, 160) }];
+    const items = d && d.items.length ? d.items.map((x) => ({ qty: x.qty, code: x.code ?? "", description: x.description.slice(0, 160) })) : searched;
+    const code = d?.code ?? `W-${l.id.slice(-6).toUpperCase()}`;
+    const notes = lang === "EN" ? `We saw this item listed on your website: ${l.url}` : `Vimos este producto publicado en su sitio web: ${l.url}`;
+    const hasMail = emailOk(l.email);
+    return {
+      mail: rfqMail({ lang, code, items, neededBy: replyBy, notes, sender, from, urgent: d ? !!(await journeyUrgency(d.id)) : false }), lang,
+      to: hasMail ? l.email : null, toName: l.seller, about: `${l.seller} · ${items[0].code || l.hunt.query}`.slice(0, 120),
+      dealId: d?.id ?? null, accountId: d?.accountId ?? null, back: `/localizar/internet/${l.hunt.id}?l=${l.id}`,
+      ref: { kind: "LEAD", id: l.id, code, party: "SUPPLIER", supplierId: l.supplierId },
+      warn: hasMail ? null : l.contactUrl
+        ? (ui ? `No email was seen for this seller. Type it under “To” if you have it, or copy the text below into their contact form: ${l.contactUrl}` : `No se vio un correo de este vendedor. Escríbelo en «Para» si lo tienes, o copia el texto de abajo en su formulario de contacto: ${l.contactUrl}`)
+        : (ui ? "No email was seen for this seller. Type it under “To” if you have it." : "No se vio un correo de este vendedor. Escríbelo en «Para» si lo tienes."),
+      canSend: d ? canEdit(user, d.ownerId) : true, files: d?.files,
     };
   }
 

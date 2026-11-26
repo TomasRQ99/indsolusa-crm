@@ -26,6 +26,8 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
     return <div className="card"><p>{t("No se encontró el registro para este correo.", "The record for this email wasn't found.")} <Link href="/">{t("Volver", "Back")}</Link></p></div>;
   }
   const meta = TEMPLATES[tpl];
+  const toSupplier = meta.to === "SUPPLIER";
+  const internalOk = (tpl === "ACK" || tpl === "PROGRESS" || tpl === "SELLER") && !!c.dealId;
   // A draft written with AI for this same Need opens in the text box; the person reads and edits it before sending.
   const aiKind = tpl === "PROGRESS" || tpl === "OFFER";
   const draft = sp.borrador && c.dealId ? await db.aiDraft.findFirst({ where: { id: sp.borrador.slice(0, 40), dealId: c.dealId, kind: tpl }, select: { subject: true, body: true, createdByName: true } }) : null;
@@ -96,7 +98,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
                 <option value="empresa">{from} · {t("correo de la empresa", "company email")}</option>
                 <option value="externo">{ownBox} · {t("mi buzón", "my mailbox")}</option>
               </select>
-              <span className="src">{t("Desde tu buzón, el cliente te responde a ti y la respuesta llega a tu correo: SOLU no la empareja sola en «Respuestas». La copia queda en tus Enviados.", "From your mailbox, the customer replies to you and the reply arrives in your own email: SOLU does not match it by itself under “Replies”. The copy stays in your Sent folder.")}</span>
+              <span className="src">{toSupplier ? t("Desde tu buzón, el vendedor te responde a ti y la respuesta llega a tu correo: SOLU no la empareja sola en «Respuestas». La copia queda en tus Enviados.", "From your mailbox, the seller replies to you and the reply arrives in your own email: SOLU does not match it by itself under “Replies”. The copy stays in your Sent folder.") : t("Desde tu buzón, el cliente te responde a ti y la respuesta llega a tu correo: SOLU no la empareja sola en «Respuestas». La copia queda en tus Enviados.", "From your mailbox, the customer replies to you and the reply arrives in your own email: SOLU does not match it by itself under “Replies”. The copy stays in your Sent folder.")}</span>
             </label>
           )}
           <div className="mail-to">
@@ -168,14 +170,15 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
                 {(c.files ?? []).map((f) => <label key={f.id}><input type="checkbox" name="attach" value={f.id} /> <span>{f.name} <span className="src">· {f.size >= 1048576 ? `${(f.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(f.size / 1024))} KB`}</span></span></label>)}
               </div>
             )}
-            <span className="src">{t("Marca solo lo que el cliente debe recibir. Las observaciones de uso interno nunca se envían.", "Tick only what the customer should receive. Internal notes are never sent.")}</span>
+            <span className="src">{toSupplier ? t("Marca solo lo que el vendedor debe recibir: una foto de la placa o de la pieza le ayuda a confirmar que es la misma. Las observaciones de uso interno nunca se envían.", "Tick only what the seller should receive: a photo of the nameplate or the piece helps them confirm it is the same one. Internal notes are never sent.") : t("Marca solo lo que el cliente debe recibir. Las observaciones de uso interno nunca se envían.", "Tick only what the customer should receive. Internal notes are never sent.")}</span>
           </section>
         )}
 
-        {(tpl === "ACK" || tpl === "PROGRESS") && c.dealId && <p className="src">{t("«Guardar solo interno, sin enviar» deja este texto en la historia de la Necesidad como nota interna. El cliente no recibe nada, y puedes enviarle el correo más adelante desde la Necesidad.", "“Keep internal only, don't send” leaves this text in the Need's history as an internal note. The customer receives nothing, and you can send them the email later from the Need.")}</p>}
+        {internalOk && toSupplier && <p className="src">{t("«Guardar solo interno, sin enviar» deja este texto en la historia de la Necesidad como nota interna. El vendedor no recibe nada, y puedes enviarle el correo más adelante.", "“Keep internal only, don't send” leaves this text in the Need's history as an internal note. The seller receives nothing, and you can send them the email later.")}</p>}
+        {internalOk && !toSupplier && <p className="src">{t("«Guardar solo interno, sin enviar» deja este texto en la historia de la Necesidad como nota interna. El cliente no recibe nada, y puedes enviarle el correo más adelante desde la Necesidad.", "“Keep internal only, don't send” leaves this text in the Need's history as an internal note. The customer receives nothing, and you can send them the email later from the Need.")}</p>}
         <div className="loc-rowacts">
           <button type="submit" disabled={!c.canSend}>{t("Enviar correo", "Send email")}</button>
-          {(tpl === "ACK" || tpl === "PROGRESS") && c.dealId && <button type="submit" className="secondary" formAction={saveInternal} formNoValidate disabled={!c.canSend}>{t("Guardar solo interno, sin enviar", "Keep internal only, don't send")}</button>}
+          {internalOk && <button type="submit" className="secondary" formAction={saveInternal} formNoValidate disabled={!c.canSend}>{t("Guardar solo interno, sin enviar", "Keep internal only, don't send")}</button>}
           <Link className="btn secondary" href={c.back}>{t("Cancelar", "Cancel")}</Link>
         </div>
       </form>
