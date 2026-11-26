@@ -549,6 +549,55 @@
   ],
   "expect": "SOLU confirms “Development goals saved.” and “Achievement” shows the percentage of each goal. Only what is recorded in SOLU counts: contacts, Needs, and the plants, areas, white spaces and future opportunities of Mercado. A customer counts as reactivated when its previous Need was 180 days ago or more."
  },
+ "presupuesto-proponer": {
+  "t": "Commercial budget: propose a company's goals for the year and send them for approval",
+  "why": "Write down, company by company, how much you expect in purchase orders and in invoicing each month of the year. SOLU proposes from the history; you adjust, explain and send to your leader.",
+  "steps": [
+   "Open [[COMERCIAL]] and click [[Presupuesto comercial]]. At the top you choose the “Year”. The list “…'S COMPANIES” shows each company with last year's purchase orders, the projected close, Eságara, the trend and the “State” of its budget.",
+   "On the company's row click [[Presupuestar]]. If the company is not in the list, search for it below under “Add another company”.",
+   "Read “HISTORY OF…”: requests, quotes, purchase orders, Eságara and invoicing of the three years before, with the monthly average of 3, 6 and 12 months. “See the sources of these figures” opens each record with its original value, the rate applied and the value in pesos.",
+   "Under “Assumptions (simulator)” check what SOLU measured: growth, seasonality, average ticket, the batting percentages and the Eságara objective. Change what you need and click [[Aplicar la sugerencia de SOLU a los 12 meses]] to recalculate the months. The history is not touched.",
+   "Under “Proposal… · January to December” type or correct “PO goal ($ M)” and “Invoicing goal ($ M)” for each month, in millions of pesos. The rows below show what the goal takes: “# POs objective”, “Eságara objective”, “Quotes required” and “# Requests required”.",
+   "Choose the “Company's potential”, write the “ECSA strategy for this company” and, if your figures are not SOLU's suggestion, the “Justification”.",
+   "Click [[Guardar borrador]] to continue later, or [[Enviar a aprobación]] when it is ready."
+  ],
+  "expect": "SOLU confirms “Draft saved.” or “Proposal sent for approval.” and the state goes from “Not started” to “Draft” and to “Submitted”. Purchase orders and invoicing are two separate budgets: one is not copied from the other. “Annual” is always the sum of the twelve months. Where SOLU has too few cases it says “not enough basis” and asks you to type the figure. If the “Justification” is missing, SOLU says so, marks the box in red and keeps the draft saved. A submitted proposal doesn't change: “Withdraw the submission” makes it a draft again. The line “Reactivations and prospects” is for what you expect to sell to companies without their own budget: it has no history and no suggestion. Management and the Commercial Director can write another person's proposal by choosing them under “Negotiator”."
+ },
+ "presupuesto-aprobar": {
+  "t": "Commercial budget: approve or return the proposal of someone on your team, and correct an approved budget",
+  "why": "So every budget is reviewed by the person's leader, with who, when and why; and what is approved never changes without a trace.",
+  "steps": [
+   "Open [[COMERCIAL]], click [[Presupuesto comercial]] and then [[Aprobaciones]]. “WAITING FOR YOUR DECISION” lists the proposals sent to you. They also show in TEAM → Pending approvals.",
+   "Click “Open and decide”. Review the history, the assumptions, the twelve months and the negotiator's “Justification”.",
+   "Go down to “APPROVAL AND TRAIL”. If you agree, click [[Aprobar presupuesto]]. If something must change, write “What must be reviewed” and click [[Devolver al negociador]].",
+   "To correct a budget already approved, its negotiator writes the “Reason for the new version” and clicks [[Abrir versión nueva]]: a draft opens with the same figures and goes through approval again."
+  ],
+  "expect": "SOLU confirms “Budget approved. It is locked: a change needs a new version.” or “Proposal returned to the negotiator with your reason.” Only the person's assigned leader approves; if they have none, Management or the Commercial Director. Nobody approves their own proposal. The “Versions” table keeps each version with its totals, and “What happened to version…” shows who did what and when, with the figures before and after. The approved version stays official until the new one is approved. The state becomes “In force” when Management or the Commercial Director publish the year's budget."
+ },
+ "presupuesto-consolidacion": {
+  "t": "Commercial budget: see the sum by negotiator, team and company, and the gap against the company objective",
+  "why": "See how much the goals of all companies add up to and how much is missing for the company objective, without anyone inflating goals silently.",
+  "steps": [
+   "Open [[COMERCIAL]], click [[Presupuesto comercial]] and then [[Consolidación]].",
+   "At the top choose “Latest proposal” (everything written, in any state) or “Approved only”.",
+   "Read “COMPANY → TEAM → NEGOTIATOR → CUSTOMER”: each row is the exact sum of the ones beneath it, with “Annual POs”, “Invoicing”, “Eságara”, “Margin” and “State”.",
+   "Under “TWELVE MONTHS” choose the indicator to see January to December; “Show the companies too” opens the detail per company.",
+   "Management or the Commercial Director write the year's objective under “COMPANY OBJECTIVE AND GAP” and click [[Guardar objetivo]]. The column “Gap to assign” shows what is missing.",
+   "Review “CHECKS BEFORE TRUSTING THE SUM” and, once the proposals are approved, publish the year under “PUBLISH THE BUDGET”."
+  ],
+  "expect": "SOLU confirms “Company objective saved.” The objective changes nobody's goal: it only shows the gap to review and assign. “Margin” is worked out from the totals (total Eságara over total POs), never as an average of percentages. A company budgeted by two negotiators is added only once, each with their part. On publishing, the approved budgets become “In force”. [[Exportar a CSV]] downloads the consolidation (Management, Commercial Director and Finance). A negotiator sees only their budget; a leader, theirs and their team's."
+ },
+ "presupuesto-cumplimiento": {
+  "t": "Commercial budget: compare real with budget and attend to the radar",
+  "why": "Know how each company is doing against what was budgeted as of today, and which customers need attention before it is late.",
+  "steps": [
+   "Open [[COMERCIAL]], click [[Presupuesto comercial]] and then [[Cumplimiento y radar]]. Choose the “Year”.",
+   "Read the boxes at the top: achievement of “PURCHASE ORDERS” and “INVOICING”, “PACE TO DELIVER” per working day and “IF THE CURRENT PACE HOLDS”.",
+   "Under “REAL AGAINST BUDGET” compare, by negotiator and company, “POs expected by today” with “Real POs”, the “PO achievement”, the “Shortfall today” and the same for invoicing.",
+   "Go down to “RADAR”. Each detection shows the fact, its figures and the “Next action”. Adjust the to-do's text and date and click [[Asignar pendiente]]."
+  ],
+  "expect": "SOLU confirms “To-do created for the negotiator. They see it in MY DAY → To-dos.” The month in course is compared by working days gone, not against the full month. It compares with the approved budget; where there is none yet, with the latest proposal. A purchase order counts when it is accepted; a rejected one does not. “Real without a budget” lists what was sold to companies nobody budgeted. The radar uses fixed rules, no artificial intelligence: it shows the fall or the change with its figures, never states the cause. “How the radar detects” explains each rule. Before the year starts, achievement says it has not started and the radar already works."
+ },
  "cobertura": {
   "t": "Coverage during absence",
   "why": "When you are away, another person looks after your Needs for a while.",

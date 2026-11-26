@@ -1,0 +1,76 @@
+/* Presupuesto comercial (COMERCIAL → Presupuesto comercial), 2026-11-26. Prefix pc-. */
+.pc-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 4px 0 12px; }
+.pc-tabs, .pc-years { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pc-tabs a, .pc-years a { display: inline-block; padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-2); font-size: 14px; text-decoration: none; }
+.pc-tabs a:hover, .pc-years a:hover { border-color: var(--brand); color: var(--brand); }
+.pc-tabs a.on, .pc-years a.on { background: var(--navy); border-color: var(--navy); color: #fff; font-weight: 600; }
+.pc-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; margin: 0 0 12px; }
+.pc-bar label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--ink-2); }
+.pc-bar form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; }
+.pc-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 0 0 12px; }
+.pc-tiles article { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-top: 4px solid var(--navy); border-radius: 8px; background: var(--surface); min-width: 0; }
+.pc-tiles article > b { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.pc-tiles article > span { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.pc-tiles article > small { font-size: 12px; color: var(--ink-2); }
+.pc-scroll { overflow-x: auto; max-width: 100%; }
+.pc-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.pc-table th, .pc-table td { padding: 7px 7px; text-align: right; vertical-align: middle; border-top: 1px solid var(--line); white-space: nowrap; }
+.pc-table thead th { border-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-2); white-space: normal; }
+.pc-table th[scope="row"], .pc-table thead th:first-child, .pc-table td.l, .pc-table th.l { text-align: left; }
+.pc-table th[scope="row"] { font-weight: 600; white-space: normal; min-width: 150px; }
+.pc-table tr.pc-total th, .pc-table tr.pc-total td { border-top: 2px solid var(--line-strong); background: var(--surface-sunken); font-weight: 700; }
+.pc-table tr.pc-sub th, .pc-table tr.pc-sub td { background: var(--surface-sunken); font-weight: 600; }
+.pc-table tr.pc-g td { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-2); background: var(--surface-sunken); }
+.pc-table tr.pc-sug th, .pc-table tr.pc-sug td { color: var(--ink-2); font-style: italic; }
+.pc-table .pc-year { font-weight: 700; border-left: 2px solid var(--line-strong); }
+.pc-l1 th[scope="row"] { padding-left: 22px; }
+.pc-l2 th[scope="row"] { padding-left: 40px; font-weight: 500; }
+.pc-l3 th[scope="row"] { padding-left: 58px; font-weight: 400; }
+.pc-in { width: 60px; text-align: right; padding: 5px 5px; font-variant-numeric: tabular-nums; }
+.pc-matrix th, .pc-matrix td { padding: 6px 4px; }
+.pc-table th .src { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.pc-table .sig { white-space: nowrap; }
+.pc-in.n { width: 54px; }
+.pc-in.bad, .pc-bad textarea, .pc-bad input { border-color: var(--risk); box-shadow: 0 0 0 2px color-mix(in srgb, var(--risk) 25%, transparent); }
+.pc-nobase { color: var(--risk); font-size: 12px; font-style: normal; white-space: normal; }
+.pc-assume { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 14px; margin: 8px 0; }
+.pc-assume label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; font-weight: 600; }
+.pc-assume label > input, .pc-assume label > select { max-width: 170px; }
+.pc-assume label > .src { font-weight: 400; }
+.pc-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.pc-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.pc-text { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px 14px; margin-top: 12px; }
+.pc-text label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; font-weight: 600; }
+.pc-text textarea { width: 100%; }
+.pc-events { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pc-events li { padding: 6px 10px; border-left: 3px solid var(--line-strong); background: var(--surface-sunken); border-radius: 0 6px 6px 0; }
+.pc-chart { display: block; width: 100%; max-width: 760px; height: auto; }
+.pc-chart .oc { fill: var(--navy); }
+.pc-chart .fa { fill: #8ec9f5; }
+.pc-chart .ax { font-size: 9px; fill: var(--ink-3); }
+.pc-chart .base { stroke: var(--line-strong); stroke-width: 1; }
+.pc-key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 4px 0 10px; }
+.pc-key.oc { background: var(--navy); margin-left: 0; }
+.pc-key.fa { background: #8ec9f5; }
+.pc-up { color: var(--ok); } .pc-down { color: var(--risk); } .pc-flat { color: var(--ink-3); }
+.pc-meter { display: block; height: 6px; border-radius: 3px; background: var(--surface-sunken); width: 96px; overflow: hidden; margin: 3px 0 0 auto; position: relative; }
+.pc-meter > span { display: block; height: 100%; border-radius: 3px; background: var(--brand); }
+.pc-radar { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.pc-radar > li { padding: 10px 12px; border: 1px solid var(--line); border-left: 4px solid var(--warn, #d9822b); border-radius: 8px; display: flex; flex-direction: column; gap: 4px; }
+.pc-radar form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; margin-top: 4px; }
+.pc-radar form label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--ink-2); }
+.pc-radar form input[type="text"] { min-width: 260px; }
+.pc-gap { padding: 10px 12px; border-radius: 8px; background: var(--surface-sunken); display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }
+@media (prefers-color-scheme: dark) { .pc-chart .oc { fill: #3b9ae1; } .pc-key.oc { background: #3b9ae1; } .pc-tabs a.on, .pc-years a.on { background: #3b9ae1; border-color: #3b9ae1; } }
+/* Phone: tables that are not month matrices become cards. Month matrices keep their sideways scroll. */
+@media (max-width: 760px) {
+  .pc-cards thead { display: none; }
+  .pc-cards, .pc-cards tbody { display: block; }
+  .pc-cards tr { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .pc-cards th, .pc-cards td { border-top: 0; padding: 4px 2px; white-space: normal; }
+  .pc-cards th[scope="row"] { grid-column: 1 / -1; padding-left: 2px; }
+  .pc-cards td { display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
+  .pc-cards td[data-l]::before { content: attr(data-l); font-size: 11px; color: var(--ink-3); }
+  .pc-meter { margin-left: 0; }
+  .pc-radar form input[type="text"] { min-width: 0; width: 100%; }
+}

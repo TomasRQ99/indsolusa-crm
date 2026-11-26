@@ -89,6 +89,7 @@ model User {
   tasks            Task[]
   activities       Activity[]
   goalTargets      GoalTarget[]
+  salesBudgets     SalesBudget[]          @relation("SalesBudgetOwner")
   visits           VisitPlan[]            @relation("VisitOwner")
   missions         CommercialMission[]    @relation("MissionOwner")
   coveredBy        CoverageAssignment[]   @relation("CoverageOriginal")
@@ -253,6 +254,7 @@ model Account {
   strategic            StrategicAccount?
   profileEntries       ProfileDiaryEntry[]
   profileItems         ProfileItem[]
+  salesBudgets         SalesBudget[]
 
   @@index([ownerId])
   @@index([name])
@@ -5967,4 +5969,111 @@ model WebLead {
 
   @@index([huntId])
   @@index([dealId])
+}
+
+// ---------- Presupuesto comercial (specification of 2026-11-26) ----------
+
+/// The commercial budget of one company for one negotiator and one year: twelve months of purchase orders and of
+/// invoicing (two separate plans), proposed by SOLU from the history, adjusted by the negotiator and approved by
+/// their leader. An approved version never changes: a correction is a new version with its reason.
+model SalesBudget {
+  id              String    @id @default(cuid())
+  year            Int
+  /// The company; null = the person's line "Reactivaciones y prospectos" (no company behind it yet).
+  accountId       String?
+  account         Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  /// accountId, or "PROSPECTOS": makes the unique key work for the line without a company.
+  slot            String
+  userId          String
+  user            User      @relation("SalesBudgetOwner", fields: [userId], references: [id], onDelete: Cascade)
+  version         Int       @default(1)
+  /// DRAFT | SUBMITTED | RETURNED | APPROVED. "Vigente" = approved, not superseded, and the year published.
+  state           String    @default("DRAFT")
+  /// The assumptions the figures were planned with (growth, ticket, conversion rates, margin, seasonality), each
+  /// with where it came from. Planning assumptions, never a promise of conversion.
+  assumptions     Json
+  potential       String?
+  strategy        String?
+  /// Why the negotiator moved away from what SOLU suggested.
+  justification   String?
+  /// Why this version exists (asked for from version 2 on).
+  versionReason   String?
+  createdByName   String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  submittedAt     DateTime?
+  submittedByName String?
+  decidedAt       DateTime?
+  decidedById     String?
+  decidedByName   String?
+  decisionNote    String?
+  /// Set when a later version was approved in its place. The row stays, to compare.
+  supersededAt    DateTime?
+  /// Dirección Comercial or Gerencia asked to reconcile this budget with the company objective.
+  reconcileNote   String?
+  reconcileByName String?
+  reconcileAt     DateTime?
+
+  lines  SalesBudgetLine[]
+  events SalesBudgetEvent[]
+
+  @@unique([year, slot, userId, version])
+  @@index([year, userId])
+  @@index([accountId])
+}
+
+/// One figure of a budget: a month (1–12) and an indicator. The annual figure is always the sum of the months.
+model SalesBudgetLine {
+  id        String      @id @default(cuid())
+  budgetId  String
+  budget    SalesBudget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  month     Int
+  /// OC_COP | FACT_COP | ESA_COP | OC_N | COT_COP | COT_N | SOL_N
+  kpi       String
+  value     Decimal     @db.Decimal(18, 2)
+  /// What SOLU suggested for this month when the figure was saved (null = SOLU had no basis to suggest).
+  suggested Decimal?    @db.Decimal(18, 2)
+  /// SOLU (the suggestion accepted) | MANUAL (typed by the person) | DERIVED (calculated from the assumptions)
+  origin    String
+
+  @@unique([budgetId, month, kpi])
+}
+
+/// What happened to a budget, in order: created, saved, sent, returned, approved, new version, reconciliation asked.
+model SalesBudgetEvent {
+  id       String      @id @default(cuid())
+  budgetId String
+  budget   SalesBudget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  kind     String
+  byId     String?
+  byName   String
+  at       DateTime    @default(now())
+  note     String?
+  /// Annual figures before and after, so a change can be read without opening both versions.
+  detail   Json?
+
+  @@index([budgetId])
+}
+
+/// The year of the commercial budget: the company objective (to show the gap, never to spread it silently) and
+/// when the approved budgets were published as the official ones.
+model SalesBudgetYear {
+  year            Int       @id
+  /// {OC_COP, FACT_COP, ESA_COP}: annual company objective in pesos
+  corporate       Json?
+  corporateByName String?
+  corporateAt     DateTime?
+  publishedAt     DateTime?
+  publishedByName String?
+  updatedAt       DateTime  @updatedAt
+}
+
+/// Official TRM (pesos per dollar) by day of validity, kept so each day is asked to datos.gov.co only once.
+/// A figure in dollars is turned into pesos with the TRM of its own date.
+model TrmDay {
+  /// first day the rate is valid, YYYY-MM-DD
+  day       String   @id
+  validTo   String
+  rate      Decimal  @db.Decimal(10, 2)
+  fetchedAt DateTime @default(now())
 }

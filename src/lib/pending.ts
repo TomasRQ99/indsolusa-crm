@@ -12,6 +12,7 @@ import { canApprovePurchase, mayApproveOwn } from "./purchase-auth";
 import { loadSupplierPayments } from "./queries";
 import { neededItems } from "./gerencia-store";
 import { ipAuthority } from "./internal-purchase";
+import { approverIdsOf } from "./sales-budget";
 
 type Txt = { es: string; en: string };
 export type PendingRow = { key: string; kind: Txt; title: Txt; detail: Txt | null; amount: string | null; since: Date | null; href: string; cta: Txt; waitsFor?: Txt };
@@ -99,6 +100,21 @@ export async function pendingFor(user: SessionUser): Promise<{ mine: PendingRow[
   for (const n of needed) {
     if (n.source === "PURCHASE" || n.source === "PAYMENT" || n.source === "INTERNAL") continue;
     mine.push({ key: `n-${n.key}`, kind: KIND[n.source] ?? t("Decisión", "Decision"), title: n.question, detail: n.whyNow, amount: n.impact, since: null, href: n.href, cta: t("Abrir y decidir", "Open and decide") });
+  }
+
+  // 6 · Commercial budget: a proposal sent for approval waits for the negotiator's assigned leader.
+  const budgets = await db.salesBudget.findMany({ where: { state: "SUBMITTED" }, orderBy: { submittedAt: "asc" }, select: { id: true, year: true, slot: true, userId: true, submittedAt: true, account: { select: { name: true } }, user: { select: { name: true } } } });
+  const approvers = new Map<string, string[]>();
+  for (const b of budgets) {
+    if (!approvers.has(b.userId)) approvers.set(b.userId, (await approverIdsOf(b.userId)).ids);
+    const who = b.account?.name ?? "Reactivaciones y prospectos";
+    const row: PendingRow = {
+      key: `sb-${b.id}`, kind: t("Aprobar un presupuesto comercial", "Approve a commercial budget"), title: t(`Aprobar el presupuesto ${b.year} de ${who}`, `Approve the ${b.year} budget of ${b.account?.name ?? "Reactivations and prospects"}`),
+      detail: t(`Lo envió ${b.user.name}. En la propuesta, revisa las cifras y haz clic en «Aprobar presupuesto» o en «Devolver al negociador».`, `Sent by ${b.user.name}. On the proposal, review the figures and click “Approve budget” or “Return to the negotiator”.`),
+      amount: null, since: b.submittedAt, href: `/comercial/presupuesto/${b.slot === "PROSPECTOS" ? "prospectos" : b.slot}?y=${b.year}&u=${b.userId}#aprobacion`, cta: t("Abrir y decidir", "Open and decide"),
+    };
+    if (approvers.get(b.userId)!.includes(user.id)) mine.push(row);
+    else if (b.userId === user.id) waiting.push({ ...row, cta: t("Ver la propuesta", "See the proposal"), waitsFor: t("La enviaste tú: la aprueba tu líder", "You sent it: your leader approves it") });
   }
   return { mine, waiting };
 }

@@ -82,6 +82,8 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   DispatchInstruction: "all",
   GoalTarget: "all",
   GoalRecipe: "all",
+  SalesBudget: ["state", "version", "userId", "accountId", "year", "decidedByName", "decisionNote", "supersededAt", "versionReason", "justification", "reconcileNote"],
+  SalesBudgetYear: "all",
   VisitPlan: "all",
   VisitCommitment: "all",
   CommercialMission: "all",

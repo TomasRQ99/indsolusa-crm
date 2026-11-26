@@ -873,6 +873,67 @@
    "expect": "SOLU confirma «Metas de desarrollo guardadas.» y «Cumplimiento» muestra el porcentaje de cada meta. Solo cuenta lo que se registra en SOLU: contactos, Necesidades, y las plantas, áreas, espacios en blanco y oportunidades futuras de Mercado. Un cliente cuenta como reactivado cuando su Necesidad anterior fue hace 180 días o más."
   },
   {
+   "id": "presupuesto-proponer",
+   "m": "comercial",
+   "t": "Presupuesto comercial: proponer las metas del año de una empresa y enviarlas a aprobación",
+   "path": "COMERCIAL → Presupuesto comercial · Mis empresas",
+   "why": "Dejar escrito, empresa por empresa, cuánto esperas en órdenes de compra y en facturación cada mes del año. SOLU propone con el historial; tú ajustas, explicas y envías a tu líder.",
+   "steps": [
+    "Abre [[COMERCIAL]] y haz clic en [[Presupuesto comercial]]. Arriba eliges el «Año». La lista «EMPRESAS DE…» muestra cada empresa con sus órdenes de compra del año anterior, el cierre proyectado, la Eságara, la tendencia y el «Estado» de su presupuesto.",
+    "En la fila de la empresa haz clic en [[Presupuestar]]. Si la empresa no está en la lista, búscala abajo en «Agregar otra empresa».",
+    "Lee «HISTORIAL DE…»: solicitudes, cotizaciones, órdenes de compra, Eságara y facturación de los tres años anteriores, con el promedio mensual de 3, 6 y 12 meses. «Ver las fuentes de estas cifras» abre cada registro con su valor original, la tasa aplicada y el valor en pesos.",
+    "En «Supuestos (simulador)» revisa lo que SOLU midió: crecimiento, estacionalidad, ticket promedio, los porcentajes de bateo y la Eságara objetivo. Cambia el que necesites y haz clic en [[Aplicar la sugerencia de SOLU a los 12 meses]] para recalcular los meses. El historial no se toca.",
+    "En «Propuesta… · enero a diciembre» escribe o corrige «Meta OC ($ M)» y «Meta facturación ($ M)» de cada mes, en millones de pesos. Las filas de abajo muestran lo que la meta exige: «# OC objetivo», «Eságara objetivo», «Cotizaciones requeridas» y «# Solicitudes requeridas».",
+    "Elige el «Potencial de la empresa», escribe la «Estrategia ECSA para esta empresa» y, si tus cifras no son la sugerencia de SOLU, la «Justificación».",
+    "Haz clic en [[Guardar borrador]] para seguir después, o en [[Enviar a aprobación]] cuando esté lista."
+   ],
+   "expect": "SOLU confirma «Borrador guardado.» o «Propuesta enviada a aprobación.» y el estado pasa de «Sin iniciar» a «Borrador» y a «Enviado». Las órdenes de compra y la facturación son dos presupuestos separados: uno no se copia del otro. El «Anual» siempre es la suma de los doce meses. Donde SOLU no tiene casos suficientes dice «sin base suficiente» y te pide escribir el dato. Si falta la «Justificación», SOLU lo dice, marca la casilla en rojo y deja el borrador guardado. Una propuesta enviada no se cambia: con «Retirar el envío» vuelve a borrador. La línea «Reactivaciones y prospectos» es para lo que esperas vender a empresas sin presupuesto propio: no tiene historial ni sugerencia. Gerencia y la Dirección Comercial pueden escribir la propuesta de otra persona eligiéndola en «Negociador»."
+  },
+  {
+   "id": "presupuesto-aprobar",
+   "m": "comercial",
+   "t": "Presupuesto comercial: aprobar o devolver la propuesta de una persona de tu equipo, y corregir un presupuesto aprobado",
+   "path": "COMERCIAL → Presupuesto comercial · Aprobaciones",
+   "why": "Que cada presupuesto quede revisado por el líder de la persona, con quién, cuándo y por qué; y que lo aprobado no cambie sin dejar rastro.",
+   "steps": [
+    "Abre [[COMERCIAL]], haz clic en [[Presupuesto comercial]] y luego en [[Aprobaciones]]. «ESPERAN TU DECISIÓN» lista las propuestas que te enviaron. También aparecen en EQUIPO → Pendientes por aprobar.",
+    "Haz clic en «Abrir y decidir». Revisa el historial, los supuestos, los doce meses y la «Justificación» del negociador.",
+    "Baja a «APROBACIÓN Y TRAZABILIDAD». Si estás de acuerdo, haz clic en [[Aprobar presupuesto]]. Si algo debe cambiar, escribe «Qué debe revisar» y haz clic en [[Devolver al negociador]].",
+    "Para corregir un presupuesto ya aprobado, su negociador escribe el «Motivo de la versión nueva» y hace clic en [[Abrir versión nueva]]: se abre un borrador con las mismas cifras, que vuelve a pasar por aprobación."
+   ],
+   "expect": "SOLU confirma «Presupuesto aprobado. Queda bloqueado: un cambio necesita una versión nueva.» o «Propuesta devuelta al negociador con tu motivo.» Solo aprueba el líder asignado de la persona; si no tiene líder, Gerencia o la Dirección Comercial. Nadie aprueba su propia propuesta. La tabla «Versiones» conserva cada versión con sus totales, y «Lo que pasó con la versión…» muestra quién hizo qué y cuándo, con las cifras antes y después. La versión aprobada sigue siendo la oficial hasta que se apruebe la nueva. El estado pasa a «Vigente» cuando Gerencia o la Dirección Comercial publican el presupuesto del año."
+  },
+  {
+   "id": "presupuesto-consolidacion",
+   "m": "comercial",
+   "t": "Presupuesto comercial: ver la suma por negociador, equipo y compañía, y la brecha frente al objetivo de la empresa",
+   "path": "COMERCIAL → Presupuesto comercial · Consolidación",
+   "why": "Ver cuánto suman las metas de todas las empresas y cuánto falta para el objetivo de la compañía, sin que nadie infle metas en silencio.",
+   "steps": [
+    "Abre [[COMERCIAL]], haz clic en [[Presupuesto comercial]] y luego en [[Consolidación]].",
+    "Elige arriba «Última propuesta» (todo lo escrito, en cualquier estado) o «Solo lo aprobado».",
+    "Lee «COMPAÑÍA → EQUIPO → NEGOCIADOR → EMPRESA»: cada fila es la suma exacta de las que tiene debajo, con «OC anual», «Facturación», «Eságara», «Margen» y «Estado».",
+    "En «DOCE MESES» elige el indicador para ver enero a diciembre; «Ver también las empresas» abre el detalle por empresa.",
+    "Gerencia o la Dirección Comercial escriben el objetivo del año en «OBJETIVO DE LA EMPRESA Y BRECHA» y hacen clic en [[Guardar objetivo]]. La columna «Brecha por asignar» muestra lo que falta.",
+    "Revisa «CONTROLES ANTES DE CONFIAR EN LA SUMA» y, cuando las propuestas estén aprobadas, publica el año en «PUBLICAR EL PRESUPUESTO»."
+   ],
+   "expect": "SOLU confirma «Objetivo de la empresa guardado.» El objetivo no cambia la meta de nadie: solo muestra la brecha para revisarla y asignarla. El «Margen» se calcula con los totales (Eságara total sobre OC total), nunca como promedio de porcentajes. Una empresa presupuestada por dos negociadores se suma una sola vez, cada uno con su parte. Al publicar, los presupuestos aprobados pasan a «Vigente». [[Exportar a CSV]] descarga la consolidación (Gerencia, Dirección Comercial y Finanzas). Un negociador ve solo su presupuesto; un líder, el suyo y el de su equipo."
+  },
+  {
+   "id": "presupuesto-cumplimiento",
+   "m": "comercial",
+   "t": "Presupuesto comercial: comparar lo real con el presupuesto y atender el radar",
+   "path": "COMERCIAL → Presupuesto comercial · Cumplimiento y radar",
+   "why": "Saber cómo va cada empresa frente a lo presupuestado a la fecha de hoy, y qué clientes necesitan atención antes de que sea tarde.",
+   "steps": [
+    "Abre [[COMERCIAL]], haz clic en [[Presupuesto comercial]] y luego en [[Cumplimiento y radar]]. Elige el «Año».",
+    "Lee los recuadros de arriba: cumplimiento de «ÓRDENES DE COMPRA» y de «FACTURACIÓN», «RITMO PARA CUMPLIR» por día hábil y «SI SIGUE EL RITMO ACTUAL».",
+    "En «REAL FRENTE AL PRESUPUESTO» compara, por negociador y empresa, «OC esperadas a hoy» con «OC reales», el «Cumplimiento OC», el «Faltante a hoy» y lo mismo para la facturación.",
+    "Baja a «RADAR». Cada detección muestra el hecho, sus cifras y la «Siguiente acción». Ajusta el texto y la fecha del pendiente y haz clic en [[Asignar pendiente]]."
+   ],
+   "expect": "SOLU confirma «Pendiente creado para el negociador. Lo ve en MI DÍA → Pendientes.» El mes en curso se compara por días hábiles transcurridos, no contra el mes completo. Se compara con el presupuesto aprobado; donde aún no lo hay, con la última propuesta. Una orden de compra cuenta cuando se acepta; una rechazada no cuenta. «Real sin presupuesto» lista lo vendido a empresas que nadie presupuestó. El radar usa reglas fijas, sin inteligencia artificial: muestra la caída o el cambio con sus cifras, nunca afirma la causa. «Cómo detecta el radar» explica cada regla. Antes de que empiece el año, el cumplimiento dice que aún no empieza y el radar ya funciona."
+  },
+  {
    "id": "cobertura",
    "m": "comercial",
    "t": "Cobertura por ausencia",

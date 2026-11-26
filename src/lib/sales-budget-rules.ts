@@ -1,0 +1,371 @@
+// Presupuesto comercial (specification "Presupuesto comercial SOLU 2027", 2026-11-26). Pure rules: no database here.
+// Two separate plans per company and negotiator: purchase orders accepted (commercial base) and invoicing (financial
+// base). SOLU suggests from the history; the negotiator adjusts and explains; the leader approves. Pesos (COP).
+// Every threshold below is a planning default (spec §11 leaves them to Dirección): they live in BUDGET_RULES so one
+// place changes them.
+
+import { isWorkingDay } from "./holidays";
+
+export const BUDGET_RULES = {
+  version: "pres-v1",
+  /** A rate needs at least this many cases behind it; with fewer SOLU says «sin base suficiente» (AT-08). */
+  minCases: 5,
+  /** Rates read the cohorts of the last N months. */
+  windowMonths: 24,
+  /** A request younger than this is not yet a fair "was it quoted?" case (cohort maturity). */
+  matureDays: 30,
+  /** Complete months of history needed to project the close of the base year. */
+  minHistoryMonths: 3,
+  /** Own seasonality needs this many complete months and this many months with orders; otherwise even months. */
+  seasonMinMonths: 12, seasonMinActive: 6,
+  /** Suggested figures are rounded to this many pesos (0,1 million: the screens work in millions of pesos). */
+  roundTo: 100000,
+  /** Radar: below this share of what was expected by today, a company is "below pace". */
+  belowPace: 0.85,
+  /** Radar: a fall of requests of at least this share between two quarters. */
+  requestDrop: 0.3,
+  /** Radar: quotes rising at least this share while orders don't. */
+  quoteRise: 0.2,
+  /** Radar: margin falling at least this many points while orders rise. */
+  marginDropPts: 3,
+} as const;
+
+type Txt = { es: string; en: string };
+export type Kpi = "OC_COP" | "FACT_COP" | "ESA_COP" | "OC_N" | "COT_COP" | "COT_N" | "SOL_N";
+export const KPIS: Record<Kpi, Txt & { unit: "cop" | "n"; how: Txt }> = {
+  OC_COP: { es: "Órdenes de compra ($)", en: "Purchase orders ($)", unit: "cop", how: { es: "Valor sin IVA de las órdenes de compra del cliente aceptadas, en el mes en que se aceptaron. Las rechazadas no cuentan.", en: "Value before VAT of the customer's purchase orders accepted, in the month they were accepted. Rejected ones don't count." } },
+  FACT_COP: { es: "Facturación ($)", en: "Invoicing ($)", unit: "cop", how: { es: "Valor sin IVA de las facturas emitidas, en el mes de la fecha de la factura. Es un plan aparte: no se copia de las órdenes de compra del mismo mes.", en: "Value before VAT of the invoices issued, in the month of the invoice date. It is a separate plan: it is not copied from the same month's purchase orders." } },
+  ESA_COP: { es: "Eságara de OC ($)", en: "Eságara of POs ($)", unit: "cop", how: { es: "Valor de las órdenes de compra por el porcentaje de Eságara de su cotización.", en: "Value of the purchase orders times the Eságara percentage of their quote." } },
+  OC_N: { es: "# Órdenes de compra", en: "# Purchase orders", unit: "n", how: { es: "Número de órdenes de compra aceptadas, en el mes en que se aceptaron.", en: "Number of purchase orders accepted, in the month they were accepted." } },
+  COT_COP: { es: "Cotizaciones ($)", en: "Quotes ($)", unit: "cop", how: { es: "Precio de venta sin IVA de la última revisión presentada de cada Necesidad, en el mes de su primera presentación. Una revisión no suma otra vez.", en: "Sale price before VAT of each Need's last presented revision, in the month of its first presentation. A revision does not add again." } },
+  COT_N: { es: "# Cotizaciones", en: "# Quotes", unit: "n", how: { es: "Necesidades con una cotización presentada, en el mes de la primera presentación. Tres revisiones cuentan una vez.", en: "Needs with a quote presented, in the month of the first presentation. Three revisions count once." } },
+  SOL_N: { es: "# Solicitudes", en: "# Requests", unit: "n", how: { es: "Necesidades creadas, en el mes en que se recibieron.", en: "Needs created, in the month they were received." } },
+};
+export const KPI_KEYS = Object.keys(KPIS) as Kpi[];
+/** The three figures that roll up in money (consolidation columns). */
+export const MAIN_KPIS: Kpi[] = ["OC_COP", "FACT_COP", "ESA_COP"];
+
+export const MONTHS: Txt[] = [
+  { es: "ene", en: "Jan" }, { es: "feb", en: "Feb" }, { es: "mar", en: "Mar" }, { es: "abr", en: "Apr" }, { es: "may", en: "May" }, { es: "jun", en: "Jun" },
+  { es: "jul", en: "Jul" }, { es: "ago", en: "Aug" }, { es: "sep", en: "Sep" }, { es: "oct", en: "Oct" }, { es: "nov", en: "Nov" }, { es: "dic", en: "Dec" },
+];
+export const PROSPECTS = "PROSPECTOS";
+export const zeros = () => Array.from({ length: 12 }, () => 0);
+export const sum = (xs: (number | null)[]) => xs.reduce<number>((s, x) => s + (x ?? 0), 0);
+export const monthKey = (year: number, m: number) => `${year}-${String(m).padStart(2, "0")}`;
+
+// ---------- States ----------
+
+export type BudgetState = "DRAFT" | "SUBMITTED" | "RETURNED" | "APPROVED";
+/** What the screen calls each state. NONE = no budget yet; INFORCE = approved and the year published. */
+export type ShownState = "NONE" | BudgetState | "INFORCE" | "SUPERSEDED";
+export const STATE_TXT: Record<ShownState, Txt & { tone: "wait" | "attn" | "risk" | "ok" }> = {
+  NONE: { es: "Sin iniciar", en: "Not started", tone: "wait" },
+  DRAFT: { es: "Borrador", en: "Draft", tone: "wait" },
+  SUBMITTED: { es: "Enviado", en: "Submitted", tone: "attn" },
+  RETURNED: { es: "Devuelto", en: "Returned", tone: "risk" },
+  APPROVED: { es: "Aprobado", en: "Approved", tone: "ok" },
+  INFORCE: { es: "Vigente", en: "In force", tone: "ok" },
+  SUPERSEDED: { es: "Reemplazado", en: "Superseded", tone: "wait" },
+};
+export const shownState = (b: { state: string; supersededAt: Date | null } | null, published: boolean): ShownState =>
+  !b ? "NONE" : b.supersededAt ? "SUPERSEDED" : b.state === "APPROVED" ? (published ? "INFORCE" : "APPROVED") : (b.state as BudgetState);
+/** Only a draft or a returned proposal can be changed; an approved one needs a new version (AT-10). */
+export const isEditable = (state: string) => state === "DRAFT" || state === "RETURNED";
+
+// ---------- Assumptions ----------
+
+export type Assumptions = {
+  /** Growth of purchase orders over the projected close of the base year, in percent. */
+  growthPct: number;
+  /** Growth of invoicing over the projected close of the base year, in percent (its own plan). */
+  factGrowthPct: number;
+  /** Average value of one purchase order, pesos. */
+  ticket: number | null;
+  /** Request → quote, percent. */
+  convSC: number | null;
+  /** Quote → purchase order by number, percent. */
+  bateoN: number | null;
+  /** Quote → purchase order by value, percent. */
+  bateoV: number | null;
+  /** Eságara objective of the purchase orders, percent. */
+  marginPct: number | null;
+  /** PROPIA = the company's own months; PAREJA = twelve even months. */
+  season: "PROPIA" | "PAREJA";
+  /** The assumptions the person typed; the others are SOLU's reading of the history. */
+  manual: string[];
+};
+export const ASSUMPTION_KEYS = ["growthPct", "factGrowthPct", "ticket", "convSC", "bateoN", "bateoV", "marginPct"] as const;
+export type AssumptionKey = (typeof ASSUMPTION_KEYS)[number];
+
+/** A rate read from the history: the percentage, and the cases behind it [hits, at-bats]. */
+export type Measured = { value: number | null; n: [number, number] };
+/** What the history gives SOLU to suggest with. null = «sin base suficiente». */
+export type Basis = {
+  baseYear: number;
+  /** Projected close of the base year, and how it was built. */
+  ocClose: number | null; factClose: number | null;
+  ocSoFar: number; factSoFar: number; monthsUsed: number;
+  /** Share of each calendar month (sums 1), or null when the company has no seasonality of its own yet. */
+  seasonOc: number[] | null; seasonFact: number[] | null;
+  ticket: Measured; convSC: Measured; bateoN: Measured; bateoV: Measured; margin: Measured;
+  /** Accepted purchase orders not invoiced yet (pesos): a reference for the invoicing plan. */
+  backlog: number;
+};
+
+const r1 = (x: number) => Math.round(x * 10) / 10;
+/** hits / at-bats as a percentage with one decimal, or null with too few cases or a zero denominator (AT-08). */
+export function measured(hits: number, atBats: number, min: number = BUDGET_RULES.minCases): Measured {
+  return { value: atBats >= min && atBats > 0 && hits > 0 ? r1((hits / atBats) * 100) : null, n: [Math.round(hits), Math.round(atBats)] };
+}
+
+/** The assumptions SOLU starts with: what the history measured, and no growth until the person decides one. */
+export function defaultAssumptions(b: Basis): Assumptions {
+  return { growthPct: 0, factGrowthPct: 0, ticket: b.ticket.value, convSC: b.convSC.value, bateoN: b.bateoN.value, bateoV: b.bateoV.value, marginPct: b.margin.value, season: b.seasonOc ? "PROPIA" : "PAREJA", manual: [] };
+}
+
+/** Reads assumptions saved as JSON (or sent by a form), keeping only sane values. */
+export function readAssumptions(raw: unknown, fallback: Assumptions): Assumptions {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const num = (k: string, lo: number, hi: number, d: number | null) => { const v = o[k]; if (v == null || v === "") return d; const n = Number(v); return Number.isFinite(n) && n >= lo && n <= hi ? n : d; };
+  return {
+    growthPct: num("growthPct", -100, 1000, fallback.growthPct) ?? 0,
+    factGrowthPct: num("factGrowthPct", -100, 1000, fallback.factGrowthPct) ?? 0,
+    ticket: num("ticket", 1, 1e13, fallback.ticket),
+    convSC: num("convSC", 0.1, 100, fallback.convSC),
+    bateoN: num("bateoN", 0.1, 100, fallback.bateoN),
+    bateoV: num("bateoV", 0.1, 1000, fallback.bateoV),
+    marginPct: num("marginPct", 0, 100, fallback.marginPct),
+    season: o.season === "PAREJA" ? "PAREJA" : o.season === "PROPIA" ? "PROPIA" : fallback.season,
+    manual: Array.isArray(o.manual) ? o.manual.filter((x): x is string => typeof x === "string" && (ASSUMPTION_KEYS as readonly string[]).includes(x)) : fallback.manual,
+  };
+}
+
+// ---------- History → projection, seasonality, suggestion ----------
+
+/** Projected close of the base year: the complete months as they were, and the months still to come at the average
+ *  of the complete ones. `first` = first month with any history (YYYY-MM); `current` = the month in course. */
+export function projectClose(byMonth: (m: string) => number, baseYear: number, current: string, first: string | null): { close: number | null; soFar: number; used: number } {
+  let soFar = 0, used = 0, complete = 0;
+  for (let m = 1; m <= 12; m++) {
+    const k = monthKey(baseYear, m);
+    if (k >= current) break;
+    complete++;
+    soFar += byMonth(k);
+    if (first && k >= first) used++;
+  }
+  if (used < BUDGET_RULES.minHistoryMonths || soFar <= 0) return { close: complete === 12 && soFar > 0 ? soFar : null, soFar, used };
+  // Months before the first record are not zeros: they are months without history, so the average skips them.
+  return { close: Math.round(soFar + (soFar / used) * (12 - complete)), soFar, used };
+}
+
+/** The company's own seasonality: average of each calendar month over the complete months given, as shares that
+ *  sum 1. null when the history is too short or too thin to call it a pattern. */
+export function seasonShares(months: { key: string; value: number }[]): number[] | null {
+  if (months.length < BUDGET_RULES.seasonMinMonths || months.filter((x) => x.value > 0).length < BUDGET_RULES.seasonMinActive) return null;
+  const tot = zeros(), cnt = zeros();
+  for (const x of months) { const m = Number(x.key.slice(5)) - 1; tot[m] += x.value; cnt[m]++; }
+  if (cnt.some((c) => c === 0)) return null;
+  const avg = tot.map((v, m) => v / cnt[m]);
+  const all = sum(avg);
+  return all > 0 ? avg.map((v) => v / all) : null;
+}
+
+/** Spreads a year's total over twelve months by shares (even months without them). The months are rounded and the
+ *  difference goes to the largest month, so January to December always add up to the total (AT-01). */
+export function spread(total: number, shares: number[] | null): number[] {
+  const unit = BUDGET_RULES.roundTo;
+  const goal = Math.round(total / unit) * unit;
+  const sh = shares ?? Array.from({ length: 12 }, () => 1 / 12);
+  const out = sh.map((s) => Math.round((goal * s) / unit) * unit);
+  const diff = goal - sum(out);
+  if (diff !== 0) { let top = 0; for (let m = 1; m < 12; m++) if (out[m] > out[top]) top = m; out[top] = Math.max(0, out[top] + diff); }
+  return out;
+}
+
+/** What SOLU suggests for the twelve months, or null when there is no basis (the person decides, AT-08). */
+export function suggest(close: number | null, growthPct: number, shares: number[] | null, season: Assumptions["season"]): number[] | null {
+  if (close == null || close <= 0) return null;
+  return spread(close * (1 + growthPct / 100), season === "PROPIA" ? shares : null);
+}
+
+// ---------- Inverse calculation of goals (spec §4) ----------
+
+const ceil = (x: number) => Math.ceil(x - 1e-9);
+export type Derived = { ocN: number | null; cotCop: number | null; cotN: number | null; solN: number | null; esa: number | null };
+
+/** From a month's purchase-order goal back to what it takes. null = the rate or ticket behind it is missing. */
+export function deriveMonth(oc: number, a: Assumptions, ocNTyped: number | null = null): Derived {
+  if (!(oc > 0)) return { ocN: 0, cotCop: 0, cotN: 0, solN: 0, esa: 0 };
+  const ocN = ocNTyped != null && ocNTyped > 0 ? Math.round(ocNTyped) : a.ticket && a.ticket > 0 ? Math.max(1, Math.round(oc / a.ticket)) : null;
+  const cotCop = a.bateoV && a.bateoV > 0 ? Math.round(oc / (a.bateoV / 100)) : null;
+  const cotN = ocN != null && a.bateoN && a.bateoN > 0 ? ceil(ocN / (a.bateoN / 100)) : null;
+  const solN = cotN != null && a.convSC && a.convSC > 0 ? ceil(cotN / (a.convSC / 100)) : null;
+  const esa = a.marginPct != null ? Math.round((oc * a.marginPct) / 100) : null;
+  return { ocN, cotCop, cotN, solN, esa };
+}
+
+/** Portfolio margin: total Eságara over total orders. Never an average of percentages (AT-07). */
+export const marginOf = (esa: number, oc: number) => (oc > 0 ? r1((esa / oc) * 100) : null);
+/** Achievement, percent with one decimal; null without a budget to compare with. */
+export const achievement = (real: number, budget: number) => (budget > 0 ? r1((real / budget) * 100) : null);
+/** Growth of the year's goal over the projected close; null without a reliable base (denominator > 0). */
+export const growthOf = (goal: number, close: number | null) => (close != null && close > 0 ? r1((goal / close - 1) * 100) : null);
+
+// ---------- Progress of the year on working days (AT-12) ----------
+
+const DAY = 864e5;
+const BOGOTA_MS = 5 * 3600e3;
+/** Today on Bogotá's calendar, as a UTC-midnight date. */
+export const bogotaDay = (now: Date) => { const b = new Date(now.getTime() - BOGOTA_MS); return new Date(Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate())); };
+const workdays = (from: Date, toExcl: Date) => { let w = 0; for (let t = from.getTime(); t < toExcl.getTime(); t += DAY) if (isWorkingDay(new Date(t))) w++; return w; };
+
+export type YearProgress = {
+  /** How much of each month has gone by: 1 = closed, 0 = not started, a fraction of working days = in course. */
+  share: number[];
+  /** Month in course (1–12), or null when the year has not started or is over. */
+  current: number | null;
+  elapsed: number; total: number;
+  /** Working days left in the year, today not included; and the working days of the whole year. */
+  remainingYear: number; totalYear: number;
+};
+export function yearProgress(year: number, now: Date): YearProgress {
+  const today = bogotaDay(now);
+  const share = zeros();
+  let current: number | null = null, elapsed = 0, total = 0;
+  for (let m = 1; m <= 12; m++) {
+    const start = new Date(Date.UTC(year, m - 1, 1)), end = new Date(Date.UTC(year, m, 1));
+    if (today >= end) share[m - 1] = 1;
+    else if (today >= start) {
+      current = m;
+      total = workdays(start, end);
+      elapsed = workdays(start, new Date(today.getTime() + DAY));
+      share[m - 1] = total ? elapsed / total : 0;
+    }
+  }
+  const yearEnd = new Date(Date.UTC(year + 1, 0, 1)), yearStart = new Date(Date.UTC(year, 0, 1));
+  const from = today < yearStart ? yearStart : new Date(today.getTime() + DAY);
+  return { share, current, elapsed, total, remainingYear: from < yearEnd ? workdays(from, yearEnd) : 0, totalYear: workdays(yearStart, yearEnd) };
+}
+/** What the budget expected by today: closed months in full, the month in course by its working days gone. */
+export const expectedToDate = (budget: number[], p: YearProgress) => budget.reduce((s, v, m) => s + v * p.share[m], 0);
+/** Real of the months started so far (a future month has nothing real yet). */
+export const realToDate = (real: number[], p: YearProgress) => real.reduce((s, v, m) => s + (p.share[m] > 0 ? v : 0), 0);
+
+// ---------- Radar (spec §8): deterministic detections, each with the figures that back it ----------
+
+export type RadarKind = "PACE" | "REQUESTS" | "QUOTES" | "MARGIN" | "BILLING";
+export const RADAR_TXT: Record<RadarKind, { title: Txt; action: Txt }> = {
+  PACE: { title: { es: "Órdenes de compra por debajo del ritmo previsto", en: "Purchase orders below the expected pace" }, action: { es: "Revisar las oportunidades avanzadas de esa empresa y sus fechas de decisión.", en: "Review that company's advanced opportunities and their decision dates." } },
+  REQUESTS: { title: { es: "Solicitudes en descenso en un cliente Pareto", en: "Requests falling at a Pareto customer" }, action: { es: "Contactar a Compras y Mantenimiento para conocer cambios. SOLU ve la caída, no la causa.", en: "Contact Purchasing and Maintenance to learn what changed. SOLU sees the fall, not its cause." } },
+  QUOTES: { title: { es: "Las cotizaciones suben y las órdenes de compra no", en: "Quotes rise and purchase orders don't" }, action: { es: "Revisar la concreción, la presentación de valor y los motivos de pérdida.", en: "Review closing, the presentation of value and the reasons for losses." } },
+  MARGIN: { title: { es: "Las órdenes de compra suben y la Eságara cae", en: "Purchase orders rise and Eságara falls" }, action: { es: "Evaluar márgenes, liquidaciones y descuentos.", en: "Assess margins, cost settlements and discounts." } },
+  BILLING: { title: { es: "El presupuesto de facturación supera lo que hay por entregar", en: "The invoicing budget exceeds what there is to deliver" }, action: { es: "Escalar la previsión de fechas a Operaciones y revisar lo pendiente por entregar.", en: "Escalate the date forecast to Operations and review what is pending delivery." } },
+};
+
+/** Quarter against quarter: the last three complete months and the three before (oldest first, six values). */
+export const quarters = (six: number[]) => ({ prev: sum(six.slice(0, 3)), last: sum(six.slice(3, 6)) });
+
+export type RadarInput = {
+  /** Budget in force and real so far, purchase orders in pesos. */
+  expected: number; real: number;
+  pareto: boolean;
+  /** Last six complete months, oldest first. */
+  sol: number[]; cotN: number[]; ocN: number[]; oc: number[]; esa: number[];
+  /** Invoicing budget of the month in course and the next, and the accepted orders not invoiced yet. */
+  factAhead: number; backlog: number;
+};
+export type RadarHit = { kind: RadarKind; evidence: Txt };
+
+export function radar(x: RadarInput, cop: (v: number) => string): RadarHit[] {
+  const R = BUDGET_RULES, out: RadarHit[] = [];
+  if (x.expected > 0 && x.real < x.expected * R.belowPace) out.push({ kind: "PACE", evidence: { es: `Van ${cop(x.real)} de ${cop(x.expected)} esperados a hoy (${Math.round((x.real / x.expected) * 100)} %).`, en: `${cop(x.real)} of ${cop(x.expected)} expected by today (${Math.round((x.real / x.expected) * 100)} %).` } });
+  const s = quarters(x.sol);
+  if (x.pareto && s.prev >= 3 && s.last <= s.prev * (1 - R.requestDrop)) out.push({ kind: "REQUESTS", evidence: { es: `${s.last} solicitudes en los últimos 3 meses completos; ${s.prev} en los 3 anteriores.`, en: `${s.last} requests in the last 3 complete months; ${s.prev} in the 3 before.` } });
+  const c = quarters(x.cotN), o = quarters(x.ocN);
+  if (c.prev >= 2 && c.last >= c.prev * (1 + R.quoteRise) && o.last <= o.prev) out.push({ kind: "QUOTES", evidence: { es: `Cotizaciones: ${c.prev} → ${c.last}. Órdenes de compra: ${o.prev} → ${o.last} (3 meses anteriores → últimos 3).`, en: `Quotes: ${c.prev} → ${c.last}. Purchase orders: ${o.prev} → ${o.last} (3 months before → last 3).` } });
+  const v = quarters(x.oc), e = quarters(x.esa);
+  const m0 = marginOf(e.prev, v.prev), m1 = marginOf(e.last, v.last);
+  if (v.prev > 0 && v.last > v.prev && m0 != null && m1 != null && m1 <= m0 - R.marginDropPts) out.push({ kind: "MARGIN", evidence: { es: `Órdenes de compra: ${cop(v.prev)} → ${cop(v.last)}. Eságara: ${m0} % → ${m1} %.`, en: `Purchase orders: ${cop(v.prev)} → ${cop(v.last)}. Eságara: ${m0} % → ${m1} %.` } });
+  if (x.factAhead > 0 && x.factAhead > x.backlog) out.push({ kind: "BILLING", evidence: { es: `Facturación presupuestada de este mes y el siguiente: ${cop(x.factAhead)}. Órdenes aceptadas sin facturar: ${cop(x.backlog)}.`, en: `Invoicing budgeted for this month and the next: ${cop(x.factAhead)}. Accepted orders not invoiced: ${cop(x.backlog)}.` } });
+  return out;
+}
+
+// ---------- Attribution: every real figure lands in exactly one budget, or in none (AT-02, AT-13) ----------
+
+/** Which negotiator's budget of a company receives the figures of people without their own budget for it: the
+ *  company's owner when they budget it, otherwise the first who did. */
+export function catchAll(budgetUserIds: string[], accountOwnerId: string | null): string | null {
+  if (!budgetUserIds.length) return null;
+  return accountOwnerId && budgetUserIds.includes(accountOwnerId) ? accountOwnerId : budgetUserIds[0];
+}
+/** The budget (slot|userId) a fact belongs to, or null = no budget covers it. `has` answers "is there a budget for
+ *  this slot and person?"; `usersOf` lists who budgets a company, oldest budget first. */
+export function attribute(f: { accountId: string; ownerId: string }, has: (slot: string, userId: string) => boolean, usersOf: (accountId: string) => string[], accountOwnerId: string | null): string | null {
+  if (has(f.accountId, f.ownerId)) return `${f.accountId}|${f.ownerId}`;
+  const other = catchAll(usersOf(f.accountId), accountOwnerId);
+  if (other) return `${f.accountId}|${other}`;
+  if (has(PROSPECTS, f.ownerId)) return `${PROSPECTS}|${f.ownerId}`;
+  return null;
+}
+
+// ---------- Text helpers ----------
+
+/** "40.000.000" → 40000000. Accepts dots, commas and spaces as thousand separators; empty = null. */
+export function parsePesos(raw: unknown): number | null {
+  const s = String(raw ?? "").replace(/[^\d-]/g, "");
+  if (!s || s === "-") return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+/** "12,5" or "12.5" → 12.5; empty = null. */
+export function parsePct(raw: unknown): number | null {
+  const s = String(raw ?? "").trim().replace(/%/g, "").replace(/\s/g, "").replace(",", ".");
+  if (!s) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+// ---------- Millions of pesos (the screens show and take money in millions, as the spec's sketches do) ----------
+
+/** "12,5" (es) or "12.5" (en) million → 12500000 pesos; empty = null; anything that is not a number = NaN. */
+export function parseMillions(raw: unknown, es: boolean): number | null {
+  let s = String(raw ?? "").trim().replace(/\s/g, "").replace(/[$M]/gi, "");
+  if (!s) return null;
+  s = es ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
+  const n = Number(s);
+  return Number.isFinite(n) ? Math.round(n * 1e6) : NaN;
+}
+/** Pesos → the text of an input in millions, in the person's notation, without trailing zeros. */
+export function millionsText(pesos: number | null | undefined, es: boolean): string {
+  if (pesos == null) return "";
+  const s = String(Math.round(pesos / 1000) / 1000);
+  return es ? s.replace(".", ",") : s;
+}
+
+// ---------- From what the person typed to the lines that are stored ----------
+
+export type LineOut = { month: number; kpi: Kpi; value: number; suggested: number | null; origin: "SOLU" | "MANUAL" | "DERIVED" };
+/** The stored figures of a budget. `pureOc` / `pureFact` = SOLU's own suggestion (its reading of the history, no
+ *  growth): a month equal to it is marked SOLU, any other MANUAL. A derived figure without basis is not stored. */
+export function budgetLines(oc: number[], fact: number[], ocN: (number | null)[], a: Assumptions, pureOc: number[] | null, pureFact: number[] | null): LineOut[] {
+  const out: LineOut[] = [];
+  for (let m = 0; m < 12; m++) {
+    const month = m + 1;
+    out.push({ month, kpi: "OC_COP", value: oc[m], suggested: pureOc?.[m] ?? null, origin: pureOc && pureOc[m] === oc[m] ? "SOLU" : "MANUAL" });
+    out.push({ month, kpi: "FACT_COP", value: fact[m], suggested: pureFact?.[m] ?? null, origin: pureFact && pureFact[m] === fact[m] ? "SOLU" : "MANUAL" });
+    const d = deriveMonth(oc[m], a, ocN[m]);
+    if (d.ocN != null) out.push({ month, kpi: "OC_N", value: d.ocN, suggested: null, origin: ocN[m] != null && ocN[m]! > 0 && oc[m] > 0 ? "MANUAL" : "DERIVED" });
+    if (d.esa != null) out.push({ month, kpi: "ESA_COP", value: d.esa, suggested: null, origin: "DERIVED" });
+    if (d.cotCop != null) out.push({ month, kpi: "COT_COP", value: d.cotCop, suggested: null, origin: "DERIVED" });
+    if (d.cotN != null) out.push({ month, kpi: "COT_N", value: d.cotN, suggested: null, origin: "DERIVED" });
+    if (d.solN != null) out.push({ month, kpi: "SOL_N", value: d.solN, suggested: null, origin: "DERIVED" });
+  }
+  return out;
+}
+/** Does the proposal move away from SOLU's own suggestion (or is there no suggestion to lean on)? Then the
+ *  negotiator explains it (spec §6). */
+export function departs(oc: number[], fact: number[], pureOc: number[] | null, pureFact: number[] | null): boolean {
+  const off = (xs: number[], pure: number[] | null) => (pure ? xs.some((v, m) => v !== pure[m]) : xs.some((v) => v > 0));
+  return off(oc, pureOc) || off(fact, pureFact);
+}
