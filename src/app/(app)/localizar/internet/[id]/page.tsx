@@ -8,7 +8,7 @@ import { aiConfigured, aiSpentThisMonth, monthlyCap } from "@/lib/ai";
 import { HUNT_STALE_MS, contactNote, confidenceLabel, failText, leadsMailedAt, needsToSaveOn, type HuntAnswers, type Understood } from "@/lib/web-hunt";
 import { HuntWaiting } from "@/components/HuntWaiting";
 import { HuntForm } from "@/components/HuntForm";
-import { WebLeadCard } from "@/components/WebLeadCard";
+import { LeadMailLink, MAIL_LABEL, WebLeadCard, mailHint } from "@/components/WebLeadCard";
 import { saveLead, startHunt } from "../actions";
 
 export default async function HuntPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; l?: string; n?: string }> }) {
@@ -124,13 +124,21 @@ export default async function HuntPage({ params, searchParams }: { params: Promi
                     {g.leads.map((l) => (
                       <WebLeadCard key={l.id} l={l} t={t} n2={i.n2} mailedAt={mailed.get(l.id)} day={i.day} openContact={sp.l === l.id && !!sp.err?.startsWith("contacto")}>
                         {l.deal ? (
-                          <p className="wl-saved">
-                            <span className="sig ok">{l.supplier ? t("Es la fuente de la Necesidad", "It is the Need's source") : t("Guardada", "Saved")}</span>{" "}
-                            <Link href={`/deals/${l.deal.id}?tab=source#internet`}>{l.deal.code ?? t("la Necesidad", "the Need")} · {l.deal.title}</Link>
-                            {l.supplier && <> · <Link href={`/suppliers/${l.supplier.id}`}>{t(`proveedor ${l.supplier.name}`, `supplier ${l.supplier.name}`)}</Link></>}
-                          </p>
+                          <div className="wl-save">
+                            <span>
+                              <span className="sig ok">{l.supplier ? t("Es la fuente de la Necesidad", "It is the Need's source") : t("Guardada", "Saved")}</span>{" "}
+                              <Link href={`/deals/${l.deal.id}?tab=source#internet`}>{l.deal.code ?? t("la Necesidad", "the Need")} · {l.deal.title}</Link>
+                              {l.supplier && <> · <Link href={`/suppliers/${l.supplier.id}`}>{t(`proveedor ${l.supplier.name}`, `supplier ${l.supplier.name}`)}</Link></>}
+                            </span>
+                            <span className="grow" />
+                            <LeadMailLink id={l.id} t={t} again={mailed.has(l.id)} />
+                          </div>
                         ) : needs.length === 0 ? (
-                          <p className="src wl-saved">{t("Para guardar esta opción necesitas una Necesidad abierta a tu nombre.", "To save this option you need an open Need in your name.")} <Link href="/deals">{t("Ir a Necesidades", "Go to Needs")}</Link></p>
+                          <div className="wl-save">
+                            <span className="src">{t("Para guardar esta opción necesitas una Necesidad abierta a tu nombre.", "To save this option you need an open Need in your name.")} <Link href="/deals">{t("Ir a Necesidades", "Go to Needs")}</Link></span>
+                            <span className="grow" />
+                            <LeadMailLink id={l.id} t={t} again={mailed.has(l.id)} />
+                          </div>
                         ) : (
                           <form action={saveLead.bind(null, l.id)} className="wl-save">
                             <label className={sp.err === "necesidad" && sp.l === l.id ? "req-miss" : undefined}>{t("Guardar en la Necesidad", "Save on the Need")}
@@ -141,6 +149,8 @@ export default async function HuntPage({ params, searchParams }: { params: Promi
                             </label>
                             <button type="submit" name="intent" value="save" className="secondary">{t("Guardar opción", "Save option")}</button>
                             <button type="submit" name="intent" value="source">{t("Guardar y usar como fuente", "Save and use as source")}</button>
+                            <button type="submit" name="intent" value="mail" className="secondary">{mailed.has(l.id) ? t("Enviar otro correo con la solicitud", "Send another email with the request") : t(MAIL_LABEL.es, MAIL_LABEL.en)}</button>
+                            <span className="src wl-hint">{mailHint(!!l.email, t)} {t("Si hay una Necesidad elegida en la lista, el vendedor queda guardado en ella y el correo lleva sus piezas.", "If a Need is picked in the list, the seller is saved on it and the email carries its pieces.")}</span>
                           </form>
                         )}
                       </WebLeadCard>

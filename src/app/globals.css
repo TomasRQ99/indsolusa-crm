@@ -3225,6 +3225,8 @@ p.pj-table { margin: 0 0 8px; }
 .wl-save form { display: contents; }
 .wl-save label { flex: 1 1 260px; min-width: 0; }
 .wl-save .grow { flex: 1; }
+.wl-save .wl-hint { flex: 1 1 100%; }
+.wl-save a.btn { flex: 0 0 auto; }
 .wl-saved { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; }
 .wl-count { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 6px; font-weight: 600; }
 .wl-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; align-items: end; max-width: 900px; }

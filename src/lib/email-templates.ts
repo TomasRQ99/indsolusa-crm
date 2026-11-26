@@ -27,7 +27,7 @@ export const TEMPLATES: Record<TemplateKey, { es: string; en: string; to: "SUPPL
 type Block =
   | { p: string; strong?: boolean }
   | { items: ItemRow[]; prices?: string | null }
-  | { bullets: string[] }
+  | { bullets: string[]; strong?: boolean }
   | { addresses: true; lang: MailLang }
   | { gap: true };
 
@@ -38,12 +38,14 @@ export const longDay = (d: Date, lang: MailLang) => new Intl.DateTimeFormat(lang
 function render(blocks: Block[], lang: MailLang): { text: string; html: string } {
   const T: string[] = []; const H: string[] = [];
   const cell = "border:1px solid #cfd6de;padding:6px 10px;vertical-align:top";
+  // The company's own look (owner's template, 2026-11-26): blue heading cells with white capitals.
+  const head0 = "border:1px solid #1f5f99;padding:8px 14px;background:#1f5f99;color:#ffffff;font-weight:bold;text-align:center";
   for (const b of blocks) {
     if ("gap" in b) { T.push(""); continue; }
     if ("p" in b) { T.push(b.p, ""); H.push(`<p style="margin:0 0 12px">${b.strong ? `<b>${esc(b.p)}</b>` : esc(b.p)}</p>`); continue; }
     if ("bullets" in b) {
       T.push(...b.bullets.map((x) => `·  ${x}`), "");
-      H.push(`<ul style="margin:0 0 12px;padding-left:22px">${b.bullets.map((x) => `<li style="margin:2px 0">${esc(x)}</li>`).join("")}</ul>`);
+      H.push(`<ul style="margin:0 0 12px;padding-left:22px">${b.bullets.map((x) => `<li style="margin:2px 0">${b.strong ? `<b>${esc(x)}</b>` : esc(x)}</li>`).join("")}</ul>`);
       continue;
     }
     if ("items" in b) {
@@ -52,7 +54,7 @@ function render(blocks: Block[], lang: MailLang): { text: string; html: string }
       const hasPrice = !!b.prices && b.items.some((i) => i.unitPrice != null);
       T.push(...b.items.map((i) => `·  ${i.qty} × ${i.code}${i.brand ? ` – ${i.brand}` : ""} – ${i.description}${hasPrice && i.unitPrice != null ? ` – ${b.prices} ${money(i.unitPrice, lang)} ${en ? "each" : "c/u"}` : ""}`), "");
       const head = [en ? "QTY" : "CANT.", "P/N", ...(hasBrand ? [en ? "BRAND" : "MARCA"] : []), en ? "DESCRIPTION" : "DESCRIPCIÓN", ...(hasPrice ? [en ? `UNIT PRICE (${b.prices})` : `PRECIO UNIT. (${b.prices})`, `TOTAL (${b.prices})`] : [])];
-      H.push(`<table style="border-collapse:collapse;margin:0 0 14px;font-size:14px"><tr>${head.map((h) => `<th style="${cell};background:#eef2f6;text-align:left">${esc(h)}</th>`).join("")}</tr>${b.items.map((i) => `<tr><td style="${cell};text-align:right">${i.qty}</td><td style="${cell};font-family:Consolas,monospace">${esc(i.code)}</td>${hasBrand ? `<td style="${cell}">${esc(i.brand ?? "")}</td>` : ""}<td style="${cell}">${esc(i.description)}</td>${hasPrice ? `<td style="${cell};text-align:right">${i.unitPrice != null ? money(i.unitPrice, lang) : ""}</td><td style="${cell};text-align:right">${i.unitPrice != null ? money(i.unitPrice * i.qty, lang) : ""}</td>` : ""}</tr>`).join("")}</table>`);
+      H.push(`<table style="border-collapse:collapse;margin:0 0 14px;font-size:14px"><tr>${head.map((h) => `<th style="${head0}">${esc(h)}</th>`).join("")}</tr>${b.items.map((i) => `<tr><td style="${cell};text-align:right">${i.qty}</td><td style="${cell};font-family:Consolas,monospace">${esc(i.code)}</td>${hasBrand ? `<td style="${cell}">${esc(i.brand ?? "")}</td>` : ""}<td style="${cell}">${esc(i.description)}</td>${hasPrice ? `<td style="${cell};text-align:right">${i.unitPrice != null ? money(i.unitPrice, lang) : ""}</td><td style="${cell};text-align:right">${i.unitPrice != null ? money(i.unitPrice * i.qty, lang) : ""}</td>` : ""}</tr>`).join("")}</table>`);
       continue;
     }
     if ("addresses" in b) {
@@ -61,7 +63,8 @@ function render(blocks: Block[], lang: MailLang): { text: string; html: string }
       const ship = [COMPANY.shipTo.name, ...COMPANY.shipTo.lines, `${en ? "Phone" : "Teléfono"}: ${COMPANY.shipTo.phone}`];
       const bt = en ? "BILL TO:" : "FACTURAR A:"; const st = en ? "SHIP TO (WAREHOUSE):" : "ENVIAR A (BODEGA):";
       T.push(bt, ...bill, "", st, ...ship, "");
-      H.push(`<table style="border-collapse:collapse;margin:0 0 14px;font-size:14px"><tr><td style="padding:0 28px 0 0;vertical-align:top"><b>${bt}</b><br>${bill.map(esc).join("<br>")}</td><td style="vertical-align:top"><b>${st}</b><br>${ship.map(esc).join("<br>")}</td></tr></table>`);
+      const who = (x: string[]) => `<b>${esc(x[0])}</b><br>${x.slice(1).map(esc).join("<br>")}`;
+      H.push(`<table style="border-collapse:collapse;margin:0 0 14px;font-size:14px"><tr><th style="${head0};text-align:left">${bt}</th><th style="${head0};text-align:left">${st}</th></tr><tr><td style="padding:6px 28px 0 2px;vertical-align:top">${who(bill)}</td><td style="padding:6px 0 0 2px;vertical-align:top">${who(ship)}</td></tr></table>`);
     }
   }
   while (T.length && T[T.length - 1] === "") T.pop();
@@ -89,7 +92,7 @@ export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; nee
     { items: o.items },
     { p: "Please send us pictures, a diagram or the technical data sheet of the quoted items, so we can double-check with our customer and avoid any mistakes." },
     { p: "To secure the purchase order from our customer, please confirm your:" },
-    { bullets: ask(["Best resale price:", "Availability (lead time after receiving our payment):", "Payment options:", "Approximate weight and box dimensions:"]) },
+    { bullets: ask(["Best resale price:", "Availability (lead time after receiving our payment):", "Payment options:", "Approximate weight and box dimensions:"]), strong: true },
     ...(o.neededBy ? [{ p: `We would appreciate your answer by ${longDay(o.neededBy, "EN")}.`, strong: true }] : []),
     ...(o.notes ? [{ p: o.notes }] : []),
     { p: "For quoting and invoicing purposes, please find our complete information below:" },
@@ -105,7 +108,7 @@ export function rfqMail(o: { lang: MailLang; code: string; items: ItemRow[]; nee
     { items: o.items },
     { p: "Por favor envíennos fotos, un diagrama o la ficha técnica de los ítems cotizados, para confirmarlos con nuestro cliente y evitar errores." },
     { p: "Para obtener la orden de compra de nuestro cliente, por favor confirmen:" },
-    { bullets: ask(["Mejor precio de reventa:", "Disponibilidad (plazo de entrega después de recibir nuestro pago):", "Formas de pago:", "Peso y dimensiones aproximadas de la caja:"]) },
+    { bullets: ask(["Mejor precio de reventa:", "Disponibilidad (plazo de entrega después de recibir nuestro pago):", "Formas de pago:", "Peso y dimensiones aproximadas de la caja:"]), strong: true },
     ...(o.neededBy ? [{ p: `Agradecemos su respuesta a más tardar el ${longDay(o.neededBy, "ES")}.`, strong: true }] : []),
     ...(o.notes ? [{ p: o.notes }] : []),
     { p: "Para efectos de cotización y facturación, estos son nuestros datos completos:" },

@@ -140,6 +140,12 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
               ) : <span className="src">{t("Se enciende cuando la empresa conecte su llave de IA.", "It turns on once the company connects its AI key.")}</span>}
             </div>
           )}
+          {!c.dealId && tpl === "SELLER" && (
+            <div className="ai-rw" id="reescribir">
+              <b className="ai-rw-h"><span aria-hidden>✦</span> {t("Reescribir con IA", "Rewrite with AI")}</b>
+              <span className="src">{t("Para pedirle cambios a la IA, este vendedor tiene que estar guardado en una Necesidad: vuelve al resultado con «Cancelar», elige la Necesidad en la lista del vendedor y haz clic otra vez en «Enviar un correo con la solicitud». Mientras tanto puedes cambiar el texto a mano.", "To ask the AI for changes, this seller has to be saved on a Need: go back to the result with “Cancel”, pick the Need in the seller's list and click “Send an email with the request” again. Meanwhile you can change the text by hand.")}</span>
+            </div>
+          )}
           <div className="sg-pick" id="firma">
             <label>{t("Firma", "Signature")}
               <select name="signatureId" defaultValue={sigDefault?.id ?? ""}>

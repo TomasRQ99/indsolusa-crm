@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { aiConfigured, aiSpentThisMonth, monthlyCap } from "@/lib/ai";
-import { WebLeadCard } from "@/components/WebLeadCard";
+import { LeadMailLink, WebLeadCard } from "@/components/WebLeadCard";
 import { HuntForm } from "@/components/HuntForm";
 import { HUNT_STALE_MS, contactNote, leadsMailedAt } from "@/lib/web-hunt";
 import { leadAsSource, unsaveLead } from "@/app/(app)/localizar/internet/actions";
@@ -61,6 +61,7 @@ export async function NeedWebLeads({ dealId, t, n2, day, editable, tab, searchFo
                   ) : editable ? (
                     <form action={leadAsSource.bind(null, l.id)}><button type="submit">{t("Usar como fuente", "Use as source")}</button></form>
                   ) : null}
+                  <LeadMailLink id={l.id} t={t} again={mailed.has(l.id)} />
                   <span className="src">{t(`Guardada por ${l.savedByName ?? "—"}${l.savedAt ? ` el ${day(l.savedAt)}` : ""}`, `Saved by ${l.savedByName ?? "—"}${l.savedAt ? ` on ${day(l.savedAt)}` : ""}`)} · <Link href={`/localizar/internet/${l.huntId}#l-${l.id}`}>{t("ver la búsqueda completa", "see the whole search")}</Link></span>
                   <span className="grow" />
                   {editable && <form action={unsaveLead.bind(null, l.id)}><input type="hidden" name="tab" value={tab} /><button type="submit" className="link small">{t("Quitar de esta Necesidad", "Remove from this Need")}</button></form>}

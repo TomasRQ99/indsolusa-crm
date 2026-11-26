@@ -65,13 +65,18 @@ export function WebLeadCard({ l, t, n2, mailedAt, day, from = "hunt", openContac
         </dd>
         {l.note && <><dt>{t("Nota", "Note")}</dt><dd>{l.note}</dd></>}
       </dl>
-      <p className="wl-mail">
-        <a className="btn secondary sm" href={`/correo/nuevo?tpl=SELLER&id=${l.id}`}>{t("Escribirle al vendedor", "Email the seller")}</a>{" "}
-        {mailedAt
-          ? <span className="sig ok">{t(`Correo enviado${day ? ` el ${day(mailedAt)}` : ""}`, `Email sent${day ? ` on ${day(mailedAt)}` : ""}`)}</span>
-          : <span className="src">{l.email ? t("abre el correo ya escrito con la pieza, para revisarlo antes de enviar", "opens the email already written with the piece, to review before sending") : t("no se vio su correo: el texto sale listo para pegarlo en su formulario de contacto", "their email was not seen: the text comes ready to paste into their contact form")}</span>}
-      </p>
+      {mailedAt && <p className="wl-mail"><span className="sig ok">{t(`Correo con la solicitud enviado${day ? ` el ${day(mailedAt)}` : ""}`, `Request email sent${day ? ` on ${day(mailedAt)}` : ""}`)}</span></p>}
       {children}
     </article>
   );
+}
+
+export const MAIL_LABEL = { es: "Enviar un correo con la solicitud", en: "Send an email with the request" };
+export const mailHint = (hasEmail: boolean, t: T) => hasEmail
+  ? t("«Enviar un correo con la solicitud» abre el correo ya escrito con la plantilla de la empresa: lo revisas, lo cambias si quieres (también con IA) y lo envías.", "“Send an email with the request” opens the email already written with the company template: you review it, change it if you like (also with AI) and send it.")
+  : t("«Enviar un correo con la solicitud» abre el correo ya escrito con la plantilla de la empresa. No se vio el correo de este vendedor: lo escribes en «Para», o copias el texto en su formulario de contacto.", "“Send an email with the request” opens the email already written with the company template. This seller's email was not seen: type it under “To”, or copy the text into their contact form.");
+
+/** The same option where there is no form to press it in (the seller is already saved, or it is shown on the Need). */
+export function LeadMailLink({ id, t, again }: { id: string; t: T; again?: boolean }) {
+  return <a className="btn secondary" href={`/correo/nuevo?tpl=SELLER&id=${id}`}>{again ? t("Enviar otro correo con la solicitud", "Send another email with the request") : t(MAIL_LABEL.es, MAIL_LABEL.en)}</a>;
 }

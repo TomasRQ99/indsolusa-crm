@@ -106,6 +106,12 @@ export async function saveLead(leadId: string, fd: FormData) {
   const lead = await db.webLead.findUniqueOrThrow({ where: { id: leadId }, select: { id: true, huntId: true, seller: true, url: true, dealId: true } });
   const here = `/localizar/internet/${lead.huntId}`;
   const dealId = txt(fd, "dealId", 40);
+  // "Enviar un correo con la solicitud" (owner, 2026-11-26): the third option beside the two that save. With a Need
+  // picked, the seller is saved on it first (the email then carries that Need's pieces and its number); with none,
+  // the email opens with the piece that was searched.
+  const mail = fd.get("intent") === "mail";
+  const compose = `/correo/nuevo?tpl=SELLER&id=${lead.id}`;
+  if (mail && !dealId) redirect(compose);
   if (!dealId) redirect(`${here}?err=necesidad&l=${lead.id}#l-${lead.id}`);
   const deal = await db.deal.findUnique({ where: { id: dealId! }, select: { id: true, ownerId: true, accountId: true, code: true } });
   if (!deal || !canEdit(user, deal.ownerId)) redirect(`${here}?err=permiso&l=${lead.id}#l-${lead.id}`);
@@ -121,6 +127,7 @@ export async function saveLead(leadId: string, fd: FormData) {
     redirect(`/deals/${deal!.id}?tab=source&ok=fuente-internet#internet`);
   }
   refreshApp();
+  if (mail) redirect(compose);
   redirect(`${here}?ok=guardada&l=${lead.id}#l-${lead.id}`);
 }
 

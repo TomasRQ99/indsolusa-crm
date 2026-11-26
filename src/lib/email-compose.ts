@@ -135,7 +135,13 @@ export async function composeFrom(ctx: ComposeCtx, user: SessionUser, from: stri
     const und = (l.hunt.understood ?? {}) as { partNumber?: string | null; brand?: string | null; what?: string };
     const qty = Math.max(1, Math.round(Number(String((l.hunt.answers as { qty?: string } | null)?.qty ?? "").replace(/[^\d.]/g, "")) || 1));
     const searched = [{ qty, code: l.mpnSeen ?? und.partNumber ?? "", brand: und.brand ?? null, description: (und.what || l.hunt.query).slice(0, 160) }];
-    const items = d && d.items.length ? d.items.map((x) => ({ qty: x.qty, code: x.code ?? "", description: x.description.slice(0, 160) })) : searched;
+    // The seller gets the whole specification (the company template carries long descriptions), and the brand the
+    // search understood goes on the piece that was searched (the Need's items have no brand of their own).
+    const flat = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const wanted = [l.mpnSeen, und.partNumber, l.hunt.query].map(flat).filter((x) => x.length >= 3);
+    const items = d && d.items.length
+      ? d.items.map((x) => ({ qty: x.qty, code: x.code ?? "", brand: und.brand && (d.items.length === 1 || wanted.some((w) => flat(x.code).includes(w) || (!!flat(x.code) && w.includes(flat(x.code))))) ? und.brand : null, description: x.description.slice(0, 1500) }))
+      : searched;
     const code = d?.code ?? `W-${l.id.slice(-6).toUpperCase()}`;
     const notes = lang === "EN" ? `We saw this item listed on your website: ${l.url}` : `Vimos este producto publicado en su sitio web: ${l.url}`;
     const hasMail = emailOk(l.email);
