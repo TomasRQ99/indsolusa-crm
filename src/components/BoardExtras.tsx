@@ -30,12 +30,13 @@ export function RouteStrip({ x, i }: { x: BoardExtras; i: I18n }) {
 
 function SalesBars({ x, i }: { x: BoardExtras; i: I18n }) {
   const { t } = i;
-  const W = 640, H = 190, L = 44, R = 8, T = 16, B = 34;
+  const W = 640, H = 190, L = 66, R = 8, T = 16, B = 34;
   const max = Math.max(1, ...x.months.map((m) => m.total));
   const mag = Math.pow(10, Math.floor(Math.log10(max)));
   const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((s) => max / s <= 4) ?? mag * 10;
   const top = Math.ceil(max / step) * step;
-  const short = (v: number) => (v >= 1e6 ? `${Math.round(v / 1e5) / 10} M` : v >= 1e3 ? `${Math.round(v / 100) / 10} k` : String(Math.round(v)));
+  // Full numbers, never "1.9 k" (owner, 2026-11-26).
+  const short = (v: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(v));
   const col = (W - L - R) / x.months.length;
   const bw = Math.min(30, col - 8);
   const y = (v: number) => T + (1 - v / top) * (H - T - B);

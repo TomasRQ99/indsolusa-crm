@@ -47,11 +47,7 @@ export const RATIO_FIELDS: { k: keyof typeof RECIPE_DEFAULTS; label: Txt }[] = [
   { k: "activitiesPerPitch", label: { es: "¿De cada cuántas actividades de prospección llegas a 1 tomador de decisión?", en: "Out of how many prospecting activities do you reach 1 decision maker?" } },
 ];
 
-/** "100k", "1.5M", "950": the picture's short form. */
+/** The full number, "100,000" (owner, 2026-11-26: never "100k"). The name is kept for its callers. */
 export function shortMoney(v: number): string {
-  const a = Math.abs(v);
-  const f = (n: number) => (Math.round(n * 10) / 10).toString();
-  if (a >= 1e6) return `${f(v / 1e6)}M`;
-  if (a >= 1e3) return `${f(v / 1e3)}k`;
-  return String(Math.round(v));
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(v) || 0);
 }

@@ -228,7 +228,8 @@ export function fmtStat(i: Fmt, unit: Unit, v: number | null): string {
 }
 /** A short figure for a chart label (1.2 k, 3.4 M). */
 export function shortStat(i: Fmt, unit: Unit, v: number): string {
-  if (unit === "usd") return Math.abs(v) >= 1e6 ? `${one(i.es, v / 1e6)} M` : Math.abs(v) >= 1e3 ? `${one(i.es, v / 1e3)} k` : String(Math.round(v));
+  // Money is the full number (owner, 2026-11-26: never "1.2 k").
+  if (unit === "usd") return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(v) || 0);
   if (unit === "hours") return Math.abs(v) >= 48 ? `${one(i.es, v / 24)}d` : `${one(i.es, v)}h`;
   if (unit === "days") return `${one(i.es, v)}`;
   return String(Math.round(v));

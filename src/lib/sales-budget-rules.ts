@@ -53,10 +53,11 @@ export const MONTHS: Txt[] = [
 export const PROSPECTS = "PROSPECTOS";
 export const zeros = () => Array.from({ length: 12 }, () => 0);
 export const sum = (xs: (number | null)[]) => xs.reduce<number>((s, x) => s + (x ?? 0), 0);
-/** Dollars for the budget screens, whole: "149.852" (es) / "149,852" (en). The budget works in dollars. */
-export const usdCell = (v: number, es: boolean) => new Intl.NumberFormat(es ? "es-CO" : "en-US", { maximumFractionDigits: 0 }).format(Math.round(v) || 0);
-/** The same with the sign: "US$ 149.852". */
-export const usdMoney = (v: number, es: boolean) => `US$ ${usdCell(v, es)}`;
+/** Dollars for the budget screens: the full number, written as the owner's files write it, "149,852", in both
+ *  languages (owner, 2026-11-26: "the full unit number, not 1K but $1,932"). */
+export const usdCell = (v: number, _es?: boolean) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(v) || 0);
+/** The same with the sign: "$149,852". */
+export const usdMoney = (v: number, _es?: boolean) => { const n = Math.round(v) || 0; return `${n < 0 ? "-" : ""}$${usdCell(Math.abs(n))}`; };
 export const monthKey =(year: number, m: number) => `${year}-${String(m).padStart(2, "0")}`;
 
 // ---------- States ----------
@@ -336,21 +337,28 @@ export function parsePct(raw: unknown): number | null {
 
 // ---------- Dollars typed on the screens ----------
 
-/** "12.500" or "12500,5" (es), "12,500" or "12500.5" (en) → dollars; empty = null; anything that is not a number = NaN. */
-export function parseMoney(raw: unknown, es: boolean): number | null {
+/** "12500", "12,500", "12.500", "1250.5" or "1250,5" → dollars, in either language (the screens write "$12,500" for
+ *  everyone); empty = null; anything that is not a number = NaN. With both marks, the last one is the decimal mark.
+ *  With one kind only: repeated, or followed by exactly three digits, it marks thousands; otherwise decimals. */
+export function parseMoney(raw: unknown, _es?: boolean): number | null {
   let s = String(raw ?? "").trim().replace(/\s/g, "").replace(/US\$|USD|\$/gi, "");
   if (!s) return null;
-  // In Spanish notation a point marks thousands ("12.500"); a lone point with one or two digits after it is read as
-  // cents ("1250.5"), so a figure typed the other way is not multiplied by a hundred.
-  s = es ? (/^\d+\.\d{1,2}$/.test(s) ? s : s.replace(/\./g, "").replace(",", ".")) : s.replace(/,/g, "");
+  const dot = s.lastIndexOf("."), comma = s.lastIndexOf(",");
+  if (dot >= 0 && comma >= 0) {
+    const dec = dot > comma ? "." : ",";
+    s = s.split(dec === "." ? "," : ".").join("").replace(dec, ".");
+  } else if (dot >= 0 || comma >= 0) {
+    const mark = dot >= 0 ? "." : ",";
+    const parts = s.split(mark);
+    const thousands = parts.length > 2 || (/^-?\d{1,3}$/.test(parts[0]) && /^\d{3}$/.test(parts[1]));
+    s = thousands ? parts.join("") : s.replace(mark, ".");
+  }
   const n = Number(s);
   return Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN;
 }
-/** Dollars → the text of an input, in the person's notation, without thousands marks or trailing zeros. */
-export function moneyText(dollars: number | null | undefined, es: boolean): string {
-  if (dollars == null) return "";
-  const s = String(Math.round(dollars * 100) / 100);
-  return es ? s.replace(".", ",") : s;
+/** Dollars → the text of an input: plain digits, a point for cents, no thousands marks ("12500", "1250.5"). */
+export function moneyText(dollars: number | null | undefined, _es?: boolean): string {
+  return dollars == null ? "" : String(Math.round(dollars * 100) / 100);
 }
 
 // ---------- From what the person typed to the lines that are stored ----------

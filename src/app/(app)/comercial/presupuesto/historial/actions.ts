@@ -44,9 +44,9 @@ export async function checkHistory(fd: FormData) {
       const inv = invoiceSheet(rows, (name) => users.filter((u) => norm(u.name) === norm(name)).length === 1);
       if (inv) {
         if (!inv.invoices) redirect(`${BASE}?err=vacio#cargar`);
-        const usd = (v: number) => new Intl.NumberFormat("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+        const usd = (v: number) => new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
         const same = inv.fileTotal != null && Math.abs(inv.fileTotal - inv.total) < 0.005;
-        const note = `${inv.invoices} facturas · US$ ${usd(inv.total)}${inv.fileTotal == null ? "" : same ? " = Total del archivo" : ` ≠ Total del archivo US$ ${usd(inv.fileTotal)}`}${inv.annulled ? ` · ${inv.annulled} anuladas sin contar` : ""}${inv.unread ? ` · ${inv.unread} filas sin leer` : ""}`;
+        const note = `${inv.invoices} facturas · ${usd(inv.total)}${inv.fileTotal == null ? "" : same ? " = Total del archivo" : ` ≠ Total del archivo ${usd(inv.fileTotal)}`}${inv.annulled ? ` · ${inv.annulled} anuladas sin contar` : ""}${inv.unread ? ` · ${inv.unread} filas sin leer` : ""}`;
         label = `${(label || file.name.replace(/\.[^.]+$/, "")).slice(0, 118 - note.length)} (${note})`;
         currency = "USD"; unit = 1;
         const b = await db.salesHistoryBatch.create({ data: { source: "ANTERIOR", currency, unit, label, raw: inv.text, createdById: user.id, createdByName: user.name } });

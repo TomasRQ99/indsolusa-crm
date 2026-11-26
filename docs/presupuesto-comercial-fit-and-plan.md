@@ -136,6 +136,24 @@ each file's own total; uploaded through the browser on a production build.
 Also: "Mis empresas" has a column with the selected year's real purchase orders, and its header says which year the
 budget is built on (the owner read the 2026 tab as "2026 analysis" and found only 2025 figures).
 
+## Full numbers, never abbreviated (2026-11-26, owner)
+
+"Values should be the full unit number, not 1K but $1,932."
+
+- The budget screens write `$149,852` in both languages (the notation of the owner's files), replacing the
+  `US$ 149.852` of a few hours earlier. Inputs take 12500, 12,500, 12.500, 1250.5 or 1250,5 in either language
+  (`parseMoney`: with both marks the last one is decimal; a single mark followed by exactly three digits is
+  thousands). This replaces PC-31.
+- Everywhere else SOLU abbreviated money with "k" or "M", it now shows the full number: the 12-month sales chart
+  (BoardExtras), the batting table's chart labels (`shortStat`), the recipe and the team goals (`shortMoney`).
+- The projected close of the base year never falls below what the year has really brought: the month in course
+  counts for what it already has when that is more than the average.
+
+| # | Default taken (NOT confirmed) |
+|---|---|
+| PC-36 | Only the budget writes "$1,932"; the rest of SOLU keeps "USD 17.900" (`i.money`). Asked the owner whether to change it everywhere. |
+| PC-37 | `bigMoney` ("COP 390.512 M", used for peso amounts in finance screens) was left as it is. |
+
 ## How each figure is counted
 
 - Requests = Needs created (month created). Quotes = one per Need, month of first presentation, value of the last presented revision. Purchase orders = customer POs **accepted** (`PoAcceptance`), on the acceptance date; rejected or not yet accepted ones don't count. Invoicing = SOLU invoices by issue date. Eságara of POs = PO value × margin of its quote.
