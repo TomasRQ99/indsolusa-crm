@@ -197,6 +197,19 @@
   ],
   "expect": "Reading the text of a photo is free and works. Photo search with AI is off until the company connects the AI service."
  },
+ "localizar-internet": {
+  "t": "Search the internet for a part",
+  "why": "Find who sells today a piece that is not in our catalog or with our suppliers: SOLU searches the internet, checks the part number on each page and hands back the sellers by confidence level, with direct link and contact.",
+  "steps": [
+   "Open [[Localizar repuestos]], type the piece's part number, name or brand and click [[Buscar]].",
+   "Go down to “SEARCH THE INTERNET” and open [[Responder unas preguntas y buscar]]. No question is required: brand, quantity, delivery country, whether used is acceptable, whether an equivalent is acceptable and which Need it is for. If that piece was already searched, you will see “Already searched” with the link to the result.",
+   "Click [[Buscar en internet]]. It takes 1 to 3 minutes; you can leave the page open or go and come back later.",
+   "Read “WHAT SOLU UNDERSTOOD” and then the sellers, from “HIGH CONFIDENCE” to “LOW CONFIDENCE”. Each one says why it has that confidence and brings “Direct link” and “Contact”: email, phone or contact form.",
+   "On the seller that suits you, pick the Need under “Save on the Need” and click [[Guardar opción]]. If you have already decided to go ahead with them, click [[Guardar y usar como fuente]].",
+   "If SOLU left “QUESTIONS THAT WOULD SHARPEN THE SEARCH”, answer the ones you know and click [[Buscar otra vez con estas respuestas]]."
+  ],
+  "expect": "High confidence: the exact part number was seen on the seller's page. Medium: everything suggests they have it, but it still has to be checked on the page. Low: worth asking them; the piece was not seen listed. Confidence does not rate the seller or the price. What a page shows is a reference, not an offer. “Save and use as source” puts the seller on file as a supplier and writes the source on the Need; you type the cost once the seller confirms it. Each search uses the AI (a few US cents) and is kept for the whole team."
+ },
  "rfq": {
   "t": "Ask several suppliers for a quote",
   "why": "One request to several suppliers from sales@, instead of one email per supplier.",
@@ -1693,6 +1706,7 @@
    "Under “1 · THE PIECE”, type each product's part number and click [[Guardar]]. If a product is missing, open “Add product” and click [[Agregar]].",
    "Under “2 · PHOTOS”, upload the photo of the nameplate or the piece and click [[Subir fotos]]. The part number or a photo is enough; both is better.",
    "Under “3 · WHERE TO LOOK”, read the list: the suppliers we already work with, ordered for this piece, each with its reason (already sold it to us, quoted it, carries the brand, purchases received).",
+   "Under “OPTIONS FOUND ON THE INTERNET” are the sellers saved from the internet search, with their direct link and contact. To search, click [[Buscar esta pieza en internet]] (with options already saved it says “Search the internet for more options”). To go ahead with one, click [[Usar como fuente]]: it becomes a supplier and the Need's source.",
    "Under “4 · IS IT LOCATED?”, type which exact piece it is, choose the supplier if you already know and click [[La pieza está localizada]].",
    "To tell the customer how it is going, click [[Escribir al cliente: avance de su solicitud]]: the email comes already written from what SOLU knows about the Need."
   ],

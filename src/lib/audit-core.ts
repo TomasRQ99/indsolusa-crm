@@ -63,6 +63,8 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   PaymentMapPerson: "all",
   PaymentPromise: "all",
   CreditReviewRequest: "all",
+  // Localizar · internet search: which found seller was saved on which Need, and which became its source.
+  WebLead: ["dealId", "supplierId", "savedByName"],
   // Comercial C4 · Sourcing & Supply
   SupplyOption: ["price", "currency", "qty", "stockQty", "leadDaysMin", "leadDaysMax", "validUntil", "covers", "status", "discardReason", "importFeasibility", "availability", "supplierId"],
   SupplierPaymentOption: "all",

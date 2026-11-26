@@ -10,6 +10,7 @@ import { testAiConnection } from "./actions";
 
 const FEATURES: { keys: string[]; es: string; en: string; whereEs: string; whereEn: string; href: string }[] = [
   { keys: ["NEED_DRAFT"], es: "Crear Necesidad con IA", en: "Create Need with AI", whereEs: "COMERCIAL → Necesidades · Nueva Necesidad", whereEn: "COMMERCIAL → Needs · New Need", href: "/deals" },
+  { keys: ["PART_WEB"], es: "Buscar en internet", en: "Search the internet", whereEs: "MERCADO → Localizar repuestos", whereEn: "MARKET → Find parts", href: "/localizar" },
   { keys: ["PART_PHOTO"], es: "Buscar por foto", en: "Search by photo", whereEs: "MERCADO → Localizar repuestos", whereEn: "MARKET → Find parts", href: "/localizar" },
   { keys: ["mail-progress", "mail-offer", "mail-rewrite"], es: "Redactar y reescribir con IA (correos de una Necesidad)", en: "Draft and rewrite with AI (emails of a Need)", whereEs: "En el correo, bloque «Reescribir con IA»", whereEn: "On the email, “Rewrite with AI” block", href: "/cotizaciones" },
   { keys: ["mail-delay"], es: "Proponer con IA (aviso de retraso)", en: "Propose with AI (delay notice)", whereEs: "En una Necesidad atrasada · Aviso de retraso", whereEn: "On a late Need · Delay notice", href: "/mi-dia" },

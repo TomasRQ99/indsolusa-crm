@@ -379,6 +379,22 @@
    "expect": "La lectura del texto de una foto es gratuita y funciona. La búsqueda por foto con IA está apagada hasta que la empresa conecte el servicio de IA."
   },
   {
+   "id": "localizar-internet",
+   "m": "mercado",
+   "t": "Buscar un repuesto en internet",
+   "path": "MERCADO → Repuestos y productos → Localizar repuestos",
+   "why": "Encontrar quién vende hoy una pieza que no está en nuestro catálogo ni con nuestros proveedores: SOLU busca en internet, comprueba el número de parte en cada página y entrega los vendedores por nivel de confianza, con enlace directo y contacto.",
+   "steps": [
+    "Abre [[Localizar repuestos]], escribe el número de parte, el nombre o la marca de la pieza y haz clic en [[Buscar]].",
+    "Baja hasta «BUSCAR EN INTERNET» y abre [[Responder unas preguntas y buscar]]. Ninguna pregunta es obligatoria: marca, cantidad, país de entrega, si sirve usada, si sirve un equivalente y para qué Necesidad es. Si esa pieza ya se buscó, verás «Ya se buscó» con el enlace al resultado.",
+    "Haz clic en [[Buscar en internet]]. Tarda de 1 a 3 minutos; puedes dejar la página abierta o irte y volver después.",
+    "Lee «LO QUE SOLU ENTENDIÓ» y después los vendedores, de «CONFIANZA ALTA» a «CONFIANZA BAJA». Cada uno dice por qué tiene esa confianza y trae «Enlace directo» y «Contacto»: correo, teléfono o formulario de contacto.",
+    "En el vendedor que te sirva, elige la Necesidad en «Guardar en la Necesidad» y haz clic en [[Guardar opción]]. Si ya decidiste seguir con él, haz clic en [[Guardar y usar como fuente]].",
+    "Si SOLU dejó «PREGUNTAS QUE AFINARÍAN LA BÚSQUEDA», responde las que sepas y haz clic en [[Buscar otra vez con estas respuestas]]."
+   ],
+   "expect": "Confianza alta: el número de parte exacto se vio en la página del vendedor. Media: todo indica que la tienen, pero falta comprobarlo en la página. Baja: vale la pena preguntarles; la pieza no se vio publicada. La confianza no califica al vendedor ni su precio. Lo que muestra una página es una referencia, no una oferta. «Guardar y usar como fuente» registra al vendedor como proveedor y escribe la fuente en la Necesidad; el costo lo escribes tú cuando el vendedor lo confirme. Cada búsqueda usa la inteligencia artificial (unos centavos de dólar) y queda guardada para todo el equipo."
+  },
+  {
    "id": "rfq",
    "m": "mercado",
    "t": "Pedir cotización a varios proveedores",
@@ -464,6 +480,7 @@
     "En «1 · LA PIEZA», escribe el número de parte de cada producto y haz clic en [[Guardar]]. Si falta un producto, abre «Agregar producto» y haz clic en [[Agregar]].",
     "En «2 · FOTOS», sube la foto de la placa o de la pieza y haz clic en [[Subir fotos]]. Con el número de parte o una foto basta; las dos es mejor.",
     "En «3 · DÓNDE BUSCARLA», lee la lista: son los proveedores con los que ya trabajamos, ordenados para esta pieza, cada uno con su razón (ya nos la vendió, nos la cotizó, maneja la marca, compras recibidas).",
+    "En «OPCIONES ENCONTRADAS EN INTERNET» están los vendedores guardados desde la búsqueda en internet, con su enlace directo y su contacto. Para buscar, haz clic en [[Buscar esta pieza en internet]] (con opciones ya guardadas dice «Buscar más opciones en internet»). Para seguir con uno, haz clic en [[Usar como fuente]]: queda como proveedor y como la fuente de la Necesidad.",
     "En «4 · ¿YA ESTÁ LOCALIZADA?», escribe cuál es exactamente la pieza, elige el proveedor si ya lo sabes y haz clic en [[La pieza está localizada]].",
     "Para avisarle al cliente cómo va, haz clic en [[Escribir al cliente: avance de su solicitud]]: el correo ya viene escrito con lo que SOLU sabe de la Necesidad."
    ],

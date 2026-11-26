@@ -17,6 +17,7 @@ import { OutlookNote } from "@/components/OutlookNote";
 import { JourneyPath } from "@/components/JourneyPath";
 import { Popovers } from "@/components/Popovers";
 import { locateOptions } from "@/lib/locate";
+import { NeedWebLeads } from "@/components/NeedWebLeads";
 import { addLocateItem, markLocated, setItemCode, unmarkLocated } from "../actions";
 import { addNeedFiles, removeNeedFile,
   acceptCustomerPo,
@@ -658,6 +659,9 @@ export default async function JourneyPage({
     </>
   );
 
+  // What an internet search for this Need starts from: the part number if there is one, else the product's name.
+  const webSearchFor = (deal.items.find((x) => x.code?.trim())?.code ?? deal.items[0]?.description ?? deal.title).trim().slice(0, 200);
+
   // ---------- Localizar: which exact piece it is, its photos, and where to look for it ----------
   const Locate = () => {
     const hasCode = deal.items.some((x) => !!x.code?.trim()), hasPhoto = deal.files.length > 0;
@@ -749,6 +753,8 @@ export default async function JourneyPage({
           </p>
         </section>
 
+        <NeedWebLeads dealId={deal.id} t={t} n2={i.n2} day={i.day} editable={editable} tab="locate" searchFor={webSearchFor} ok={sp.ok} err={sp.err} />
+
         <section className={`jblock${deal.locatedAt ? "" : " loc-pending"}`} id="localizada">
           <div className="jbh"><b>{t("4 · ¿YA ESTÁ LOCALIZADA?", "4 · IS IT LOCATED?")}</b><span className="grow" />{deal.locatedAt ? <span className="sig ok">{t(`Localizada · ${i.day(deal.locatedAt)}`, `Located · ${i.day(deal.locatedAt)}`)}</span> : <span className="sig attn">{t("Sin localizar", "Not located")}</span>}</div>
           {deal.locatedAt ? (
@@ -789,6 +795,7 @@ export default async function JourneyPage({
         <div className="jbh"><b>{t("ABASTECIMIENTO", "SOURCING & SUPPLY")}</b><span className="grow" /><Link className="btn secondary sm" href={`${self}/abastecimiento`}>{t("Abrir", "Open")}</Link></div>
         <p className="quiet-p">{t("Opciones de cada proveedor con la fuente de cada dato, comparación por alcance (no solo precio), formas de pago, logística e importación, y la base de suministro elegida.", "Each supplier's options with the source of every value, comparison by scope (not just price), payment methods, logistics and import, and the chosen supply basis.")}</p>
       </section>
+      <NeedWebLeads dealId={deal.id} t={t} n2={i.n2} day={i.day} editable={editable} tab="source" searchFor={webSearchFor} ok={sp.ok} err={sp.err} />
       <section className="jblock">
         <div className="jbh"><b>{t("CÓMO LO VAMOS A CONSEGUIR", "HOW WE WILL SOURCE IT")}</b></div>
         {editable ? (

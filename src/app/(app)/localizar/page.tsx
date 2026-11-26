@@ -13,6 +13,8 @@ import { PhotoSearch } from "@/components/PhotoSearch";
 import { whyText, LIFE } from "./labels";
 import { createPart, syncCatalog } from "./actions";
 import { saveSearch } from "../deals/[id]/abastecimiento/actions";
+import { HuntForm } from "@/components/HuntForm";
+import { needsToSaveOn } from "@/lib/web-hunt";
 
 const EXAMPLES = ["6SL3210-1KE21-7UF1", "rodamiento 6205", "Siemens", "bomba dosificadora Grundfos", "servomotr siemens", "VFD urgente"];
 
@@ -50,6 +52,11 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
   const [ev, ctxDeal] = await Promise.all([
     evidenceFor((res?.hits ?? []).map((h) => h.id)),
     sp.deal ? db.deal.findUnique({ where: { id: sp.deal }, select: { id: true, code: true, title: true, account: { select: { name: true } } } }) : null,
+  ]);
+  // Internet search: the Needs it can be for, and what was already searched (so nobody pays twice for the same search).
+  const [needs, hunts] = await Promise.all([
+    needsToSaveOn(user),
+    db.webHunt.findMany({ where: q ? { query: { equals: q, mode: "insensitive" }, status: { in: ["DONE", "RUNNING"] } } : { status: "DONE" }, orderBy: { createdAt: "desc" }, take: q ? 3 : 8, select: { id: true, query: true, status: true, userName: true, createdAt: true, _count: { select: { leads: true } } } }),
   ]);
   const dq = ctxDeal ? `?deal=${ctxDeal.id}` : "";
   const now = today();
@@ -130,6 +137,7 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
       {sp.ok === "sync" &&<p className="note">{t(`Catálogo actualizado: ${sp.c ?? 0} parte(s) nueva(s) desde el historial y ${sp.a ?? 0} nombre(s) alterno(s) desde Productos.`, `Catalog updated: ${sp.c ?? 0} new part(s) from history and ${sp.a ?? 0} alternate name(s) from Products.`)}</p>}
       {sp.err === "falta" && <p className="note attn">{t("Para agregar una parte necesito el número de parte y una descripción.", "To add a part I need the part number and a description.")}</p>}
       {sp.err === "permiso" && <p className="note attn">{t("Solo Gerencia o el Director Comercial pueden hacer eso.", "Only Management or the Commercial Director can do that.")}</p>}
+      {sp.err === "internet-corto" && <p className="note attn" role="alert">{t("Para buscar en internet escribe al menos el número de parte, el nombre o la marca de la pieza.", "To search the internet type at least the piece's part number, name or brand.")}</p>}
 
       {ctxDeal && (
         <div className="loc-ctx">
@@ -181,9 +189,25 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
           {hits.length === 0 && (
             <div className="card">
               <p><b>{t(`“${q}” no está en nuestro catálogo todavía.`, `“${q}” isn't in our catalog yet.`)}</b></p>
-              <p className="src">{t("El catálogo se arma con lo que ya cotizamos, vendimos y compramos. Si es una parte nueva, agrégala y la próxima vez aparecerá. (La búsqueda en internet llega en la siguiente fase.)", "The catalog is built from what we already quoted, sold and bought. If it's a new part, add it and it'll show up next time. (Web search comes in the next phase.)")}</p>
+              <p className="src">{t("El catálogo se arma con lo que ya cotizamos, vendimos y compramos. Si es una parte nueva, agrégala y la próxima vez aparecerá. Mientras tanto, búscala en internet aquí abajo.", "The catalog is built from what we already quoted, sold and bought. If it's a new part, add it and it'll show up next time. Meanwhile, search the internet for it below.")}</p>
             </div>
           )}
+          <section className="jblock loc-sec" id="internet">
+            <div className="jbh"><b>{t("BUSCAR EN INTERNET", "SEARCH THE INTERNET")}</b><span className="grow" /><span className="src">{t("quién vende esta pieza hoy, con enlace directo y contacto", "who sells this piece today, with direct link and contact")}</span></div>
+            <p className="quiet-p">{t("SOLU busca en internet vendedores de esta pieza, abre cada página para comprobar el número de parte y te los entrega por nivel de confianza, con el enlace directo, el correo, el teléfono o el formulario de contacto. Cada opción se puede guardar en una Necesidad y usar como su fuente.", "SOLU searches the internet for sellers of this piece, opens each page to check the part number and hands them to you by confidence level, with the direct link, the email, the phone or the contact form. Each option can be saved on a Need and used as its source.")}</p>
+            {hunts.length > 0 && (
+              <ul className="plain wl-prev">
+                {hunts.map((h) => (
+                  <li key={h.id}><Link href={`/localizar/internet/${h.id}`}>{h.status === "RUNNING" ? t("Hay una búsqueda en curso: ver cómo va", "A search is running: see how it is going") : t(`Ya se buscó: ver los ${h._count.leads} vendedor(es) encontrados`, `Already searched: see the ${h._count.leads} seller(s) found`)} →</Link> <span className="src">{h.userName} · {i.day(h.createdAt)}</span></li>
+                ))}
+              </ul>
+            )}
+            <details className="qa" open={hunts.length === 0}>
+              <summary className="qa-btn">{hunts.length === 0 ? t("Responder unas preguntas y buscar", "Answer a few questions and search") : t("Buscar otra vez", "Search again")}</summary>
+              <p className="src" style={{ margin: "8px 0" }}>{t("Ninguna pregunta es obligatoria: lo que respondas afina la búsqueda.", "No question is required: what you answer sharpens the search.")}</p>
+              <HuntForm t={t} q={q} dealId={ctxDeal?.id} partId={best && best.score >= 95 ? best.id : null} needs={needs} answers={{ brand: res.brand ?? photo?.brand ?? undefined }} state={aiState} cap={cap} />
+            </details>
+          </section>
           {ctxDeal && hits.length > 0 && (
             <details className="scp-add" open={sp.err === "motivo"}>
               <summary className="qa-btn">{t(`Guardar esta búsqueda en ${ctxDeal.code ?? "la Necesidad"}`, `Save this search to ${ctxDeal.code ?? "the Need"}`)}</summary>
@@ -218,6 +242,14 @@ export default async function LocalizarPage({ searchParams }: { searchParams: Pr
         </>
       )}
 
+      {!q && hunts.length > 0 && (
+        <section className="jblock loc-sec">
+          <div className="jbh"><b>{t("BÚSQUEDAS EN INTERNET RECIENTES", "RECENT INTERNET SEARCHES")}</b><span className="grow" /><span className="src">{t("escribe una pieza arriba y pulsa Buscar para hacer una nueva", "type a piece above and press Search to make a new one")}</span></div>
+          <ul className="plain wl-prev">
+            {hunts.map((h) => <li key={h.id}><Link href={`/localizar/internet/${h.id}`}>{h.query}</Link> <span className="src">{t(`${h._count.leads} vendedor(es)`, `${h._count.leads} seller(s)`)} · {h.userName} · {i.day(h.createdAt)}</span></li>)}
+          </ul>
+        </section>
+      )}
       {!q && (
         <section className="jblock loc-sec">
           <div className="jbh">

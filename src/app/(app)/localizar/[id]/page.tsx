@@ -333,6 +333,7 @@ export default async function PartPage({ params, searchParams }: { params: Promi
               </table>
             )}
             <div className="loc-offer-acts">
+              <Link className="btn sm" href={`/localizar?${new URLSearchParams({ q: [p.brand && !p.mpn.toLowerCase().includes(p.brand.toLowerCase()) ? p.brand : null, p.mpn].filter(Boolean).join(" "), ...(sp.deal ? { deal: sp.deal } : {}) })}#internet`}>{t("Buscar vendedores en internet", "Search sellers on the internet")}</Link>
               <form action={searchSources.bind(null, p.id)}><button type="submit" className="secondary sm">{t("Buscar en fuentes oficiales", "Search official sources")}</button></form>
               <details className="qa"><summary className="qa-btn">{t("Leer una página web", "Read a web page")}</summary><div className="qa-pop wide">
                 <form action={readPage.bind(null, p.id)} className="qa-form">

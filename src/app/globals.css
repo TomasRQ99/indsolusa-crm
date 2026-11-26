@@ -3210,3 +3210,30 @@ p.pj-table { margin: 0 0 8px; }
 .rp-list .mb-go { flex: none; color: var(--ai); border-color: var(--ai); background: var(--ai-soft); white-space: nowrap; }
 .ia-steps { margin: 0 0 8px; padding-left: 20px; display: grid; gap: 6px; }
 @media (max-width: 520px) { .ai-need-dl > div { grid-template-columns: 1fr; gap: 0; } }
+/* ---------- Localizar repuestos · búsqueda en internet (sellers found, by confidence) ---------- */
+.wl { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--line-strong); border-radius: var(--radius); padding: 12px 14px; scroll-margin-top: 80px; }
+.wl.wl-high { border-left-color: var(--ok); }
+.wl.wl-medium { border-left-color: var(--attn); }
+.wl-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.wl-top .grow { flex: 1; }
+.wl-seller { font-size: 15px; }
+.wl-title { font-size: 13px; color: var(--ink-2); margin-top: 2px; overflow-wrap: anywhere; }
+.wl .loc-why { margin-top: 6px; }
+.wl-ev { margin: 6px 0 0; font-size: 13px; color: var(--ink-2); }
+.wl-dl { margin-top: 8px; grid-template-columns: 140px minmax(0, 1fr); }
+.wl-save { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.wl-save form { display: contents; }
+.wl-save label { flex: 1 1 260px; min-width: 0; }
+.wl-save .grow { flex: 1; }
+.wl-saved { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; }
+.wl-count { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 6px; font-weight: 600; }
+.wl-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; align-items: end; max-width: 900px; }
+.wl-form .wide { grid-column: 1 / -1; }
+.wl-go { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.wl-go .src { flex: 1 1 260px; }
+.wl-prev { margin: 8px 0; display: grid; gap: 4px; font-size: 13px; }
+.wl-wait { display: flex; align-items: center; gap: 12px; }
+.wl-spin { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--brand); animation: wl-spin 0.9s linear infinite; }
+@keyframes wl-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .wl-spin { animation-duration: 3s; } }
+@media (max-width: 760px) { .wl-form { grid-template-columns: 1fr; } .wl-dl { grid-template-columns: 1fr; gap: 2px 0; } .wl-dl dd { margin-bottom: 6px; } }

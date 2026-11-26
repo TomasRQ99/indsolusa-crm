@@ -444,6 +444,8 @@ model Deal {
   dispatches            DispatchInstruction[]
   // Comercial C4 · Sourcing & Supply
   sourcingSearches      SourcingSearch[]
+  webHunts              WebHunt[]
+  webLeads              WebLead[]
   supplyOptions         SupplyOption[]
   supplyBases           SupplyBasis[]
   opsExceptions         OperationalException[]
@@ -755,6 +757,7 @@ model Part {
   aliases           PartAlias[]
   offers            SupplierOffer[]
   webSources        WebSource[]
+  webHunts          WebHunt[]
   logisticsObs      LogisticsObservation[]
   importExperiences ImportExperience[]
 
@@ -953,6 +956,7 @@ model Supplier {
   purchaseRequirements PurchaseRequirement[]
   supplierInvoices     SupplierInvoice[]
   internalPurchases    InternalPurchase[]
+  webLeads             WebLead[]
 }
 
 model SupplierPO {
@@ -3038,18 +3042,18 @@ model GoalTarget {
 /// and four "1 of N" ratios SOLU derives the closes, quotes, first meetings, decision-maker pitches and prospecting
 /// activities needed (and per working day). One row per person and month; editing replaces it (audited).
 model GoalRecipe {
-  id                  String   @id @default(cuid())
-  userId              String
-  period              String
-  salesGoal           Decimal  @db.Decimal(14, 2)
-  avgSale             Decimal  @db.Decimal(14, 2)
-  quotesPerClose      Int      @default(2)
-  meetingsPerQuote    Int      @default(2)
-  pitchesPerMeeting   Int      @default(3)
-  activitiesPerPitch  Int      @default(3)
-  setByName           String
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  userId             String
+  period             String
+  salesGoal          Decimal  @db.Decimal(14, 2)
+  avgSale            Decimal  @db.Decimal(14, 2)
+  quotesPerClose     Int      @default(2)
+  meetingsPerQuote   Int      @default(2)
+  pitchesPerMeeting  Int      @default(3)
+  activitiesPerPitch Int      @default(3)
+  setByName          String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@unique([userId, period])
 }
@@ -5872,4 +5876,95 @@ model FollowUp {
   sentAt     DateTime @default(now())
 
   @@index([accountId, sentAt])
+}
+
+// ---------- Localizar repuestos · Búsqueda en internet con IA ----------
+
+/// One search of the open internet for a piece (owner, 2026-11-26: "seek through the internet any option that fits
+/// the piece number… multiple sources with different levels of confidence"). The AI searches; SOLU then opens each
+/// page itself and grades the confidence by rule. The result is kept, so nobody pays twice for the same search.
+model WebHunt {
+  id         String    @id @default(cuid())
+  query      String
+  /// what the person answered before searching: {brand, qty, country, condition, equivalents, details}
+  answers    Json?
+  lang       String    @default("ES")
+  partId     String?
+  part       Part?     @relation(fields: [partId], references: [id], onDelete: SetNull)
+  dealId     String?
+  deal       Deal?     @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  /// RUNNING | DONE | FAILED
+  status     String    @default("RUNNING")
+  failCode   String?
+  failNote   String?
+  /// what the AI understood the piece to be: {partNumber, brand, what, alternates: [{code, note}]}
+  understood Json?
+  summary    String?
+  /// questions whose answer would sharpen the search: string[]
+  questions  Json?
+  searches   Int       @default(0)
+  costUsd    Decimal?  @db.Decimal(10, 5)
+  userId     String?
+  userName   String
+  createdAt  DateTime  @default(now())
+  finishedAt DateTime?
+  leads      WebLead[]
+
+  @@index([createdAt])
+  @@index([dealId])
+}
+
+/// One seller found by a WebHunt. Reference only, never a confirmed offer. It can be saved to a Need and, if the
+/// company goes ahead with it, become that Need's source (and a supplier on file).
+model WebLead {
+  id           String    @id @default(cuid())
+  huntId       String
+  hunt         WebHunt   @relation(fields: [huntId], references: [id], onDelete: Cascade)
+  position     Int       @default(0)
+  seller       String
+  /// MANUFACTURER | AUTHORIZED | DISTRIBUTOR | MARKETPLACE | BROKER | OTHER
+  sellerKind   String    @default("OTHER")
+  country      String?
+  /// the direct link to the piece on the seller's site
+  url          String
+  host         String
+  title        String?
+  /// what the AI says the page shows: EXACT | LIKELY | SELLER_ONLY
+  match        String
+  /// HIGH | MEDIUM | LOW, decided by SOLU's rules (src/lib/web-hunt.ts), not by the AI
+  confidence   String
+  /// reason codes behind the confidence, shown in words
+  reasons      String[]  @default([])
+  /// the AI's one sentence on what supports the match
+  evidence     String?
+  mpnSeen      String?
+  price        Decimal?  @db.Decimal(14, 4)
+  currency     String?
+  availability String?
+  /// NEW | REFURBISHED | USED
+  condition    String?
+  email        String?
+  phone        String?
+  contactUrl   String?
+  /// where the contact data came from: AI (read in the search) | PAGE (SOLU read it on the page itself)
+  contactFrom  String?
+  note         String?
+  /// SOLU's own reading of the page: SEEN (the number is there) | NOT_SEEN | CLOSED (could not open it)
+  checked      String?
+  checkedWhy   String?
+  /// whether the link was among the results the search really returned (null = could not tell)
+  linkKnown    Boolean?
+  /// saved to a Need
+  dealId       String?
+  deal         Deal?     @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  savedByName  String?
+  savedAt      DateTime?
+  /// chosen as that Need's source: the supplier it became
+  supplierId   String?
+  supplier     Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  sourceAt     DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([huntId])
+  @@index([dealId])
 }
