@@ -111,7 +111,17 @@ async function main() {
   console.log("Demo data loaded (demo.manager@ / demo.rep@example.com, password ChangeMe123!).");
 }
 
+// The owner's 2025–2026 sales go into the commercial budget's history (once). A failure here never stops a deploy:
+// the daily housekeeping job tries again.
+async function history() {
+  try { const { bootIndustryHistory } = await import("../src/lib/sales-history-boot"); console.log("Sales history:", await bootIndustryHistory()); }
+  catch (e) { console.log("Sales history: not loaded this time ·", e instanceof Error ? e.message : e); }
+  // That code uses the app's own database connection: close it, so the seed ends and the deploy goes on.
+  try { await (await import("../src/lib/db")).db.$disconnect(); } catch { /* nothing to close */ }
+}
+
 main()
+  .then(history)
   .catch((e) => {
     console.error(e);
     process.exit(1);

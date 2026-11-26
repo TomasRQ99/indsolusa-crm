@@ -62,6 +62,7 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
   const saved: EditorSaved | null = chosen ? {
     oc: numbers(m.OC_COP), fact: numbers(m.FACT_COP),
     ocN: Array.from({ length: 12 }, (_, k) => { const l = chosen.lines.find((x) => x.kpi === "OC_N" && x.month === k + 1 && x.origin === "MANUAL"); return l ? Number(l.value) : null; }),
+    ent: Array.from({ length: 12 }, (_, k) => { const l = chosen.lines.find((x) => x.kpi === "ENT_N" && x.month === k + 1); return l ? Number(l.value) : null; }),
     a: readAssumptions(chosen.assumptions, { ...start, ticket: null, convSC: null, bateoN: null, bateoV: null, marginPct: null }),
     potential: chosen.potential, strategy: chosen.strategy, justification: chosen.justification,
   } : null;
@@ -73,7 +74,7 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
   const all = totals(set, (x) => x.accountId === slot), mine = totals(set, pick);
   const histYears = [base - 2, base - 1, base];
   const current = monthOf(now);
-  const HIST: Kpi[] = ["SOL_N", "COT_N", "COT_COP", "OC_N", "OC_COP", "ESA_COP", "FACT_COP"];
+  const HIST: Kpi[] = ["SOL_N", "COT_N", "COT_COP", "OC_N", "OC_COP", "ESA_COP", "FACT_COP", "ENT_N"];
   const avg = (kpi: Kpi, n: number) => { const ms = lastMonths(current, n).filter((k) => all.first != null && k >= all.first); return ms.length ? sum(ms.map((k) => all.of(kpi, k))) / ms.length : null; };
   const chartMonths = lastMonths(current, 36).filter((k) => all.first != null && k >= all.first);
   const chartMax = Math.max(1, ...chartMonths.map((k) => Math.max(all.of("OC_COP", k), all.of("FACT_COP", k))));
@@ -95,7 +96,7 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
     enviado: t("La propuesta ya se envió: retira el envío para cambiarla.", "The proposal was already sent: withdraw it to change it."),
     aprobado: t("El presupuesto aprobado no se cambia: abre una versión nueva con su motivo.", "The approved budget doesn't change: open a new version with its reason."),
     valor: t("Falta corregir una cifra en «Meta OC» o «Meta facturación»: son números en millones, de cero en adelante.", "A figure in «PO goal» or «Invoicing goal» needs fixing: they are numbers in millions, from zero up."),
-    numero: t("Falta corregir «# OC objetivo»: son números enteros.", "«# POs objective» needs fixing: whole numbers only."),
+    numeros: t("Falta corregir «# OC objetivo» o «# Entregas objetivo»: son números enteros.", "«# POs objective» or «# Deliveries objective» needs fixing: whole numbers only."),
     supuesto: t("Falta corregir un supuesto: escribe solo números (los porcentajes, sin el signo %).", "An assumption needs fixing: type numbers only (percentages without the % sign)."),
     vacio: t("Falta la meta: escribe al menos un mes de «Meta OC» o de «Meta facturación» mayor que cero. El borrador quedó guardado.", "The goal is missing: type at least one month of «PO goal» or «Invoicing goal» above zero. The draft was saved."),
     justificacion: t("Falta la «Justificación»: tus cifras no son la sugerencia de SOLU (o no hay sugerencia), así que tu líder necesita saber de dónde salen. El borrador quedó guardado.", "The «Justification» is missing: your figures are not SOLU's suggestion (or there is none), so your leader needs to know where they come from. The draft was saved."),

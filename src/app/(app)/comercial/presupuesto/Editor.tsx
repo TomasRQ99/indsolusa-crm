@@ -13,7 +13,7 @@ export type EditorBasis = {
   seasonOc: number[] | null; seasonFact: number[] | null; backlog: number;
   ticket: Rate; convSC: Rate; bateoN: Rate; bateoV: Rate; margin: Rate;
 };
-export type EditorSaved = { oc: number[]; fact: number[]; ocN: (number | null)[]; a: Assumptions; potential: string | null; strategy: string | null; justification: string | null };
+export type EditorSaved = { oc: number[]; fact: number[]; ocN: (number | null)[]; ent: (number | null)[]; a: Assumptions; potential: string | null; strategy: string | null; justification: string | null };
 
 type Props = {
   es: boolean; year: number; editable: boolean; prospects: boolean; basis: EditorBasis; start: Assumptions; saved: EditorSaved | null;
@@ -51,6 +51,7 @@ export default function Editor({ es, year, editable, prospects, basis, start, sa
   const [oc, setOc] = useState<string[]>(() => (saved ? saved.oc : sugOc ?? Array(12).fill(null)).map((v) => (v == null || (!saved && v === 0) ? "" : millionsText(v, es))));
   const [fact, setFact] = useState<string[]>(() => (saved ? saved.fact : sugFact ?? Array(12).fill(null)).map((v) => (v == null || (!saved && v === 0) ? "" : millionsText(v, es))));
   const [ocN, setOcN] = useState<string[]>(() => (saved?.ocN ?? Array(12).fill(null)).map((v) => (v == null ? "" : String(v))));
+  const [ent, setEnt] = useState<string[]>(() => (saved?.ent ?? Array(12).fill(null)).map((v) => (v == null ? "" : String(v))));
 
   const num = (s: string) => { const v = parseMillions(s, es); return v == null || Number.isNaN(v) ? 0 : v; };
   const ocV = oc.map(num), factV = fact.map(num);
@@ -115,6 +116,7 @@ export default function Editor({ es, year, editable, prospects, basis, start, sa
             <tr data-k="SOL_N"><th scope="row">{t("# Solicitudes requeridas", "# Requests required")}<span className="src block">{t("Señal de cuánta demanda generar; no una obligación del cliente.", "A signal of how much demand to create; not an obligation of the customer.")}</span></th>{der.map((d, m) => <td key={m}>{cell(d.solN, false)}</td>)}<td className="pc-year">{cell(total(der.map((d) => d.solN)), false)}</td></tr>
             <tr className="pc-g"><td colSpan={14}>{t("Facturación (base financiera · plan aparte)", "Invoicing (financial base · a separate plan)")}</td></tr>
             {!prospects && <tr className="pc-sug" data-k="SUG_FACT"><th scope="row">{t("Sugerencia de SOLU", "SOLU's suggestion")}</th>{sugFact ? sugFact.map((v, m) => <td key={m}>{show(v)}</td>) : <td colSpan={12} className="l">{nobase}</td>}<td className="pc-year">{sugFact ? show(sum(sugFact)) : "—"}</td></tr>}
+            <tr data-k="ENT_N"><th scope="row">{t("# Entregas objetivo", "# Deliveries objective")}<span className="src block">{t("Opcional: cuántas entregas al cliente esperas confirmar cada mes.", "Optional: how many deliveries to the customer you expect to confirm each month.")}</span></th>{ent.map((v, m) => <td key={m}><input className="pc-in n" name={`ent_${m + 1}`} inputMode="numeric" value={v} onChange={(e) => setAt(setEnt, m, e.target.value.replace(/[^\d]/g, ""))} readOnly={ro} aria-label={`${t("# Entregas objetivo", "# Deliveries objective")} · ${M[m]}`} /></td>)}<td className="pc-year" data-total="ENT_N">{ent.some((v) => v.trim()) ? ent.reduce((s2, v) => s2 + (Number(v) || 0), 0) : "—"}</td></tr>
             <tr data-k="FACT_COP"><th scope="row">{t("Meta facturación ($ M)", "Invoicing goal ($ M)")}</th>{fact.map((v, m) => <td key={m}><input className="pc-in" name={`fact_${m + 1}`} inputMode="decimal" value={v} onChange={(e) => setAt(setFact, m, e.target.value)} readOnly={ro} aria-label={`${t("Meta facturación", "Invoicing goal")} · ${M[m]}`} /></td>)}<td className="pc-year" data-total="FACT_COP">{show(annualFact)}</td></tr>
           </tbody>
         </table>
@@ -147,6 +149,7 @@ export default function Editor({ es, year, editable, prospects, basis, start, sa
           <li>{t("Eságara objetivo = meta OC × Eságara objetivo (%).", "Eságara objective = PO goal × Eságara objective (%).")}</li>
           <li>{t("Cotizaciones requeridas ($) = meta OC ÷ bateo por valor. # Cotizaciones = # OC ÷ bateo por cantidad, hacia arriba. # Solicitudes = # Cotizaciones ÷ Solicitud → Cotización, hacia arriba.", "Quotes required ($) = PO goal ÷ batting by value. # Quotes = # POs ÷ batting by number, rounded up. # Requests = # Quotes ÷ Request → Quote, rounded up.")}</li>
           <li>{t(KPIS.FACT_COP.how.es, KPIS.FACT_COP.how.en)}</li>
+          <li>{t(`# Entregas objetivo: lo escribes tú; SOLU no lo calcula. Lo real: ${KPIS.ENT_N.how.es}`, `# Deliveries objective: you type it; SOLU does not work it out. Real: ${KPIS.ENT_N.how.en}`)}</li>
           <li>{t("Los porcentajes se miden por grupos de origen en los últimos 24 meses: solo cotizaciones ya decididas (una abierta no cuenta como perdida) y solicitudes con más de 30 días. Con menos de 5 casos SOLU dice «sin base suficiente».", "The percentages are measured by cohort over the last 24 months: only quotes already decided (an open one is not a loss) and requests older than 30 days. With fewer than 5 cases SOLU says «not enough basis».")}</li>
         </ul>
       </details>

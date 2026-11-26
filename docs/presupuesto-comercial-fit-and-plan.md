@@ -39,6 +39,30 @@ Code: `src/lib/sales-history-rules.ts` (pure: parsing), `src/lib/sales-history.t
 
 Checked on 2026-11-26: 32 parsing checks, 36 data checks on the local database, browser checks on a production build (negotiator and Gerencia; phone width). Not checked: a real file from the earlier system or from Siigo; a large load (thousands of rows); the live site.
 
+## Wave 3 (2026-11-26): reforecast, priorities of the day, deliveries, Excel upload, and the owner's real sales
+
+Asked by the owner: "completa lo que está pendiente por construir"; then, seeing the live screen empty: "necesitamos análisis pasado para poder programar para el futuro… la info no está en el sistema".
+
+- **The owner's 2025–2026 sales load themselves.** `prisma/data/industry-sales-2025-2026.json` (65 company-months built from their two invoice lists: 357 invoices, USD 504,183.15) is loaded once by `src/lib/sales-history-boot.ts`, called from `prisma/seed.ts` at deploy and retried by the daily HOUSEKEEPING job. It creates the missing customers (owner: the first Gerencia user) and two ordinary loads: invoicing, and purchase orders **as an approximation** (the same invoices read as their orders: value and number). `SalesBudgetSetting.historyBootAt` marks it done, so a load a person removes never comes back.
+- **Reforecast** (`/comercial/presupuesto/reforecast`, `…/reforecast/[slot]`): estimate = real so far + what the negotiator types for the months still open (probable POs, scheduled invoices), with required assumptions; each save is a cut (`SalesForecast`, `SalesForecastLine`). The official budget is never touched.
+- **Priorities of the day** (on Cumplimiento y radar) and **evening email** (`src/lib/sales-insight.ts`, table `SalesInsight`, job `BUDGET_EVENING`): at most three, each a radar detection with its figures and link; with the AI key the model only orders and words them (`aiPriorities` drops anything that names no existing detection). Email off by default (`SalesBudgetSetting.eveningMail`).
+- **Deliveries**: indicator `ENT_N` (confirmed deliveries by real date) in the history; optional row "# Entregas objetivo" in the proposal.
+- **Historial** reads .xlsx directly (first sheet) and Excel date cells.
+- Real against budget and the radar now come from one reader, `src/lib/sales-budget-track.ts`, used by Cumplimiento, Reforecast and the priorities.
+
+| # | Default taken in wave 3 (NOT confirmed) |
+|---|---|
+| PC-18 | An invoice of the owner's files is read as its purchase order too (same month, same value), in a separate removable load named as an approximation. |
+| PC-19 | Customers created by the automatic load belong to the first Gerencia user; a seller who is not a SOLU user leaves the figure to the company's owner. |
+| PC-20 | Reforecast uses no probabilities: real + typed. Only during the year in course. Sums include only companies with a reforecast. |
+| PC-21 | Evening email: working days from 17:00 Bogotá, once a day, to each person with a budget of the year, with customer names and figures (unlike the Gerencia close email, which carries only counts). Off until Gerencia or Dirección Comercial turn it on. |
+| PC-22 | Priorities: the screen's are worded in the language of whoever prepares them; the email rebuilds them in the recipient's. Without detections SOLU recommends nothing (AT-15). |
+| PC-23 | Deliveries are counted, not valued; the delivery goal is typed, never derived. |
+
+Checked on 2026-11-26: 37 rule/data checks, 10 checks of the automatic load (run, rerun, undo) on the local database, browser checks on a production build. Not checked: the AI path with a real key (no key on this PC), a real email, the live site.
+
+Not built: sites / plants, split attribution, feeding Mis metas, delivery value, glossary terms, Siigo read live.
+
 ## How each figure is counted
 
 - Requests = Needs created (month created). Quotes = one per Need, month of first presentation, value of the last presented revision. Purchase orders = customer POs **accepted** (`PoAcceptance`), on the acceptance date; rejected or not yet accepted ones don't count. Invoicing = SOLU invoices by issue date. Eságara of POs = PO value × margin of its quote.
@@ -81,7 +105,7 @@ Checked on 2026-11-26: 32 parsing checks, 36 data checks on the local database, 
 | 12 current month by working days | met | rules test + browser |
 | 13 attribution 100 % | met by construction | one owner per Need |
 | 14 prospects not a company's history | met | browser + data test |
-| 15 AI mail only with figures and links | not built | phase 5 |
+| 15 AI mail only with figures and links | met by construction, AI path untested | wave 3: priorities are radar detections; the AI cannot add one |
 
 Checked on 2026-11-26: 62 rule/data checks on the local database; 68 browser checks on a production build (negotiator, leader, another negotiator in English, Gerencia; phone width). The official TRM was really fetched and stored (449 days). Not checked: the live site after deploy; real company data (the sample history is small); a leader assigned through a role agreement instead of a team.
 

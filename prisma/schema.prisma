@@ -256,6 +256,7 @@ model Account {
   profileItems         ProfileItem[]
   salesBudgets         SalesBudget[]
   salesHistory         SalesHistoryMonth[]
+  salesForecasts       SalesForecast[]
 
   @@index([ownerId])
   @@index([name])
@@ -6128,4 +6129,69 @@ model SalesHistoryMonth {
   @@index([accountId, month])
   @@index([userId])
   @@index([batchId])
+}
+
+/// A reforecast of one budget (company and negotiator, a year): what the negotiator expects today on top of the
+/// real figures. Each save is a new cut; the official approved budget never changes because of it (spec §3, §6).
+model SalesForecast {
+  id            String   @id @default(cuid())
+  year          Int
+  /// accountId, or "PROSPECTOS"
+  slot          String
+  accountId     String?
+  account       Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  userId        String
+  cutAt         DateTime @default(now())
+  /// The assumptions behind the estimate, in the negotiator's words
+  note          String
+  /// The annual estimates as they stood at the cut (real so far + what was typed), in pesos
+  estOc         Decimal  @db.Decimal(18, 2)
+  estFact       Decimal  @db.Decimal(18, 2)
+  createdById   String
+  createdByName String
+
+  lines SalesForecastLine[]
+
+  @@index([year, slot, userId])
+  @@index([accountId])
+}
+
+/// One typed figure of a reforecast: a month still open and what is expected on top of the real figures.
+model SalesForecastLine {
+  id         String        @id @default(cuid())
+  forecastId String
+  forecast   SalesForecast @relation(fields: [forecastId], references: [id], onDelete: Cascade)
+  month      Int
+  /// OC_PROB (purchase orders seen as probable) | FACT_PROG (invoices scheduled)
+  kpi        String
+  value      Decimal       @db.Decimal(18, 2)
+
+  @@unique([forecastId, month, kpi])
+}
+
+/// The day's priorities of one person on the commercial budget: at most three, each tied to a radar detection with
+/// its figures and its link. Kept one per person and day, so the screen and the evening email say the same.
+model SalesInsight {
+  id        String    @id @default(cuid())
+  userId    String
+  /// local date (America/Bogota), YYYY-MM-DD
+  day       String
+  year      Int
+  payload   Json
+  byAi      Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  mailedAt  DateTime?
+
+  @@unique([userId, day])
+}
+
+/// Switches of the commercial budget (a single row, id "main").
+model SalesBudgetSetting {
+  id            String   @id @default("main")
+  /// The evening email with the day's results and priorities: off until Gerencia or Dirección Comercial turn it on.
+  eveningMail   Boolean  @default(false)
+  /// When the owner's 2025–2026 sales were loaded into the history by SOLU itself (done once, never repeated).
+  historyBootAt DateTime?
+  updatedByName String?
+  updatedAt     DateTime @updatedAt
 }

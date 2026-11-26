@@ -78,9 +78,9 @@ export default async function BudgetHistory({ searchParams }: { searchParams: Pr
   };
   const errMsg: Record<string, string> = {
     permiso: t("El historial lo cargan Gerencia, la Dirección Comercial, Finanzas o Administración.", "History is loaded by Management, the Commercial Director, Finance or Administration."),
-    vacio: t("Faltan las filas: pega las celdas copiadas de Excel en «Filas copiadas de Excel», o elige un archivo CSV.", "The rows are missing: paste the cells copied from Excel into «Rows copied from Excel», or choose a CSV file."),
+    vacio: t("Faltan las filas: pega las celdas copiadas de Excel en «Filas copiadas de Excel», o elige un archivo de Excel o CSV.", "The rows are missing: paste the cells copied from Excel into «Rows copied from Excel», or choose an Excel or CSV file."),
     nombre: t("Falta «Nombre de esta carga»: escribe de dónde salen las cifras (por ejemplo «Ventas 2024–2026 del sistema anterior»).", "«Name of this load» is missing: write where the figures come from (for example «Sales 2024–2026 from the earlier system»)."),
-    excel: t("Ese archivo es de Excel (.xlsx). Ábrelo, copia las celdas y pégalas en «Filas copiadas de Excel», o guárdalo como «CSV UTF-8».", "That file is an Excel workbook (.xlsx). Open it, copy the cells and paste them into «Rows copied from Excel», or save it as «CSV UTF-8»."),
+    excel: t("No se pudo leer ese archivo. SOLU lee Excel .xlsx y CSV; si es un .xls antiguo, ábrelo y guárdalo como .xlsx, o copia las celdas y pégalas en «Filas copiadas de Excel».", "That file could not be read. SOLU reads Excel .xlsx and CSV; if it is an old .xls, open it and save it as .xlsx, or copy the cells and paste them into «Rows copied from Excel»."),
     grande: t("Son demasiadas filas para una sola carga (máximo 5 MB). Divídela por años.", "Too many rows for one load (5 MB at most). Split it by year."),
     estado: t("Esa carga ya se guardó o se descartó.", "That load was already saved or discarded."),
     nada: t("Ninguna fila se pudo leer: no hay nada que guardar. Corrige lo que se indica abajo y vuelve a cargar.", "No row could be read: there is nothing to save. Fix what is listed below and load again."),
@@ -158,7 +158,7 @@ export default async function BudgetHistory({ searchParams }: { searchParams: Pr
           <ol className="small" style={{ margin: "6px 0 10px", paddingLeft: 20 }}>
             <li>{t("Descarga la plantilla y ábrela en Excel: ", "Download the template and open it in Excel: ")}<a href="/comercial/presupuesto/historial/plantilla?s=ANTERIOR" id="plantilla">{t("Plantilla del sistema anterior", "Earlier-system template")}</a> · <a href="/comercial/presupuesto/historial/plantilla?s=SIIGO" id="plantilla-siigo">{t("Plantilla de Siigo", "Siigo template")}</a></li>
             <li>{t("Llena una fila por empresa y mes. La empresa se reconoce por el NIT (o por su nombre exacto en SOLU). Deja vacía la cifra que no tengas.", "Fill one row per company and month. The company is recognised by its tax ID (or its exact name in SOLU). Leave empty any figure you don't have.")}</li>
-            <li>{t("Selecciona las celdas con sus títulos, cópialas y pégalas aquí abajo.", "Select the cells with their headings, copy them and paste them below.")}</li>
+            <li>{t("Selecciona las celdas con sus títulos, cópialas y pégalas aquí abajo; o guarda el archivo y súbelo tal cual (se lee la primera hoja).", "Select the cells with their headings, copy them and paste them below; or save the file and upload it as it is (the first sheet is read).")}</li>
           </ol>
           <form action={checkHistory} className="qa-form" style={{ maxWidth: 860 }}>
             <div className="pc-assume">
@@ -168,7 +168,7 @@ export default async function BudgetHistory({ searchParams }: { searchParams: Pr
             </div>
             <label>{t("Nombre de esta carga", "Name of this load")} *<input type="text" name="label" maxLength={120} placeholder={t("Ventas 2024–2026 del sistema anterior", "Sales 2024–2026 from the earlier system")} /></label>
             <label>{t("Filas copiadas de Excel", "Rows copied from Excel")}<textarea name="rows" rows={7} spellCheck={false} style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, whiteSpace: "pre" }} /></label>
-            <label>{t("O un archivo CSV", "Or a CSV file")}<input type="file" name="file" accept=".csv,.txt,text/csv,text/plain" /></label>
+            <label>{t("O un archivo de Excel o CSV", "Or an Excel or CSV file")}<input type="file" name="file" accept=".xlsx,.xlsm,.csv,.txt,text/csv,text/plain" /></label>
             <button type="submit">{t("Revisar antes de guardar", "Check before saving")}</button>
             <span className="src block">{t("Revisar no guarda nada: muestra lo que SOLU entendió, fila por fila, y ahí decides. Valores sin IVA; la facturación, ya descontadas las notas crédito. Un valor en dólares se pasa a pesos con la TRM oficial promedio de su mes.", "Checking saves nothing: it shows what SOLU understood, row by row, and you decide there. Values before VAT; invoicing net of credit notes. A value in dollars is turned into pesos with its month's average official TRM.")}</span>
           </form>

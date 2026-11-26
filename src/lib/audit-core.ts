@@ -85,6 +85,8 @@ export const AUDITED: Record<string, readonly string[] | "all"> = {
   SalesBudget: ["state", "version", "userId", "accountId", "year", "decidedByName", "decisionNote", "supersededAt", "versionReason", "justification", "reconcileNote"],
   SalesBudgetYear: "all",
   SalesHistoryBatch: ["state", "label", "source", "currency", "unit"],
+  SalesForecast: ["year", "slot", "userId", "note", "estOc", "estFact"],
+  SalesBudgetSetting: "all",
   VisitPlan: "all",
   VisitCommitment: "all",
   CommercialMission: "all",

@@ -1,4 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { eveningDue } from "./sales-budget-rules";
 import type { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { briefDue } from "./gerencia-rules";
@@ -12,7 +13,7 @@ import { briefDue } from "./gerencia-rules";
 // Every call is recorded in WorkerRun. Nothing here sends money. The only email it sends on its own is the monthly
 // reminder to Gerencia that the Business Pulse is ready to issue (decision 2026-11-11).
 
-export const JOB_KINDS = ["MAIL_REPLIES", "CUSTOMER_MAIL", "CATALOG_SYNC", "PAY_BEHAVIOR", "PAY_BEHAVIOR_ALL", "HOUSEKEEPING", "PULSE_REMINDER", "ADMIN_DAILY", "GERENCIA_DAILY", "GERENCIA_BRIEF", "FX_RATES"] as const;
+export const JOB_KINDS = ["MAIL_REPLIES", "CUSTOMER_MAIL", "CATALOG_SYNC", "PAY_BEHAVIOR", "PAY_BEHAVIOR_ALL", "HOUSEKEEPING", "PULSE_REMINDER", "ADMIN_DAILY", "GERENCIA_DAILY", "GERENCIA_BRIEF", "FX_RATES", "BUDGET_EVENING"] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
 
 export const JOB_LABEL: Record<JobKind, [string, string]> = {
@@ -27,6 +28,7 @@ export const JOB_LABEL: Record<JobKind, [string, string]> = {
   GERENCIA_DAILY: ["Guardar la foto diaria de Gerencia y anotar los cambios materiales", "Save Management's daily picture and note material changes"],
   GERENCIA_BRIEF: ["Avisar a Gerencia por correo que el cierre ejecutivo está listo", "Email Management that the executive close is ready"],
   FX_RATES: ["Actualizar las tasas de cambio del mercado (Yahoo Finance)", "Update market exchange rates (Yahoo Finance)"],
+  BUDGET_EVENING: ["Enviar el correo de la tarde del presupuesto comercial (si está encendido)", "Send the commercial budget's evening email (when turned on)"],
 };
 
 /** Slot keys contain "@": they stay forever (a slot runs once). Plain keys are released when the job ends. */
@@ -75,7 +77,9 @@ const HANDLERS: Record<JobKind, Handler> = {
   async HOUSEKEEPING() {
     const done = await db.job.deleteMany({ where: { status: "DONE", doneAt: { lt: new Date(Date.now() - 30 * 864e5) } } });
     const runs = await db.workerRun.deleteMany({ where: { startedAt: { lt: new Date(Date.now() - 60 * 864e5) } } });
-    return `deleted ${done.count} jobs, ${runs.count} runs`;
+    // The owner's 2025–2026 sales: loaded once; this retries if the deploy could not (for example, no TRM yet).
+    const boot = await import("./sales-history-boot").then((m) => m.bootIndustryHistory()).catch((e) => `history: ${e instanceof Error ? e.message : e}`);
+    return `deleted ${done.count} jobs, ${runs.count} runs · ${boot}`;
   },
   async PULSE_REMINDER() {
     const { pulseReminder } = await import("./pulse-reminder");
@@ -92,6 +96,10 @@ const HANDLERS: Record<JobKind, Handler> = {
   async GERENCIA_BRIEF() {
     const { gerenciaBrief } = await import("./gerencia-brief");
     return gerenciaBrief();
+  },
+  async BUDGET_EVENING() {
+    const { budgetEvening } = await import("./sales-insight");
+    return budgetEvening();
   },
   async FX_RATES() {
     const { refreshMarket } = await import("./fx-market");
@@ -119,6 +127,9 @@ export async function planRecurring(now = new Date()) {
   // Working days from 7 in the morning, company time: the job itself reads the policy (off, daily or Mondays).
   const brief = briefDue("DAILY", now);
   if (brief) await enqueue("GERENCIA_BRIEF", {}, { dedupeKey: `GERENCIA_BRIEF@${brief.day}`, maxAttempts: 1 });
+  // Working days from 5 in the afternoon, company time: the job itself checks whether the email is turned on.
+  const evening = eveningDue(now);
+  if (evening) await enqueue("BUDGET_EVENING", {}, { dedupeKey: `BUDGET_EVENING@${evening}`, maxAttempts: 1 });
   // Once a month, in its first week: the month that just ended is ready to issue.
   if (now.getUTCDate() <= 7) await enqueue("PULSE_REMINDER", {}, { dedupeKey: `PULSE_REMINDER@${day.slice(0, 7)}`, maxAttempts: 3 });
 }

@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
-import { db } from "@/lib/db";
-import { monthOf } from "@/lib/customer-stats";
 import { workPeople } from "@/lib/team-store";
 import { addWorkingDays } from "@/lib/holidays";
-import { BUDGET_RULES, PROSPECTS, RADAR_TXT, achievement, expectedToDate, radar, realToDate, shownState, sum, yearProgress, zeros, type RadarKind } from "@/lib/sales-budget-rules";
-import { budgetKey, budgetScope, budgetYears, budgetsOf, groupVersions, lastMonths, loadFacts, matrixOf, numbers, readYear, realByBudget, totals, yearRow, type BudgetRow } from "@/lib/sales-budget";
+import { BUDGET_RULES, PROSPECTS, RADAR_TXT, achievement, shownState, sum } from "@/lib/sales-budget-rules";
+import { budgetScope, budgetYears, readYear } from "@/lib/sales-budget";
+import { trackYear, type TrackLine } from "@/lib/sales-budget-track";
+import { canManageAll } from "@/lib/permissions";
+import { aiConfigured } from "@/lib/ai";
+import { eveningMailOn, insightOfToday } from "@/lib/sales-insight";
 import { radarTask } from "../actions";
+import { prepareInsight, setEveningMail } from "../reforecast/actions";
 import { BudgetNav, StateChip, budgetFmt } from "../ui";
 import "../presupuesto.css";
 
@@ -30,26 +33,10 @@ export default async function BudgetTracking({ searchParams }: { searchParams: P
   const only = sp.u && people.some((p) => p.id === sp.u) ? sp.u : null;
   const inView = (id: string) => (only ? id === only : scope.all || scope.ids.has(id));
 
-  const [rows, yr] = await Promise.all([budgetsOf(year), yearRow(year)]);
-  const published = !!yr?.publishedAt;
-  // Compare against the approved budget; where there is none yet, against the latest proposal (and say so).
-  const allChosen = [...groupVersions(rows).values()].map((g) => g.official ?? g.latest);
-  const chosen = allChosen.filter((b) => inView(b.userId));
-  const set = await loadFacts(scope.all && !only ? {} : { ownerIds: only ? [only] : [...scope.ids], accountIds: chosen.map((b) => b.accountId).filter((x): x is string => !!x) });
-  const accountIds = [...new Set(set.facts.map((x) => x.accountId))];
-  const accounts = new Map((await db.account.findMany({ where: { id: { in: accountIds } }, select: { id: true, name: true, ownerId: true } })).map((a) => [a.id, a]));
-  // Attribution uses every budget of the year, so a figure is never handed to someone just because of who is looking.
-  const real = realByBudget(set, year, allChosen, (id) => accounts.get(id)?.ownerId ?? null);
-  const prog = yearProgress(year, now);
-  const started = prog.share.some((s) => s > 0);
+  const tr = await trackYear(year, now, { all: scope.all, ids: scope.ids, only, viewerId: user.id }, f.m);
+  const { published, prog, started, lines, accounts, unassigned, hits } = tr;
   const nameOf = (id: string) => everyone.find((p) => p.id === id)?.name ?? "—";
-
-  type Line = { b: BudgetRow; oc: { goal: number; exp: number; real: number }; fa: { goal: number; exp: number; real: number }; es: { exp: number; real: number } };
-  const lines: Line[] = chosen.map((b) => {
-    const m = matrixOf(b), r = real.byKey.get(budgetKey(b));
-    const of = (goal: number[], got: number[] | undefined) => ({ goal: sum(goal), exp: expectedToDate(goal, prog), real: realToDate(got ?? zeros(), prog) });
-    return { b, oc: of(numbers(m.OC_COP), r?.OC_COP), fa: of(numbers(m.FACT_COP), r?.FACT_COP), es: of(numbers(m.ESA_COP), r?.ESA_COP) };
-  });
+  type Line = TrackLine;
   const byPerson = new Map<string, Line[]>();
   for (const l of lines) byPerson.set(l.b.userId, [...(byPerson.get(l.b.userId) ?? []), l]);
   const add = (ls: Line[]) => ({ ocGoal: sum(ls.map((l) => l.oc.goal)), ocExp: sum(ls.map((l) => l.oc.exp)), ocReal: sum(ls.map((l) => l.oc.real)), faGoal: sum(ls.map((l) => l.fa.goal)), faExp: sum(ls.map((l) => l.fa.exp)), faReal: sum(ls.map((l) => l.fa.real)), esExp: sum(ls.map((l) => l.es.exp)), esReal: sum(ls.map((l) => l.es.real)) });
@@ -57,31 +44,11 @@ export default async function BudgetTracking({ searchParams }: { searchParams: P
   const elapsedYear = prog.totalYear - prog.remainingYear;
   const project = (v: number) => (started && elapsedYear >= 20 ? (v / elapsedYear) * prog.totalYear : null);
   const perDay = (goal: number, got: number) => (prog.remainingYear > 0 && goal > got ? (goal - got) / prog.remainingYear : null);
-  const unassigned = [...real.unassignedRows.entries()].map(([k, r]) => { const [accountId, ownerId] = k.split("|"); return { accountId, ownerId, oc: realToDate(r.OC_COP, prog), fa: realToDate(r.FACT_COP, prog) }; }).filter((x) => inView(x.ownerId) && (x.oc > 0 || x.fa > 0)).sort((a, b) => b.oc - a.oc);
-
-  // ---------- Radar ----------
-  const current = monthOf(now);
-  const six = lastMonths(current, 6), twelve = lastMonths(current, 12);
-  const seen = (x: { ownerId: string }) => inView(x.ownerId);
-  const companies = [...new Set(set.facts.filter(seen).filter((x) => x.month >= twelve[0]).map((x) => x.accountId))];
-  const oc12 = new Map(companies.map((id) => { const tt = totals(set, (x) => x.accountId === id && seen(x)); return [id, sum(twelve.map((m) => tt.of("OC_COP", m)))] as const; }));
-  const totalOc12 = sum([...oc12.values()]);
-  const pareto = new Set<string>();
-  { let acc = 0; for (const [id, v] of [...oc12.entries()].sort((a, b) => b[1] - a[1])) { if (v <= 0 || acc >= totalOc12 * 0.8) break; pareto.add(id); acc += v; } }
   const cm = prog.current;
-  const hits = companies.flatMap((id) => {
-    const tt = totals(set, (x) => x.accountId === id && seen(x));
-    const ls = lines.filter((l) => l.b.accountId === id);
-    const fact = ls.map((l) => numbers(matrixOf(l.b).FACT_COP));
-    const ownerId = ls[0]?.b.userId ?? accounts.get(id)?.ownerId ?? user.id;
-    return radar({
-      expected: sum(ls.map((l) => l.oc.exp)), real: sum(ls.map((l) => l.oc.real)), pareto: pareto.has(id),
-      sol: six.map((m) => tt.of("SOL_N", m)), cotN: six.map((m) => tt.of("COT_N", m)), ocN: six.map((m) => tt.of("OC_N", m)), oc: six.map((m) => tt.of("OC_COP", m)), esa: six.map((m) => tt.of("ESA_COP", m)),
-      factAhead: cm ? sum(fact.map((x) => x[cm - 1] + (cm < 12 ? x[cm] : 0))) : 0, backlog: set.backlog.filter((x) => x.accountId === id && seen(x)).reduce((s, x) => s + x.cop, 0),
-    }, f.m).map((h) => ({ ...h, accountId: id, ownerId: inView(ownerId) ? ownerId : user.id }));
-  });
-  const prio: RadarKind[] = ["PACE", "MARGIN", "REQUESTS", "QUOTES", "BILLING"];
-  hits.sort((a, b) => prio.indexOf(a.kind) - prio.indexOf(b.kind) || (oc12.get(b.accountId) ?? 0) - (oc12.get(a.accountId) ?? 0));
+  // The day's priorities are one person's: the one chosen above, otherwise whoever is looking.
+  const who = only ?? user.id;
+  const [insight, mailOn] = await Promise.all([insightOfToday(who, now), eveningMailOn()]);
+  const hasBudgets = lines.some((l) => l.b.userId === who);
   const due = addWorkingDays(new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z"), 2).toISOString().slice(0, 10);
 
   const H = { goal: t("Presupuesto OC del año", "PO budget of the year"), exp: t("OC esperadas a hoy", "POs expected by today"), real: t("OC reales", "Real POs"), pct: t("Cumplimiento OC", "PO achievement"), gap: t("Faltante a hoy", "Shortfall today"), fexp: t("Facturación esperada a hoy", "Invoicing expected by today"), freal: t("Facturación real", "Real invoicing"), fpct: t("Cumplimiento facturación", "Invoicing achievement"), es: t("Eságara real / esperada", "Eságara real / expected"), st: t("Presupuesto", "Budget") };
@@ -100,7 +67,13 @@ export default async function BudgetTracking({ searchParams }: { searchParams: P
     </>);
   };
   const one = (l: Line) => add([l]);
-  const okMsg: Record<string, string> = { tarea: t("Pendiente creado para el negociador. Lo ve en MI DÍA → Pendientes.", "To-do created for the negotiator. They see it in MY DAY → To-dos.") };
+  const okMsg: Record<string, string> = {
+    tarea: t("Pendiente creado para el negociador. Lo ve en MI DÍA → Pendientes.", "To-do created for the negotiator. They see it in MY DAY → To-dos."),
+    prioridades: t("Prioridades de hoy preparadas.", "Today's priorities prepared."),
+    "prioridades-sin-ia": t("Prioridades de hoy preparadas con las reglas de SOLU: la IA no respondió esta vez.", "Today's priorities prepared with SOLU's rules: the AI did not answer this time."),
+    "correo-on": t("Correo de la tarde encendido: sale los días hábiles después de las 5 de la tarde.", "Evening email turned on: it goes out on working days after 5 in the afternoon."),
+    "correo-off": t("Correo de la tarde apagado.", "Evening email turned off."),
+  };
   const errMsg: Record<string, string> = { permiso: t("Solo puedes asignar pendientes a ti o a las personas que lideras.", "You can only assign to-dos to yourself or the people you lead."), tarea: t("Falta el texto del pendiente.", "The to-do text is missing.") };
   const monthName = cm ? new Intl.DateTimeFormat(i.es ? "es-CO" : "en-US", { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(year, cm - 1, 1))) : null;
 
@@ -162,6 +135,45 @@ export default async function BudgetTracking({ searchParams }: { searchParams: P
             <ul className="mk-ul">{unassigned.slice(0, 40).map((x) => <li key={`${x.accountId}|${x.ownerId}`}><Link href={`/comercial/presupuesto/${x.accountId}?y=${year}&u=${x.ownerId}`}>{accounts.get(x.accountId)?.name ?? "—"}</Link> · {nameOf(x.ownerId)} · OC {f.m(x.oc)} · {t("facturación", "invoicing")} {f.m(x.fa)}</li>)}</ul>
           </details>
         )}
+      </section>
+
+      <section className="card" id="prioridades">
+        <b>{t(`PRIORIDADES DE HOY · ${nameOf(who).toUpperCase()}`, `TODAY'S PRIORITIES · ${nameOf(who).toUpperCase()}`)}</b>
+        {!hasBudgets ? <p className="small muted">{t(`${nameOf(who)} no tiene presupuestos de ${year}: las prioridades salen del radar de sus empresas presupuestadas.`, `${nameOf(who)} has no ${year} budgets: priorities come from the radar of their budgeted companies.`)}</p> : !insight ? (
+          <p className="small muted">{t("Todavía no se han preparado las prioridades de hoy.", "Today's priorities have not been prepared yet.")}</p>
+        ) : insight.payload.priorities.length === 0 ? (
+          <p className="small">{t("SOLU no detecta nada que atender hoy con sus reglas, así que no recomienda nada: una recomendación necesita cifras que la respalden.", "SOLU detects nothing to attend to today with its rules, so it recommends nothing: a recommendation needs figures behind it.")}</p>
+        ) : (
+          <ol className="pc-radar" id="lista-prioridades">
+            {insight.payload.priorities.map((x, n) => (
+              <li key={n} data-kind={x.kind}>
+                <b>{n + 1}. <Link href={`/comercial/presupuesto/${x.accountId}?y=${insight.payload.year}&u=${who}`}>{x.company}</Link> · {t(RADAR_TXT[x.kind].title.es, RADAR_TXT[x.kind].title.en)}</b>
+                <span>{t(x.evidence.es, x.evidence.en)}</span>
+                {x.why && <span>{x.why}</span>}
+                <span><b>{t("Qué hacer", "What to do")}:</b> {x.action}</span>
+                <span className="small muted">{t("Lo que no se sabe", "What is not known")}: {x.uncertainty} · <Link href={`/accounts/${x.accountId}/estadisticas`}>{t("Ver los registros del cliente", "See the customer's records")}</Link></span>
+                <form action={radarTask.bind(null, year)}>
+                  <input type="hidden" name="assigneeId" value={who} /><input type="hidden" name="accountId" value={x.accountId} />
+                  <label>{t(`Pendiente para ${nameOf(who)}`, `To-do for ${nameOf(who)}`)}<input type="text" name="title" maxLength={200} required defaultValue={`${x.company}: ${x.action}`.slice(0, 200)} /></label>
+                  <label>{t("Para el", "Due")}<input type="date" name="due" defaultValue={due} required /></label>
+                  <button type="submit" className="secondary">{t("Crear pendiente", "Create to-do")}</button>
+                </form>
+              </li>
+            ))}
+          </ol>
+        )}
+        {hasBudgets && (
+          <form action={prepareInsight.bind(null, year, who)} className="pc-actions">
+            <button type="submit" className={insight ? "secondary" : ""}>{insight ? t("Preparar de nuevo", "Prepare again") : t("Preparar las prioridades de hoy", "Prepare today's priorities")}</button>
+            <span className="src">{insight ? t(`Preparadas ${i.date(insight.row.createdAt)} · ${insight.payload.aiNote === "AI" ? "la IA eligió el orden y redactó el consejo con las cifras de SOLU; no agrega datos" : "con las reglas fijas de SOLU, sin IA"}.`, `Prepared ${i.date(insight.row.createdAt)} · ${insight.payload.aiNote === "AI" ? "the AI chose the order and worded the advice from SOLU's figures; it adds no data" : "with SOLU's fixed rules, no AI"}.`) : aiConfigured() ? t("Máximo tres. La IA solo ordena y redacta sobre las detecciones del radar; cada una trae sus cifras y su enlace.", "Three at most. The AI only orders and words the radar's detections; each comes with its figures and its link.") : t("Máximo tres, tomadas del radar con sus cifras y su enlace. Sin la llave de IA se usan las reglas fijas.", "Three at most, taken from the radar with their figures and link. Without the AI key the fixed rules are used.")}</span>
+          </form>
+        )}
+        <div className="pc-gap" id="correo-tarde">
+          <b>{t("Correo de la tarde", "Evening email")}: {mailOn ? <span className="sig ok">{t("Encendido", "On")}</span> : <span className="sig wait">{t("Apagado", "Off")}</span>}</b>
+          <span className="small">{t("Los días hábiles después de las 5 de la tarde, cada persona con presupuesto recibe un correo con cómo va frente a su presupuesto, sus prioridades, los clientes que caen, las empresas con cotizaciones sin decidir y sus pendientes hasta el día siguiente. Trae nombres de clientes y cifras.", "On working days after 5 in the afternoon, each person with a budget gets an email with how they stand against their budget, their priorities, the customers falling, the companies with undecided quotes and their to-dos through the next day. It carries customer names and figures.")}</span>
+          {canManageAll(user) && <form action={setEveningMail.bind(null, year, !mailOn)} className="pc-actions"><button type="submit" className="secondary">{mailOn ? t("Apagar el correo de la tarde", "Turn the evening email off") : t("Encender el correo de la tarde", "Turn the evening email on")}</button></form>}
+          {!canManageAll(user) && <span className="src">{t("Lo encienden o apagan Gerencia y la Dirección Comercial.", "Management and the Commercial Director turn it on or off.")}</span>}
+        </div>
       </section>
 
       <section className="card" id="radar">

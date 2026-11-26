@@ -31,7 +31,7 @@ export const BUDGET_RULES = {
 } as const;
 
 type Txt = { es: string; en: string };
-export type Kpi = "OC_COP" | "FACT_COP" | "ESA_COP" | "OC_N" | "COT_COP" | "COT_N" | "SOL_N";
+export type Kpi = "OC_COP" | "FACT_COP" | "ESA_COP" | "OC_N" | "COT_COP" | "COT_N" | "SOL_N" | "ENT_N";
 export const KPIS: Record<Kpi, Txt & { unit: "cop" | "n"; how: Txt }> = {
   OC_COP: { es: "Órdenes de compra ($)", en: "Purchase orders ($)", unit: "cop", how: { es: "Valor sin IVA de las órdenes de compra del cliente aceptadas, en el mes en que se aceptaron. Las rechazadas no cuentan.", en: "Value before VAT of the customer's purchase orders accepted, in the month they were accepted. Rejected ones don't count." } },
   FACT_COP: { es: "Facturación ($)", en: "Invoicing ($)", unit: "cop", how: { es: "Valor sin IVA de las facturas emitidas, en el mes de la fecha de la factura. Es un plan aparte: no se copia de las órdenes de compra del mismo mes.", en: "Value before VAT of the invoices issued, in the month of the invoice date. It is a separate plan: it is not copied from the same month's purchase orders." } },
@@ -40,6 +40,7 @@ export const KPIS: Record<Kpi, Txt & { unit: "cop" | "n"; how: Txt }> = {
   COT_COP: { es: "Cotizaciones ($)", en: "Quotes ($)", unit: "cop", how: { es: "Precio de venta sin IVA de la última revisión presentada de cada Necesidad, en el mes de su primera presentación. Una revisión no suma otra vez.", en: "Sale price before VAT of each Need's last presented revision, in the month of its first presentation. A revision does not add again." } },
   COT_N: { es: "# Cotizaciones", en: "# Quotes", unit: "n", how: { es: "Necesidades con una cotización presentada, en el mes de la primera presentación. Tres revisiones cuentan una vez.", en: "Needs with a quote presented, in the month of the first presentation. Three revisions count once." } },
   SOL_N: { es: "# Solicitudes", en: "# Requests", unit: "n", how: { es: "Necesidades creadas, en el mes en que se recibieron.", en: "Needs created, in the month they were received." } },
+  ENT_N: { es: "# Entregas", en: "# Deliveries", unit: "n", how: { es: "Entregas confirmadas al cliente (con remisión), en el mes de la fecha real de entrega. Una entrega parcial cuenta como una entrega.", en: "Deliveries confirmed to the customer (with a delivery note), in the month of the real delivery date. A partial delivery counts as one delivery." } },
 };
 export const KPI_KEYS = Object.keys(KPIS) as Kpi[];
 /** The three figures that roll up in money (consolidation columns). */
@@ -348,10 +349,12 @@ export function millionsText(pesos: number | null | undefined, es: boolean): str
 export type LineOut = { month: number; kpi: Kpi; value: number; suggested: number | null; origin: "SOLU" | "MANUAL" | "DERIVED" };
 /** The stored figures of a budget. `pureOc` / `pureFact` = SOLU's own suggestion (its reading of the history, no
  *  growth): a month equal to it is marked SOLU, any other MANUAL. A derived figure without basis is not stored. */
-export function budgetLines(oc: number[], fact: number[], ocN: (number | null)[], a: Assumptions, pureOc: number[] | null, pureFact: number[] | null): LineOut[] {
+export function budgetLines(oc: number[], fact: number[], ocN: (number | null)[], a: Assumptions, pureOc: number[] | null, pureFact: number[] | null, ent: (number | null)[] = []): LineOut[] {
   const out: LineOut[] = [];
   for (let m = 0; m < 12; m++) {
     const month = m + 1;
+    // Deliveries are planned by hand: SOLU has no rule to derive them from the order goal.
+    if (ent[m] != null) out.push({ month, kpi: "ENT_N", value: ent[m]!, suggested: null, origin: "MANUAL" });
     out.push({ month, kpi: "OC_COP", value: oc[m], suggested: pureOc?.[m] ?? null, origin: pureOc && pureOc[m] === oc[m] ? "SOLU" : "MANUAL" });
     out.push({ month, kpi: "FACT_COP", value: fact[m], suggested: pureFact?.[m] ?? null, origin: pureFact && pureFact[m] === fact[m] ? "SOLU" : "MANUAL" });
     const d = deriveMonth(oc[m], a, ocN[m]);
@@ -368,4 +371,66 @@ export function budgetLines(oc: number[], fact: number[], ocN: (number | null)[]
 export function departs(oc: number[], fact: number[], pureOc: number[] | null, pureFact: number[] | null): boolean {
   const off = (xs: number[], pure: number[] | null) => (pure ? xs.some((v, m) => v !== pure[m]) : xs.some((v) => v > 0));
   return off(oc, pureOc) || off(fact, pureFact);
+}
+// ---------- Reforecast (spec §3 "Forecast", §6): the official budget stays as approved; this is today's estimate ----------
+
+/** What the person adds to the real figures of a month that is not over: purchase orders they see as probable and
+ *  invoices already scheduled. A closed month takes nothing: its real figure is final. */
+export type ForecastTyped = { ocProb: (number | null)[]; factProg: (number | null)[] };
+export type ForecastMonth = { real: number; typed: number; estimate: number; open: boolean };
+/** Month by month: real so far + what was typed for the months still open (the one in course and the ones ahead). */
+export function forecastMonths(real: number[], typed: (number | null)[], p: YearProgress): ForecastMonth[] {
+  return real.map((r, m) => {
+    const open = p.share[m] < 1;
+    const got = p.share[m] > 0 ? r : 0;
+    const add = open ? Math.max(0, typed[m] ?? 0) : 0;
+    return { real: got, typed: add, estimate: got + add, open };
+  });
+}
+/** Annual estimate against the official budget: the difference in pesos and in percent of the budget. */
+export function forecastGap(estimate: number, budget: number): { diff: number; pct: number | null } {
+  return { diff: estimate - budget, pct: budget > 0 ? Math.round(((estimate - budget) / budget) * 1000) / 10 : null };
+}
+
+// ---------- Daily priorities (spec §8, AT-15): at most three, each tied to a detection with its figures and link ----------
+
+export type InsightHit = { id: string; kind: RadarKind; accountId: string; company: string; evidence: Txt };
+export type Priority = { hitId: string; kind: RadarKind; accountId: string; company: string; evidence: Txt; why: string | null; action: string; uncertainty: string; byAi: boolean };
+export const MAX_PRIORITIES = 3;
+const UNSURE: Txt = { es: "SOLU ve el hecho y sus cifras, no la causa: confírmala con el cliente antes de actuar.", en: "SOLU sees the fact and its figures, not the cause: confirm it with the customer before acting." };
+/** The priorities when no AI is used (or its answer is not usable): the first detections in the radar's own order. */
+export function rulePriorities(hits: InsightHit[], es: boolean): Priority[] {
+  return hits.slice(0, MAX_PRIORITIES).map((h) => ({ hitId: h.id, kind: h.kind, accountId: h.accountId, company: h.company, evidence: h.evidence, why: null, action: es ? RADAR_TXT[h.kind].action.es : RADAR_TXT[h.kind].action.en, uncertainty: es ? UNSURE.es : UNSURE.en, byAi: false }));
+}
+/** What the AI may add: an order and words. It never adds a fact: a priority that names no existing detection is
+ *  dropped, a detection is used once, and figures always come from SOLU's own evidence text (AT-15). */
+export function aiPriorities(raw: unknown, hits: InsightHit[], es: boolean): Priority[] {
+  const list = raw && typeof raw === "object" && Array.isArray((raw as { priorities?: unknown }).priorities) ? (raw as { priorities: unknown[] }).priorities : [];
+  const byId = new Map(hits.map((h) => [h.id, h]));
+  const out: Priority[] = [], used = new Set<string>();
+  const txt = (v: unknown, max: number) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+  for (const x of list) {
+    if (out.length >= MAX_PRIORITIES || !x || typeof x !== "object") continue;
+    const o = x as Record<string, unknown>;
+    const h = byId.get(String(o.id ?? ""));
+    if (!h || used.has(h.id)) continue;
+    const action = txt(o.action, 300);
+    if (!action) continue;
+    used.add(h.id);
+    out.push({ hitId: h.id, kind: h.kind, accountId: h.accountId, company: h.company, evidence: h.evidence, why: txt(o.why, 300) || null, action, uncertainty: txt(o.uncertainty, 240) || (es ? UNSURE.es : UNSURE.en), byAi: true });
+  }
+  return out;
+}
+/** Is the evening email due now? Working days (Monday to Friday, no Colombian holidays) from 5 in the afternoon,
+ *  company time. Returns the local date, so it goes out once per day. */
+export function eveningDue(now: Date): string | null {
+  const local = new Date(now.getTime() - 5 * 3600e3);
+  const day = bogotaDay(now);
+  return isWorkingDay(day) && local.getUTCHours() >= 17 ? day.toISOString().slice(0, 10) : null;
+}
+/** The next working day after a local date (YYYY-MM-DD), as YYYY-MM-DD. */
+export function nextWorkingDay(day: string): string {
+  let d = new Date(`${day}T00:00:00Z`);
+  do { d = new Date(d.getTime() + 864e5); } while (!isWorkingDay(d));
+  return d.toISOString().slice(0, 10);
 }

@@ -1,0 +1,461 @@
+{
+ "source": "Negocios Industry 2025.xlsx + Negocios Industry 1 ene a 26 nov.xlsx (invoices, USD), given by the owner on 2026-11-26",
+ "invoices": 357,
+ "rows": [
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2025-01",
+   "usd": 3896.16,
+   "invoices": 8
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2025-01",
+   "usd": 3019.44,
+   "invoices": 4
+  },
+  {
+   "client": "Brammertz Ingenieros S.A.",
+   "seller": "Laura Parra",
+   "month": "2025-02",
+   "usd": 6178.8,
+   "invoices": 1
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2025-02",
+   "usd": 3304.86,
+   "invoices": 8
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2025-02",
+   "usd": 12157.25,
+   "invoices": 5
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2025-03",
+   "usd": 7628.62,
+   "invoices": 12
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2025-03",
+   "usd": 1357.04,
+   "invoices": 3
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2025-04",
+   "usd": 4788.38,
+   "invoices": 8
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2025-04",
+   "usd": 17912.24,
+   "invoices": 6
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2025-05",
+   "usd": 9251.57,
+   "invoices": 11
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2025-05",
+   "usd": 20820.19,
+   "invoices": 8
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2025-06",
+   "usd": 3040.79,
+   "invoices": 9
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2025-06",
+   "usd": 8779.09,
+   "invoices": 3
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2025-07",
+   "usd": 11507.02,
+   "invoices": 7
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2025-07",
+   "usd": 20314.87,
+   "invoices": 7
+  },
+  {
+   "client": "AES Ohio",
+   "seller": "TATIANA MENDEZ",
+   "month": "2025-08",
+   "usd": 4701.84,
+   "invoices": 1
+  },
+  {
+   "client": "Brammertz Ingenieros S.A.",
+   "seller": "Laura Parra",
+   "month": "2025-08",
+   "usd": 12811.72,
+   "invoices": 2
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2025-08",
+   "usd": 4952.46,
+   "invoices": 10
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2025-08",
+   "usd": 16849.86,
+   "invoices": 6
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2025-09",
+   "usd": 2248.37,
+   "invoices": 10
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2025-09",
+   "usd": 8729.1,
+   "invoices": 6
+  },
+  {
+   "client": "AES HB Energy LLC",
+   "seller": "TATIANA MENDEZ",
+   "month": "2025-10",
+   "usd": 458.4,
+   "invoices": 1
+  },
+  {
+   "client": "AES Ohio",
+   "seller": "TATIANA MENDEZ",
+   "month": "2025-10",
+   "usd": 2516.4,
+   "invoices": 1
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2025-10",
+   "usd": 6674.57,
+   "invoices": 16
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2025-10",
+   "usd": 1279.89,
+   "invoices": 3
+  },
+  {
+   "client": "Brammertz Ingenieros S.A.",
+   "seller": "Laura Parra",
+   "month": "2025-11",
+   "usd": 6522.13,
+   "invoices": 3
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2025-11",
+   "usd": 6390.96,
+   "invoices": 12
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2025-11",
+   "usd": 15943.83,
+   "invoices": 4
+  },
+  {
+   "client": "AES HB Energy LLC",
+   "seller": "TATIANA MENDEZ",
+   "month": "2025-12",
+   "usd": 458.4,
+   "invoices": 1
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2025-12",
+   "usd": 4696.92,
+   "invoices": 11
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2025-12",
+   "usd": 22689.6,
+   "invoices": 5
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2026-01",
+   "usd": 4768.96,
+   "invoices": 5
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2026-01",
+   "usd": 6780.96,
+   "invoices": 5
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2026-02",
+   "usd": 2317.34,
+   "invoices": 4
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2026-02",
+   "usd": 17493.87,
+   "invoices": 5
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2026-03",
+   "usd": 17941.98,
+   "invoices": 11
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2026-03",
+   "usd": 2263.43,
+   "invoices": 4
+  },
+  {
+   "client": "AES Alamitos Energy, LLC",
+   "seller": "TATIANA MENDEZ",
+   "month": "2026-04",
+   "usd": 611.2,
+   "invoices": 1
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2026-04",
+   "usd": 4305.64,
+   "invoices": 10
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2026-04",
+   "usd": 6965.9,
+   "invoices": 3
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2026-05",
+   "usd": 4289.71,
+   "invoices": 10
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2026-05",
+   "usd": 12880.47,
+   "invoices": 3
+  },
+  {
+   "client": "Proquinal Costa Rica S.A.",
+   "seller": "PAULA ESPITIA",
+   "month": "2026-05",
+   "usd": 22914.87,
+   "invoices": 2
+  },
+  {
+   "client": "AES Ohio",
+   "seller": "TATIANA MENDEZ",
+   "month": "2026-06",
+   "usd": 1765.8,
+   "invoices": 1
+  },
+  {
+   "client": "Brammertz Ingenieros S.A.",
+   "seller": "Laura Parra",
+   "month": "2026-06",
+   "usd": 6090.75,
+   "invoices": 1
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2026-06",
+   "usd": 3849.68,
+   "invoices": 11
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2026-06",
+   "usd": 14155.01,
+   "invoices": 5
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2026-07",
+   "usd": 5520.98,
+   "invoices": 10
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2026-07",
+   "usd": 16742.46,
+   "invoices": 5
+  },
+  {
+   "client": "Proquinal Costa Rica S.A.",
+   "seller": "PAULA ESPITIA",
+   "month": "2026-07",
+   "usd": 955.68,
+   "invoices": 1
+  },
+  {
+   "client": "Brammertz Ingenieros S.A.",
+   "seller": "Laura Parra",
+   "month": "2026-08",
+   "usd": 5386.78,
+   "invoices": 1
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2026-08",
+   "usd": 12295.09,
+   "invoices": 7
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2026-08",
+   "usd": 4238.31,
+   "invoices": 2
+  },
+  {
+   "client": "Proquinal Costa Rica S.A.",
+   "seller": "PAULA ESPITIA",
+   "month": "2026-08",
+   "usd": 4665.36,
+   "invoices": 1
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2026-09",
+   "usd": 9347.65,
+   "invoices": 13
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2026-09",
+   "usd": 4192.2,
+   "invoices": 1
+  },
+  {
+   "client": "Proquinal Costa Rica S.A.",
+   "seller": "PAULA ESPITIA",
+   "month": "2026-09",
+   "usd": 5594.2,
+   "invoices": 1
+  },
+  {
+   "client": "Proquinal SAS",
+   "seller": "PAULA ESPITIA",
+   "month": "2026-09",
+   "usd": 8265.79,
+   "invoices": 2
+  },
+  {
+   "client": "AES HB Energy LLC",
+   "seller": "TATIANA MENDEZ",
+   "month": "2026-10",
+   "usd": 472.05,
+   "invoices": 1
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2026-10",
+   "usd": 7487.31,
+   "invoices": 14
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2026-10",
+   "usd": 2517.19,
+   "invoices": 3
+  },
+  {
+   "client": "AES Alamitos Energy, LLC",
+   "seller": "TATIANA MENDEZ",
+   "month": "2026-11",
+   "usd": 1101.45,
+   "invoices": 2
+  },
+  {
+   "client": "ImportSoluciones SAS",
+   "seller": "NUVIA GOMEZ",
+   "month": "2026-11",
+   "usd": 7105.45,
+   "invoices": 13
+  },
+  {
+   "client": "PHOENIX PACKAGING OPERATIONS LLC",
+   "seller": "MARCELA GARCIA",
+   "month": "2026-11",
+   "usd": 24561.02,
+   "invoices": 6
+  },
+  {
+   "client": "Proquinal Costa Rica S.A.",
+   "seller": "Valentina Lizarazo",
+   "month": "2026-11",
+   "usd": 2457.84,
+   "invoices": 1
+  }
+ ]
+}

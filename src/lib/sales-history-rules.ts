@@ -60,6 +60,8 @@ export function readMonth(raw: unknown): number | null {
 /** "2024-03", "03/2024", "2024/3", "mar 2024", "marzo de 2024", "15/03/2024" → "2024-03". */
 export function readPeriod(raw: unknown): string | null {
   const s = String(raw ?? "").trim();
+  // A date cell read straight from an Excel file comes as its serial number (days since 1900).
+  if (/^\d{5}(\.\d+)?$/.test(s)) { const n = Number(s); if (n >= 36526 && n <= 73050) { const d = new Date(Math.round((n - 25569) * 864e5)); return okPeriod(d.getUTCFullYear(), d.getUTCMonth() + 1); } }
   let m = /^(\d{4})[-/.](\d{1,2})(?:[-/.]\d{1,2})?$/.exec(s);
   if (m) return okPeriod(Number(m[1]), Number(m[2]));
   m = /^(?:\d{1,2}[-/.])?(\d{1,2})[-/.](\d{4})$/.exec(s);

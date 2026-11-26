@@ -14,6 +14,7 @@ const FEATURES: { keys: string[]; es: string; en: string; whereEs: string; where
   { keys: ["PART_PHOTO"], es: "Buscar por foto", en: "Search by photo", whereEs: "MERCADO → Localizar repuestos", whereEn: "MARKET → Find parts", href: "/localizar" },
   { keys: ["mail-progress", "mail-offer", "mail-rewrite"], es: "Redactar y reescribir con IA (correos de una Necesidad)", en: "Draft and rewrite with AI (emails of a Need)", whereEs: "En el correo, bloque «Reescribir con IA»", whereEn: "On the email, “Rewrite with AI” block", href: "/cotizaciones" },
   { keys: ["mail-delay"], es: "Proponer con IA (aviso de retraso)", en: "Propose with AI (delay notice)", whereEs: "En una Necesidad atrasada · Aviso de retraso", whereEn: "On a late Need · Delay notice", href: "/mi-dia" },
+  { keys: ["BUDGET_INSIGHT"], es: "Prioridades del día del presupuesto comercial", en: "Commercial budget's priorities of the day", whereEs: "COMERCIAL → Presupuesto comercial → Cumplimiento y radar", whereEn: "COMMERCIAL → Commercial budget → Achievement and radar", href: "/comercial/presupuesto/cumplimiento" },
   { keys: ["VISIT_DRAFT"], es: "Borrador con IA (resultado de una visita)", en: "AI draft (visit outcome)", whereEs: "COMERCIAL → Visitas → una visita", whereEn: "COMMERCIAL → Visits → a visit", href: "/visitas" },
 ];
 

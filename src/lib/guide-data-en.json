@@ -557,7 +557,7 @@
    "On the company's row click [[Presupuestar]]. If the company is not in the list, search for it below under “Add another company”.",
    "Read “HISTORY OF…”: requests, quotes, purchase orders, Eságara and invoicing of the three years before, with the monthly average of 3, 6 and 12 months. “See the sources of these figures” opens each record with its original value, the rate applied and the value in pesos.",
    "Under “Assumptions (simulator)” check what SOLU measured: growth, seasonality, average ticket, the batting percentages and the Eságara objective. Change what you need and click [[Aplicar la sugerencia de SOLU a los 12 meses]] to recalculate the months. The history is not touched.",
-   "Under “Proposal… · January to December” type or correct “PO goal ($ M)” and “Invoicing goal ($ M)” for each month, in millions of pesos. The rows below show what the goal takes: “# POs objective”, “Eságara objective”, “Quotes required” and “# Requests required”.",
+   "Under “Proposal… · January to December” type or correct “PO goal ($ M)” and “Invoicing goal ($ M)” for each month, in millions of pesos. The rows below show what the goal takes: “# POs objective”, “Eságara objective”, “Quotes required” and “# Requests required”. Under “# Deliveries objective” you can type how many deliveries you expect to confirm each month (optional).",
    "Choose the “Company's potential”, write the “ECSA strategy for this company” and, if your figures are not SOLU's suggestion, the “Justification”.",
    "Click [[Guardar borrador]] to continue later, or [[Enviar a aprobación]] when it is ready."
   ],
@@ -598,6 +598,31 @@
   ],
   "expect": "SOLU confirms “To-do created for the negotiator. They see it in MY DAY → To-dos.” The month in course is compared by working days gone, not against the full month. It compares with the approved budget; where there is none yet, with the latest proposal. A purchase order counts when it is accepted; a rejected one does not. “Real without a budget” lists what was sold to companies nobody budgeted. The radar uses fixed rules, no artificial intelligence: it shows the fall or the change with its figures, never states the cause. “How the radar detects” explains each rule. Before the year starts, achievement says it has not started and the radar already works."
  },
+ "presupuesto-reforecast": {
+  "t": "Commercial budget: make a company's reforecast (how the year's close looks today)",
+  "why": "Say how each company's year-end looks today, beside the official budget, without touching what was approved.",
+  "steps": [
+   "Open [[COMERCIAL]], click [[Presupuesto comercial]] and then [[Reforecast]]. Choose the year in course at the top.",
+   "Under “OFFICIAL BUDGET AND REFORECAST”, find the company and click “Make a reforecast” (or “Update” if it already has one).",
+   "Read the boxes at the top: “PO REFORECAST”, “INVOICING REFORECAST”, “WHAT TO LEAN ON” (your quotes presented and not decided, and accepted orders not invoiced) and “DELIVERIES CONFIRMED”.",
+   "In the table, the row “Real POs (accepted)” comes filled in. Under “Probable POs (what you add)” type, in millions, what you expect on top of the real figures: only for the month in course and the ones left.",
+   "Do the same under “Scheduled invoices (what you add)”.",
+   "Write the “Assumptions of this reforecast”: which orders you expect, from whom and by when. Click [[Guardar reforecast]]."
+  ],
+  "expect": "SOLU confirms “Reforecast saved as a new cut. The official budget did not change.” and the cut shows under “EARLIER CUTS” with your name, the date and the assumptions. Reforecast = what is already real + what you typed for the months left. A closed month is worth what it was: what was typed for it stops counting. When a probable order is accepted, it moves to “real” by itself. In the list, “Against the budget” shows the difference in millions and in percent, and the sums include only the companies that already have a reforecast. Before the year starts, the screen says the reforecast opens in January. It is written by the negotiator, Management or the Commercial Director; leaders see their team's."
+ },
+ "presupuesto-prioridades": {
+  "t": "Commercial budget: prepare today's priorities and the evening email",
+  "why": "Have, each day, at most three things to attend to first, each with its figures and its link, and turn them into to-dos with a date.",
+  "steps": [
+   "Open [[COMERCIAL]], click [[Presupuesto comercial]] and then [[Cumplimiento y radar]]. Choose the year in course at the top.",
+   "Under “TODAY'S PRIORITIES” click [[Preparar las prioridades de hoy]].",
+   "Read each priority: the company, what SOLU detected with its figures, “What to do” and “What is not known”. The company's name opens its budget.",
+   "To leave it with an owner and a date, adjust the to-do's text and date and click [[Crear pendiente]].",
+   "Management or the Commercial Director: under “Evening email” click [[Encender el correo de la tarde]] so each person with a budget gets it on working days."
+  ],
+  "expect": "SOLU confirms “Today's priorities prepared.” There are three at most and they come from the radar's detections: if the radar detects nothing, SOLU recommends nothing. With the AI key connected, the AI chooses the order and words the advice from those figures; it adds no data, and if it does not answer the fixed rules are used. The line under the button says how they were prepared. The to-do shows in MY DAY → To-dos. The evening email is off until someone turns it on; it goes out after 5 in the afternoon, once a day, with how the person stands against their budget, their priorities, the customers falling, the companies with undecided quotes and their to-dos through the next day."
+ },
  "presupuesto-historial": {
   "t": "Commercial budget: load the sales history from before SOLU (or Siigo's invoicing)",
   "why": "So every company has a history and a suggestion even when its sales of earlier years are not in SOLU, and to compare SOLU's invoicing with Siigo's.",
@@ -605,11 +630,11 @@
    "Open [[COMERCIAL]], click [[Presupuesto comercial]] and then [[Historial]]. Management, the Commercial Director, Finance and Administration load; everyone else sees the saved loads.",
    "Under “LOAD HISTORY” download the “Earlier-system template” (or the “Siigo template”) and open it in Excel. Fill one row per company and month: “Tax ID” or “Company”, “Year”, “Month” and the figures you have. “Negotiator” is optional: left empty, the figure goes to the company's owner.",
    "Choose the “Origin”, the “Currency of the values” and “The values are in” (whole pesos, thousands or millions). Type the “Name of this load”.",
-   "In Excel select the cells with their headings, copy them and paste them into “Rows copied from Excel” (or choose the file under “Or a CSV file”). Click [[Revisar antes de guardar]].",
+   "In Excel select the cells with their headings, copy them and paste them into “Rows copied from Excel” (or choose the file under “Or an Excel or CSV file”). Click [[Revisar antes de guardar]].",
    "Read “REVIEW BEFORE SAVING”: “Rows read”, “Rows to be saved”, “Rows with something to fix” and the sum by year. “Rows that are not saved” says, row by row, what to fix. Compare the sum with your file's total.",
    "Click [[Guardar historial]]. If something does not add up, click [[Descartar revisión]], fix the Excel and paste again."
   ],
-  "expect": "SOLU confirms “History saved. It now feeds each company's history and suggestion.” and the load shows under “SAVED LOADS”; “Remove load” takes it out with all its figures. A loaded figure counts as real only in the months before that company's first Need in SOLU; from that month on SOLU's own records count, so nothing is counted twice. A new load of the same origin replaces the earlier figure for the same company, month and indicator. Dollars are turned into pesos with the month's average official TRM. For invoicing, Siigo's figure replaces the earlier system's. “INVOICING: SOLU AGAINST SIIGO” compares, month by month, SOLU's invoices with the Siigo invoicing loaded and names the companies that differ. SOLU does not read Siigo directly nor .xlsx files: paste from Excel or upload a CSV."
+  "expect": "SOLU confirms “History saved. It now feeds each company's history and suggestion.” and the load shows under “SAVED LOADS”; “Remove load” takes it out with all its figures. A loaded figure counts as real only in the months before that company's first Need in SOLU; from that month on SOLU's own records count, so nothing is counted twice. A new load of the same origin replaces the earlier figure for the same company, month and indicator. Dollars are turned into pesos with the month's average official TRM. For invoicing, Siigo's figure replaces the earlier system's. “INVOICING: SOLU AGAINST SIIGO” compares, month by month, SOLU's invoices with the Siigo invoicing loaded and names the companies that differ. SOLU does not read Siigo directly. From an Excel file it reads the first sheet."
  },
  "cobertura": {
   "t": "Coverage during absence",

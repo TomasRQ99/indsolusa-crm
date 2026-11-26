@@ -23,6 +23,7 @@ export const SECTIONS = [
   { key: "consolidacion", href: "/comercial/presupuesto/consolidacion", es: "Consolidación", en: "Consolidation" },
   { key: "aprobaciones", href: "/comercial/presupuesto/aprobaciones", es: "Aprobaciones", en: "Approvals" },
   { key: "cumplimiento", href: "/comercial/presupuesto/cumplimiento", es: "Cumplimiento y radar", en: "Achievement and radar" },
+  { key: "reforecast", href: "/comercial/presupuesto/reforecast", es: "Reforecast", en: "Reforecast" },
   { key: "historial", href: "/comercial/presupuesto/historial", es: "Historial", en: "History" },
 ] as const;
 

@@ -56,6 +56,7 @@ export async function loadFacts(scope: FactScope = {}): Promise<FactSet> {
       quotes: { where: { presentedAt: { not: null } }, orderBy: { presentedAt: "asc" }, select: { id: true, number: true, presentedAt: true, protSale: true, protEsagra: true, status: true, currency: true, docFxRate: true } },
       customerPos: { where: { rejectedAt: null }, select: { id: true, number: true, currency: true, docFxRate: true, quoteId: true, acceptance: { select: { acceptedAt: true } }, lines: { select: { qty: true, unitPrice: true, docUnitPrice: true } } } },
       invoices: { select: { id: true, number: true, issuedAt: true, amount: true, docCurrency: true, quote: { select: { docFxRate: true } } } },
+      deliveries: { select: { id: true, code: true, deliveredAt: true } },
     },
   }), historyFor(scope)]);
   let min = new Date();
@@ -112,6 +113,8 @@ export async function loadFacts(scope: FactScope = {}): Promise<FactSet> {
       push("FACT_COP", inv.issuedAt, { ...v, orig: usd, currency: "USD", text: `${inv.number} · ${name}`, href: `/deals/${d.id}/facturacion` });
       if (v.cop != null) factCop += v.cop;
     }
+    // Deliveries confirmed to the customer, on the real delivery date (a partial delivery is one delivery).
+    for (const dl of d.deliveries) push("ENT_N", dl.deliveredAt, { ...one, text: `${dl.code} · ${name}`, href: `/deals/${d.id}` });
     if (ocCop > factCop) backlog.push({ ...base, cop: ocCop - factCop });
     const won = accepted > 0 || d.quotes.some((q) => q.status === "ACCEPTED");
     cohorts.push({ ...base, created: d.createdAt, quotedAt: q0?.presentedAt ?? null, won, decided: won || d.quotes.some((q) => q.status === "DECLINED"), cotCop, ocCop });

@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { refreshApp } from "@/lib/revalidate";
 import { canLoadHistory, checkBatch } from "@/lib/sales-history";
 import { UNITS } from "@/lib/sales-history-rules";
+import { readXlsx } from "@/lib/sheet-read";
 
 // Presupuesto comercial · Historial: loading the figures from before SOLU. Two steps on purpose: "Revisar" keeps the
 // pasted text and shows what SOLU understood (nothing counts yet); "Guardar historial" writes the rows that could be
@@ -30,9 +31,15 @@ export async function checkHistory(fd: FormData) {
   const file = fd.get("file");
   let raw = String(fd.get("rows") ?? "");
   if (!raw.trim() && file instanceof File && file.size > 0) {
-    if (/\.(xlsx|xls|xlsm)$/i.test(file.name)) redirect(`${BASE}?err=excel#cargar`);
+    if (/\.xls$/i.test(file.name)) redirect(`${BASE}?err=excel#cargar`);
     if (file.size > MAX_CHARS) redirect(`${BASE}?err=grande#cargar`);
-    raw = decode(await file.arrayBuffer());
+    if (/\.(xlsx|xlsm)$/i.test(file.name)) {
+      // The first sheet, as the cells show: a number keeps two decimals at most, so no thousands mark can be misread.
+      let rows: (string | number | null)[][] = [];
+      try { rows = readXlsx(Buffer.from(await file.arrayBuffer())).rows; } catch { redirect(`${BASE}?err=excel#cargar`); }
+      const cell = (v: string | number | null) => (v == null ? "" : typeof v === "number" ? (Number.isInteger(v) ? String(v) : v.toFixed(2)) : String(v).replace(/[\t\r\n]+/g, " ").trim());
+      raw = rows.map((r) => r.map(cell).join("\t")).join("\n");
+    } else raw = decode(await file.arrayBuffer());
   }
   if (!raw.trim()) redirect(`${BASE}?err=vacio#cargar`);
   if (raw.length > MAX_CHARS) redirect(`${BASE}?err=grande#cargar`);

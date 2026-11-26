@@ -39,14 +39,17 @@ export async function saveBudget(year: number, slot: string, userId: string, sen
   if (current && !isEditable(current.state)) back(current.state === "SUBMITTED" ? "err=enviado" : "err=aprobado");
 
   const es = user.lang === "ES";
-  const oc: number[] = [], fact: number[] = [], ocN: (number | null)[] = [];
+  const oc: number[] = [], fact: number[] = [], ocN: (number | null)[] = [], ent: (number | null)[] = [];
   for (let m = 1; m <= 12; m++) {
     const a = parseMillions(fd.get(`oc_${m}`), es), f = parseMillions(fd.get(`fact_${m}`), es);
     const rawN = String(fd.get(`ocn_${m}`) ?? "").trim();
     const n = rawN === "" ? null : Number(rawN);
     if (Number.isNaN(a) || Number.isNaN(f) || (a ?? 0) < 0 || (f ?? 0) < 0 || (a ?? 0) > 1e13 || (f ?? 0) > 1e13) back("err=valor", "#propuesta");
     if (n != null && (!Number.isInteger(n) || n < 0 || n > 100000)) back("err=numero", "#propuesta");
-    oc.push(a ?? 0); fact.push(f ?? 0); ocN.push(n);
+    const rawE = String(fd.get(`ent_${m}`) ?? "").trim();
+    const e = rawE === "" ? null : Number(rawE);
+    if (e != null && (!Number.isInteger(e) || e < 0 || e > 100000)) back("err=numero", "#propuesta");
+    oc.push(a ?? 0); fact.push(f ?? 0); ocN.push(n); ent.push(e);
   }
 
   // What SOLU itself would suggest today for this company and person: the reference every month is compared with.
@@ -67,7 +70,7 @@ export async function saveBudget(year: number, slot: string, userId: string, sen
   const a: Assumptions = readAssumptions(typed, { ...start, ticket: null, convSC: null, bateoN: null, bateoV: null, marginPct: null });
   a.manual = ASSUMPTION_KEYS.filter((k) => a[k] !== start[k]);
 
-  const lines = budgetLines(oc, fact, ocN, a, pureOc, pureFact);
+  const lines = budgetLines(oc, fact, ocN, a, pureOc, pureFact, ent);
   const data = { assumptions: a, potential: ["ALTO", "MEDIO", "BAJO"].includes(String(fd.get("potential"))) ? String(fd.get("potential")) : null, strategy: clean(fd.get("strategy"), 2000), justification: clean(fd.get("justification"), 2000) };
   const before = annual(current);
   const after = { OC_COP: sum(oc), FACT_COP: sum(fact), ESA_COP: sum(lines.filter((l) => l.kpi === "ESA_COP").map((l) => l.value)) };
