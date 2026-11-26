@@ -35,7 +35,7 @@ export default async function BudgetHome({ searchParams }: { searchParams: Promi
   const [companies, mine, yr] = await Promise.all([companiesOf(personId, year), budgetsOf(year, [personId]), yearRow(year)]);
   const ids = companies.map((c) => c.id);
   const [set, allBudgets] = await Promise.all([
-    loadFacts({ OR: [{ ownerId: personId }, { accountId: { in: ids } }] }),
+    loadFacts({ ownerIds: [personId], accountIds: ids }),
     db.salesBudget.findMany({ where: { year, slot: { in: ids } }, distinct: ["slot", "userId"], orderBy: { createdAt: "asc" }, select: { slot: true, userId: true } }),
   ]);
   const groups = groupVersions(mine);

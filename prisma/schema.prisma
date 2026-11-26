@@ -255,6 +255,7 @@ model Account {
   profileEntries       ProfileDiaryEntry[]
   profileItems         ProfileItem[]
   salesBudgets         SalesBudget[]
+  salesHistory         SalesHistoryMonth[]
 
   @@index([ownerId])
   @@index([name])
@@ -6076,4 +6077,55 @@ model TrmDay {
   validTo   String
   rate      Decimal  @db.Decimal(10, 2)
   fetchedAt DateTime @default(now())
+}
+
+/// A load of commercial history from before SOLU (the earlier system) or of Siigo's invoicing, pasted on
+/// Presupuesto comercial → Historial. Checked first (CHECKED), then saved (APPLIED); removing it removes its rows.
+model SalesHistoryBatch {
+  id            String    @id @default(cuid())
+  /// ANTERIOR (the system before SOLU) | SIIGO (invoicing as the accounting system has it)
+  source        String
+  label         String
+  /// COP | USD: the currency of the money columns as pasted
+  currency      String
+  /// 1 | 1000 | 1000000: what one unit of the money columns is worth
+  unit          Int       @default(1)
+  /// The text as pasted, kept so the load can be read again
+  raw           String
+  /// CHECKED | APPLIED
+  state         String    @default("CHECKED")
+  createdById   String
+  createdByName String
+  createdAt     DateTime  @default(now())
+  appliedAt     DateTime?
+
+  rows SalesHistoryMonth[]
+}
+
+/// One loaded figure: a company, a month and an indicator, in pesos (or a count). It stands in for SOLU's own
+/// records only in the months before the company's first Need in SOLU, so nothing is counted twice.
+model SalesHistoryMonth {
+  id        String            @id @default(cuid())
+  batchId   String
+  batch     SalesHistoryBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  accountId String
+  account   Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  /// The negotiator the figure belongs to; null = whoever owns the company
+  userId    String?
+  /// YYYY-MM
+  month     String
+  /// OC_COP | FACT_COP | ESA_COP | OC_N | COT_COP | COT_N | SOL_N
+  kpi       String
+  /// Pesos (or the count)
+  value     Decimal           @db.Decimal(18, 2)
+  /// The figure as pasted, in its currency
+  orig      Decimal           @db.Decimal(18, 2)
+  currency  String
+  /// Pesos per dollar applied (the month's average official TRM) when the figure came in dollars
+  rate      Decimal?          @db.Decimal(10, 2)
+  source    String
+
+  @@index([accountId, month])
+  @@index([userId])
+  @@index([batchId])
 }

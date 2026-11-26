@@ -35,7 +35,7 @@ export default async function BudgetTracking({ searchParams }: { searchParams: P
   // Compare against the approved budget; where there is none yet, against the latest proposal (and say so).
   const allChosen = [...groupVersions(rows).values()].map((g) => g.official ?? g.latest);
   const chosen = allChosen.filter((b) => inView(b.userId));
-  const set = await loadFacts(scope.all && !only ? {} : { OR: [{ ownerId: { in: only ? [only] : [...scope.ids] } }, { accountId: { in: chosen.map((b) => b.accountId).filter((x): x is string => !!x) } }] });
+  const set = await loadFacts(scope.all && !only ? {} : { ownerIds: only ? [only] : [...scope.ids], accountIds: chosen.map((b) => b.accountId).filter((x): x is string => !!x) });
   const accountIds = [...new Set(set.facts.map((x) => x.accountId))];
   const accounts = new Map((await db.account.findMany({ where: { id: { in: accountIds } }, select: { id: true, name: true, ownerId: true } })).map((a) => [a.id, a]));
   // Attribution uses every budget of the year, so a figure is never handed to someone just because of who is looking.

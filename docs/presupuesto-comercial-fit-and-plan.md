@@ -16,6 +16,29 @@ COMERCIAL → Mi trabajo → **Presupuesto comercial** (`/comercial/presupuesto`
 
 Code: `src/lib/sales-budget-rules.ts` (pure rules, `BUDGET_RULES` holds every threshold), `src/lib/sales-budget.ts` (reads), `src/lib/trm-store.ts` (official TRM by day, table `TrmDay`), `src/app/(app)/comercial/presupuesto/*` (pages, `actions.ts`, `Editor.tsx` client form, `presupuesto.css` prefix `pc-`). Tables (migration `20270128120000_sales_budget`, additive): `SalesBudget`, `SalesBudgetLine`, `SalesBudgetEvent`, `SalesBudgetYear`, `TrmDay`. Proposals sent for approval also show in Pendientes por aprobar (`src/lib/pending.ts`).
 
+## Wave 2 (2026-11-26): history from before SOLU and the Siigo comparison
+
+Asked by the owner the same day ("proceder con lo que puedas hacer de la lista de lo que falta"). Fifth screen **Historial** (`/comercial/presupuesto/historial`):
+
+- A person pastes rows copied from Excel (or uploads a CSV): one row per company and month, with any of requests, quotes (number and value), purchase orders (number and value), Eságara and invoicing. Templates: `/historial/plantilla?s=ANTERIOR|SIIGO`. Origin = earlier system (every figure) or Siigo (invoicing only); currency COP or USD; values in units, thousands or millions.
+- Two steps: "Revisar antes de guardar" keeps the text as a `SalesHistoryBatch` (CHECKED) and shows what was understood (rows read, rows to save, each unreadable row with its Excel line and what to fix, totals by year, what an earlier load loses, what will not count). "Guardar historial" writes `SalesHistoryMonth` rows. A load is removed whole.
+- Nothing is guessed: the company must match by tax ID (with or without the check digit) or by exact name without its legal ending; the negotiator by full name or email; an unreadable row is left out and listed.
+- `loadFacts` now takes a scope (`{ accountIds, ownerIds }`) and joins the loaded figures as facts, so the history table, projected close, seasonality, suggestion and rates use them without any other change.
+- "FACTURACIÓN: SOLU FRENTE A SIIGO": for each month with Siigo figures, SOLU's invoices against Siigo's, the difference and the companies that differ (AT-11, by month and company, from a loaded file — not a live reading).
+
+Code: `src/lib/sales-history-rules.ts` (pure: parsing), `src/lib/sales-history.ts` (reads, check, month-average TRM), `historial/page.tsx`, `historial/actions.ts`, `historial/plantilla/route.ts`. Migration `20270129120000_sales_history` (additive). Guide `presupuesto-historial` (ES + EN).
+
+| # | Default taken in wave 2 (NOT confirmed) |
+|---|---|
+| PC-12 | A loaded figure counts as real only in the months **before the company's first Need in SOLU**; from that month SOLU's own records rule. A company's sale made outside SOLU in or after that month is therefore not counted. |
+| PC-13 | For invoicing, Siigo's loaded figure replaces the earlier system's for the same company and month. SOLU's own invoices stay the real figure once the company is in SOLU; Siigo is shown beside them, not instead of them. |
+| PC-14 | A loaded figure without a negotiator belongs to the company's owner (today's owner). A new load of the same origin replaces the earlier figure for the same company, month and indicator; removing the new load does not bring the old figure back. |
+| PC-15 | Rates of loaded months come from the month's totals (so many requests, of them so many quoted, of them so many won), every one treated as a finished case; the average order uses the loaded number of orders, and a month without that number does not feed it. |
+| PC-16 | Dollars are turned into pesos with the month's average official TRM (every calendar day). |
+| PC-17 | Gerencia, Dirección Comercial, Finanzas and Administración load and remove; everyone reads. Invoicing figures are expected before VAT and net of credit notes. A difference under 1,000 pesos is rounding. |
+
+Checked on 2026-11-26: 32 parsing checks, 36 data checks on the local database, browser checks on a production build (negotiator and Gerencia; phone width). Not checked: a real file from the earlier system or from Siigo; a large load (thousands of rows); the live site.
+
 ## How each figure is counted
 
 - Requests = Needs created (month created). Quotes = one per Need, month of first presentation, value of the last presented revision. Purchase orders = customer POs **accepted** (`PoAcceptance`), on the acceptance date; rejected or not yet accepted ones don't count. Invoicing = SOLU invoices by issue date. Eságara of POs = PO value × margin of its quote.
@@ -54,7 +77,7 @@ Code: `src/lib/sales-budget-rules.ts` (pure rules, `BUDGET_RULES` holds every th
 | 08 no basis → says so | met | rules + browser (prospects) |
 | 09 open quote not a loss | met | data test |
 | 10 approved locked; correction = version | met | browser |
-| 11 Siigo reconciliation | not built | needs the Siigo mapping (PC-02) |
+| 11 Siigo reconciliation | partly | wave 2: by month and company from a loaded Siigo file; no live reading, no invoice-by-invoice match, no separate credit notes |
 | 12 current month by working days | met | rules test + browser |
 | 13 attribution 100 % | met by construction | one owner per Need |
 | 14 prospects not a company's history | met | browser + data test |
@@ -64,8 +87,8 @@ Checked on 2026-11-26: 62 rule/data checks on the local database; 68 browser che
 
 ## Not built (next waves)
 
-1. History loaded from outside SOLU (2024–2026 from the old system / Siigo): today the history is only what SOLU itself holds, so most real companies will say "sin base suficiente" until then.
-2. Siigo Nube invoicing and credit notes, with reconciliation per period (AT-11).
+1. Built in wave 2 (see above). Still owed: somebody has to load the real 2024–2026 figures; reading .xlsx files directly.
+2. Siigo Nube read live, credit notes as their own figure, reconciliation invoice by invoice.
 3. Reforecast (confirmed / probable POs, scheduled invoices) compared with the frozen official budget.
 4. AI daily insight and evening email (phase 5), alerts table with owner and due date beyond the to-do.
 5. Deliveries budget, sites / plants per company, attribution percentages for shared deals.

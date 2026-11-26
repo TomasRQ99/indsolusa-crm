@@ -5,6 +5,8 @@ import { canManageAll, isMoneyRole } from "./permissions";
 import { leaderIdsOf, reportIdsOf } from "./team-store";
 import { monthOf } from "./customer-stats";
 import { trmLookup } from "./trm-store";
+import { historyFor, type FactScope } from "./sales-history";
+import { SOURCE_TXT } from "./sales-history-rules";
 import {
   BUDGET_RULES, KPI_KEYS, PROSPECTS, attribute, catchAll, measured, monthKey, projectClose, seasonShares, zeros,
   type Basis, type Kpi, type Measured,
@@ -24,6 +26,10 @@ export type Fact = {
   orig: number; currency: string;
   rate: number | null; rateDay: string | null; rateSource: Txt | null;
   text: string; href: string;
+  /** Set on a figure loaded from before SOLU (a month's total, not one document): the load it came from. */
+  loaded?: string;
+  /** Cases behind a loaded month's total (its number of purchase orders); a SOLU record is always one case. */
+  cases?: number;
 };
 /** One Need as a cohort case for the batting rates. */
 export type Cohort = { accountId: string; ownerId: string; created: Date; quotedAt: Date | null; decided: boolean; won: boolean; cotCop: number | null; ocCop: number };
@@ -31,18 +37,27 @@ export type FactSet = { facts: Fact[]; cohorts: Cohort[]; backlog: { accountId: 
 
 const FIXED: Txt = { es: "Tasa fija de la cotización", en: "The quote's fixed rate" };
 const TRM: Txt = { es: "TRM oficial del día", en: "Official TRM of the day" };
+const TRM_MONTH: Txt = { es: "TRM oficial promedio del mes", en: "Average official TRM of the month" };
+/** Where a loaded figure of a company opens: the rows loaded for that company. */
+export const historyHref = (accountId: string, month?: string) => `/comercial/presupuesto/historial?e=${accountId}${month ? `#m-${month}` : ""}`;
+const MAX_SYNTH = 500;
 
-/** The dated records behind the budget screens. `where` narrows the Needs read (a company, some people). */
-export async function loadFacts(where: Prisma.DealWhereInput = {}): Promise<FactSet> {
-  const deals = await db.deal.findMany({
-    where: { internal: false, ...where },
+/** The dated records behind the budget screens. `scope` narrows what is read: the Needs of some companies or of
+ *  some people (either one is enough); empty = everything. The history loaded from before SOLU joins them for the
+ *  months before each company's first Need (see sales-history.ts). */
+export async function loadFacts(scope: FactScope = {}): Promise<FactSet> {
+  const or: Prisma.DealWhereInput[] = [];
+  if (scope.accountIds) or.push({ accountId: { in: scope.accountIds } });
+  if (scope.ownerIds) or.push({ ownerId: { in: scope.ownerIds } });
+  const [deals, history] = await Promise.all([db.deal.findMany({
+    where: { internal: false, ...(or.length ? { OR: or } : {}) },
     select: {
       id: true, code: true, title: true, accountId: true, ownerId: true, createdAt: true,
       quotes: { where: { presentedAt: { not: null } }, orderBy: { presentedAt: "asc" }, select: { id: true, number: true, presentedAt: true, protSale: true, protEsagra: true, status: true, currency: true, docFxRate: true } },
       customerPos: { where: { rejectedAt: null }, select: { id: true, number: true, currency: true, docFxRate: true, quoteId: true, acceptance: { select: { acceptedAt: true } }, lines: { select: { qty: true, unitPrice: true, docUnitPrice: true } } } },
       invoices: { select: { id: true, number: true, issuedAt: true, amount: true, docCurrency: true, quote: { select: { docFxRate: true } } } },
     },
-  });
+  }), historyFor(scope)]);
   let min = new Date();
   for (const d of deals) if (d.createdAt < min) min = d.createdAt;
   const trm = await trmLookup(min, new Date());
@@ -101,6 +116,36 @@ export async function loadFacts(where: Prisma.DealWhereInput = {}): Promise<Fact
     const won = accepted > 0 || d.quotes.some((q) => q.status === "ACCEPTED");
     cohorts.push({ ...base, created: d.createdAt, quotedAt: q0?.presentedAt ?? null, won, decided: won || d.quotes.some((q) => q.status === "DECLINED"), cotCop, ocCop });
   }
+  // Loaded history: one figure per company, person, month and indicator, dated in the middle of its month.
+  const months = new Map<string, Partial<Record<Kpi, number>> & { accountId: string; ownerId: string; month: string }>();
+  for (const h of history) {
+    const key = `${h.accountId}|${h.ownerId}|${h.month}`;
+    const m = months.get(key) ?? { accountId: h.accountId, ownerId: h.ownerId, month: h.month };
+    m[h.kpi] = (m[h.kpi] ?? 0) + h.value;
+    months.set(key, m);
+  }
+  for (const h of history) {
+    const at = new Date(`${h.month}-15T17:00:00Z`);
+    const usd = h.currency === "USD";
+    const ocN = months.get(`${h.accountId}|${h.ownerId}|${h.month}`)?.OC_N ?? 0;
+    facts.push({
+      kpi: h.kpi, at, month: h.month, accountId: h.accountId, ownerId: h.ownerId, cop: h.value, orig: h.orig, currency: h.currency,
+      rate: usd ? h.rate : null, rateDay: null, rateSource: usd ? TRM_MONTH : null,
+      text: `${SOURCE_TXT[h.source].es} · ${h.label}`, href: historyHref(h.accountId, h.month), loaded: h.batchId,
+      cases: h.kpi === "OC_COP" || h.kpi === "ESA_COP" ? ocN : 1,
+    });
+  }
+  // The batting rates of loaded months come from the month's totals: so many requests, so many of them quoted, so
+  // many quotes won. Each is one finished case of that month (history from before SOLU has no open quotes).
+  for (const m of months.values()) {
+    const s = m.SOL_N ?? 0, c = m.COT_N ?? 0, o = Math.min(m.OC_N ?? 0, c);
+    const n = Math.min(Math.max(s, c), MAX_SYNTH);
+    const at = new Date(`${m.month}-15T17:00:00Z`);
+    for (let k = 0; k < n; k++) {
+      const quoted = k < c, won = k < o;
+      cohorts.push({ accountId: m.accountId, ownerId: m.ownerId, created: at, quotedAt: quoted ? at : null, decided: quoted, won, cotCop: quoted && m.COT_COP != null && c > 0 ? m.COT_COP / c : null, ocCop: won && o > 0 ? (m.OC_COP ?? 0) / o : 0 });
+    }
+  }
   return { facts, cohorts, backlog, noRate };
 }
 
@@ -137,8 +182,11 @@ function rates(set: FactSet, pick: FactPick, now: Date): { ticket: Measured; con
   const valued = decided.filter((c) => c.cotCop != null && c.cotCop > 0);
   let oc = 0, ocN = 0, esa = 0, ocWithEsa = 0, esaN = 0;
   const esaKeys = new Set<string>();
-  for (const f of set.facts) if (f.kpi === "ESA_COP" && pick(f) && f.month >= from && f.cop != null) { esa += f.cop; esaN++; esaKeys.add(f.href); }
-  for (const f of set.facts) if (f.kpi === "OC_COP" && pick(f) && f.month >= from && f.cop != null) { oc += f.cop; ocN++; if (esaKeys.has(f.href)) ocWithEsa += f.cop; }
+  // A SOLU record is one case; a loaded month's total stands for as many cases as purchase orders it says it had
+  // (none stated = it cannot feed the average value of an order).
+  const key = (f: Fact) => `${f.href}|${f.ownerId}`;
+  for (const f of set.facts) if (f.kpi === "ESA_COP" && pick(f) && f.month >= from && f.cop != null) { esa += f.cop; esaN += Math.max(1, f.cases ?? 1); esaKeys.add(key(f)); }
+  for (const f of set.facts) if (f.kpi === "OC_COP" && pick(f) && f.month >= from && f.cop != null) { const n = f.cases ?? 1; if (n > 0) { oc += f.cop; ocN += n; } if (esaKeys.has(key(f))) ocWithEsa += f.cop; }
   const byValue = measured(valued.filter((c) => c.won).length, valued.length);
   const cot = valued.reduce((s, c) => s + c.cotCop!, 0), got = valued.reduce((s, c) => s + c.ocCop, 0);
   return {
@@ -242,15 +290,17 @@ export async function approverIdsOf(ownerId: string): Promise<{ ids: string[]; b
 /** The companies a person can budget: the ones they own, the ones they have Needs with, and the ones already
  *  budgeted for them. */
 export async function companiesOf(userId: string, year: number) {
-  const [owned, viaDeals, budgeted] = await Promise.all([
+  const [owned, viaDeals, budgeted, loaded] = await Promise.all([
     db.account.findMany({ where: { ownerId: userId, internal: false }, select: { id: true, name: true, industry: true, ownerId: true } }),
     db.deal.findMany({ where: { ownerId: userId, internal: false }, distinct: ["accountId"], select: { account: { select: { id: true, name: true, industry: true, ownerId: true, internal: true } } } }),
     db.salesBudget.findMany({ where: { year, userId, accountId: { not: null } }, distinct: ["accountId"], select: { account: { select: { id: true, name: true, industry: true, ownerId: true } } } }),
+    db.salesHistoryMonth.findMany({ where: { userId, batch: { state: "APPLIED" }, account: { internal: false } }, distinct: ["accountId"], select: { account: { select: { id: true, name: true, industry: true, ownerId: true } } } }),
   ]);
   const map = new Map<string, { id: string; name: string; industry: string | null; ownerId: string }>();
   for (const a of owned) map.set(a.id, a);
   for (const d of viaDeals) if (d.account && !d.account.internal) map.set(d.account.id, d.account);
   for (const b of budgeted) if (b.account) map.set(b.account.id, b.account);
+  for (const h of loaded) map.set(h.account.id, h.account);
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, "es"));
 }
 

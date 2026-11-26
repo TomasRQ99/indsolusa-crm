@@ -51,7 +51,7 @@ export async function saveBudget(year: number, slot: string, userId: string, sen
 
   // What SOLU itself would suggest today for this company and person: the reference every month is compared with.
   const others = slot === PROSPECTS ? [] : (await db.salesBudget.findMany({ where: { year, slot }, distinct: ["userId"], orderBy: { createdAt: "asc" }, select: { userId: true } })).map((b) => b.userId);
-  const set = await loadFacts(slot === PROSPECTS ? { ownerId: userId } : { OR: [{ accountId: slot }, { ownerId: userId }] });
+  const set = await loadFacts(slot === PROSPECTS ? { ownerIds: [userId] } : { accountIds: [slot], ownerIds: [userId] });
   const now = new Date();
   const basis = slot === PROSPECTS ? basisFor(set, year, now, () => false, (f) => f.ownerId === userId) : basisFor(set, year, now, basisPick(slot, userId, account!.ownerId, others), (f) => f.ownerId === userId);
   const start = defaultAssumptions(basis);

@@ -934,6 +934,22 @@
    "expect": "SOLU confirma «Pendiente creado para el negociador. Lo ve en MI DÍA → Pendientes.» El mes en curso se compara por días hábiles transcurridos, no contra el mes completo. Se compara con el presupuesto aprobado; donde aún no lo hay, con la última propuesta. Una orden de compra cuenta cuando se acepta; una rechazada no cuenta. «Real sin presupuesto» lista lo vendido a empresas que nadie presupuestó. El radar usa reglas fijas, sin inteligencia artificial: muestra la caída o el cambio con sus cifras, nunca afirma la causa. «Cómo detecta el radar» explica cada regla. Antes de que empiece el año, el cumplimiento dice que aún no empieza y el radar ya funciona."
   },
   {
+   "id": "presupuesto-historial",
+   "m": "comercial",
+   "t": "Presupuesto comercial: cargar el historial de ventas anterior a SOLU (o la facturación de Siigo)",
+   "path": "COMERCIAL → Presupuesto comercial · Historial",
+   "why": "Que cada empresa tenga historial y sugerencia aunque sus ventas de años anteriores no estén en SOLU, y comparar la facturación de SOLU con la de Siigo.",
+   "steps": [
+    "Abre [[COMERCIAL]], haz clic en [[Presupuesto comercial]] y luego en [[Historial]]. Cargan Gerencia, la Dirección Comercial, Finanzas y Administración; los demás ven las cargas guardadas.",
+    "En «CARGAR HISTORIAL» descarga la «Plantilla del sistema anterior» (o la «Plantilla de Siigo») y ábrela en Excel. Llena una fila por empresa y mes: «NIT» o «Empresa», «Año», «Mes» y las cifras que tengas. «Negociador» es opcional: si queda vacío, la cifra queda a nombre del dueño de la empresa.",
+    "Elige el «Origen», la «Moneda de los valores» y «Los valores están en» (pesos completos, miles o millones). Escribe el «Nombre de esta carga».",
+    "En Excel selecciona las celdas con sus títulos, cópialas y pégalas en «Filas copiadas de Excel» (o elige el archivo en «O un archivo CSV»). Haz clic en [[Revisar antes de guardar]].",
+    "Lee «REVISIÓN ANTES DE GUARDAR»: «Filas leídas», «Filas que se guardarán», «Filas con algo por corregir» y la suma por año. «Filas que no se guardan» dice, fila por fila, qué corregir. Compara la suma con el total de tu archivo.",
+    "Haz clic en [[Guardar historial]]. Si algo no cuadra, haz clic en [[Descartar revisión]], corrige el Excel y vuelve a pegar."
+   ],
+   "expect": "SOLU confirma «Historial guardado. Ya entra en el historial y en la sugerencia de cada empresa.» y la carga aparece en «CARGAS GUARDADAS»; «Quitar carga» la retira con todas sus cifras. Lo cargado cuenta como real solo en los meses anteriores a la primera Necesidad de esa empresa en SOLU; desde ese mes cuenta lo registrado en SOLU, así nada se cuenta dos veces. Una carga nueva del mismo origen reemplaza la cifra anterior de la misma empresa, mes e indicador. Los dólares se pasan a pesos con la TRM oficial promedio del mes. En facturación, la cifra de Siigo reemplaza a la del sistema anterior. «FACTURACIÓN: SOLU FRENTE A SIIGO» compara, mes a mes, las facturas de SOLU con la facturación cargada de Siigo y nombra las empresas que no coinciden. SOLU no lee Siigo directamente ni archivos .xlsx: se pega desde Excel o se sube un CSV."
+  },
+  {
    "id": "cobertura",
    "m": "comercial",
    "t": "Cobertura por ausencia",

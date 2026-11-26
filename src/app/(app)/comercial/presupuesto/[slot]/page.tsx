@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { monthOf } from "@/lib/customer-stats";
 import { workPeople } from "@/lib/team-store";
 import { KPIS, PROSPECTS, defaultAssumptions, isEditable, marginOf, readAssumptions, shownState, sum, type Kpi } from "@/lib/sales-budget-rules";
-import { approverIdsOf, basisFor, basisPick, budgetScope, budgetYears, canWriteBudget, lastMonths, loadFacts, matrixOf, numbers, readYear, totals, yearRow } from "@/lib/sales-budget";
+import { approverIdsOf, basisFor, basisPick, budgetScope, budgetYears, canWriteBudget, historyHref, lastMonths, loadFacts, matrixOf, numbers, readYear, totals, yearRow } from "@/lib/sales-budget";
 import { askReconcile, decideBudget, discardDraft, newVersion, saveBudget, withdrawBudget } from "../actions";
 import Editor, { type EditorSaved } from "../Editor";
 import { BudgetNav, StateChip, budgetFmt } from "../ui";
@@ -47,7 +47,7 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
     db.salesBudget.findMany({ where: { year, slot, userId: personId }, orderBy: { version: "desc" }, include: { lines: true, events: { orderBy: { at: "asc" } } } }),
     yearRow(year),
     prospects ? [] : db.salesBudget.findMany({ where: { year, slot }, distinct: ["userId"], orderBy: { createdAt: "asc" }, select: { userId: true, user: { select: { name: true } } } }),
-    loadFacts(prospects ? { ownerId: personId } : { OR: [{ accountId: slot }, { ownerId: personId }] }),
+    loadFacts(prospects ? { ownerIds: [personId] } : { accountIds: [slot], ownerIds: [personId] }),
     approverIdsOf(personId),
   ]);
   const latest = versions[0] ?? null;
@@ -78,6 +78,7 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
   const chartMonths = lastMonths(current, 36).filter((k) => all.first != null && k >= all.first);
   const chartMax = Math.max(1, ...chartMonths.map((k) => Math.max(all.of("OC_COP", k), all.of("FACT_COP", k))));
   const sources = prospects ? [] : set.facts.filter((x) => x.accountId === slot && (x.kpi === "OC_COP" || x.kpi === "FACT_COP" || x.kpi === "COT_COP" || x.kpi === "SOL_N")).sort((a, b) => +b.at - +a.at).slice(0, 80);
+  const loadedMonths = prospects ? 0 : new Set(set.facts.filter((x) => x.loaded && x.accountId === slot).map((x) => x.month)).size;
   const sharedWith = otherRows.filter((o) => o.userId !== personId).map((o) => o.user.name);
 
   const title = prospects ? t("Reactivaciones y prospectos", "Reactivations and prospects") : account!.name;
@@ -124,7 +125,7 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
       {!prospects && (
         <section className="card" id="historial">
           <b>{t(`HISTORIAL DE ${title.toUpperCase()}`, `HISTORY OF ${title.toUpperCase()}`)}</b>
-          {all.first == null ? <p className="small muted">{t("SOLU no tiene registros de esta empresa todavía: no hay historial ni sugerencia. Escribe las metas mes a mes y explica de dónde salen.", "SOLU has no records of this company yet: there is no history and no suggestion. Type the goals month by month and explain where they come from.")}</p> : (
+          {all.first == null ? <p className="small muted">{t("SOLU no tiene registros de esta empresa todavía: no hay historial ni sugerencia. Escribe las metas mes a mes y explica de dónde salen.", "SOLU has no records of this company yet: there is no history and no suggestion. Type the goals month by month and explain where they come from.")} {t("Si la empresa ya compraba antes de SOLU, sus cifras de años anteriores se cargan en", "If the company was already buying before SOLU, its figures from earlier years are loaded in")} <Link href="/comercial/presupuesto/historial">{t("Historial", "History")}</Link>.</p> : (
             <>
               <div className="pc-scroll">
                 <table className="pc-table pc-cards" id="tabla-historial">
@@ -142,7 +143,7 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
                   </tbody>
                 </table>
               </div>
-              <p className="src">{t("Toda la empresa, todos los negociadores. Cifras en millones de pesos; el cierre proyectado usa solo lo que entra en el presupuesto de este negociador.", "The whole company, every negotiator. Figures in millions of pesos; the projected close uses only what enters this negotiator's budget.")}{sum(mine.year("OC_COP", base)) !== sum(all.year("OC_COP", base)) ? t(` De las OC de ${base}, ${f.m(sum(mine.year("OC_COP", base)))} entran en este presupuesto.`, ` Of the ${base} POs, ${f.m(sum(mine.year("OC_COP", base)))} enter this budget.`) : ""}</p>
+              <p className="src">{t("Toda la empresa, todos los negociadores. Cifras en millones de pesos; el cierre proyectado usa solo lo que entra en el presupuesto de este negociador.", "The whole company, every negotiator. Figures in millions of pesos; the projected close uses only what enters this negotiator's budget.")}{sum(mine.year("OC_COP", base)) !== sum(all.year("OC_COP", base)) ? t(` De las OC de ${base}, ${f.m(sum(mine.year("OC_COP", base)))} entran en este presupuesto.`, ` Of the ${base} POs, ${f.m(sum(mine.year("OC_COP", base)))} enter this budget.`) : ""}{loadedMonths > 0 ? <> {t(`Incluye ${loadedMonths} meses de historial cargado de antes de SOLU; sus porcentajes se calculan con los totales del mes, no caso por caso.`, `It includes ${loadedMonths} months of history loaded from before SOLU; their percentages come from the month's totals, not case by case.`)} <Link href={historyHref(slot)}>{t("Ver lo cargado", "See what was loaded")}</Link></> : null}</p>
               {chartMonths.length >= 3 && (
                 <>
                   <svg className="pc-chart" viewBox={`0 0 ${chartMonths.length * 20 + 10} 120`} role="img" aria-label={t("Órdenes de compra y facturación por mes", "Purchase orders and invoicing by month")}>
@@ -169,7 +170,7 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
                           <th scope="row"><Link href={x.href}>{x.text}</Link></th>
                           <td className="l" data-l={t("Indicador", "Indicator")}>{t(KPIS[x.kpi].es, KPIS[x.kpi].en)}</td>
                           <td data-l={t("Fecha", "Date")}>{i.date(x.at)}</td>
-                          <td data-l={t("Valor original", "Original value")}>{x.currency ? i.money(x.orig, x.currency) : "1"}</td>
+                          <td data-l={t("Valor original", "Original value")}>{x.currency ? i.money(x.orig, x.currency) : i.n(x.cop ?? 1)}</td>
                           <td data-l={t("Tasa aplicada", "Rate applied")}>{x.rate ? <>{i.n2(x.rate)}<span className="src block">{x.rateSource ? t(x.rateSource.es, x.rateSource.en) : ""}{x.rateDay ? ` · ${x.rateDay}` : ""}</span></> : x.currency === "USD" ? <span className="pc-nobase">{t("sin tasa", "no rate")}</span> : "—"}</td>
                           <td data-l={t("En pesos", "In pesos")}>{x.currency ? (x.cop != null ? i.money(x.cop, "COP") : "—") : "—"}</td>
                         </tr>
@@ -177,7 +178,7 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
                     </tbody>
                   </table>
                 </div>
-                <p className="src">{t("Los 80 registros más recientes de esta empresa. Cada uno abre su Necesidad, cotización, orden de compra o factura.", "The 80 most recent records of this company. Each one opens its Need, quote, purchase order or invoice.")}</p>
+                <p className="src">{t("Los 80 registros más recientes de esta empresa. Cada uno abre su Necesidad, cotización, orden de compra o factura; un mes cargado de antes de SOLU abre el historial cargado.", "The 80 most recent records of this company. Each one opens its Need, quote, purchase order or invoice; a month loaded from before SOLU opens the loaded history.")}</p>
               </details>
             </>
           )}

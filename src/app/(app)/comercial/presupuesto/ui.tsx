@@ -23,9 +23,10 @@ export const SECTIONS = [
   { key: "consolidacion", href: "/comercial/presupuesto/consolidacion", es: "Consolidación", en: "Consolidation" },
   { key: "aprobaciones", href: "/comercial/presupuesto/aprobaciones", es: "Aprobaciones", en: "Approvals" },
   { key: "cumplimiento", href: "/comercial/presupuesto/cumplimiento", es: "Cumplimiento y radar", en: "Achievement and radar" },
+  { key: "historial", href: "/comercial/presupuesto/historial", es: "Historial", en: "History" },
 ] as const;
 
-/** The row that moves between the four screens and between the years, keeping the person chosen. */
+/** The row that moves between the screens and between the years, keeping the person chosen. */
 export function BudgetNav({ i, active, year, years, personId, extra = "" }: { i: I18n; active: (typeof SECTIONS)[number]["key"]; year: number; years: number[]; personId?: string | null; extra?: string }) {
   const { t } = i;
   const qs = (y: number) => `?y=${y}${personId ? `&u=${personId}` : ""}${extra}`;
@@ -36,10 +37,12 @@ export function BudgetNav({ i, active, year, years, personId, extra = "" }: { i:
         {SECTIONS.map((s) => <Link key={s.key} href={`${s.href}${qs(year)}`} className={s.key === active ? "on" : ""} aria-current={s.key === active ? "page" : undefined}>{t(s.es, s.en)}</Link>)}
       </span>
       <span className="grow" />
-      <span className="pc-years">
-        <span className="src">{t("Año", "Year")}</span>
-        {years.map((y) => <Link key={y} href={`${here.href}${qs(y)}`} className={y === year ? "on" : ""} aria-current={y === year ? "true" : undefined}>{y}</Link>)}
-      </span>
+      {years.length > 0 && (
+        <span className="pc-years">
+          <span className="src">{t("Año", "Year")}</span>
+          {years.map((y) => <Link key={y} href={`${here.href}${qs(y)}`} className={y === year ? "on" : ""} aria-current={y === year ? "true" : undefined}>{y}</Link>)}
+        </span>
+      )}
     </nav>
   );
 }

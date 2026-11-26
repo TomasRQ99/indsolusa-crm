@@ -598,6 +598,19 @@
   ],
   "expect": "SOLU confirms “To-do created for the negotiator. They see it in MY DAY → To-dos.” The month in course is compared by working days gone, not against the full month. It compares with the approved budget; where there is none yet, with the latest proposal. A purchase order counts when it is accepted; a rejected one does not. “Real without a budget” lists what was sold to companies nobody budgeted. The radar uses fixed rules, no artificial intelligence: it shows the fall or the change with its figures, never states the cause. “How the radar detects” explains each rule. Before the year starts, achievement says it has not started and the radar already works."
  },
+ "presupuesto-historial": {
+  "t": "Commercial budget: load the sales history from before SOLU (or Siigo's invoicing)",
+  "why": "So every company has a history and a suggestion even when its sales of earlier years are not in SOLU, and to compare SOLU's invoicing with Siigo's.",
+  "steps": [
+   "Open [[COMERCIAL]], click [[Presupuesto comercial]] and then [[Historial]]. Management, the Commercial Director, Finance and Administration load; everyone else sees the saved loads.",
+   "Under “LOAD HISTORY” download the “Earlier-system template” (or the “Siigo template”) and open it in Excel. Fill one row per company and month: “Tax ID” or “Company”, “Year”, “Month” and the figures you have. “Negotiator” is optional: left empty, the figure goes to the company's owner.",
+   "Choose the “Origin”, the “Currency of the values” and “The values are in” (whole pesos, thousands or millions). Type the “Name of this load”.",
+   "In Excel select the cells with their headings, copy them and paste them into “Rows copied from Excel” (or choose the file under “Or a CSV file”). Click [[Revisar antes de guardar]].",
+   "Read “REVIEW BEFORE SAVING”: “Rows read”, “Rows to be saved”, “Rows with something to fix” and the sum by year. “Rows that are not saved” says, row by row, what to fix. Compare the sum with your file's total.",
+   "Click [[Guardar historial]]. If something does not add up, click [[Descartar revisión]], fix the Excel and paste again."
+  ],
+  "expect": "SOLU confirms “History saved. It now feeds each company's history and suggestion.” and the load shows under “SAVED LOADS”; “Remove load” takes it out with all its figures. A loaded figure counts as real only in the months before that company's first Need in SOLU; from that month on SOLU's own records count, so nothing is counted twice. A new load of the same origin replaces the earlier figure for the same company, month and indicator. Dollars are turned into pesos with the month's average official TRM. For invoicing, Siigo's figure replaces the earlier system's. “INVOICING: SOLU AGAINST SIIGO” compares, month by month, SOLU's invoices with the Siigo invoicing loaded and names the companies that differ. SOLU does not read Siigo directly nor .xlsx files: paste from Excel or upload a CSV."
+ },
  "cobertura": {
   "t": "Coverage during absence",
   "why": "When you are away, another person looks after your Needs for a while.",
