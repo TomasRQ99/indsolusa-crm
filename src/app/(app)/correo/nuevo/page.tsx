@@ -9,10 +9,11 @@ import { saveInternal, sendComposed } from "../actions";
 import MailBodyHints from "@/components/MailBodyHints";
 import { db } from "@/lib/db";
 import { aiConfigured } from "@/lib/ai";
-import { draftWithAi } from "../ai-actions";
+import { draftWithAi, rewriteWithAi } from "../ai-actions";
+import { REWRITE_PRESETS } from "@/lib/mail-ai";
 import { imapAllowed, imapBox } from "@/lib/mailbox-imap";
 
-export default async function ComposeMail({ searchParams }: { searchParams: Promise<{ tpl?: string; id?: string; lang?: string; err?: string; msg?: string; borrador?: string }> }) {
+export default async function ComposeMail({ searchParams }: { searchParams: Promise<{ tpl?: string; id?: string; lang?: string; err?: string; msg?: string; borrador?: string; ok?: string; to?: string; cc?: string; bcc?: string }> }) {
   const user = await requireUser();
   const { t } = makeI18n(user.lang);
   const sp = await searchParams;
@@ -26,7 +27,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
   const meta = TEMPLATES[tpl];
   // A draft written with AI for this same Need opens in the text box; the person reads and edits it before sending.
   const aiKind = tpl === "PROGRESS" || tpl === "OFFER";
-  const draft = (aiKind || tpl === "ACK") && sp.borrador && c.dealId ? await db.aiDraft.findFirst({ where: { id: sp.borrador.slice(0, 40), dealId: c.dealId, kind: tpl }, select: { subject: true, body: true, createdByName: true } }) : null;
+  const draft = sp.borrador && c.dealId ? await db.aiDraft.findFirst({ where: { id: sp.borrador.slice(0, 40), dealId: c.dealId, kind: tpl }, select: { subject: true, body: true, createdByName: true } }) : null;
   const aiOn = aiConfigured();
   const ownBox = imapAllowed(user) && imapBox().ready ? imapBox().address : null;
   const other = c.lang === "EN" ? "ES" : "EN";
@@ -39,6 +40,7 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
     texto: t("El mensaje está vacío.", "The message is empty."),
     adjuntos: t("No se envió: los archivos marcados pesan más de 3 MB en total, y el buzón no los acepta. Desmarca alguno.", "Not sent: the ticked files weigh more than 3 MB in total and the mailbox won't accept them. Untick some."),
     envio: t("No se pudo enviar: ", "Couldn't send: ") + (sp.msg ?? ""),
+    "ia-prompt": t("Escribe qué quieres cambiar del correo, o usa uno de los botones.", "Type what you want changed in the email, or use one of the buttons."),
     "ia-off": t("La IA no está conectada todavía. Puedes enviar el texto de abajo, que ya trae los datos de la Necesidad.", "AI is not connected yet. You can send the text below, which already carries the Need's data."),
     "ia-tope": t("La IA llegó al tope de gasto de este mes. Puedes enviar el texto de abajo.", "AI reached this month's spending cap. You can send the text below."),
     "ia-fallo": t("La IA no pudo redactar el correo esta vez. Intenta de nuevo, o usa el texto de abajo.", "AI could not draft the email this time. Try again, or use the text below."),
@@ -74,7 +76,8 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
         </section>
       )}
 
-      {draft && !aiKind && <p className="note attn">{t(`Respuesta preparada por IA a pedido de ${draft.createdByName}. Léela completa antes de enviar: revisa nombres, números de parte y lo que se le pide al cliente. SOLU agrega el número de la Necesidad en el asunto.`, `Reply prepared by AI at ${draft.createdByName}'s request. Read all of it before sending: check names, part numbers and what the customer is asked for. SOLU adds the Need number to the subject.`)}</p>}
+      {sp.ok === "reescrito" && draft && <p className="note okn" role="status">{t("La IA reescribió el correo: el texto nuevo está en «MENSAJE». Léelo antes de enviar; puedes pedirle otro cambio.", "AI rewrote the email: the new text is under “MESSAGE”. Read it before sending; you can ask for another change.")}</p>}
+      {draft && !aiKind && sp.ok !== "reescrito" && <p className="note attn">{t(`Respuesta preparada por IA a pedido de ${draft.createdByName}. Léela completa antes de enviar: revisa nombres, números de parte y lo que se le pide al cliente. SOLU agrega el número de la Necesidad en el asunto.`, `Reply prepared by AI at ${draft.createdByName}'s request. Read all of it before sending: check names, part numbers and what the customer is asked for. SOLU adds the Need number to the subject.`)}</p>}
       <form key={`${c.lang}-${sp.borrador ?? ""}`} action={sendComposed} className="stack">
         <input type="hidden" name="tpl" value={tpl} />
         <input type="hidden" name="id" value={sp.id} />
@@ -94,9 +97,9 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
             </label>
           )}
           <div className="mail-to">
-            <label>{t("Para", "To")} · {c.toName}<input type="text" inputMode="email" name="to" defaultValue={c.to ?? ""} required autoComplete="off" placeholder={t("correo@empresa.com", "name@company.com")} /></label>
-            <label>{t("CC (con copia)", "CC (copy)")}<input type="text" inputMode="email" name="cc" autoComplete="off" placeholder={t("opcional", "optional")} /></label>
-            <label>{t("CCO (copia oculta)", "BCC (hidden copy)")}<input type="text" inputMode="email" name="bcc" autoComplete="off" placeholder={t("opcional", "optional")} /></label>
+            <label>{t("Para", "To")} · {c.toName}<input type="text" inputMode="email" name="to" defaultValue={sp.to ?? c.to ?? ""} required autoComplete="off" placeholder={t("correo@empresa.com", "name@company.com")} /></label>
+            <label>{t("CC (con copia)", "CC (copy)")}<input type="text" inputMode="email" name="cc" defaultValue={sp.cc ?? ""} autoComplete="off" placeholder={t("opcional", "optional")} /></label>
+            <label>{t("CCO (copia oculta)", "BCC (hidden copy)")}<input type="text" inputMode="email" name="bcc" defaultValue={sp.bcc ?? ""} autoComplete="off" placeholder={t("opcional", "optional")} /></label>
           </div>
           <span className="src">{t("Puedes escribir varios correos en cada casilla, separados por coma. El primero de «Para» es el destinatario principal: con ese SOLU empareja la respuesta. Los de CCO reciben el correo sin que los demás los vean.", "You can type several addresses in each box, separated by commas. The first one under “To” is the main recipient: SOLU matches the reply with that one. BCC recipients get the email without the others seeing them.")}</span>
           {!c.to && <p className="note">{t("No hay correo guardado para este destinatario. Escríbelo aquí y agrégalo también a su ficha.", "No email saved for this recipient. Type it here and add it to their record too.")}</p>}
@@ -113,8 +116,25 @@ export default async function ComposeMail({ searchParams }: { searchParams: Prom
         </section>
 
         <section className="jblock loc-sec">
-          <div className="jbh"><b>{t("MENSAJE", "MESSAGE")}</b></div>
+          <div className="jbh" id="mensaje"><b>{t("MENSAJE", "MESSAGE")}</b></div>
           <MailBodyHints original={c.mail.text} tpl={tpl} ui={user.lang === "EN" ? "EN" : "ES"} initial={draft?.body ?? null} />
+          {c.dealId && (
+            <div className="ai-rw" id="reescribir">
+              <b className="ai-rw-h"><span aria-hidden>✦</span> {t("Reescribir con IA", "Rewrite with AI")}</b>
+              {aiOn ? (
+                <>
+                  <label className="ai-rw-l">{t("Dile a la IA cómo quieres el correo", "Tell the AI how you want the email")}
+                    <textarea name="aiPrompt" rows={2} maxLength={1500} placeholder={t("Ej.: más corto y que pida la foto de la placa; menciona que la línea está parada y que respondemos mañana", "E.g.: shorter and ask for the nameplate photo; mention that the line is stopped and that we reply tomorrow")} />
+                  </label>
+                  <div className="ai-rw-act">
+                    <button type="submit" className="secondary ai-rw-go" data-preset="" formAction={rewriteWithAi.bind(null, "")} formNoValidate disabled={!c.canSend}>{t("Reescribir con IA", "Rewrite with AI")}</button>
+                    {Object.entries(REWRITE_PRESETS).map(([k, p]) => <button key={k} type="submit" className="secondary sm" data-preset={k} formAction={rewriteWithAi.bind(null, k)} formNoValidate disabled={!c.canSend}>{t(p.es, p.en)}</button>)}
+                  </div>
+                  <span className="src">{t("La IA toma el texto que está arriba, con tus cambios, y lo reescribe como le pidas. No cambia números de parte, cantidades, precios ni fechas, y no envía nada: el texto nuevo vuelve a esta misma casilla para que lo revises. Puedes pedirle cambios las veces que quieras.", "AI takes the text above, with your changes, and rewrites it as you ask. It does not change part numbers, quantities, prices or dates, and it sends nothing: the new text comes back to this same box for you to review. You can ask for changes as many times as you like.")}</span>
+                </>
+              ) : <span className="src">{t("Se enciende cuando la empresa conecte su llave de IA.", "It turns on once the company connects its AI key.")}</span>}
+            </div>
+          )}
           <p className="src">{t("Si no cambias el texto, sale con formato (tabla de partes). Si lo editas, sale como texto simple con tus cambios.", "If you don't change the text, it goes out formatted (parts table). If you edit it, it goes out as plain text with your changes.")} {t("Si pegas enlaces, SOLU les quita los parámetros de rastreo (utm, fbclid…).", "If you paste links, SOLU removes their tracking parameters (utm, fbclid…).")}</p>
           <details className="loc-preview"><summary>{t("Ver cómo se verá con formato", "Preview with formatting")}</summary>
             <div className="mail-preview" dangerouslySetInnerHTML={{ __html: c.mail.html }} />

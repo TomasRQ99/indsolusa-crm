@@ -3189,6 +3189,12 @@ p.pj-table { margin: 0 0 8px; }
 .mb-pick { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
 .mb-pick .chip { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); text-decoration: none; font-size: 13px; }
 .mb-pick .chip.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.ai-rw { display: grid; gap: 8px; margin: 12px 0 4px; padding: 12px 14px; border-radius: 10px; background: var(--ai-soft); border: 1px solid #d9cdf0; }
+.ai-rw-h { color: var(--ai); }
+.ai-rw-l { display: grid; gap: 4px; font-size: 13px; }
+.ai-rw-l textarea { width: 100%; resize: vertical; }
+.ai-rw-act { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ai-rw-act .ai-rw-go { color: #fff; background: var(--ai); border-color: var(--ai); }
 .mail-from { display: grid; gap: 4px; margin-bottom: 10px; max-width: 560px; }
 .mb-sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
 .rp-list .mb-go { flex: none; color: var(--ai); border-color: var(--ai); background: var(--ai-soft); white-space: nowrap; }
