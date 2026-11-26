@@ -42,6 +42,10 @@ export default async function BudgetHome({ searchParams }: { searchParams: Promi
   const published = !!yr?.publishedAt;
   const current = monthOf(now);
   const six = lastMonths(current, 6);
+  /** The base year is over: a company without orders in it had no sales that year, which is not "too little history". */
+  const baseOver = `${base}-12` < current;
+  /** The budget's own year has begun: its real purchase orders so far can be shown beside the base year. */
+  const started = `${year}-01` <= current;
 
   const rows = companies.map((c) => {
     const others = allBudgets.filter((b) => b.slot === c.id).map((b) => b.userId);
@@ -54,7 +58,7 @@ export default async function BudgetHome({ searchParams }: { searchParams: Promi
     const g = groups.get(`${c.id}|${personId}`) ?? null;
     const m = matrixOf(g?.latest ?? null);
     const state = shownState(g?.latest ?? null, published);
-    return { ...c, soFar: sum(oc), close: b.ocClose, margin: marginOf(sum(esa), sum(oc)), trend, potential: g?.latest.potential ?? null, goalOc: g ? sum(m.OC_COP) : null, goalFact: g ? sum(m.FACT_COP) : null, goalEsa: g ? sum(m.ESA_COP) : null, state, version: g?.latest.version ?? null };
+    return { ...c, soFar: sum(oc), real: sum(tt.year("OC_COP", year)), close: b.ocClose, margin: sum(esa) > 0 ? marginOf(sum(esa), sum(oc)) : null, trend, potential: g?.latest.potential ?? null, goalOc: g ? sum(m.OC_COP) : null, goalFact: g ? sum(m.FACT_COP) : null, goalEsa: g ? sum(m.ESA_COP) : null, state, version: g?.latest.version ?? null };
   });
 
   const q = (sp.q ?? "").trim().toLowerCase().slice(0, 60);
@@ -77,7 +81,7 @@ export default async function BudgetHome({ searchParams }: { searchParams: Promi
   const link = (slot: string) => `/comercial/presupuesto/${slot}?y=${year}&u=${personId}`;
   const arrow = { up: "↑", down: "↓", flat: "→" } as const;
   const H = {
-    sector: t("Sector", "Sector"), so: t(`OC ${base}`, `POs ${base}`), close: t(`Cierre ${base} proyectado`, `Projected ${base} close`), esa: t(`Eságara ${base}`, `Eságara ${base}`), trend: t("Tendencia", "Trend"), pot: t("Potencial", "Potential"),
+    sector: t("Sector", "Sector"), so: t(`OC ${base}`, `POs ${base}`), close: t(`Cierre ${base} proyectado`, `Projected ${base} close`), esa: t(`Eságara ${base}`, `Eságara ${base}`), trend: t("Tendencia", "Trend"), pot: t("Potencial", "Potential"), real: t(`OC ${year} real`, `Real POs ${year}`),
     goc: t(`Meta OC ${year}`, `PO goal ${year}`), gfa: t(`Meta facturación ${year}`, `Invoicing goal ${year}`), st: t("Estado", "State"),
   };
 
@@ -86,7 +90,7 @@ export default async function BudgetHome({ searchParams }: { searchParams: Promi
       <div className="ph"><div>
         <div className="crumb"><Link href="/deals">{t("Comercial", "Commercial")}</Link></div>
         <h1>{own ? t(`Presupuesto comercial ${year}`, `Commercial budget ${year}`) : t(`Presupuesto comercial ${year} de ${person.name}`, `${person.name}'s commercial budget ${year}`)}</h1>
-        <p>{t("Empresa por empresa: SOLU propone las metas del año con el historial, tú las ajustas y las explicas, y tu líder las aprueba. Las órdenes de compra y la facturación son dos presupuestos separados. Cifras en millones de pesos, sin IVA.", "Company by company: SOLU proposes the year's goals from the history, you adjust and explain them, and your leader approves them. Purchase orders and invoicing are two separate budgets. Figures in millions of pesos, before VAT.")}</p>
+        <p>{t(`Empresa por empresa: SOLU propone las metas del año con el historial, tú las ajustas y las explicas, y tu líder las aprueba. Las órdenes de compra y la facturación son dos presupuestos separados. Cifras en dólares (US$), sin IVA. El presupuesto de ${year} se arma con lo vendido en ${base}; para planear con lo vendido en ${year}, elige el año ${year + 1}.`,`Company by company: SOLU proposes the year's goals from the history, you adjust and explain them, and your leader approves them. Purchase orders and invoicing are two separate budgets. Figures in dollars (US$), before VAT. The ${year} budget is built on what was sold in ${base}; to plan with what was sold in ${year}, choose year ${year + 1}.`)}</p>
       </div></div>
 
       <BudgetNav i={i} active="empresas" year={year} years={years} personId={own ? null : personId} />
@@ -135,27 +139,28 @@ export default async function BudgetHome({ searchParams }: { searchParams: Promi
         {rows.length === 0 ? <p className="small muted">{t("Esta persona aún no tiene empresas a su nombre ni Necesidades. Con «Agregar otra empresa», abajo, se puede presupuestar cualquier cliente.", "This person has no companies or Needs yet. With «Add another company», below, any customer can be budgeted.")}</p> : (
           <div className="pc-scroll">
             <table className="pc-table pc-cards">
-              <thead><tr><th>{t("Empresa", "Company")}</th><th className="l">{H.sector}</th><th>{H.so}</th><th>{H.close}</th><th>{H.esa}</th><th>{H.trend}</th><th>{H.pot}</th><th>{H.goc}</th><th>{H.gfa}</th><th>{H.st}</th><th /></tr></thead>
+              <thead><tr><th>{t("Empresa", "Company")}</th><th className="l">{H.sector}</th><th>{H.so}</th><th>{H.close}</th><th>{H.esa}</th><th>{H.trend}</th><th>{H.pot}</th><th>{H.real}</th><th>{H.goc}</th><th>{H.gfa}</th><th>{H.st}</th><th /></tr></thead>
               <tbody>
                 {shown.map((r) => (
                   <tr key={r.id} data-a={r.id}>
                     <th scope="row"><Link href={link(r.id)}>{r.name}</Link></th>
                     <td className="l" data-l={H.sector}>{r.industry ?? "—"}</td>
                     <td data-l={H.so}>{f.m(r.soFar)}</td>
-                    <td data-l={H.close}>{r.close != null ? f.m(r.close) : <span className="muted">{t("sin base suficiente", "not enough basis")}</span>}</td>
+                    <td data-l={H.close}>{r.close != null ? f.m(r.close) : <span className="muted">{baseOver && r.soFar <= 0 ? t(`sin ventas en ${base}`, `no sales in ${base}`) : t("sin base suficiente", "not enough basis")}</span>}</td>
                     <td data-l={H.esa}>{f.pct(r.margin)}</td>
                     <td data-l={H.trend}>{r.trend ? <span className={`pc-${r.trend}`} title={r.trend === "up" ? t("Los últimos 3 meses completos superan a los 3 anteriores", "The last 3 complete months beat the 3 before") : r.trend === "down" ? t("Los últimos 3 meses completos están por debajo de los 3 anteriores", "The last 3 complete months are below the 3 before") : t("Los últimos 3 meses completos están parejos con los 3 anteriores", "The last 3 complete months are level with the 3 before")}>{arrow[r.trend]}</span> : "—"}</td>
                     <td data-l={H.pot}>{r.potential && POT[r.potential] ? t(POT[r.potential].es, POT[r.potential].en) : "—"}</td>
+                    <td data-l={H.real} data-c="real">{started ? f.m(r.real) : "—"}</td>
                     <td data-l={H.goc}>{r.goalOc != null ? f.m(r.goalOc) : "—"}</td>
                     <td data-l={H.gfa}>{r.goalFact != null ? f.m(r.goalFact) : "—"}</td>
                     <td data-l={H.st}><StateChip i={i} state={r.state} />{r.version && r.version > 1 ? <span className="src"> v{r.version}</span> : null}</td>
                     <td><Link className={`btn${r.state === "NONE" && write ? "" : " secondary"}`} href={link(r.id)}>{r.state === "NONE" && write ? t("Presupuestar", "Budget") : t("Abrir", "Open")}</Link></td>
                   </tr>
                 ))}
-                {shown.length === 0 && <tr><td colSpan={11} className="l muted">{t("Ninguna empresa coincide con el filtro.", "No company matches the filter.")}</td></tr>}
+                {shown.length === 0 && <tr><td colSpan={12} className="l muted">{t("Ninguna empresa coincide con el filtro.", "No company matches the filter.")}</td></tr>}
                 <tr data-a={PROSPECTS} className="pc-sub">
                   <th scope="row"><Link href={link("prospectos")}>{t("Reactivaciones y prospectos", "Reactivations and prospects")}</Link><span className="src block">{t("Lo que esperas vender a empresas que aún no tienen presupuesto propio. No tiene historial: no es una empresa.", "What you expect to sell to companies without a budget of their own yet. It has no history: it is not a company.")}</span></th>
-                  <td className="l" data-l={H.sector}>—</td><td data-l={H.so}>—</td><td data-l={H.close}>—</td><td data-l={H.esa}>—</td><td data-l={H.trend}>—</td><td data-l={H.pot}>—</td>
+                  <td className="l" data-l={H.sector}>—</td><td data-l={H.so}>—</td><td data-l={H.close}>—</td><td data-l={H.esa}>—</td><td data-l={H.trend}>—</td><td data-l={H.pot}>—</td><td data-l={H.real}>—</td>
                   <td data-l={H.goc}>{pros ? f.m(sum(prosM.OC_COP)) : "—"}</td>
                   <td data-l={H.gfa}>{pros ? f.m(sum(prosM.FACT_COP)) : "—"}</td>
                   <td data-l={H.st}><StateChip i={i} state={shownState(pros?.latest ?? null, published)} /></td>
@@ -165,7 +170,7 @@ export default async function BudgetHome({ searchParams }: { searchParams: Promi
             </table>
           </div>
         )}
-        <p className="src">{t(`«OC ${base}» = órdenes de compra aceptadas en ${base} hasta el mes pasado. «Cierre ${base} proyectado» = esos meses más los que faltan al promedio de los meses con historial; con menos de 3 meses de historial SOLU dice «sin base suficiente». «Tendencia» compara los últimos 3 meses completos con los 3 anteriores. Dólares convertidos a pesos con la TRM oficial del día de cada documento.`, `«POs ${base}» = purchase orders accepted in ${base} up to last month. «Projected ${base} close» = those months plus the ones to come at the average of the months with history; with fewer than 3 months of history SOLU says «not enough basis». «Trend» compares the last 3 complete months with the 3 before. Dollars converted to pesos at the official TRM of each document's day.`)}{set.noRate > 0 ? t(` ${set.noRate} cifras en dólares no tienen TRM guardada para su fecha y no entran en los totales.`, ` ${set.noRate} dollar figures have no stored TRM for their date and are left out of the totals.`) : ""}</p>
+        <p className="src">{t(`«OC ${base}» = órdenes de compra aceptadas en ${base} hasta hoy. «Cierre ${base} proyectado» = esos meses más los que faltan al promedio de los meses con historial (el mes en curso cuenta por lo que ya lleva, si es más que el promedio); con menos de 3 meses de historial SOLU dice «sin base suficiente», y «sin ventas en ${base}» cuando ese año ya terminó sin órdenes. «Eságara ${base}» sale «—» cuando las ventas cargadas no traen Eságara. «OC ${year} real» = órdenes de compra aceptadas en ${year} hasta hoy (antes de que empiece el año sale «—»). «Tendencia» compara los últimos 3 meses completos con los 3 anteriores. Todo va en dólares: el valor en dólares de cada documento de SOLU y de las ventas cargadas.`, `«POs ${base}» = purchase orders accepted in ${base} up to today. «Projected ${base} close» = those months plus the ones to come at the average of the months with history (the month in course counts for what it already has, when that is more than the average); with fewer than 3 months of history SOLU says «not enough basis», and «no sales in ${base}» when that year ended without orders. «Eságara ${base}» shows «—» when the loaded sales carry no Eságara. «Real POs ${year}» = purchase orders accepted in ${year} up to today («—» before the year starts). «Trend» compares the last 3 complete months with the 3 before. Everything is in dollars: the dollar value of each SOLU document and of the loaded sales.`)}{set.noRate > 0 ? t(` ${set.noRate} cifras cargadas en pesos no tienen TRM guardada para su mes y no entran en los totales.`, ` ${set.noRate} figures loaded in pesos have no stored TRM for their month and are left out of the totals.`) : ""}</p>
       </section>
 
       {write && (

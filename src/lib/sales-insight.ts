@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { sendMail } from "./mail";
 import { AiError, aiConfigured, aiJson } from "./ai";
-import { MAX_PRIORITIES, RADAR_TXT, achievement, aiPriorities, bogotaDay, eveningDue, nextWorkingDay, rulePriorities, sum, type InsightHit, type Priority } from "./sales-budget-rules";
+import { MAX_PRIORITIES, RADAR_TXT, achievement, aiPriorities, bogotaDay, usdMoney, eveningDue, nextWorkingDay, rulePriorities, sum, type InsightHit, type Priority } from "./sales-budget-rules";
 import { trackYear } from "./sales-budget-track";
 
 // Presupuesto comercial · the day's priorities and the evening email (spec §8, phase 5, AT-15).
@@ -13,7 +13,7 @@ import { trackYear } from "./sales-budget-track";
 type Txt = { es: string; en: string };
 export type InsightPayload = {
   year: number; started: boolean;
-  /** Real and expected-by-today, in pesos; null before the year starts. */
+  /** Real and expected-by-today, in dollars; null before the year starts. */
   oc: { real: number; exp: number; pct: number | null } | null;
   fact: { real: number; exp: number; pct: number | null } | null;
   budgets: number;
@@ -21,13 +21,13 @@ export type InsightPayload = {
   /** Companies with a detection of falling requests or orders below pace (names and the evidence). */
   falling: { accountId: string; company: string; evidence: Txt }[];
   /** Companies with quotes presented and not decided yet: where an order can still come from. */
-  open: { accountId: string; company: string; quotes: number; cop: number }[];
+  open: { accountId: string; company: string; quotes: number; usd: number }[];
   /** The person's open to-dos due by the next working day. */
   tasks: { id: string; title: string; due: string | null; accountId: string | null }[];
   hits: number; aiNote: "AI" | "RULES" | "AI_FAILED";
 };
 
-const millions = (es: boolean) => { const one = new Intl.NumberFormat(es ? "es-CO" : "en-US", { maximumFractionDigits: 1 }); return (v: number) => `$ ${one.format(v / 1e6)} M`; };
+const millions = (es: boolean) => (v: number) => usdMoney(v, es);
 const localDay = (now: Date) => bogotaDay(now).toISOString().slice(0, 10);
 
 const SYSTEM = `Eres el analista comercial de una empresa que vende repuestos industriales. Recibes una lista de detecciones que el sistema ya calculó con sus cifras. Tu trabajo: elegir como máximo tres para atender primero y decir, para cada una, por qué va primero, qué hacer (una acción concreta de acercamiento al cliente: entender su situación, confirmar la causa con la persona correcta, proponer el siguiente paso) y qué no se sabe todavía.
@@ -67,8 +67,8 @@ export async function buildInsight(person: { id: string; name: string; lang: str
     }
   }
 
-  const openBy = new Map<string, { quotes: number; cop: number }>();
-  for (const c of tr.set.cohorts) if (c.ownerId === person.id && c.quotedAt && !c.decided) { const o = openBy.get(c.accountId) ?? { quotes: 0, cop: 0 }; o.quotes++; o.cop += c.cotCop ?? 0; openBy.set(c.accountId, o); }
+  const openBy = new Map<string, { quotes: number; usd: number }>();
+  for (const c of tr.set.cohorts) if (c.ownerId === person.id && c.quotedAt && !c.decided) { const o = openBy.get(c.accountId) ?? { quotes: 0, usd: 0 }; o.quotes++; o.usd += c.cotUsd ?? 0; openBy.set(c.accountId, o); }
   const next = nextWorkingDay(day);
   const tasks = await db.task.findMany({ where: { assigneeId: person.id, status: "OPEN", dueDate: { lt: new Date(`${next}T23:59:59Z`) } }, orderBy: { dueDate: "asc" }, take: 8, select: { id: true, title: true, dueDate: true, accountId: true } });
 
@@ -78,7 +78,7 @@ export async function buildInsight(person: { id: string; name: string; lang: str
     fact: tr.started ? { real: T.faReal, exp: T.faExp, pct: achievement(T.faReal, T.faExp) } : null,
     priorities,
     falling: hits.filter((h) => h.kind === "REQUESTS" || h.kind === "PACE").slice(0, 6).map((h) => ({ accountId: h.accountId, company: h.company, evidence: h.evidence })),
-    open: [...openBy.entries()].map(([accountId, o]) => ({ accountId, company: tr.accounts.get(accountId)?.name ?? "—", ...o })).sort((a, b) => b.cop - a.cop).slice(0, 5),
+    open: [...openBy.entries()].map(([accountId, o]) => ({ accountId, company: tr.accounts.get(accountId)?.name ?? "—", ...o })).sort((a, b) => b.usd - a.usd).slice(0, 5),
     tasks: tasks.map((t) => ({ id: t.id, title: t.title, due: t.dueDate ? t.dueDate.toISOString().slice(0, 10) : null, accountId: t.accountId })),
     hits: mine.length, aiNote,
   };
@@ -123,7 +123,7 @@ export function eveningMail(p: InsightPayload, person: { name: string; lang: str
   });
 
   if (p.falling.length) { head(t("Clientes que caen", "Customers falling")); for (const x of p.falling) line(`${x.company}: ${es ? x.evidence.es : x.evidence.en}`, `${a(`/accounts/${x.accountId}/estadisticas`, x.company)}: ${esc(es ? x.evidence.es : x.evidence.en)}`); }
-  if (p.open.length) { head(t("Empresas con oportunidad: cotizaciones presentadas sin decisión", "Companies with an opportunity: quotes presented and not decided")); for (const x of p.open) { const s = t(`${x.quotes} ${x.quotes === 1 ? "cotización" : "cotizaciones"} por ${m(x.cop)}`, `${x.quotes} ${x.quotes === 1 ? "quote" : "quotes"} worth ${m(x.cop)}`); line(`${x.company}: ${s}`, `${a(`/accounts/${x.accountId}`, x.company)}: ${esc(s)}`); } }
+  if (p.open.length) { head(t("Empresas con oportunidad: cotizaciones presentadas sin decisión", "Companies with an opportunity: quotes presented and not decided")); for (const x of p.open) { const s = t(`${x.quotes} ${x.quotes === 1 ? "cotización" : "cotizaciones"} por ${m(x.usd)}`, `${x.quotes} ${x.quotes === 1 ? "quote" : "quotes"} worth ${m(x.usd)}`); line(`${x.company}: ${s}`, `${a(`/accounts/${x.accountId}`, x.company)}: ${esc(s)}`); } }
   head(t("Tus pendientes hasta mañana", "Your to-dos through tomorrow"));
   if (!p.tasks.length) line(t("No tienes pendientes con fecha hasta mañana.", "You have no to-dos due through tomorrow."));
   for (const x of p.tasks) line(`${x.title}${x.due ? ` (${x.due})` : ""}`);

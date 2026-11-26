@@ -100,22 +100,23 @@ export async function checkBatch(b: { id: string; source: string; currency: stri
   const source = b.source as HistorySource;
   const parsed = parseHistory(b.raw, source, b.unit, { accounts, users }, monthOf(new Date()));
   const problems = [...parsed.problems];
-  const usd = b.currency === "USD";
-  const rates = usd ? await monthRates(parsed.rows.map((r) => r.month)) : new Map<string, number | null>();
+  // The budget works in dollars: a load in pesos is turned into dollars with each month's average official TRM.
+  const pesos = b.currency === "COP";
+  const rates = pesos ? await monthRates(parsed.rows.map((r) => r.month)) : new Map<string, number | null>();
   const figures: CheckedRow[] = [];
   let okRows = 0;
   const companies = new Set<string>();
   let from: string | null = null, to: string | null = null;
   for (const r of parsed.rows) {
-    const rate = usd ? rates.get(r.month) ?? null : null;
+    const rate = pesos ? rates.get(r.month) ?? null : null;
     const money = (Object.keys(r.values) as Kpi[]).some(isMoney);
-    if (usd && money && rate == null) { problems.push({ line: r.line, code: "sin-tasa", detail: r.month }); continue; }
+    if (pesos && money && rate == null) { problems.push({ line: r.line, code: "sin-tasa", detail: r.month }); continue; }
     okRows++; companies.add(r.accountId);
     if (!from || r.month < from) from = r.month;
     if (!to || r.month > to) to = r.month;
     for (const [k, v] of Object.entries(r.values) as [Kpi, number][]) {
-      const conv = usd && isMoney(k);
-      figures.push({ line: r.line, accountId: r.accountId, userId: r.userId, month: r.month, kpi: k, orig: v, currency: isMoney(k) ? b.currency : "", rate: conv ? rate : null, value: conv ? Math.round(v * rate!) : v });
+      const conv = pesos && isMoney(k);
+      figures.push({ line: r.line, accountId: r.accountId, userId: r.userId, month: r.month, kpi: k, orig: v, currency: isMoney(k) ? b.currency : "", rate: conv ? rate : null, value: conv ? Math.round((v / rate!) * 100) / 100 : v });
     }
   }
   problems.sort((x, y) => x.line - y.line);

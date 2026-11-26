@@ -4,7 +4,7 @@ import { canExportReports, canManageAll } from "@/lib/permissions";
 import { makeI18n } from "@/lib/i18n";
 import { workPeople } from "@/lib/team-store";
 import { db } from "@/lib/db";
-import { KPIS, MAIN_KPIS, MONTHS, PROSPECTS, STATE_TXT, marginOf, millionsText, shownState, sum, zeros, type Kpi, type ShownState } from "@/lib/sales-budget-rules";
+import { KPIS, MAIN_KPIS, MONTHS, PROSPECTS, STATE_TXT, marginOf, moneyText, shownState, sum, zeros, type Kpi, type ShownState } from "@/lib/sales-budget-rules";
 import { budgetScope, budgetYears, budgetsOf, corporateOf, groupVersions, matrixOf, numbers, readYear, teamOfPeople, yearRow, type BudgetRow } from "@/lib/sales-budget";
 import { publishYear, saveCorporate } from "../actions";
 import { BudgetNav, StateChip, budgetFmt } from "../ui";
@@ -83,7 +83,7 @@ export default async function BudgetRollup({ searchParams }: { searchParams: Pro
   const annualCells = (n: Node) => <><td data-l={H.oc}>{f.m(sum(n.oc))}</td><td data-l={H.fa}>{f.m(sum(n.fact))}</td><td data-l={H.es}>{f.m(sum(n.esa))}</td><td data-l={H.mg}>{f.pct(marginOf(sum(n.esa), sum(n.oc)))}</td></>;
   const monthCells = (n: Node) => <>{pick(n).map((v, m) => <td key={m}>{f.bare(v)}</td>)}<td className="pc-year">{f.bare(sum(pick(n)))}</td></>;
   const okMsg: Record<string, string> = { objetivo: t("Objetivo de la empresa guardado.", "Company objective saved."), publicado: t(`Presupuesto ${year} publicado: los presupuestos aprobados quedan «Vigente».`, `Budget ${year} published: the approved budgets are now «In force».`) };
-  const errMsg: Record<string, string> = { permiso: t("Solo Gerencia o la Dirección Comercial.", "Only Management or the Commercial Director."), valor: t("El objetivo es un número en millones de pesos, de cero en adelante.", "The objective is a number in millions of pesos, from zero up."), anio: t("Ese año no está abierto.", "That year is not open."), "nada-aprobado": t("Todavía no hay ningún presupuesto aprobado que publicar.", "There is no approved budget to publish yet.") };
+  const errMsg: Record<string, string> = { permiso: t("Solo Gerencia o la Dirección Comercial.", "Only Management or the Commercial Director."), valor: t("El objetivo es un número en dólares, de cero en adelante.", "The objective is a number in dollars, from zero up."), anio: t("Ese año no está abierto.", "That year is not open."), "nada-aprobado": t("Todavía no hay ningún presupuesto aprobado que publicar.", "There is no approved budget to publish yet.") };
 
   return (
     <>
@@ -126,7 +126,7 @@ export default async function BudgetRollup({ searchParams }: { searchParams: Pro
         {yr?.corporateByName && <p className="src">{t(`Objetivo escrito por ${yr.corporateByName} · ${i.day(yr.corporateAt)}.`, `Objective written by ${yr.corporateByName} · ${i.day(yr.corporateAt)}.`)}</p>}
         {manage && (
           <form action={saveCorporate.bind(null, year)} className="pc-bar" style={{ margin: "8px 0 0" }}>
-            {MAIN_KPIS.map((k) => <label key={k}>{t(`Objetivo ${KPIS[k].es} · millones`, `Objective ${KPIS[k].en} · millions`)}<input name={k} inputMode="decimal" defaultValue={millionsText(corp[k as "OC_COP"] ?? null, i.es)} /></label>)}
+            {MAIN_KPIS.map((k) => <label key={k}>{t(`Objetivo ${KPIS[k].es} · US$`, `Objective ${KPIS[k].en} · US$`)}<input name={k} inputMode="decimal" defaultValue={moneyText(corp[k as "OC_COP"] ?? null, i.es)} /></label>)}
             <button type="submit" className="secondary">{t("Guardar objetivo", "Save objective")}</button>
           </form>
         )}
@@ -176,7 +176,7 @@ export default async function BudgetRollup({ searchParams }: { searchParams: Pro
               </tbody>
             </table>
           </div>
-          <p className="src">{t("Cifras en millones de pesos, sin IVA. Cada fila es la suma exacta de las filas que tiene debajo.", "Figures in millions of pesos, before VAT. Each row is the exact sum of the rows beneath it.")}</p>
+          <p className="src">{t("Cifras en dólares (US$), sin IVA. Cada fila es la suma exacta de las filas que tiene debajo.", "Figures in dollars (US$), before VAT. Each row is the exact sum of the rows beneath it.")}</p>
         </section>
       )}
 

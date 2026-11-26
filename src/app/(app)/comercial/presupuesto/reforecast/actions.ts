@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { canManageAll } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
-import { PROSPECTS, forecastMonths, parseMillions, sum, yearProgress } from "@/lib/sales-budget-rules";
+import { PROSPECTS, forecastMonths, parseMoney, sum, yearProgress } from "@/lib/sales-budget-rules";
 import { budgetScope, canWriteBudget } from "@/lib/sales-budget";
 import { trackYear } from "@/lib/sales-budget-track";
 import { buildInsight } from "@/lib/sales-insight";
@@ -27,7 +27,7 @@ export async function saveForecast(year: number, slot: string, userId: string, f
   const line = tr.lines.find((l) => l.b.slot === slot);
   if (!line) back("err=presupuesto");
   const es = user.lang === "ES";
-  const read = (prefix: string) => Array.from({ length: 12 }, (_, m) => (prog.share[m] < 1 ? parseMillions(fd.get(`${prefix}_${m + 1}`), es) : null));
+  const read = (prefix: string) => Array.from({ length: 12 }, (_, m) => (prog.share[m] < 1 ? parseMoney(fd.get(`${prefix}_${m + 1}`), es) : null));
   const ocProb = read("oc"), factProg = read("fact");
   if ([...ocProb, ...factProg].some((v) => v != null && (Number.isNaN(v) || v < 0 || v > 1e13))) back("err=valor", "#reforecast");
   const note = String(fd.get("note") ?? "").replace(/\r\n/g, "\n").trim().slice(0, 2000);

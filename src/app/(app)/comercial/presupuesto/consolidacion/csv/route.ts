@@ -4,7 +4,7 @@ import { KPIS, KPI_KEYS, MONTHS, PROSPECTS, STATE_TXT, shownState } from "@/lib/
 import { budgetYears, budgetsOf, groupVersions, matrixOf, readYear, teamOfPeople, yearRow } from "@/lib/sales-budget";
 
 // Presupuesto comercial · the consolidation as a file: one row per company, negotiator and indicator, twelve months
-// in whole pesos. Gerencia, Dirección Comercial and Finanzas (the roles that may take reports out of SOLU).
+// in whole dollars. Gerencia, Dirección Comercial and Finanzas (the roles that may take reports out of SOLU).
 
 export async function GET(req: Request) {
   const user = await requireUser();

@@ -1,18 +1,18 @@
 import Link from "next/link";
 import type { I18n } from "@/lib/i18n";
-import { STATE_TXT, type ShownState } from "@/lib/sales-budget-rules";
+import { STATE_TXT, usdCell, usdMoney, type ShownState } from "@/lib/sales-budget-rules";
 
-// Presupuesto comercial · pieces shared by its screens. Money is shown in millions of pesos ("$ 40 M").
+// Presupuesto comercial · pieces shared by its screens. Money is shown in whole dollars ("US$ 149.852").
 
 export function budgetFmt(i: I18n) {
   const locale = i.es ? "es-CO" : "en-US";
   const one = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
-  const m = (v: number | null | undefined) => (v == null ? "—" : `$ ${one.format(v / 1e6)} M`);
+  const m = (v: number | null | undefined) => (v == null ? "—" : usdMoney(v, i.es));
   return {
-    /** "$ 40 M" */
+    /** "US$ 149.852" */
     m,
-    /** "40" (for a table whose caption already says millions of pesos) */
-    bare: (v: number | null | undefined) => (v == null ? "—" : one.format(v / 1e6)),
+    /** "149.852" (for a table whose caption already says dollars) */
+    bare: (v: number | null | undefined) => (v == null ? "—" : usdCell(v, i.es)),
     pct: (v: number | null | undefined) => (v == null ? "—" : `${one.format(v)} %`),
     signed: (v: number | null | undefined) => (v == null ? "—" : `${v > 0 ? "+" : ""}${one.format(v)} %`),
   };

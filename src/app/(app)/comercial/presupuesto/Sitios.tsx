@@ -30,8 +30,8 @@ export default async function Sitios({ i, year, accountId, accountName, personId
   ]);
   const pctOf = new Map(sites.map((s) => [s.plantId, Number(s.pct)]));
   const nameOf = (id: string) => people.find((p) => p.id === id)?.name ?? "—";
-  const mine = set.facts.filter((x) => x.accountId === accountId && pick(x) && x.cop != null);
-  const of = (plantId: string | null, kpi: "OC_COP" | "FACT_COP", y: number) => sum(mine.filter((x) => (x.plantId ?? null) === plantId && x.kpi === kpi && x.month.startsWith(String(y))).map((x) => x.cop));
+  const mine = set.facts.filter((x) => x.accountId === accountId && pick(x) && x.usd != null);
+  const of = (plantId: string | null, kpi: "OC_COP" | "FACT_COP", y: number) => sum(mine.filter((x) => (x.plantId ?? null) === plantId && x.kpi === kpi && x.month.startsWith(String(y))).map((x) => x.usd));
   const rows = [...plants.map((p) => ({ id: p.id as string | null, name: p.city ? `${p.name} · ${p.city}` : p.name })), { id: null as string | null, name: t("Sin sede asignada", "No site assigned") }];
   const given = sum(plants.map((p) => pctOf.get(p.id) ?? 0));
   const editable = !!budget?.editable && write;
@@ -61,7 +61,7 @@ export default async function Sitios({ i, year, accountId, accountName, personId
                 </tbody>
               </table>
             </div>
-            <p className="src">{t("Cifras en millones de pesos, de lo que entra en el presupuesto de este negociador. «% de la meta» reparte la meta anual de órdenes de compra; lo que no se le da a una sede queda en «Sin sede asignada». Lo real de una sede son las Necesidades que la nombran (abajo se asigna); el historial cargado de antes de SOLU no tiene sede.", "Figures in millions of pesos, of what enters this negotiator's budget. «% of the goal» spreads the annual purchase-order goal; what is not given to a site stays under «No site assigned». A site's real figures are the Needs that name it (assigned below); history loaded from before SOLU has no site.")}{!budget ? t(" Guarda primero la propuesta para repartirla por sede.", " Save the proposal first to spread it by site.") : !editable ? t(" El reparto se cambia mientras la propuesta es un borrador; una aprobada necesita una versión nueva.", " The split is changed while the proposal is a draft; an approved one needs a new version.") : ""}</p>
+            <p className="src">{t("Cifras en dólares (US$), de lo que entra en el presupuesto de este negociador. «% de la meta» reparte la meta anual de órdenes de compra; lo que no se le da a una sede queda en «Sin sede asignada». Lo real de una sede son las Necesidades que la nombran (abajo se asigna); el historial cargado de antes de SOLU no tiene sede.", "Figures in dollars (US$), of what enters this negotiator's budget. «% of the goal» spreads the annual purchase-order goal; what is not given to a site stays under «No site assigned». A site's real figures are the Needs that name it (assigned below); history loaded from before SOLU has no site.")}{!budget ? t(" Guarda primero la propuesta para repartirla por sede.", " Save the proposal first to spread it by site.") : !editable ? t(" El reparto se cambia mientras la propuesta es un borrador; una aprobada necesita una versión nueva.", " The split is changed while the proposal is a draft; an approved one needs a new version.") : ""}</p>
             {editable && <div className="pc-actions"><button type="submit" className="secondary">{t("Guardar reparto por sede", "Save split by site")}</button></div>}
           </form>
         )}
@@ -118,7 +118,7 @@ export default async function Sitios({ i, year, accountId, accountName, personId
             </table>
           </div>
         )}
-        <p className="src">{t("Las 30 Necesidades más recientes de esta empresa. Una venta compartida reparte los valores en pesos de esa Necesidad (cotizado, órdenes de compra, Eságara y facturación) entre quien la lleva y la otra persona; el número de solicitudes, cotizaciones y órdenes sigue completo con quien la lleva. Siempre suma 100 %. La comparten Gerencia o la Dirección Comercial. El reparto vale para el presupuesto comercial: no cambia las comisiones ni la tabla de bateo.", "The 30 most recent Needs of this company. A shared sale splits that Need's peso figures (quoted, purchase orders, Eságara and invoicing) between whoever leads it and the other person; the number of requests, quotes and orders stays whole with whoever leads it. It always adds up to 100 %. Management or the Commercial Director share it. The split applies to the commercial budget: it does not change commissions or the batting table.")}</p>
+        <p className="src">{t("Las 30 Necesidades más recientes de esta empresa. Una venta compartida reparte los valores en dólares de esa Necesidad (cotizado, órdenes de compra, Eságara y facturación) entre quien la lleva y la otra persona; el número de solicitudes, cotizaciones y órdenes sigue completo con quien la lleva. Siempre suma 100 %. La comparten Gerencia o la Dirección Comercial. El reparto vale para el presupuesto comercial: no cambia las comisiones ni la tabla de bateo.", "The 30 most recent Needs of this company. A shared sale splits that Need's peso figures (quoted, purchase orders, Eságara and invoicing) between whoever leads it and the other person; the number of requests, quotes and orders stays whole with whoever leads it. It always adds up to 100 %. Management or the Commercial Director share it. The split applies to the commercial budget: it does not change commissions or the batting table.")}</p>
       </section>
     </>
   );

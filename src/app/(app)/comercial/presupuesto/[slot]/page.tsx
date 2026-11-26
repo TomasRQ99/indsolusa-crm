@@ -98,7 +98,7 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
     anio: t("Ese año no está abierto para presupuestar.", "That year is not open for budgeting."), persona: t("Esa persona no está activa.", "That person isn't active."), empresa: t("Esa empresa no existe.", "That company doesn't exist."),
     enviado: t("La propuesta ya se envió: retira el envío para cambiarla.", "The proposal was already sent: withdraw it to change it."),
     aprobado: t("El presupuesto aprobado no se cambia: abre una versión nueva con su motivo.", "The approved budget doesn't change: open a new version with its reason."),
-    valor: t("Falta corregir una cifra en «Meta OC» o «Meta facturación»: son números en millones, de cero en adelante.", "A figure in «PO goal» or «Invoicing goal» needs fixing: they are numbers in millions, from zero up."),
+    valor: t("Falta corregir una cifra en «Meta OC» o «Meta facturación»: son números en dólares, de cero en adelante.", "A figure in «PO goal» or «Invoicing goal» needs fixing: they are numbers in dollars, from zero up."),
     numeros: t("Falta corregir «# OC objetivo» o «# Entregas objetivo»: son números enteros.", "«# POs objective» or «# Deliveries objective» needs fixing: whole numbers only."),
     supuesto: t("Falta corregir un supuesto: escribe solo números (los porcentajes, sin el signo %).", "An assumption needs fixing: type numbers only (percentages without the % sign)."),
     vacio: t("Falta la meta: escribe al menos un mes de «Meta OC» o de «Meta facturación» mayor que cero. El borrador quedó guardado.", "The goal is missing: type at least one month of «PO goal» or «Invoicing goal» above zero. The draft was saved."),
@@ -117,7 +117,7 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
     "compartir-suma": t("Las partes suman demasiado: quien lleva la Necesidad debe conservar al menos 1 %.", "The shares add up to too much: whoever leads the Need must keep at least 1 %."),
   };
   const bad = sp.err && ["valor", "numero", "supuesto", "vacio", "justificacion"].includes(sp.err) ? sp.err : null;
-  const val = (kpi: Kpi, v: number) => (KPIS[kpi].unit === "cop" ? f.bare(v) : i.n(v));
+  const val = (kpi: Kpi, v: number) => (KPIS[kpi].unit === "usd" ? f.bare(v) : i.n(v));
 
   return (
     <>
@@ -144,17 +144,17 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
                   <tbody>
                     {HIST.map((k) => (
                       <tr key={k} data-k={k}>
-                        <th scope="row">{t(KPIS[k].es, KPIS[k].en)}{KPIS[k].unit === "cop" ? " · $ M" : ""}</th>
+                        <th scope="row">{t(KPIS[k].es, KPIS[k].en)}{KPIS[k].unit === "usd" ? " · US$" : ""}</th>
                         {histYears.map((y) => <td key={y} data-l={String(y)}>{val(k, sum(all.year(k, y)))}</td>)}
                         <td data-l={t(`Cierre ${base} proyectado`, `Projected ${base} close`)}>{k === "OC_COP" ? (basis.ocClose != null ? f.bare(basis.ocClose) : <span className="muted">{t("sin base", "no basis")}</span>) : k === "FACT_COP" ? (basis.factClose != null ? f.bare(basis.factClose) : <span className="muted">{t("sin base", "no basis")}</span>) : "—"}</td>
-                        {[3, 6, 12].map((n) => { const a = avg(k, n); return <td key={n} data-l={t(`Promedio ${n} meses`, `Average ${n} months`)}>{a == null ? "—" : KPIS[k].unit === "cop" ? f.bare(a) : i.n2(a)}</td>; })}
+                        {[3, 6, 12].map((n) => { const a = avg(k, n); return <td key={n} data-l={t(`Promedio ${n} meses`, `Average ${n} months`)}>{a == null ? "—" : KPIS[k].unit === "usd" ? f.bare(a) : i.n2(a)}</td>; })}
                       </tr>
                     ))}
                     <tr data-k="MARGEN"><th scope="row">{t("Eságara sobre OC (%)", "Eságara on POs (%)")}</th>{histYears.map((y) => <td key={y} data-l={String(y)}>{f.pct(marginOf(sum(all.year("ESA_COP", y)), sum(all.year("OC_COP", y))))}</td>)}<td>—</td><td>—</td><td>—</td><td>—</td></tr>
                   </tbody>
                 </table>
               </div>
-              <p className="src">{t("Toda la empresa, todos los negociadores. Cifras en millones de pesos; el cierre proyectado usa solo lo que entra en el presupuesto de este negociador.", "The whole company, every negotiator. Figures in millions of pesos; the projected close uses only what enters this negotiator's budget.")}{sum(mine.year("OC_COP", base)) !== sum(all.year("OC_COP", base)) ? t(` De las OC de ${base}, ${f.m(sum(mine.year("OC_COP", base)))} entran en este presupuesto.`, ` Of the ${base} POs, ${f.m(sum(mine.year("OC_COP", base)))} enter this budget.`) : ""}{loadedMonths > 0 ? <> {t(`Incluye ${loadedMonths} meses de historial cargado de antes de SOLU; sus porcentajes se calculan con los totales del mes, no caso por caso.`, `It includes ${loadedMonths} months of history loaded from before SOLU; their percentages come from the month's totals, not case by case.`)} <Link href={historyHref(slot)}>{t("Ver lo cargado", "See what was loaded")}</Link></> : null}</p>
+              <p className="src">{t("Toda la empresa, todos los negociadores. Cifras en dólares (US$); el cierre proyectado usa solo lo que entra en el presupuesto de este negociador.", "The whole company, every negotiator. Figures in dollars (US$); the projected close uses only what enters this negotiator's budget.")}{sum(mine.year("OC_COP", base)) !== sum(all.year("OC_COP", base)) ? t(` De las OC de ${base}, ${f.m(sum(mine.year("OC_COP", base)))} entran en este presupuesto.`, ` Of the ${base} POs, ${f.m(sum(mine.year("OC_COP", base)))} enter this budget.`) : ""}{loadedMonths > 0 ? <> {t(`Incluye ${loadedMonths} meses de historial cargado de antes de SOLU; sus porcentajes se calculan con los totales del mes, no caso por caso.`, `It includes ${loadedMonths} months of history loaded from before SOLU; their percentages come from the month's totals, not case by case.`)} <Link href={historyHref(slot)}>{t("Ver lo cargado", "See what was loaded")}</Link></> : null}</p>
               {chartMonths.length >= 3 && (
                 <>
                   <svg className="pc-chart" viewBox={`0 0 ${chartMonths.length * 20 + 10} 120`} role="img" aria-label={t("Órdenes de compra y facturación por mes", "Purchase orders and invoicing by month")}>
@@ -174,16 +174,16 @@ export default async function BudgetCompany({ params, searchParams }: { params: 
                 <summary>{t("Ver las fuentes de estas cifras", "See the sources of these figures")}</summary>
                 <div className="pc-scroll">
                   <table className="pc-table pc-cards">
-                    <thead><tr><th>{t("Registro", "Record")}</th><th className="l">{t("Indicador", "Indicator")}</th><th>{t("Fecha", "Date")}</th><th>{t("Valor original", "Original value")}</th><th>{t("Tasa aplicada", "Rate applied")}</th><th>{t("En pesos", "In pesos")}</th></tr></thead>
+                    <thead><tr><th>{t("Registro", "Record")}</th><th className="l">{t("Indicador", "Indicator")}</th><th>{t("Fecha", "Date")}</th><th>{t("Valor original", "Original value")}</th><th>{t("Tasa aplicada", "Rate applied")}</th><th>{t("En dólares", "In dollars")}</th></tr></thead>
                     <tbody>
                       {sources.map((x, n) => (
                         <tr key={n}>
                           <th scope="row"><Link href={x.href}>{x.text}</Link></th>
                           <td className="l" data-l={t("Indicador", "Indicator")}>{t(KPIS[x.kpi].es, KPIS[x.kpi].en)}</td>
                           <td data-l={t("Fecha", "Date")}>{i.date(x.at)}</td>
-                          <td data-l={t("Valor original", "Original value")}>{x.currency ? i.money(x.orig, x.currency) : i.n(x.cop ?? 1)}</td>
+                          <td data-l={t("Valor original", "Original value")}>{x.currency ? i.money(x.orig, x.currency) : i.n(x.usd ?? 1)}</td>
                           <td data-l={t("Tasa aplicada", "Rate applied")}>{x.rate ? <>{i.n2(x.rate)}<span className="src block">{x.rateSource ? t(x.rateSource.es, x.rateSource.en) : ""}{x.rateDay ? ` · ${x.rateDay}` : ""}</span></> : x.currency === "USD" ? <span className="pc-nobase">{t("sin tasa", "no rate")}</span> : "—"}</td>
-                          <td data-l={t("En pesos", "In pesos")}>{x.currency ? (x.cop != null ? i.money(x.cop, "COP") : "—") : "—"}</td>
+                          <td data-l={t("En dólares", "In dollars")}>{x.currency ? (x.usd != null ? i.money(x.usd, "USD") : "—") : "—"}</td>
                         </tr>
                       ))}
                     </tbody>

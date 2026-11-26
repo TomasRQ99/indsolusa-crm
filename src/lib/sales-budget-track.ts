@@ -22,8 +22,8 @@ export type Tracking = {
 
 const PRIO: RadarKind[] = ["PACE", "MARGIN", "REQUESTS", "QUOTES", "BILLING"];
 
-/** `cop` writes a peso figure inside the radar's evidence text (the screens use "$ 40 M"). */
-export async function trackYear(year: number, now: Date, view: TrackView, cop: (v: number) => string): Promise<Tracking> {
+/** `usd` writes a peso figure inside the radar's evidence text (the screens use "US$ 149.852"). */
+export async function trackYear(year: number, now: Date, view: TrackView, usd: (v: number) => string): Promise<Tracking> {
   const inView = (id: string) => (view.only ? id === view.only : view.all || view.ids.has(id));
   const [rows, yr] = await Promise.all([budgetsOf(year), yearRow(year)]);
   // Compare against the approved budget; where there is none yet, against the latest proposal.
@@ -62,8 +62,8 @@ export async function trackYear(year: number, now: Date, view: TrackView, cop: (
     return radar({
       expected: sum(ls.map((l) => l.oc.exp)), real: sum(ls.map((l) => l.oc.real)), pareto: pareto.has(id),
       sol: six.map((m) => tt.of("SOL_N", m)), cotN: six.map((m) => tt.of("COT_N", m)), ocN: six.map((m) => tt.of("OC_N", m)), oc: six.map((m) => tt.of("OC_COP", m)), esa: six.map((m) => tt.of("ESA_COP", m)),
-      factAhead: cm ? sum(fact.map((x) => x[cm - 1] + (cm < 12 ? x[cm] : 0))) : 0, backlog: set.backlog.filter((x) => x.accountId === id && seen(x)).reduce((s, x) => s + x.cop, 0),
-    }, cop).map((h) => ({ ...h, accountId: id, ownerId: inView(ownerId) ? ownerId : view.viewerId }));
+      factAhead: cm ? sum(fact.map((x) => x[cm - 1] + (cm < 12 ? x[cm] : 0))) : 0, backlog: set.backlog.filter((x) => x.accountId === id && seen(x)).reduce((s, x) => s + x.usd, 0),
+    }, usd).map((h) => ({ ...h, accountId: id, ownerId: inView(ownerId) ? ownerId : view.viewerId }));
   });
   hits.sort((a, b) => PRIO.indexOf(a.kind) - PRIO.indexOf(b.kind) || (oc12.get(b.accountId) ?? 0) - (oc12.get(a.accountId) ?? 0));
   return { year, published: !!yr?.publishedAt, prog, started, set, lines, accounts, unassigned, hits, oc12 };

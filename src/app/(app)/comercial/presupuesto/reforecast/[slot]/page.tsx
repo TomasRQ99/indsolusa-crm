@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { workPeople } from "@/lib/team-store";
-import { MONTHS, PROSPECTS, forecastGap, forecastMonths, millionsText, sum } from "@/lib/sales-budget-rules";
+import { MONTHS, PROSPECTS, forecastGap, forecastMonths, moneyText, sum } from "@/lib/sales-budget-rules";
 import { budgetScope, budgetYears, canWriteBudget, matrixOf, numbers, readYear } from "@/lib/sales-budget";
 import { trackYear } from "@/lib/sales-budget-track";
 import { saveForecast } from "../actions";
@@ -48,7 +48,7 @@ export default async function ReforecastCompany({ params, searchParams }: { para
   // What there is to lean on: quotes presented and not decided, and accepted orders not invoiced yet.
   const mine = (x: { accountId: string; ownerId: string }) => x.ownerId === personId && (slot === PROSPECTS ? false : x.accountId === slot);
   const openQ = tr.set.cohorts.filter((c) => mine(c) && c.quotedAt && !c.decided);
-  const backlog = tr.set.backlog.filter(mine).reduce((s, x) => s + x.cop, 0);
+  const backlog = tr.set.backlog.filter(mine).reduce((s, x) => s + x.usd, 0);
   const entReal = sum(line.realEnt.map((v, k) => (prog.share[k] > 0 ? v : 0)));
   const M = MONTHS.map((x) => t(x.es, x.en));
   const okMsg: Record<string, string> = { guardado: t("Reforecast guardado como un corte nuevo. El presupuesto oficial no cambió.", "Reforecast saved as a new cut. The official budget did not change.") };
@@ -56,12 +56,12 @@ export default async function ReforecastCompany({ params, searchParams }: { para
     permiso: t("El reforecast lo escribe su negociador, Gerencia o la Dirección Comercial.", "The reforecast is written by its negotiator, Management or the Commercial Director."),
     anio: t("Ese año no está en curso: el reforecast solo se hace durante el año.", "That year is not in course: a reforecast is only made during the year."),
     presupuesto: t("Esa empresa no tiene presupuesto este año.", "That company has no budget this year."),
-    valor: t("Falta corregir una cifra en «OC probables» o «Facturas programadas»: son números en millones, de cero en adelante.", "A figure in «Probable POs» or «Scheduled invoices» needs fixing: numbers in millions, from zero up."),
+    valor: t("Falta corregir una cifra en «OC probables» o «Facturas programadas»: son números en dólares, de cero en adelante.", "A figure in «Probable POs» or «Scheduled invoices» needs fixing: numbers in dollars, from zero up."),
     supuestos: t("Faltan los «Supuestos de este reforecast»: escribe en qué te basas (qué órdenes esperas, de quién y para cuándo).", "The «Assumptions of this reforecast» are missing: write what you base it on (which orders you expect, from whom and by when)."),
   };
   const diff = (g: { diff: number; pct: number | null }) => <b className={g.diff < 0 ? "pc-down" : g.diff > 0 ? "pc-up" : ""}>{g.diff > 0 ? "+" : ""}{f.bare(g.diff)}{g.pct != null ? ` (${f.signed(g.pct)})` : ""}</b>;
   const inputRow = (prefix: string, label: string, ms: typeof oc, vals: (number | null)[]) => (
-    <tr data-k={prefix}><th scope="row">{label}</th>{ms.map((x, k) => <td key={k}>{x.open ? (write ? <input className="pc-in" name={`${prefix}_${k + 1}`} inputMode="decimal" defaultValue={vals[k] ? millionsText(vals[k], i.es) : ""} aria-label={`${label} · ${M[k]}`} /> : f.bare(x.typed)) : <span className="muted">—</span>}</td>)}<td className="pc-year">{f.bare(sum(ms.map((x) => x.typed)))}</td></tr>
+    <tr data-k={prefix}><th scope="row">{label}</th>{ms.map((x, k) => <td key={k}>{x.open ? (write ? <input className="pc-in" name={`${prefix}_${k + 1}`} inputMode="decimal" defaultValue={vals[k] ? moneyText(vals[k], i.es) : ""} aria-label={`${label} · ${M[k]}`} /> : f.bare(x.typed)) : <span className="muted">—</span>}</td>)}<td className="pc-year">{f.bare(sum(ms.map((x) => x.typed)))}</td></tr>
   );
 
   return (
@@ -79,7 +79,7 @@ export default async function ReforecastCompany({ params, searchParams }: { para
       <div className="pc-tiles">
         <article data-t="oc"><b>{t("Reforecast OC", "PO reforecast")}</b><span>{started ? f.m(estOc) : "—"}</span><small>{t(`Presupuesto oficial: ${f.m(sum(goalOc))}`, `Official budget: ${f.m(sum(goalOc))}`)}{started ? <> · {diff(gOc)}</> : null}</small></article>
         <article data-t="fact"><b>{t("Reforecast facturación", "Invoicing reforecast")}</b><span>{started ? f.m(estFa) : "—"}</span><small>{t(`Presupuesto oficial: ${f.m(sum(goalFa))}`, `Official budget: ${f.m(sum(goalFa))}`)}{started ? <> · {diff(gFa)}</> : null}</small></article>
-        <article data-t="apoyo"><b>{t("En qué apoyarte", "What to lean on")}</b><span>{f.m(sum(openQ.map((c) => c.cotCop ?? 0)))}</span><small>{t(`en ${openQ.length} cotizaciones presentadas sin decisión · OC aceptadas sin facturar: ${f.m(backlog)}`, `in ${openQ.length} quotes presented and not decided · accepted POs not invoiced: ${f.m(backlog)}`)}</small></article>
+        <article data-t="apoyo"><b>{t("En qué apoyarte", "What to lean on")}</b><span>{f.m(sum(openQ.map((c) => c.cotUsd ?? 0)))}</span><small>{t(`en ${openQ.length} cotizaciones presentadas sin decisión · OC aceptadas sin facturar: ${f.m(backlog)}`, `in ${openQ.length} quotes presented and not decided · accepted POs not invoiced: ${f.m(backlog)}`)}</small></article>
         <article data-t="ent"><b>{t("Entregas confirmadas", "Deliveries confirmed")}</b><span>{started ? i.n(entReal) : "—"}</span><small>{sum(goalEnt) > 0 ? t(`de ${i.n(sum(goalEnt))} presupuestadas en el año`, `of ${i.n(sum(goalEnt))} budgeted for the year`) : t("Sin entregas presupuestadas", "No deliveries budgeted")}</small></article>
       </div>
 
@@ -88,7 +88,7 @@ export default async function ReforecastCompany({ params, searchParams }: { para
         <form action={saveForecast.bind(null, year, slot, personId)} className="pc-form">
           <div className="pc-scroll">
             <table className="pc-table pc-matrix" id="tabla-reforecast-mes">
-              <thead><tr><th>{t("Indicador ($ M)", "Indicator ($ M)")}</th>{M.map((x) => <th key={x}>{x}</th>)}<th className="pc-year">{t(`Año ${year}`, `Year ${year}`)}</th></tr></thead>
+              <thead><tr><th>{t("Indicador (US$)", "Indicator (US$)")}</th>{M.map((x) => <th key={x}>{x}</th>)}<th className="pc-year">{t(`Año ${year}`, `Year ${year}`)}</th></tr></thead>
               <tbody>
                 <tr className="pc-g"><td colSpan={14}>{t("Órdenes de compra", "Purchase orders")}</td></tr>
                 <tr className="pc-sug" data-k="goal_oc"><th scope="row">{t("Presupuesto oficial", "Official budget")}</th>{goalOc.map((v, k) => <td key={k}>{f.bare(v)}</td>)}<td className="pc-year">{f.bare(sum(goalOc))}</td></tr>

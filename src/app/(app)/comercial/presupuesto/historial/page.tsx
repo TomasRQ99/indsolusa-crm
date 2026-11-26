@@ -16,7 +16,7 @@ import "../presupuesto.css";
 // first Need in SOLU. Below, SOLU's invoicing is compared with Siigo's month by month (spec AT-11).
 
 const MAX_PROBLEMS = 60;
-const SAME = 1000; // pesos: a difference below this is rounding, not a discrepancy
+const SAME = 1; // dollars: a difference below this is rounding, not a discrepancy
 
 export default async function BudgetHistory({ searchParams }: { searchParams: Promise<{ y?: string; b?: string; e?: string; cy?: string; ok?: string; err?: string }> }) {
   const user = await requireUser();
@@ -30,7 +30,7 @@ export default async function BudgetHistory({ searchParams }: { searchParams: Pr
   const scope = await budgetScope(user);
   const colName = (k: string) => { const c = COLUMNS.find((x) => x.col === k)!; return t(c.es, c.en); };
   const monthName = (key: string) => `${t(MONTHS[Number(key.slice(5)) - 1].es, MONTHS[Number(key.slice(5)) - 1].en)} ${key.slice(0, 4)}`;
-  const cell = (k: Kpi, v: number | undefined) => (v == null ? "—" : KPIS[k].unit === "cop" ? i.money(v, "COP") : i.n(v));
+  const cell = (k: Kpi, v: number | undefined) => (v == null ? "—" : KPIS[k].unit === "usd" ? i.money(v, "USD") : i.n(v));
 
   const [batch, batches, company] = await Promise.all([
     load && sp.b ? db.salesHistoryBatch.findUnique({ where: { id: sp.b } }) : null,
@@ -62,12 +62,12 @@ export default async function BudgetHistory({ searchParams }: { searchParams: Pr
   if (cy && siigo.length) {
     const set = await loadFacts({});
     const solu = set.facts.filter((x) => x.kpi === "FACT_COP" && !x.loaded && x.month.startsWith(cy));
-    noRate = solu.filter((x) => x.cop == null).length;
+    noRate = solu.filter((x) => x.usd == null).length;
     const accNames = new Map((await db.account.findMany({ where: { id: { in: [...new Set(solu.map((x) => x.accountId))] } }, select: { id: true, name: true } })).map((a) => [a.id, a.name]));
     for (const month of [...new Set(siigo.map((r) => r.month))].sort()) {
       const by = new Map<string, { name: string; solu: number; siigo: number }>();
       for (const r of siigo) if (r.month === month) { const x = by.get(r.accountId) ?? { name: r.account.name, solu: 0, siigo: 0 }; x.siigo += Number(r.value); by.set(r.accountId, x); }
-      for (const x of solu) if (x.month === month && x.cop != null) { const y = by.get(x.accountId) ?? { name: accNames.get(x.accountId) ?? "—", solu: 0, siigo: 0 }; y.solu += x.cop; by.set(x.accountId, y); }
+      for (const x of solu) if (x.month === month && x.usd != null) { const y = by.get(x.accountId) ?? { name: accNames.get(x.accountId) ?? "—", solu: 0, siigo: 0 }; y.solu += x.usd; by.set(x.accountId, y); }
       const rows = [...by.values()].filter((r) => Math.abs(r.solu - r.siigo) >= SAME).sort((a, b) => Math.abs(b.solu - b.siigo) - Math.abs(a.solu - a.siigo));
       compare.push({ month, solu: [...by.values()].reduce((s, r) => s + r.solu, 0), siigo: [...by.values()].reduce((s, r) => s + r.siigo, 0), rows });
     }
@@ -139,7 +139,7 @@ export default async function BudgetHistory({ searchParams }: { searchParams: Pr
                   </table>
                 </div>
               )}
-              {review.totals.length > 0 && <p className="src">{t("Lo que se guardará, sumado por año, en pesos.", "What will be saved, added up by year, in pesos.")}{batch.currency === "USD" ? t(" Los dólares se pasaron a pesos con la TRM oficial promedio de cada mes.", " Dollars were turned into pesos with each month's average official TRM.") : ""} {t("Compáralo con el total de tu archivo antes de guardar.", "Compare it with your file's total before saving.")}</p>}
+              {review.totals.length > 0 && <p className="src">{t("Lo que se guardará, sumado por año, en dólares.", "What will be saved, added up by year, in dollars.")}{batch.currency === "COP" ? t(" Los pesos se pasaron a dólares con la TRM oficial promedio de cada mes.", " Pesos were turned into dollars with each month's average official TRM.") : ""} {t("Compáralo con el total de tu archivo antes de guardar.", "Compare it with your file's total before saving.")}</p>}
             </>
           )}
           {review.problems.length > 0 && (
@@ -178,8 +178,9 @@ export default async function BudgetHistory({ searchParams }: { searchParams: Pr
             <label>{t("Nombre de esta carga", "Name of this load")} *<input type="text" name="label" maxLength={120} placeholder={t("Ventas 2024–2026 del sistema anterior", "Sales 2024–2026 from the earlier system")} /></label>
             <label>{t("Filas copiadas de Excel", "Rows copied from Excel")}<textarea name="rows" rows={7} spellCheck={false} style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, whiteSpace: "pre" }} /></label>
             <label>{t("O un archivo de Excel o CSV", "Or an Excel or CSV file")}<input type="file" name="file" accept=".xlsx,.xlsm,.csv,.txt,text/csv,text/plain" /></label>
+            <p className="src" id="excel-facturas">{t("Excel de facturas del sistema anterior: súbelo tal como sale, con las columnas «Fecha, Factura, Cliente, Vendedor, Estado, Envío, Impuesto, Importe». SOLU suma las facturas por cliente y mes, en dólares y sin convertirlas, y en la revisión te dice cuántas facturas leyó y si su suma es igual a la fila «Total» del archivo. Para ese archivo no hace falta elegir moneda ni escribir el nombre de la carga.", "Invoice Excel from the earlier system: upload it as it is exported, with the columns «Fecha, Factura, Cliente, Vendedor, Estado, Envío, Impuesto, Importe». SOLU adds the invoices up per customer and month, in dollars and without converting them, and the review tells you how many invoices it read and whether their sum equals the file's «Total» row. For that file there is no need to choose a currency or to type the load's name.")}</p>
             <button type="submit">{t("Revisar antes de guardar", "Check before saving")}</button>
-            <span className="src block">{t("Revisar no guarda nada: muestra lo que SOLU entendió, fila por fila, y ahí decides. Valores sin IVA; la facturación, ya descontadas las notas crédito. Un valor en dólares se pasa a pesos con la TRM oficial promedio de su mes.", "Checking saves nothing: it shows what SOLU understood, row by row, and you decide there. Values before VAT; invoicing net of credit notes. A value in dollars is turned into pesos with its month's average official TRM.")}</span>
+            <span className="src block">{t("Revisar no guarda nada: muestra lo que SOLU entendió, fila por fila, y ahí decides. Valores sin IVA; la facturación, ya descontadas las notas crédito. Un valor en pesos se pasa a dólares con la TRM oficial promedio de su mes.", "Checking saves nothing: it shows what SOLU understood, row by row, and you decide there. Values before VAT; invoicing net of credit notes. A value in pesos is turned into dollars with its month's average official TRM.")}</span>
           </form>
         </section>
       )}
@@ -231,7 +232,7 @@ export default async function BudgetHistory({ searchParams }: { searchParams: Pr
                   </tbody>
                 </table>
               </div>
-              <p className="src">{t("En pesos. «En parte» = la facturación de ese mes la da Siigo y las demás cifras, el sistema anterior.", "In pesos. «Partly» = that month's invoicing comes from Siigo and the other figures from the earlier system.")}</p>
+              <p className="src">{t("En dólares. «En parte» = la facturación de ese mes la da Siigo y las demás cifras, el sistema anterior.", "In dollars. «Partly» = that month's invoicing comes from Siigo and the other figures from the earlier system.")}</p>
             </>
           )}
         </section>
@@ -280,7 +281,7 @@ export default async function BudgetHistory({ searchParams }: { searchParams: Pr
                   </tbody>
                 </table>
               </div>
-              <p className="src">{t("Solo los meses con facturación de Siigo cargada. «Facturas en SOLU» = facturas emitidas en SOLU ese mes, en pesos (las de dólares, a la TRM oficial de su fecha), de todas las empresas. Una diferencia menor a $ 1.000 se toma como redondeo. Una empresa que factura en Siigo y no en SOLU (o al revés) aparece como diferencia. Los meses de antes de SOLU dicen «Sin facturas en SOLU ese mes»: ahí no hay nada que conciliar.", "Only the months with Siigo invoicing loaded. «Invoices in SOLU» = invoices issued in SOLU that month, in pesos (dollar ones at the official TRM of their date), every company. A difference under $ 1,000 is taken as rounding. A company invoiced in Siigo and not in SOLU (or the other way round) shows as a difference. Months from before SOLU say «No invoices in SOLU that month»: there is nothing to reconcile there.")}{noRate ? t(` ${noRate} facturas en dólares no tienen TRM guardada y no suman.`, ` ${noRate} dollar invoices have no stored TRM and are not added.`) : ""}</p>
+              <p className="src">{t("Solo los meses con facturación de Siigo cargada. «Facturas en SOLU» = facturas emitidas en SOLU ese mes, en dólares, de todas las empresas. Una diferencia menor a $ 1.000 se toma como redondeo. Una empresa que factura en Siigo y no en SOLU (o al revés) aparece como diferencia. Los meses de antes de SOLU dicen «Sin facturas en SOLU ese mes»: ahí no hay nada que conciliar.", "Only the months with Siigo invoicing loaded. «Invoices in SOLU» = invoices issued in SOLU that month, in dollars, every company. A difference under $ 1,000 is taken as rounding. A company invoiced in Siigo and not in SOLU (or the other way round) shows as a difference. Months from before SOLU say «No invoices in SOLU that month»: there is nothing to reconcile there.")}{noRate ? t(` ${noRate} cifras cargadas en pesos no tienen TRM guardada y no suman.`, ` ${noRate} figures loaded in pesos have no stored TRM and are not added.`) : ""}</p>
             </>
           )}
         </section>

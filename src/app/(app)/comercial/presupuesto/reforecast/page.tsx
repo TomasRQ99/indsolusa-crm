@@ -107,7 +107,7 @@ export default async function ReforecastList({ searchParams }: { searchParams: P
                 </table>
               </div>
             )}
-            <p className="src">{t("Cifras en millones de pesos. Las sumas incluyen solo las empresas que ya tienen reforecast, para comparar lo mismo en los dos lados. El reforecast se recalcula solo: cuando una orden probable se acepta pasa a «reales», y lo escrito para un mes que ya cerró deja de contar. El presupuesto oficial es el aprobado; donde no lo hay, la última propuesta.", "Figures in millions of pesos. The sums include only the companies that already have a reforecast, so both sides compare the same thing. The reforecast recalculates itself: when a probable order is accepted it moves to «real», and what was typed for a month that closed stops counting. The official budget is the approved one; where there is none, the latest proposal.")}</p>
+            <p className="src">{t("Cifras en dólares (US$). Las sumas incluyen solo las empresas que ya tienen reforecast, para comparar lo mismo en los dos lados. El reforecast se recalcula solo: cuando una orden probable se acepta pasa a «reales», y lo escrito para un mes que ya cerró deja de contar. El presupuesto oficial es el aprobado; donde no lo hay, la última propuesta.", "Figures in dollars (US$). The sums include only the companies that already have a reforecast, so both sides compare the same thing. The reforecast recalculates itself: when a probable order is accepted it moves to «real», and what was typed for a month that closed stops counting. The official budget is the approved one; where there is none, the latest proposal.")}</p>
           </section>
         </>
       )}

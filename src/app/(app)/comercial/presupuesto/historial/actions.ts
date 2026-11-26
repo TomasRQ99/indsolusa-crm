@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { refreshApp } from "@/lib/revalidate";
 import { canLoadHistory, checkBatch } from "@/lib/sales-history";
-import { UNITS } from "@/lib/sales-history-rules";
+import { UNITS, invoiceSheet, norm } from "@/lib/sales-history-rules";
 import { readXlsx } from "@/lib/sheet-read";
 import { SiigoFail, pullSiigo, siigoAsRows } from "@/lib/siigo";
 
@@ -26,9 +26,9 @@ export async function checkHistory(fd: FormData) {
   const user = await requireUser();
   if (!canLoadHistory(user)) redirect(`${BASE}?err=permiso`);
   const source = fd.get("source") === "SIIGO" ? "SIIGO" : "ANTERIOR";
-  const currency = fd.get("currency") === "USD" ? "USD" : "COP";
-  const unit = UNITS.find((u) => String(u) === String(fd.get("unit"))) ?? 1;
-  const label = String(fd.get("label") ?? "").trim().slice(0, 120);
+  let currency = fd.get("currency") === "USD" ? "USD" : "COP";
+  let unit: number = UNITS.find((u) => String(u) === String(fd.get("unit"))) ?? 1;
+  let label = String(fd.get("label") ?? "").trim().slice(0, 120);
   const file = fd.get("file");
   let raw = String(fd.get("rows") ?? "");
   if (!raw.trim() && file instanceof File && file.size > 0) {
@@ -38,6 +38,20 @@ export async function checkHistory(fd: FormData) {
       // The first sheet, as the cells show: a number keeps two decimals at most, so no thousands mark can be misread.
       let rows: (string | number | null)[][] = [];
       try { rows = readXlsx(Buffer.from(await file.arrayBuffer())).rows; } catch { redirect(`${BASE}?err=excel#cargar`); }
+      // The invoice sheet of the earlier system, uploaded as it is exported: dollars, one invoice per row. SOLU adds
+      // it up per customer and month and says, in the load's name, how its sum compares with the sheet's own total.
+      const users = await db.user.findMany({ select: { name: true } });
+      const inv = invoiceSheet(rows, (name) => users.filter((u) => norm(u.name) === norm(name)).length === 1);
+      if (inv) {
+        if (!inv.invoices) redirect(`${BASE}?err=vacio#cargar`);
+        const usd = (v: number) => new Intl.NumberFormat("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+        const same = inv.fileTotal != null && Math.abs(inv.fileTotal - inv.total) < 0.005;
+        const note = `${inv.invoices} facturas · US$ ${usd(inv.total)}${inv.fileTotal == null ? "" : same ? " = Total del archivo" : ` ≠ Total del archivo US$ ${usd(inv.fileTotal)}`}${inv.annulled ? ` · ${inv.annulled} anuladas sin contar` : ""}${inv.unread ? ` · ${inv.unread} filas sin leer` : ""}`;
+        label = `${(label || file.name.replace(/\.[^.]+$/, "")).slice(0, 118 - note.length)} (${note})`;
+        currency = "USD"; unit = 1;
+        const b = await db.salesHistoryBatch.create({ data: { source: "ANTERIOR", currency, unit, label, raw: inv.text, createdById: user.id, createdByName: user.name } });
+        redirect(`${BASE}?b=${b.id}#revision`);
+      }
       const cell = (v: string | number | null) => (v == null ? "" : typeof v === "number" ? (Number.isInteger(v) ? String(v) : v.toFixed(2)) : String(v).replace(/[\t\r\n]+/g, " ").trim());
       raw = rows.map((r) => r.map(cell).join("\t")).join("\n");
     } else raw = decode(await file.arrayBuffer());

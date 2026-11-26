@@ -7,7 +7,7 @@ import { canManageAll } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { addWorkingDays } from "@/lib/holidays";
 import {
-  PROSPECTS, budgetLines, defaultAssumptions, departs, isEditable, parseMillions, parsePct, readAssumptions, suggest, sum,
+  PROSPECTS, budgetLines, defaultAssumptions, departs, isEditable, parseMoney, parsePct, readAssumptions, suggest, sum,
   ASSUMPTION_KEYS, type Assumptions,
 } from "@/lib/sales-budget-rules";
 import { approverIdsOf, basisFor, basisPick, budgetScope, budgetYears, canWriteBudget, loadFacts, matrixOf } from "@/lib/sales-budget";
@@ -41,7 +41,7 @@ export async function saveBudget(year: number, slot: string, userId: string, sen
   const es = user.lang === "ES";
   const oc: number[] = [], fact: number[] = [], ocN: (number | null)[] = [], ent: (number | null)[] = [];
   for (let m = 1; m <= 12; m++) {
-    const a = parseMillions(fd.get(`oc_${m}`), es), f = parseMillions(fd.get(`fact_${m}`), es);
+    const a = parseMoney(fd.get(`oc_${m}`), es), f = parseMoney(fd.get(`fact_${m}`), es);
     const rawN = String(fd.get(`ocn_${m}`) ?? "").trim();
     const n = rawN === "" ? null : Number(rawN);
     if (Number.isNaN(a) || Number.isNaN(f) || (a ?? 0) < 0 || (f ?? 0) < 0 || (a ?? 0) > 1e13 || (f ?? 0) > 1e13) back("err=valor", "#propuesta");
@@ -63,7 +63,7 @@ export async function saveBudget(year: number, slot: string, userId: string, sen
   const typed: Record<string, unknown> = { season: fd.get("season") };
   for (const k of ASSUMPTION_KEYS) {
     const raw = fd.get(k);
-    const v = k === "ticket" ? parseMillions(raw, es) : parsePct(raw);
+    const v = k === "ticket" ? parseMoney(raw, es) : parsePct(raw);
     if (Number.isNaN(v)) back("err=supuesto", "#supuestos");
     typed[k] = v;
   }
@@ -186,7 +186,7 @@ export async function askReconcile(id: string, fd: FormData) {
   back("ok=conciliar");
 }
 
-/** The company objective of the year (annual, pesos). It only shows the gap: it never changes anyone's goals. */
+/** The company objective of the year (annual, dollars). It only shows the gap: it never changes anyone's goals. */
 export async function saveCorporate(year: number, fd: FormData) {
   const user = await requireUser();
   const back = (qs: string): never => { refreshApp(); redirect(`${BASE}/consolidacion?y=${year}&${qs}#objetivo`); };
@@ -195,7 +195,7 @@ export async function saveCorporate(year: number, fd: FormData) {
   const es = user.lang === "ES";
   const corporate: Record<string, number> = {};
   for (const k of ["OC_COP", "FACT_COP", "ESA_COP"]) {
-    const v = parseMillions(fd.get(k), es);
+    const v = parseMoney(fd.get(k), es);
     if (Number.isNaN(v) || (v ?? 0) < 0 || (v ?? 0) > 1e15) back("err=valor");
     if (v) corporate[k] = v;
   }

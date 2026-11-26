@@ -83,6 +83,59 @@ Checked on 2026-11-26: 21 data checks (split to the peso, goals feed, Siigo agai
 
 Not built: delivery value, invoice-by-invoice Siigo match, glossary terms.
 
+## The budget works in dollars (2026-11-26, owner's decision)
+
+The owner asked for the commercial budget in dollars instead of millions of pesos ("values are also in Million COP,
+please convert these to USD"). **This replaces the spec's pesos and every "millions of pesos" above.**
+
+- A fact's value is `usd`: a SOLU document's own dollar value (quotes, purchase orders and invoices are priced in
+  dollars; one made in pesos keeps its peso figure and fixed rate beside it for the sources table). No TRM is needed
+  for SOLU documents any more.
+- Loaded history: a load in dollars is stored as it came (the owner's 2025–2026 sales are exact again: 504,183.15);
+  a load in pesos (Siigo) is turned into dollars with the month's average official TRM.
+- Goals, reforecasts, company objectives and the average ticket are typed and stored in dollars. Screens show whole
+  dollars ("US$ 149.852"); inputs take "12500", "12.500" or "12500,5".
+- The indicator keys keep their names (OC_COP, FACT_COP, ESA_COP, COT_COP): stored identifiers, not a currency.
+- Migration `20270202120000_budget_in_dollars` (data only): history in dollars back to its original value; anything
+  typed in pesos divided once by the latest official TRM stored; the day's saved priorities deleted (prepared again).
+- Also: a company without orders in a finished base year says "sin ventas en <año>" instead of "sin base
+  suficiente"; Eságara shows "—" when the loaded sales carry none.
+
+| # | Default taken (NOT confirmed) |
+|---|---|
+| PC-28 | Figures already typed in pesos were converted once at the latest official TRM stored (not month by month). |
+| PC-29 | SOLU's suggestions are rounded to US$ 10 (was 0,1 million pesos). |
+| PC-30 | Mis metas takes the approved budget's dollar goal as it is (PC-26's TRM conversion is gone). |
+| PC-31 | In Spanish notation a lone point followed by one or two digits is read as cents ("1250.5"); otherwise a point marks thousands. |
+
+Checked on 2026-11-26: migration run on the local database (which held the owner's loads in pesos): totals per
+company equal the owner's file; parsing and rounding checks; browser check on a production build.
+
+## The owner uploads the invoice Excel; SOLU's own loads removed (2026-11-26)
+
+The owner did not trust the figures SOLU had loaded by itself (they were shown in pesos) and asked to delete them
+and to upload the Excel files instead ("that way the info is more accurate").
+
+- Migration `20270202130000_remove_boot_history` deletes the two loads made by `bootIndustryHistory` (rows cascade;
+  customers stay). The automatic load is off (`SALES_HISTORY_BOOT=1` would turn it on; nobody should).
+- Historial reads the earlier system's invoice sheet as exported: «Fecha, Factura, Cliente, Vendedor, Estado, Envío,
+  Impuesto, Importe», one invoice per row, "$1,698.12". `invoiceSheet()` (sales-history-rules.ts) adds it up per
+  customer, seller and month into the rows the usual review reads; the load is forced to dollars and its name says
+  how many invoices were read and whether their sum equals the sheet's «Total» row.
+
+| # | Default taken (NOT confirmed) |
+|---|---|
+| PC-32 | «Importe» is used as it is (tax and shipping are zero in the owner's files). |
+| PC-33 | A row whose «Estado» says anulado / cancelado / void is not added. |
+| PC-34 | A seller who is not exactly one SOLU user: the figure goes to the company's owner. |
+| PC-35 | The customers the automatic load had created were not deleted. |
+
+Checked on 2026-11-26 with the owner's two files: 192 and 165 invoices, sums 251,880.77 and 252,302.38, equal to
+each file's own total; uploaded through the browser on a production build.
+
+Also: "Mis empresas" has a column with the selected year's real purchase orders, and its header says which year the
+budget is built on (the owner read the 2026 tab as "2026 analysis" and found only 2025 figures).
+
 ## How each figure is counted
 
 - Requests = Needs created (month created). Quotes = one per Need, month of first presentation, value of the last presented revision. Purchase orders = customer POs **accepted** (`PoAcceptance`), on the acceptance date; rejected or not yet accepted ones don't count. Invoicing = SOLU invoices by issue date. Eságara of POs = PO value × margin of its quote.

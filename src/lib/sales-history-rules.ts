@@ -199,6 +199,61 @@ export function parseHistory(text: string, source: HistorySource, unit: number, 
 }
 export const isMoney = (k: Kpi) => MONEY.includes(k);
 
+// ---------- The owner's invoice sheet (one row per invoice, in dollars) ----------
+
+export type InvoiceSheet = {
+  /** The same rows the review reads: one per company, negotiator and month. */
+  text: string;
+  invoices: number; total: number;
+  /** What the sheet's own "Total" row says, when it has one. */
+  fileTotal: number | null;
+  /** Rows left out: annulled invoices, and rows without customer, date or amount. */
+  annulled: number; unread: number;
+};
+const sheetMoney = (v: string | number | null): number | null => {
+  if (typeof v === "number") return v;
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  const neg = /^\(.*\)$/.test(s) || /^-/.test(s.replace(/[\s$]|US/gi, ""));
+  const n = Number(s.replace(/[^\d.,]/g, "").replace(/,/g, ""));
+  return Number.isFinite(n) ? (neg ? -n : n) : null;
+};
+const sheetMonth = (v: string | number | null): string | null => {
+  // An Excel date is a day count: 25569 is 1970-01-01.
+  if (typeof v === "number" && v > 20000 && v < 80000) return new Date(Math.round((v - 25569) * 864e5)).toISOString().slice(0, 7);
+  return v == null ? null : readPeriod(String(v));
+};
+/** Reads the invoice sheet of the earlier system as it is exported: «Fecha, Factura, Cliente, Vendedor, Estado, Envío,
+ *  Impuesto, Importe», one invoice per row, amounts in dollars written "$1,698.12". Returns null when the sheet is
+ *  not that layout. The invoices are added up per customer, seller and month; an invoice stands for a purchase
+ *  order (the owner's decision), so each month carries invoicing, order value and number of orders.
+ *  `sellerOk` = the seller is exactly one SOLU user; other sellers' figures go to whoever owns the company. */
+export function invoiceSheet(rows: (string | number | null)[][], sellerOk: (name: string) => boolean): InvoiceSheet | null {
+  const at = rows.findIndex((r) => { const h = r.map(norm); return h.includes("fecha") && h.includes("factura") && h.includes("cliente") && h.includes("importe"); });
+  if (at < 0) return null;
+  const h = rows[at].map(norm);
+  const c = { date: h.indexOf("fecha"), client: h.indexOf("cliente"), seller: h.indexOf("vendedor"), state: h.indexOf("estado"), amount: h.indexOf("importe") };
+  const by = new Map<string, { client: string; seller: string; month: string; usd: number; n: number }>();
+  const out: InvoiceSheet = { text: "", invoices: 0, total: 0, fileTotal: null, annulled: 0, unread: 0 };
+  for (const r of rows.slice(at + 1)) {
+    if (!r || r.every((x) => x == null || String(x).trim() === "")) continue;
+    if (norm(r[0]) === "total" || norm(r[c.client]) === "total") { out.fileTotal = sheetMoney(r[c.amount]); continue; }
+    const client = String(r[c.client] ?? "").replace(/\s+/g, " ").trim(), month = sheetMonth(r[c.date]), usd = sheetMoney(r[c.amount]);
+    if (!client || !month || usd == null) { out.unread++; continue; }
+    if (c.state >= 0 && /anulad|cancelad|void/.test(norm(r[c.state]))) { out.annulled++; continue; }
+    const rawSeller = c.seller >= 0 ? String(r[c.seller] ?? "").replace(/\s+/g, " ").trim() : "";
+    const seller = rawSeller && sellerOk(rawSeller) ? rawSeller : "";
+    const key = `${normCompany(client)}|${norm(seller)}|${month}`;
+    const g = by.get(key) ?? { client, seller, month, usd: 0, n: 0 };
+    g.usd += usd; g.n++; by.set(key, g);
+    out.invoices++; out.total += usd;
+  }
+  out.total = Math.round(out.total * 100) / 100;
+  const body = [...by.values()].sort((a, b) => (a.month + a.client < b.month + b.client ? -1 : 1)).map((g) => { const v = (Math.round(g.usd * 100) / 100).toFixed(2); return [g.client, g.seller, g.month, g.n, v, v].join("\t"); });
+  out.text = ["Empresa\tNegociador\tPeriodo\tÓrdenes de compra (número)\tÓrdenes de compra (valor)\tFacturación (valor)", ...body].join("\n");
+  return out;
+}
+
 export const PROBLEM_TXT: Record<Problem["code"], Txt> = {
   empresa: { es: "La empresa no está en SOLU con ese NIT ni con ese nombre exacto. Créala en Clientes o corrige el NIT.", en: "The company is not in SOLU with that tax ID or that exact name. Create it in Customers or fix the tax ID." },
   "empresa-varias": { es: "Hay más de una empresa en SOLU con ese NIT o nombre: escribe el NIT de la correcta.", en: "More than one company in SOLU has that tax ID or name: type the tax ID of the right one." },
@@ -209,7 +264,7 @@ export const PROBLEM_TXT: Record<Problem["code"], Txt> = {
   entero: { es: "El número de casos debe ser entero, de cero en adelante.", en: "The number of cases must be a whole number, from zero up." },
   vacia: { es: "La fila no trae ninguna cifra.", en: "The row has no figure." },
   repetida: { es: "La misma empresa, negociador y mes ya están en una fila anterior.", en: "The same company, negotiator and month are already in an earlier row." },
-  "sin-tasa": { es: "No hay TRM oficial guardada para ese mes: no se pudo pasar a pesos.", en: "There is no official TRM stored for that month: it could not be turned into pesos." },
+  "sin-tasa": { es: "No hay TRM oficial guardada para ese mes: no se pudo pasar a dólares.", en: "There is no official TRM stored for that month: it could not be turned into dollars." },
 };
 
 /** The template a person fills in Excel: the headings and two example rows. */

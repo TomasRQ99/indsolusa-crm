@@ -4,7 +4,6 @@ import type { SessionUser } from "./auth";
 import { canManageAll, isMoneyRole } from "./permissions";
 import { leaderIdsOf, reportIdsOf } from "./team-store";
 import { monthOf } from "./customer-stats";
-import { trmLookup } from "./trm-store";
 import { historyFor, type FactScope } from "./sales-history";
 import { SOURCE_TXT } from "./sales-history-rules";
 import {
@@ -13,15 +12,17 @@ import {
 } from "./sales-budget-rules";
 
 // Presupuesto comercial · reads. Every real figure is a dated record of SOLU (a Need, a presented quote, an accepted
-// purchase order, an invoice) turned into pesos with the rate of its own date, and it keeps its link, original
-// currency, rate and source so any total can be opened and checked (spec §2, §3 "Hecho comercial").
+// purchase order, an invoice) in dollars, the currency SOLU prices in (owner's decision 2026-11-26: the budget works
+// in dollars, not pesos). A document made in pesos keeps its own figure, rate and source beside its dollars, so any
+// total can be opened and checked (spec §2, §3 "Hecho comercial"). The indicator keys keep their first names
+// (OC_COP, FACT_COP…): they are stored identifiers, not a currency.
 // Attribution: by the owner of the Need. One owner per Need, so a document is always attributed 100 % once (AT-13).
 
 type Txt = { es: string; en: string };
 export type Fact = {
   kpi: Kpi; at: Date; month: string; accountId: string; ownerId: string;
-  /** Value in pesos; null = a dollar figure whose date has no TRM stored (shown as "sin tasa", never guessed). */
-  cop: number | null;
+  /** Value in dollars (or the count); null = a figure loaded in pesos whose month has no TRM stored (never guessed). */
+  usd: number | null;
   /** The figure as recorded: amount and currency (counts carry 1). */
   orig: number; currency: string;
   rate: number | null; rateDay: string | null; rateSource: Txt | null;
@@ -36,11 +37,10 @@ export type Fact = {
   sharePct?: number;
 };
 /** One Need as a cohort case for the batting rates. */
-export type Cohort = { accountId: string; ownerId: string; created: Date; quotedAt: Date | null; decided: boolean; won: boolean; cotCop: number | null; ocCop: number };
-export type FactSet = { facts: Fact[]; cohorts: Cohort[]; backlog: { accountId: string; ownerId: string; cop: number }[]; noRate: number };
+export type Cohort = { accountId: string; ownerId: string; created: Date; quotedAt: Date | null; decided: boolean; won: boolean; cotUsd: number | null; ocUsd: number };
+export type FactSet = { facts: Fact[]; cohorts: Cohort[]; backlog: { accountId: string; ownerId: string; usd: number }[]; noRate: number };
 
 const FIXED: Txt = { es: "Tasa fija de la cotización", en: "The quote's fixed rate" };
-const TRM: Txt = { es: "TRM oficial del día", en: "Official TRM of the day" };
 const TRM_MONTH: Txt = { es: "TRM oficial promedio del mes", en: "Average official TRM of the month" };
 /** Where a loaded figure of a company opens: the rows loaded for that company. */
 export const historyHref = (accountId: string, month?: string) => `/comercial/presupuesto/historial?e=${accountId}${month ? `#m-${month}` : ""}`;
@@ -65,18 +65,13 @@ export async function loadFacts(scope: FactScope = {}): Promise<FactSet> {
       deliveries: { select: { id: true, code: true, deliveredAt: true } },
     },
   }), historyFor(scope)]);
-  let min = new Date();
-  for (const d of deals) if (d.createdAt < min) min = d.createdAt;
-  const trm = await trmLookup(min, new Date());
   const facts: Fact[] = [], cohorts: Cohort[] = [], backlog: FactSet["backlog"] = [];
   let noRate = 0;
-  /** Dollars → pesos: the document's own fixed rate when it was made in pesos, otherwise the TRM of the date. */
-  const toCop = (usd: number, at: Date, fixed: number | null) => {
-    if (fixed && fixed > 0) return { cop: Math.round(usd * fixed), rate: fixed, rateDay: null as string | null, rateSource: FIXED as Txt | null };
-    const hit = trm(at);
-    if (!hit) { noRate++; return { cop: null, rate: null, rateDay: null, rateSource: null }; }
-    return { cop: Math.round(usd * hit.rate), rate: hit.rate, rateDay: hit.day, rateSource: TRM as Txt | null };
-  };
+  const cents = (v: number) => Math.round(v * 100) / 100;
+  /** A SOLU document always has its dollar value. One made in pesos also shows its peso figure at its fixed rate. */
+  const doc = (usd: number, fixed: number | null, pesos?: number) => fixed && fixed > 0
+    ? { usd: cents(usd), orig: pesos ?? Math.round(usd * fixed), currency: "COP", rate: fixed as number | null, rateDay: null as string | null, rateSource: FIXED as Txt | null }
+    : { usd: cents(usd), orig: cents(usd), currency: "USD", rate: null as number | null, rateDay: null as string | null, rateSource: null as Txt | null };
   for (const d of deals) {
     const base = { accountId: d.accountId, ownerId: d.ownerId };
     const name = `${d.code ?? ""} ${d.title}`.trim();
@@ -85,26 +80,25 @@ export async function loadFacts(scope: FactScope = {}): Promise<FactSet> {
     const others = d.salesShares.filter((x) => x.userId !== d.ownerId && Number(x.pct) > 0).map((x) => ({ userId: x.userId, pct: Number(x.pct) }));
     const given = others.reduce((s, x) => s + x.pct, 0);
     const shared = others.length > 0 && given < 100;
-    const split = (v: number) => { const parts = others.map((x) => ({ ownerId: x.userId, pct: x.pct, v: Math.round((v * x.pct) / 100) })); return [{ ownerId: d.ownerId, pct: Math.round((100 - given) * 100) / 100, v: v - parts.reduce((s, x) => s + x.v, 0) }, ...parts]; };
+    const split = (v: number) => { const parts = others.map((x) => ({ ownerId: x.userId, pct: x.pct, v: cents((v * x.pct) / 100) })); return [{ ownerId: d.ownerId, pct: Math.round((100 - given) * 100) / 100, v: cents(v - parts.reduce((s, x) => s + x.v, 0)) }, ...parts]; };
     const push = (kpi: Kpi, at: Date, f: Omit<Fact, "kpi" | "at" | "month" | "accountId" | "ownerId">) => {
       const common = { kpi, at, month: monthOf(at), accountId: d.accountId, plantId: d.plantId };
-      if (!shared || KPIS[kpi].unit === "n" || f.cop == null) { facts.push({ ...common, ownerId: d.ownerId, ...f }); return; }
-      for (const p of split(f.cop)) facts.push({ ...common, ownerId: p.ownerId, ...f, cop: p.v, orig: Math.round(f.orig * p.pct) / 100, text: `${f.text} · ${p.pct} %`, sharePct: p.pct });
+      if (!shared || KPIS[kpi].unit === "n" || f.usd == null) { facts.push({ ...common, ownerId: d.ownerId, ...f }); return; }
+      for (const p of split(f.usd)) facts.push({ ...common, ownerId: p.ownerId, ...f, usd: p.v, orig: Math.round(f.orig * p.pct) / 100, text: `${f.text} · ${p.pct} %`, sharePct: p.pct });
     };
-    const one = { cop: 1, orig: 1, currency: "", rate: null, rateDay: null, rateSource: null };
+    const one = { usd: 1, orig: 1, currency: "", rate: null, rateDay: null, rateSource: null };
     push("SOL_N", d.createdAt, { ...one, text: name, href: `/deals/${d.id}` });
     // Quotes: one per Need, in the month of the first presentation, valued at the last presented revision (AT-03).
     const q0 = d.quotes[0], qLast = d.quotes[d.quotes.length - 1];
-    let cotCop: number | null = null;
+    let cotUsd: number | null = null;
     if (q0?.presentedAt && qLast) {
-      const usd = Number(qLast.protSale ?? 0);
-      const v = toCop(usd, q0.presentedAt, qLast.currency === "COP" && qLast.docFxRate ? Number(qLast.docFxRate) : null);
-      cotCop = v.cop;
+      const v = doc(Number(qLast.protSale ?? 0), qLast.currency === "COP" && qLast.docFxRate ? Number(qLast.docFxRate) : null);
+      cotUsd = v.usd;
       push("COT_N", q0.presentedAt, { ...one, text: `${qLast.number} · ${name}`, href: `/cotizaciones/${qLast.id}` });
-      push("COT_COP", q0.presentedAt, { ...v, orig: usd, currency: "USD", text: `${qLast.number} · ${name}`, href: `/cotizaciones/${qLast.id}` });
+      push("COT_COP", q0.presentedAt, { ...v, text: `${qLast.number} · ${name}`, href: `/cotizaciones/${qLast.id}` });
     }
     // Purchase orders: accepted ones, on the date they were accepted. A rejected or not yet accepted one is not real.
-    let ocCop = 0, accepted = 0;
+    let ocUsd = 0, accepted = 0;
     for (const p of d.customerPos) {
       if (!p.acceptance) continue;
       accepted++;
@@ -112,28 +106,27 @@ export async function loadFacts(scope: FactScope = {}): Promise<FactSet> {
       const usd = p.lines.reduce((s, l) => s + l.qty * Number(l.unitPrice), 0);
       const fixed = p.currency === "COP" && p.docFxRate ? Number(p.docFxRate) : null;
       const inPesos = fixed && p.lines.every((l) => l.docUnitPrice != null);
-      const v = inPesos ? { cop: Math.round(p.lines.reduce((s, l) => s + l.qty * Number(l.docUnitPrice), 0)), rate: fixed, rateDay: null, rateSource: FIXED as Txt | null } : toCop(usd, at, fixed);
+      const v = doc(usd, fixed, inPesos ? Math.round(p.lines.reduce((s, l) => s + l.qty * Number(l.docUnitPrice), 0)) : undefined);
       const text = `OC ${p.number} · ${name}`, href = `/po/${p.id}`;
       push("OC_N", at, { ...one, text, href });
-      push("OC_COP", at, { ...v, orig: inPesos ? v.cop! : usd, currency: inPesos ? "COP" : "USD", text, href });
-      if (v.cop != null) ocCop += v.cop;
+      push("OC_COP", at, { ...v, text, href });
+      ocUsd += v.usd;
       // Eságara of the order: the order's value at the margin of its quote (the linked one, else the last presented).
       const q = d.quotes.find((x) => x.id === p.quoteId) ?? qLast;
       const sale = Number(q?.protSale ?? 0);
-      if (q && sale > 0 && q.protEsagra != null && v.cop != null) push("ESA_COP", at, { cop: Math.round((v.cop * Number(q.protEsagra)) / sale), orig: Math.round((usd * Number(q.protEsagra)) / sale * 100) / 100, currency: "USD", rate: v.rate, rateDay: v.rateDay, rateSource: v.rateSource, text, href });
+      if (q && sale > 0 && q.protEsagra != null) { const e = cents((v.usd * Number(q.protEsagra)) / sale); push("ESA_COP", at, { usd: e, orig: e, currency: "USD", rate: null, rateDay: null, rateSource: null, text, href }); }
     }
-    let factCop = 0;
+    let factUsd = 0;
     for (const inv of d.invoices) {
-      const usd = Number(inv.amount);
-      const v = toCop(usd, inv.issuedAt, inv.docCurrency === "COP" && inv.quote?.docFxRate ? Number(inv.quote.docFxRate) : null);
-      push("FACT_COP", inv.issuedAt, { ...v, orig: usd, currency: "USD", text: `${inv.number} · ${name}`, href: `/deals/${d.id}/facturacion` });
-      if (v.cop != null) factCop += v.cop;
+      const v = doc(Number(inv.amount), inv.docCurrency === "COP" && inv.quote?.docFxRate ? Number(inv.quote.docFxRate) : null);
+      push("FACT_COP", inv.issuedAt, { ...v, text: `${inv.number} · ${name}`, href: `/deals/${d.id}/facturacion` });
+      factUsd += v.usd;
     }
     // Deliveries confirmed to the customer, on the real delivery date (a partial delivery is one delivery).
     for (const dl of d.deliveries) push("ENT_N", dl.deliveredAt, { ...one, text: `${dl.code} · ${name}`, href: `/deals/${d.id}` });
-    if (ocCop > factCop) { if (shared) for (const p of split(ocCop - factCop)) backlog.push({ accountId: d.accountId, ownerId: p.ownerId, cop: p.v }); else backlog.push({ ...base, cop: ocCop - factCop }); }
+    if (ocUsd > factUsd) { if (shared) for (const p of split(ocUsd - factUsd)) backlog.push({ accountId: d.accountId, ownerId: p.ownerId, usd: p.v }); else backlog.push({ ...base, usd: cents(ocUsd - factUsd) }); }
     const won = accepted > 0 || d.quotes.some((q) => q.status === "ACCEPTED");
-    cohorts.push({ ...base, created: d.createdAt, quotedAt: q0?.presentedAt ?? null, won, decided: won || d.quotes.some((q) => q.status === "DECLINED"), cotCop, ocCop });
+    cohorts.push({ ...base, created: d.createdAt, quotedAt: q0?.presentedAt ?? null, won, decided: won || d.quotes.some((q) => q.status === "DECLINED"), cotUsd, ocUsd });
   }
   // Loaded history: one figure per company, person, month and indicator, dated in the middle of its month.
   const months = new Map<string, Partial<Record<Kpi, number>> & { accountId: string; ownerId: string; month: string }>();
@@ -145,11 +138,11 @@ export async function loadFacts(scope: FactScope = {}): Promise<FactSet> {
   }
   for (const h of history) {
     const at = new Date(`${h.month}-15T17:00:00Z`);
-    const usd = h.currency === "USD";
+    const pesos = h.currency === "COP";
     const ocN = months.get(`${h.accountId}|${h.ownerId}|${h.month}`)?.OC_N ?? 0;
     facts.push({
-      kpi: h.kpi, at, month: h.month, accountId: h.accountId, ownerId: h.ownerId, cop: h.value, orig: h.orig, currency: h.currency,
-      rate: usd ? h.rate : null, rateDay: null, rateSource: usd ? TRM_MONTH : null,
+      kpi: h.kpi, at, month: h.month, accountId: h.accountId, ownerId: h.ownerId, usd: h.value, orig: h.orig, currency: h.currency,
+      rate: pesos ? h.rate : null, rateDay: null, rateSource: pesos ? TRM_MONTH : null,
       text: `${SOURCE_TXT[h.source].es} · ${h.label}`, href: historyHref(h.accountId, h.month), loaded: h.batchId,
       cases: h.kpi === "OC_COP" || h.kpi === "ESA_COP" ? ocN : 1,
     });
@@ -162,23 +155,23 @@ export async function loadFacts(scope: FactScope = {}): Promise<FactSet> {
     const at = new Date(`${m.month}-15T17:00:00Z`);
     for (let k = 0; k < n; k++) {
       const quoted = k < c, won = k < o;
-      cohorts.push({ accountId: m.accountId, ownerId: m.ownerId, created: at, quotedAt: quoted ? at : null, decided: quoted, won, cotCop: quoted && m.COT_COP != null && c > 0 ? m.COT_COP / c : null, ocCop: won && o > 0 ? (m.OC_COP ?? 0) / o : 0 });
+      cohorts.push({ accountId: m.accountId, ownerId: m.ownerId, created: at, quotedAt: quoted ? at : null, decided: quoted, won, cotUsd: quoted && m.COT_COP != null && c > 0 ? m.COT_COP / c : null, ocUsd: won && o > 0 ? (m.OC_COP ?? 0) / o : 0 });
     }
   }
   return { facts, cohorts, backlog, noRate };
 }
 
 export type FactPick = (x: { accountId: string; ownerId: string }) => boolean;
-/** kpi + month → total in pesos (or count) of the facts picked. Facts without a rate are left out of money totals. */
+/** kpi + month → total in dollars (or count) of the facts picked. Facts without a rate are left out of money totals. */
 export function totals(set: FactSet, pick: FactPick) {
   const m = new Map<string, number>();
   let first: string | null = null;
   for (const f of set.facts) {
     if (!pick(f)) continue;
     if (!first || f.month < first) first = f.month;
-    if (f.cop == null) continue;
+    if (f.usd == null) continue;
     const k = `${f.kpi}|${f.month}`;
-    m.set(k, (m.get(k) ?? 0) + f.cop);
+    m.set(k, (m.get(k) ?? 0) + f.usd);
   }
   const of = (kpi: Kpi, month: string) => m.get(`${kpi}|${month}`) ?? 0;
   return { of, first, year: (kpi: Kpi, year: number) => Array.from({ length: 12 }, (_, i) => of(kpi, monthKey(year, i + 1))) };
@@ -198,16 +191,16 @@ function rates(set: FactSet, pick: FactPick, now: Date): { ticket: Measured; con
   const cs = set.cohorts.filter(pick);
   const asked = cs.filter((c) => inWin(c.created) && c.created <= mature);
   const decided = cs.filter((c) => c.quotedAt && inWin(c.quotedAt) && c.decided);
-  const valued = decided.filter((c) => c.cotCop != null && c.cotCop > 0);
+  const valued = decided.filter((c) => c.cotUsd != null && c.cotUsd > 0);
   let oc = 0, ocN = 0, esa = 0, ocWithEsa = 0, esaN = 0;
   const esaKeys = new Set<string>();
   // A SOLU record is one case; a loaded month's total stands for as many cases as purchase orders it says it had
   // (none stated = it cannot feed the average value of an order).
   const key = (f: Fact) => `${f.href}|${f.ownerId}`;
-  for (const f of set.facts) if (f.kpi === "ESA_COP" && pick(f) && f.month >= from && f.cop != null) { esa += f.cop; esaN += Math.max(1, f.cases ?? 1); esaKeys.add(key(f)); }
-  for (const f of set.facts) if (f.kpi === "OC_COP" && pick(f) && f.month >= from && f.cop != null) { const n = f.cases ?? 1; if (n > 0) { oc += f.cop; ocN += n; } if (esaKeys.has(key(f))) ocWithEsa += f.cop; }
+  for (const f of set.facts) if (f.kpi === "ESA_COP" && pick(f) && f.month >= from && f.usd != null) { esa += f.usd; esaN += Math.max(1, f.cases ?? 1); esaKeys.add(key(f)); }
+  for (const f of set.facts) if (f.kpi === "OC_COP" && pick(f) && f.month >= from && f.usd != null) { const n = f.cases ?? 1; if (n > 0) { oc += f.usd; ocN += n; } if (esaKeys.has(key(f))) ocWithEsa += f.usd; }
   const byValue = measured(valued.filter((c) => c.won).length, valued.length);
-  const cot = valued.reduce((s, c) => s + c.cotCop!, 0), got = valued.reduce((s, c) => s + c.ocCop, 0);
+  const cot = valued.reduce((s, c) => s + c.cotUsd!, 0), got = valued.reduce((s, c) => s + c.ocUsd, 0);
   return {
     ticket: { value: ocN >= R.minCases ? Math.round(oc / ocN) : null, n: [ocN, ocN] },
     convSC: measured(asked.filter((c) => c.quotedAt).length, asked.length),
@@ -238,7 +231,7 @@ export function basisFor(set: FactSet, year: number, now: Date, pick: FactPick, 
     seasonOc: seasonShares(span.map((key) => ({ key, value: t.of("OC_COP", key) }))),
     seasonFact: seasonShares(span.map((key) => ({ key, value: t.of("FACT_COP", key) }))),
     ticket: scoped("ticket"), convSC: scoped("convSC"), bateoN: scoped("bateoN"), bateoV: scoped("bateoV"), margin: scoped("margin"),
-    backlog: set.backlog.filter(pick).reduce((s, b) => s + b.cop, 0),
+    backlog: set.backlog.filter(pick).reduce((s, b) => s + b.usd, 0),
   };
 }
 
@@ -341,14 +334,14 @@ export function realByBudget(set: FactSet, year: number, budgets: { slot: string
   const byKey = new Map<string, Record<Kpi, number[]>>(), unassigned = blank(), unassignedRows = new Map<string, Record<Kpi, number[]>>();
   const y = String(year);
   for (const f of set.facts) {
-    if (f.cop == null || !f.month.startsWith(y)) continue;
+    if (f.usd == null || !f.month.startsWith(y)) continue;
     const key = attribute(f, (slot, userId) => has.has(`${slot}|${userId}`), (a) => users.get(a) ?? [], ownerOf(f.accountId));
     const m = Number(f.month.slice(5)) - 1;
-    if (key) { const r = byKey.get(key) ?? blank(); r[f.kpi][m] += f.cop; byKey.set(key, r); }
+    if (key) { const r = byKey.get(key) ?? blank(); r[f.kpi][m] += f.usd; byKey.set(key, r); }
     else {
-      unassigned[f.kpi][m] += f.cop;
+      unassigned[f.kpi][m] += f.usd;
       const k = `${f.accountId}|${f.ownerId}`, r = unassignedRows.get(k) ?? blank();
-      r[f.kpi][m] += f.cop; unassignedRows.set(k, r);
+      r[f.kpi][m] += f.usd; unassignedRows.set(k, r);
     }
   }
   return { byKey, unassigned, unassignedRows };
