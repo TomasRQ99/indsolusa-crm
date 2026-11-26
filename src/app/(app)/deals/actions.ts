@@ -10,7 +10,9 @@ import { refreshApp } from "@/lib/revalidate";
 import { nextCode, today } from "@/lib/domain";
 import { CAUSE_KEYS } from "@/lib/causes";
 import { esagaraPctOf, otherTotal, priceForEsagara, repriceLines } from "@/lib/cost-lines";
-import { linesTotal, sumMoney } from "@/lib/money";
+import { linesTotal, sumMoney, money2, mulMoney } from "@/lib/money";
+import { BASE_CURRENCY, cleanCurrency } from "@/lib/currencies";
+import { marketRate, rateSourceText } from "@/lib/fx-market";
 import { remindQuoteAdjust } from "@/lib/quote-reminder";
 import { partKey } from "@/lib/parts";
 import { addWorkingDays } from "@/lib/holidays";
@@ -285,8 +287,22 @@ export async function saveSourcing(id: string, fd: FormData) {
   const days = num(fd, "transitDays");
   // The Eságara the person typed decides the price (owner, 2026-11-19): price = total cost ÷ (1 − Eságara %).
   // Same rule as the quote's sheet (cotizaciones/actions.ts saveCosts). Never once the price is with the customer.
+  // The supplier's price may be typed in the supplier's currency (owner, 2026-11-25): it is kept as typed, with the
+  // rate used, and its USD value goes where the rest of SOLU reads the cost. A rate left empty takes the market's.
+  let supplierUsd = num(fd, "supplierCost");
+  let fx: { costCurrency: string; supplierCostNative: number | null; costFxRate: number | null; costFxSource: string | null } | null = null;
+  if (fd.has("costCurrency") && supplierUsd !== undefined) {
+    const code = cleanCurrency(fd.get("costCurrency"));
+    if (code === BASE_CURRENCY) fx = { costCurrency: BASE_CURRENCY, supplierCostNative: null, costFxRate: null, costFxSource: null };
+    else {
+      let rate = num(fd, "fxRate"); let src = txt(fd, "fxSource", 200);
+      if (!(rate && rate > 0)) { const m = await marketRate(code); if (!m) { refreshApp(); redirect(`/deals/${id}?tab=source&err=tasa`); } rate = m!.usdPerUnit; src = rateSourceText(m!); }
+      fx = { costCurrency: code, supplierCostNative: money2(supplierUsd), costFxRate: rate!, costFxSource: src ?? null };
+      supplierUsd = mulMoney(supplierUsd, rate!);
+    }
+  }
   const cur = await db.deal.findUniqueOrThrow({ where: { id }, select: { amount: true, supplierCost: true, freightCost: true, otherCosts: true, quoteSentAt: true, stage: true, items: { orderBy: { id: "asc" }, select: { id: true, qty: true, unitPrice: true } } } });
-  const newCost = sumMoney([num(fd, "supplierCost") ?? cur.supplierCost, num(fd, "freightCost") ?? cur.freightCost, sheet ? otherTotal(parts) : num(fd, "otherCosts") ?? cur.otherCosts]);
+  const newCost = sumMoney([supplierUsd ?? cur.supplierCost, num(fd, "freightCost") ?? cur.freightCost, sheet ? otherTotal(parts) : num(fd, "otherCosts") ?? cur.otherCosts]);
   const rawPct = String(fd.get("esagaraPct") ?? "").trim().replace(",", ".");
   const wantPct = rawPct === "" ? null : Number(rawPct);
   const target = cur.quoteSentAt || cur.stage === "WON" || cur.stage === "LOST" ? null : priceForEsagara(newCost, wantPct);
@@ -299,7 +315,8 @@ export async function saveSourcing(id: string, fd: FormData) {
     data: {
       ...(newAmount != null ? { amount: newAmount } : {}),
       sourcingNote: txt(fd, "sourcingNote"),
-      ...(num(fd, "supplierCost") !== undefined ? { supplierCost: num(fd, "supplierCost") } : {}),
+      ...(supplierUsd !== undefined ? { supplierCost: supplierUsd } : {}),
+      ...(fx ?? {}),
       ...(num(fd, "freightCost") !== undefined ? { freightCost: num(fd, "freightCost") } : {}),
       ...(sheet
         ? { otherCosts: otherTotal(parts), taxCost: parts.tax, customsCost: parts.customs, packingCost: parts.packing, wireCost: parts.wire, creditAmount: parts.credit, creditSrc: parts.credit > 0 ? creditSrc : null, transitDays: days === undefined ? null : Math.min(365, Math.round(days)) }

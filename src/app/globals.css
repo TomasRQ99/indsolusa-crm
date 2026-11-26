@@ -2706,6 +2706,21 @@ a.sig:hover { text-decoration: underline; }
 .trm-chip small { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--muted, #5b6b7c); }
 .oroute a .oroute-n { margin-left: 2px; min-width: 18px; padding: 0 5px; height: 18px; line-height: 18px; border-radius: 9px; background: var(--brand-soft); color: var(--brand-strong); font-size: 11px; font-weight: 700; text-align: center; }
 .oroute a.on .oroute-n { background: rgba(255, 255, 255, .25); color: #fff; }
+.fxc-wrap { position: relative; display: inline-flex; }
+.fxc-chip { cursor: pointer; font: inherit; color: inherit; }
+.fxc-chip:hover, .fxc-chip.on { border-color: var(--brand); }
+.fxc-caret { font-size: 10px; color: var(--muted, #5b6b7c); }
+.fxc-pop { position: absolute; top: calc(100% + 8px); right: 8px; z-index: 60; width: min(380px, calc(100vw - 24px)); padding: 14px 16px; display: grid; gap: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface, #fff); color: var(--ink); box-shadow: 0 12px 40px rgba(0,0,0,.18); text-align: left; }
+.fxc-top { display: flex; align-items: center; justify-content: space-between; }
+.fxc-x { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface, #fff); color: var(--ink-2); font-size: 18px; line-height: 1; cursor: pointer; padding: 0; }
+.fxc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: end; }
+.fxc-row label, .fxc-amt { display: grid; gap: 4px; font-size: 12px; color: var(--ink-2); }
+.fxc-row select, .fxc-amt input { width: 100%; }
+.fxc-swap { height: 36px; width: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface, #fff); cursor: pointer; font-size: 16px; }
+.fxc-swap:hover { border-color: var(--brand); color: var(--brand); }
+.fxc-out { margin: 0; font-size: 15px; } .fxc-out b { font: 600 20px/1.2 var(--font-mono), monospace; display: block; }
+.fxc-rates { margin: 0; display: grid; gap: 2px; font: 500 12px/1.4 var(--font-mono), monospace; color: var(--ink-2); }
+.fxc-pop .src, .fxc-pop .note { margin: 0; }
 @media (max-width: 900px) { .trm-chip { display: none; } .newmenu > summary { padding: 0 10px; } }
 /* Need → Localizar: photos, and the suppliers ordered for this piece */
 .loc-photos { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }

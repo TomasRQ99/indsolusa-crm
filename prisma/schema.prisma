@@ -328,6 +328,12 @@ model Deal {
   customsCost           Decimal      @default(0) @db.Decimal(14, 2)
   packingCost           Decimal      @default(0) @db.Decimal(14, 2)
   wireCost              Decimal      @default(0) @db.Decimal(14, 2)
+  /// Currency the supplier is paid in on the Need's cost sheet (same idea as Quote.costCurrency). supplierCost stays
+  /// the USD value every other screen reads; supplierCostNative is what was typed, costFxRate = USD per 1 unit.
+  costCurrency          String       @default("USD")
+  supplierCostNative    Decimal?     @db.Decimal(16, 2)
+  costFxRate            Decimal?     @db.Decimal(18, 10)
+  costFxSource          String?
   creditAmount          Decimal      @default(0) @db.Decimal(14, 2)
   creditSrc             String?
   transitDays           Int?

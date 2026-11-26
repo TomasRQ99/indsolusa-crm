@@ -504,7 +504,7 @@
    "why": "Registra exactamente qué necesita el cliente y de dónde vendrá, antes de cotizar.",
    "steps": [
     "Pestaña [[Necesidad]]: describe el resultado que busca el cliente y la necesidad, y haz clic en [[Guardar necesidad]]. Ahí mismo están la máquina del cliente, las observaciones de uso interno y «FOTOS Y ARCHIVOS».",
-    "Pestaña [[Fuente]]: escribe de dónde lo vamos a conseguir y, en la hoja «Liquidación de costos», la primera cuenta de lo que cuesta traerlo: producto, envío, impuestos, aduana, empaque, giro y crédito a favor, en USD. Lo que no sepas todavía se deja en 0. En el recuadro azul, en «Eságara que quieres ganar», escribe el porcentaje que quieres: SOLU calcula el «Precio de venta» (costo total ÷ (1 − Eságara)). Haz clic en [[Guardar fuente]].",
+    "Pestaña [[Fuente]]: escribe de dónde lo vamos a conseguir y, en la hoja «Liquidación de costos», la primera cuenta de lo que cuesta traerlo: producto, envío, impuestos, aduana, empaque, giro y crédito a favor, en USD. El precio del proveedor (fila «Producto») puede ir en su moneda: elígela en «Moneda en que se le paga al proveedor», escribe el precio en esa moneda y SOLU trae la tasa del mercado y muestra cuánto es en USD. Lo que no sepas todavía se deja en 0. En el recuadro azul, en «Eságara que quieres ganar», escribe el porcentaje que quieres: SOLU calcula el «Precio de venta» (costo total ÷ (1 − Eságara)). Haz clic en [[Guardar fuente]].",
     "Anota en el registro de búsqueda las cotizaciones de proveedores y por qué elegiste uno."
    ],
    "expect": "La Eságara calculada aparece debajo de la fuente, y el recuadro azul muestra el costo total mientras escribes. Al preparar la cotización, la hoja pasa completa y allá se afina (moneda del proveedor y de dónde sale cada valor). Si ya hay una cotización abierta en borrador y cambias aquí la Eságara o un costo, esa cotización no cambia sola: SOLU te deja el aviso «Recuerda ajustar la cotización…» con el botón «Abrir la cotización», y un pendiente en MI DÍA → Pendientes. Los dos se quitan solos cuando guardas los costos en la cotización."
@@ -2335,14 +2335,17 @@
   {
    "id": "trm-barra",
    "m": "global",
-   "t": "TRM del día, siempre a la vista",
+   "t": "TRM del día y conversor de monedas",
    "path": "Barra superior · TRM",
-   "why": "La tasa oficial del dólar en pesos colombianos, sin salir de donde estás.",
+   "why": "La tasa oficial del dólar en pesos colombianos siempre a la vista, y un conversor entre las monedas que usa SOLU, sin salir de donde estás.",
    "steps": [
     "Mira arriba a la derecha, junto a la campana: «TRM» y el valor de hoy.",
-    "Pasa el cursor por encima para ver la fuente y desde qué fecha rige."
+    "Haz clic en ese recuadro: se abre «Convertir monedas».",
+    "En «Tengo» elige la moneda que tienes y en «Quiero comprar» la que vas a comprar. El botón ⇄ las invierte.",
+    "Escribe la cantidad: SOLU muestra el resultado y la tasa en los dos sentidos.",
+    "Ciérralo con la «×»."
    ],
-   "expect": "Es la TRM oficial de la Superfinanciera. Si la fuente no responde, el recuadro no aparece. En un teléfono no se muestra."
+   "expect": "La TRM del recuadro es la oficial de la Superfinanciera. El conversor usa la tasa del mercado (Yahoo Finance), que SOLU actualiza cada 15 minutos, y dice de cuándo es. Es de referencia: la del banco el día del pago puede variar. No guarda nada. Si la TRM oficial no responde, el recuadro dice «MONEDAS» y el conversor sigue funcionando. En un teléfono no se muestra."
   },
   {
    "id": "proy-crear",

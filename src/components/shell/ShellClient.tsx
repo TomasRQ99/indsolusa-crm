@@ -1,5 +1,6 @@
 "use client";
 
+import { FxConverter } from "./FxConverter";
 import { BackToNeed } from "@/components/WorkingNeed";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -348,11 +349,7 @@ export function ShellClient({ lang, guideOn, testMode, user, brief, modules: bas
           </a>
         )}
 
-        {frame.trm && (
-          <span className="trm-chip" title={t(`${frame.trm.source} · vigente desde ${frame.trm.validFrom}`, `${frame.trm.source} · valid from ${frame.trm.validFrom}`)}>
-            <small>TRM</small> ${frame.trm.rate.toLocaleString(es ? "es-CO" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-        )}
+        <FxConverter lang={es ? "ES" : "EN"} trm={frame.trm ?? null} />
 
         <div className="bell-wrap">
           <button type="button" className="ibtn bell" onClick={() => { setAsk(false); setBell((v) => !v); }} aria-expanded={bell} aria-label={t(`Alertas: ${alerts.length}`, `Alerts: ${alerts.length}`)}>

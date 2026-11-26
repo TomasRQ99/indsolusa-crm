@@ -73,7 +73,10 @@ export async function createQuote(dealId: string) {
         number,
         lang: deal.account.docLang,
         createdById: user.id,
-        supplierCost: deal.supplierCost,
+        // A supplier price typed on the Need in the supplier's currency arrives as it was typed, with its rate.
+        ...(deal.costCurrency !== BASE_CURRENCY && deal.supplierCostNative != null && deal.costFxRate != null
+          ? { supplierCost: deal.supplierCostNative, costCurrency: deal.costCurrency, fxRate: deal.costFxRate, fxSource: deal.costFxSource }
+          : { supplierCost: deal.supplierCost }),
         freightCost: deal.freightCost,
         otherCosts: deal.otherCosts,
         taxCost: deal.taxCost, customsCost: deal.customsCost, packingCost: deal.packingCost, wireCost: deal.wireCost,

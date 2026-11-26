@@ -44,6 +44,7 @@ import { recordShipment } from "../../logistica/actions";
 import { forwardOf, fwdLabel } from "@/lib/logistics";
 import { lineAmount, linesTotal, subMoney } from "@/lib/money";
 import { CostTotal } from "@/components/CostTotal";
+import { CostFxFields } from "@/components/CostFxFields";
 import { stepNeeds } from "@/lib/step-needs";
 import { COST_LINES, costDetail, esagaraPctOf } from "@/lib/cost-lines";
 import { quoteAdjustPending } from "@/lib/quote-reminder";
@@ -794,6 +795,7 @@ export default async function JourneyPage({
           <form action={saveSourcing.bind(null, deal.id)} className="stack jform">
             <H />
             <label id="fuente" className={!deal.sourcingNote && !(Number(deal.supplierCost) > 0) && deal.supplierPos.length === 0 ? "req-miss" : undefined}>{t("Fuente: marca, proveedor candidato, origen, alternativas", "Source: brand, candidate supplier, origin, alternatives")}{!deal.sourcingNote && !(Number(deal.supplierCost) > 0) && deal.supplierPos.length === 0 && <span className="req-tag">{t("Obligatorio para pasar al siguiente paso: escribe la fuente aquí, o el costo del producto abajo", "Required to move to the next step: type the source here, or the product's cost below")}</span>}<textarea name="sourcingNote" rows={3} defaultValue={deal.sourcingNote ?? ""} placeholder={t("Ej.: Grundfos vía distribuidor en Miami; alternativa ProMinent desde Alemania", "E.g.: Grundfos via Miami distributor; alternative ProMinent from Germany")} /></label>
+            {sp.err === "tasa" && <p className="note risk">{t("No se pudo consultar la tasa de esa moneda y no escribiste una. Escribe la tasa del banco y guarda otra vez. No se guardó nada todavía.", "The rate for that currency could not be read and you did not type one. Type the bank's rate and save again. Nothing was saved yet.")}</p>}
             {sp.err === "credito-fuente" && <p className="note risk">{t("Escribiste un crédito a favor: di de dónde sale (nota crédito, saldo con el transportador). No se guardó nada todavía.", "You typed a credit in our favor: say where it comes from (credit note, balance with the carrier). Nothing was saved yet.")}</p>}
             {adjustQuote && (
               <p className="note attn" role="status" id="ajustar-cotizacion" style={{ margin: 0 }}>
@@ -810,7 +812,8 @@ export default async function JourneyPage({
               <div className="liq-grid two">
                 <span className="liq-th">{t("Concepto", "Item")}</span><span className="liq-th r">{t("Valor USD", "Amount USD")}</span>
                 <label htmlFor="dl-supplierCost" className="liq-name">{t("Producto", "Product")}<small>{t("lo que cobra el proveedor", "what the supplier charges")}</small></label>
-                <input id="dl-supplierCost" className="liq-val" name="supplierCost" type="number" min="0" step="0.01" defaultValue={Number(deal.supplierCost)} />
+                <input id="dl-supplierCost" className="liq-val" name="supplierCost" type="number" min="0" step="0.01" defaultValue={deal.costCurrency !== "USD" && deal.supplierCostNative != null ? Number(deal.supplierCostNative) : Number(deal.supplierCost)} />
+                <div className="liq-wide"><CostFxFields lang={user.lang} currency={deal.costCurrency} rate={deal.costFxRate ? Number(deal.costFxRate) : null} source={deal.costFxSource} /></div>
                 <label htmlFor="dl-freightCost" className="liq-name">{t("Envío", "Shipping")}<small>{t("transporte hasta el cliente", "transport to the customer")}</small></label>
                 <input id="dl-freightCost" className="liq-val" name="freightCost" type="number" min="0" step="0.01" defaultValue={Number(deal.freightCost)} />
                 <label htmlFor="dl-transitDays" className="liq-name">{t("Días de transporte", "Transit days")}<small>{t("cuántos días viaja la mercancía; no es un costo", "how many days the goods travel; not a cost")}</small></label>

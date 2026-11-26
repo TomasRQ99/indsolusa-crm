@@ -269,7 +269,7 @@
   "why": "Record exactly what the customer needs and where it will come from, before quoting.",
   "steps": [
    "[[Necesidad]] tab: describe the result the customer wants and the need, and click [[Guardar necesidad]]. The customer's machine, the notes for internal use and “PHOTOS AND FILES” are right there.",
-   "[[Fuente]] tab: write where we will get it and, in the “Cost settlement” sheet, the first estimate of what it costs to bring it: product, shipping, taxes, customs, packing, bank wire and credit in our favor, in USD. Leave at 0 what you do not know yet. In the blue box, under «Eságara que quieres ganar», type the percentage you want: SOLU calculates the «Precio de venta» (total cost ÷ (1 − Eságara)). Click [[Guardar fuente]].",
+   "[[Fuente]] tab: write where we will get it and, in the “Cost settlement” sheet, the first estimate of what it costs to bring it: product, shipping, taxes, customs, packing, bank wire and credit in our favor, in USD. The supplier's price (the “Product” row) can be in its own currency: choose it under “Currency the supplier is paid in”, type the price in that currency and SOLU brings the market rate and shows what it is in USD. Leave at 0 what you do not know yet. In the blue box, under «Eságara que quieres ganar», type the percentage you want: SOLU calculates the «Precio de venta» (total cost ÷ (1 − Eságara)). Click [[Guardar fuente]].",
    "Note in the search log the suppliers' quotes and why you chose one."
   ],
   "expect": "The calculated Eságara shows under the source, and the blue box shows the total cost as you type. When the quote is prepared, the sheet carries over in full and is refined there (supplier currency and where each amount comes from). If a quote is already open as a draft and you change the Eságara or a cost here, that quote does not change by itself: SOLU leaves the notice “Remember to adjust quote…” with the “Open the quote” button, and a pending task under MY DAY → Pending. Both go away by themselves once you save the costs on the quote."
@@ -1662,13 +1662,16 @@
   "expect": "What you type is kept only in your browser tab while you work, never passwords or attached files, and it is deleted when the form is saved. Files have to be attached again. If the form takes you to another screen after the error, it is not brought back."
  },
  "trm-barra": {
-  "t": "Today's TRM, always in view",
-  "why": "The official rate of the dollar in Colombian pesos, without leaving where you are.",
+  "t": "Today's TRM and the currency converter",
+  "why": "The official rate of the dollar in Colombian pesos always in view, and a converter between the currencies SOLU uses, without leaving where you are.",
   "steps": [
    "Look at the top right, next to the bell: “TRM” and today's value.",
-   "Move the cursor over it to see the source and the date it applies from."
+   "Click that box: “Convert currencies” opens.",
+   "Under “I have” choose the currency you hold and under “I want to buy” the one you are buying. The ⇄ button swaps them.",
+   "Type the amount: SOLU shows the result and the rate both ways.",
+   "Close it with the “×”."
   ],
-  "expect": "It is the official TRM from the Superfinanciera. If the source does not answer, the box does not appear. It is not shown on a phone."
+  "expect": "The TRM in the box is the official one from the Superfinanciera. The converter uses the market rate (Yahoo Finance), which SOLU refreshes every 15 minutes, and says when it is from. It is a reference: the bank's rate on payment day can differ. It saves nothing. If the official TRM does not answer, the box reads “CURRENCIES” and the converter keeps working. It is not shown on a phone."
  },
  "need-localizar": {
   "t": "Locate the piece (before the Source)",
