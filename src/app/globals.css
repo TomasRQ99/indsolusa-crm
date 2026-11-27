@@ -1825,7 +1825,10 @@ button.linkish { background: none; border: 0; padding: 0; color: var(--brand); f
 .liq-prod-h { display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
 .liq-prod-h b { font-size: 14px; display: flex; align-items: center; gap: 8px; }
 .liq-count { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: var(--brand); color: #fff; font-size: 13px; font-variant-numeric: tabular-nums; }
-.liq-prow { display: grid; grid-template-columns: 22px 70px 120px minmax(150px, 1fr) 120px 110px 120px 52px; gap: 6px 8px; align-items: center; font-size: 13px; }
+.liq-desc { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.liq-desc input { width: 100%; }
+.liq-desc .link { align-self: flex-start; white-space: nowrap; }
+.liq-prow { display: grid; grid-template-columns: 22px 60px 120px minmax(0, 1fr) 112px 96px 100px 46px; gap: 6px 8px; align-items: center; font-size: 13px; }
 .liq-prow.head { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); border-bottom: 1px solid var(--line); padding-bottom: 4px; }
 .liq-prow input { width: 100%; min-width: 0; }
 .liq-prow .r { text-align: right; font-variant-numeric: tabular-nums; }
@@ -1840,7 +1843,7 @@ input.liq-val[readonly] { background: var(--bg, #f6f8fb); color: var(--ink); fon
 @media (max-width: 860px) {
   .liq-prow.head { display: none; }
   .liq-prow { grid-template-columns: 22px 70px minmax(0, 1fr) minmax(0, 1fr); border-bottom: 1px solid var(--line); padding-bottom: 8px; }
-  .liq-prow input[name="pi_desc"] { grid-column: 2 / -1; }
+  .liq-prow .liq-desc { grid-column: 2 / -1; flex-wrap: wrap; }
   .liq-prow input[name="pi_cost"] { grid-column: 2 / 4; }
   .liq-lt::before { content: attr(data-l) ": "; font-family: inherit; font-size: 11px; color: var(--ink-2); font-weight: 400; }
   .liq-lt { grid-column: 2 / -1; text-align: left !important; }

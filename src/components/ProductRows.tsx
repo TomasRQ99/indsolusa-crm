@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ESAGARA_MAX_PCT, priceForEsagara } from "@/lib/cost-lines";
+import { improvePieceText } from "@/app/(app)/deals/piece-ai";
 
 // The products of the cost settlement sheet, one row each (owner, 2026-11-27): how many products the quote has is
 // always in sight, another one is added right here, and each keeps what the supplier charges for it. The rows are
@@ -43,6 +44,9 @@ export function ProductRows({ lang, items, seeded, fixed, what }: {
   const blank = (): Row => ({ key: `n${seq.current++}`, id: "", qty: "1", code: "", desc: "", cost: "", price: 0, locked: false });
   const [rows, setRows] = useState<Row[]>(() => (items.length ? items.map((it) => ({ key: it.id || `s${seq.current++}`, id: it.id, qty: String(it.qty), code: it.code ?? "", desc: it.description, cost: it.unitCost == null ? "" : String(it.unitCost), price: it.unitPrice, locked: !!it.locked })) : [blank()]));
   const [removed, setRemoved] = useState(0);
+  // "Mejorar con IA": the row being rewritten, and what the AI answered when it could not.
+  const [aiBusy, setAiBusy] = useState<string | null>(null);
+  const [aiMsg, setAiMsg] = useState<string | null>(null);
   const [env, setEnv] = useState<{ cur: string; target: number | null }>({ cur: "USD", target: null });
   const nf = (n: number) => new Intl.NumberFormat(lang === "EN" ? "en-US" : "es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
@@ -94,6 +98,22 @@ export function ProductRows({ lang, items, seeded, fixed, what }: {
     setRows((rs) => { const next = rs.filter((x) => x.key !== r.key); return next.length ? next : [blank()]; });
   };
 
+  const improve = async (r: Row) => {
+    if (aiBusy) return;
+    setAiMsg(null);
+    if (r.desc.trim().length < 3) { setAiMsg(t("Escribe primero la descripción de la pieza: la IA la ordena, no la inventa.", "Type the piece's description first: the AI tidies it, it does not invent it.")); return; }
+    setAiBusy(r.key);
+    try {
+      const out = await improvePieceText(r.code, r.desc);
+      if (out.ok) set(r.key, { desc: out.text });
+      else setAiMsg(out.reason === "OFF" ? t("La IA no está conectada: la descripción queda como la escribiste.", "The AI is not connected: the description stays as you typed it.")
+        : out.reason === "CAP" ? t("Se llegó al tope mensual de IA: la descripción queda como la escribiste.", "The monthly AI cap was reached: the description stays as you typed it.")
+        : out.reason === "EMPTY" ? t("Escribe primero la descripción de la pieza.", "Type the piece's description first.")
+        : t("La IA no respondió. Intenta otra vez; la descripción queda como la escribiste.", "The AI did not answer. Try again; the description stays as you typed it."));
+    } catch { setAiMsg(t("La IA no respondió. Intenta otra vez; la descripción queda como la escribiste.", "The AI did not answer. Try again; the description stays as you typed it.")); }
+    setAiBusy(null);
+  };
+
   // Price per unit of a row: from its own cost when every product has one and the Eságara gives a price;
   // otherwise the price it has today.
   const priceOf = (r: Row): { v: number; calc: boolean } => {
@@ -101,22 +121,23 @@ export function ProductRows({ lang, items, seeded, fixed, what }: {
     return { v: r.price, calc: false };
   };
   const anyCalc = !fixed && allCosted && env.target != null && total > 0;
-  const title = count === 0
-    ? t("Todavía no hay productos", "There are no products yet")
+  const title = t("Precio por pieza", "Price per piece");
+  const has = count === 0
+    ? t("Todavía no hay piezas.", "There are no pieces yet.")
     : what === "quote"
-      ? t(`Esta cotización tiene ${count} ${count === 1 ? "producto" : "productos"}`, `This quote has ${count} ${count === 1 ? "product" : "products"}`)
-      : t(`Esta Necesidad tiene ${count} ${count === 1 ? "producto" : "productos"}`, `This Need has ${count} ${count === 1 ? "product" : "products"}`);
+      ? t(`Esta cotización tiene ${count} ${count === 1 ? "pieza" : "piezas"}.`, `This quote has ${count} ${count === 1 ? "piece" : "pieces"}.`)
+      : t(`Esta Necesidad tiene ${count} ${count === 1 ? "pieza" : "piezas"}.`, `This Need has ${count} ${count === 1 ? "piece" : "pieces"}.`);
 
   return (
     <div ref={box} className="liq-prod" id="productos-costo">
       <input type="hidden" name="pi_rows" value="1" />
       <div className="liq-prod-h">
         <b><span className="liq-count">{count}</span>{title}</b>
-        <span className="src">{t("Una fila por producto: cantidad y lo que cobra el proveedor por unidad. SOLU guarda el costo de cada uno y le pone su precio de venta aparte.", "One row per product: quantity and what the supplier charges per unit. SOLU keeps the cost of each one and gives each its own sale price.")}</span>
+        <span className="src"><b>{has}</b> {t("Una fila por pieza: cantidad, número de pieza, descripción y el precio que cobra el proveedor por unidad. La descripción llega de Localizar o la escribes aquí, y «Mejorar con IA» la ordena. SOLU guarda el precio de cada pieza y calcula su precio de venta: así sale cada una en el PDF de la cotización.", "One row per piece: quantity, part number, description and the price the supplier charges per unit. The description comes from Locate or you type it here, and “Improve with AI” tidies it. SOLU keeps the price of each piece and calculates its sale price: that is how each one comes out on the quote's PDF.")}</span>
       </div>
       <div className="liq-prow head" aria-hidden>
-        <span>#</span><span>{t("Cant.", "Qty")}</span><span>{t("Código", "Code")}</span><span>{t("Descripción", "Description")}</span>
-        <span className="r">{t("Costo unit.", "Unit cost")} {env.cur}</span><span className="r">{t("Costo total", "Total cost")} {env.cur}</span><span className="r">{t("Precio venta unit. USD", "Unit sale price USD")}</span><span />
+        <span>#</span><span>{t("Cant.", "Qty")}</span><span>{t("Número de pieza", "Part number")}</span><span>{t("Descripción", "Description")}</span>
+        <span className="r">{t("Precio proveedor unit.", "Supplier unit price")} {env.cur}</span><span className="r">{t("Total proveedor", "Supplier total")} {env.cur}</span><span className="r">{t("Precio venta unit. USD", "Unit sale price USD")}</span><span />
       </div>
       {rows.map((r, n) => {
         const p = priceOf(r);
@@ -126,10 +147,13 @@ export function ProductRows({ lang, items, seeded, fixed, what }: {
             <input type="hidden" name="pi_id" value={r.id} />
             <span className="liq-n">{n + 1}</span>
             <input name="pi_qty" type="number" min="1" step="1" inputMode="numeric" value={r.qty} readOnly={r.locked} onChange={(e) => set(r.key, { qty: e.target.value })} aria-label={t(`Cantidad del producto ${n + 1}`, `Quantity of product ${n + 1}`)} />
-            <input name="pi_code" maxLength={60} value={r.code} onChange={(e) => set(r.key, { code: e.target.value })} placeholder={t("Código", "Code")} aria-label={t(`Código del producto ${n + 1}`, `Code of product ${n + 1}`)} />
-            <input name="pi_desc" maxLength={300} value={r.desc} onChange={(e) => set(r.key, { desc: e.target.value })} placeholder={t("Descripción del producto", "Product description")} aria-label={t(`Descripción del producto ${n + 1}`, `Description of product ${n + 1}`)} />
+            <input name="pi_code" maxLength={60} value={r.code} onChange={(e) => set(r.key, { code: e.target.value })} placeholder={t("Número de pieza", "Part number")} aria-label={t(`Número de pieza ${n + 1}`, `Part number ${n + 1}`)} />
+            <span className="liq-desc">
+              <input name="pi_desc" maxLength={300} value={r.desc} onChange={(e) => set(r.key, { desc: e.target.value })} placeholder={t("Descripción de la pieza", "Piece description")} aria-label={t(`Descripción de la pieza ${n + 1}`, `Description of piece ${n + 1}`)} />
+              <button type="button" className="link small" onClick={() => improve(r)} disabled={aiBusy != null} title={t("La IA ordena la descripción que escribiste. No cambia números de parte ni agrega datos.", "The AI tidies the description you typed. It changes no part number and adds no data.")}>{aiBusy === r.key ? t("Mejorando…", "Improving…") : t("Mejorar con IA", "Improve with AI")}</button>
+            </span>
             <input name="pi_cost" className={`r${isReal && count > 1 && !(numOf(r.cost) > 0) ? " miss" : ""}`} type="number" min="0" step="0.01" inputMode="decimal" value={r.cost} onChange={(e) => set(r.key, { cost: e.target.value })} placeholder="0" aria-label={t(`Costo por unidad del producto ${n + 1}`, `Cost per unit of product ${n + 1}`)} />
-            <span className="r mono liq-lt" data-l={t("Costo total", "Total cost")}>{lineCost(r) > 0 ? nf(lineCost(r)) : "—"}</span>
+            <span className="r mono liq-lt" data-l={t("Total proveedor", "Supplier total")}>{lineCost(r) > 0 ? nf(lineCost(r)) : "—"}</span>
             <span className={`r mono liq-lt${p.calc ? " calc" : ""}`} data-l={t("Precio venta unit.", "Unit sale price")}>{p.v > 0 ? nf(p.v) : "—"}</span>
             {!fixed && !r.locked ? <button type="button" className="link small" onClick={() => remove(r)} aria-label={t(`Quitar el producto ${n + 1}`, `Remove product ${n + 1}`)}>{t("Quitar", "Remove")}</button> : <span />}
           </div>
@@ -137,11 +161,12 @@ export function ProductRows({ lang, items, seeded, fixed, what }: {
       })}
       <div className="liq-prod-f">
         {!fixed
-          ? <button type="button" className="btn secondary sm" onClick={add}>{t("+ Agregar otro producto", "+ Add another product")}</button>
+          ? <button type="button" className="btn secondary sm" onClick={add}>{t("+ Agregar pieza", "+ Add a piece")}</button>
           : <span className="src">{t("El precio ya está con el cliente: aquí no se agregan ni se quitan productos. Para cambiarlos, crea una revisión de la cotización.", "The price is already with the customer: products are not added or removed here. To change them, create a revision of the quote.")}</span>}
         <span className="grow" />
-        <span className="liq-sum">{t("Productos", "Products")}: <b className="mono">{env.cur} {nf(total)}</b></span>
+        <span className="liq-sum">{t("Piezas", "Pieces")}: <b className="mono">{env.cur} {nf(total)}</b></span>
       </div>
+      {aiMsg && <span className="attn-t small" role="status">{aiMsg}</span>}
       {seeded && <span className="attn-t small" role="status">{t("Antes solo había un total para todos los productos: SOLU lo repartió entre ellos. Revisa el costo de cada uno y corrígelo.", "There used to be only one total for all the products: SOLU spread it over them. Check the cost of each one and correct it.")}</span>}
       {removed > 0 && <span className="attn-t small" role="status">{t(`${removed === 1 ? "Quitaste 1 producto: se quita" : `Quitaste ${removed} productos: se quitan`} al guardar.`, `You removed ${removed} ${removed === 1 ? "product: it is" : "products: they are"} removed on save.`)}</span>}
       {!fixed && count > 1 && noCost > 0 && <span className="attn-t small" role="status">{t(`Falta el costo de ${noCost} ${noCost === 1 ? "producto" : "productos"}: escríbelo para que cada uno tenga su precio según lo que cuesta.`, `The cost of ${noCost} ${noCost === 1 ? "product is" : "products is"} missing: type it so each one gets its price from what it costs.`)}</span>}
