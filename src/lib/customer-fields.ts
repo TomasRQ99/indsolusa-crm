@@ -147,7 +147,10 @@ export function placeLine(p: Place, es: boolean) {
   return [first, countryName(p.country, es)].filter(Boolean).join(", ");
 }
 
-/** Street plus city, department, postal code and country, for documents and deliveries. */
+/** Street plus city, department, postal code and country, for documents and deliveries. On a document (one item
+ *  per line) the country goes on its own line, as on the company's own quotes (owner, 2026-11-27): "U.S.A.". */
 export function fullAddress(p: Place, es: boolean, sep = "\n") {
-  return [p.address?.trim(), placeLine(p, es)].filter(Boolean).join(sep);
+  if (sep !== "\n") return [p.address?.trim(), placeLine(p, es)].filter(Boolean).join(sep);
+  const country = p.country === "US" && !es ? "U.S.A." : countryName(p.country, es);
+  return [p.address?.trim(), placeLine({ ...p, country: null }, es), country].filter(Boolean).join("\n");
 }

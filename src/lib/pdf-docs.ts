@@ -117,7 +117,18 @@ const RULE = "#bbbbbb";
 const BRAND = "#0f4c75";
 const FILL = "#eeeeee";
 
-export async function renderDoc(doc: QuoteDoc | InvoiceDoc): Promise<Buffer> {
+/** Text typed in a form box arrives with Windows line ends (carriage return + line feed); the PDF fonts print the
+ *  carriage return as a stray letter at the end of each line (owner's report, 2026-11-27: Bill to / Ship to).
+ *  Every text of the document is cleaned here. */
+function plainLines<T>(v: T): T {
+  if (typeof v === "string") return v.replace(/\r\n?/g, "\n").replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "") as T;
+  if (Array.isArray(v)) return v.map(plainLines) as T;
+  if (v && typeof v === "object" && Object.getPrototypeOf(v) === Object.prototype) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plainLines(x)])) as T;
+  return v;
+}
+
+export async function renderDoc(rawDoc: QuoteDoc | InvoiceDoc): Promise<Buffer> {
+  const doc = plainLines(rawDoc);
   const T = L[doc.lang];
   const pdf = new PDFDocument({ size: "LETTER", margins: { top: 48, bottom: 64, left: 48, right: 48 }, bufferPages: true, info: { Title: `${doc.kind === "quote" ? T.quote : T.invoice} ${doc.number}`, Author: ISSUER.name } });
   const chunks: Buffer[] = [];
