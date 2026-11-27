@@ -52,7 +52,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
         account: { select: { id: true, name: true } }, owner: { select: { name: true } },
       },
     }),
-    db.account.findMany({ where: { internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true, address: true, city: true } }),
+    db.account.findMany({ where: { internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true, address: true, city: true, region: true, postalCode: true, country: true, shipSame: true, shipAddress: true, shipCity: true, shipRegion: true, shipPostalCode: true, shipCountry: true } }),
     db.deal.count({ where: { ...scope, closedAt: { not: null } } }),
     // For the new-request form: contacts per customer, and what is already registered so nobody types it twice.
     db.contact.findMany({ where: { account: { internal: false } }, orderBy: { firstName: "asc" }, select: { id: true, accountId: true, firstName: true, lastName: true, email: true } }),
@@ -86,7 +86,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
 
       {err === "cliente-nuevo" && <p className="note risk">{t("Para crear el cliente nuevo falta el nombre de la empresa.", "To create the new customer, the company name is missing.")}</p>}
       {err === "nueva" && <p className="note risk">{t("Para crear la Necesidad faltan el cliente y el asunto.", "To create the Need, the customer and the subject are missing.")}</p>}
-      <NewNeedForm lang={user.lang} action={createNeed} accounts={accounts.map((a) => ({ id: a.id, name: a.name, noAddr: !(a.address?.trim() || a.city?.trim()) }))} contacts={contacts.flatMap((c) => (c.accountId ? [{ id: c.id, accountId: c.accountId, name: `${c.firstName} ${c.lastName}`.trim(), email: c.email }] : []))} parts={parts.map((x) => ({ code: x.mpn, name: x.name }))} machines={machines} defaultFollowUp={dayInput(addWorkingDays(now, 2))} aiReady={aiConfigured()} aiSeed={aiSeed ?? mailSeed} />
+      <NewNeedForm lang={user.lang} action={createNeed} accounts={accounts} contacts={contacts.flatMap((c) => (c.accountId ? [{ id: c.id, accountId: c.accountId, name: `${c.firstName} ${c.lastName}`.trim(), email: c.email }] : []))} parts={parts.map((x) => ({ code: x.mpn, name: x.name }))} machines={machines} defaultFollowUp={dayInput(addWorkingDays(now, 2))} aiReady={aiConfigured()} aiSeed={aiSeed ?? mailSeed} />
       {mailErr && <p className="note risk">{t("No se pudo abrir ese correo del buzón. Vuelve a «Correos del buzón» y elígelo otra vez.", "That mailbox email could not be opened. Go back to “Mailbox emails” and pick it again.")}</p>}
 
       <section className="sum">

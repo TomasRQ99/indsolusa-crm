@@ -1,4 +1,4 @@
-import { fullAddress } from "@/lib/customer-fields";
+import { fullAddress, shipPlace } from "@/lib/customer-fields";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { invoiceCash } from "@/lib/domain";
@@ -15,7 +15,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     where: { id },
     include: {
       applications: { select: { amount: true, payment: { select: { reconciledAt: true } } } },
-      account: { select: { name: true, address: true, city: true, region: true, postalCode: true, country: true, docLang: true } },
+      account: { select: { name: true, address: true, city: true, region: true, postalCode: true, country: true, docLang: true, shipSame: true, shipAddress: true, shipCity: true, shipRegion: true, shipPostalCode: true, shipCountry: true } },
       delivery: { include: { lines: { include: { dealItem: true } } } },
       quote: { include: { lines: { orderBy: { position: "asc" } } } },
       deal: { select: { customerPo: true, owner: { select: { name: true } }, items: true } },
@@ -47,7 +47,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     dueAt: inv.dueAt,
     salesRep: inv.deal.owner.name,
     billTo: inv.quote?.billTo ?? addr,
-    shipTo: inv.quote?.shipTo ?? addr,
+    shipTo: inv.quote?.shipTo ?? ([inv.account.name, fullAddress(shipPlace(inv.account), inv.account.docLang !== "EN")].filter(Boolean).join("\n")),
     lines,
     sourceQuote: inv.quote ? `${inv.quote.number}${inv.quote.rev ? ` Rev. ${inv.quote.rev}` : ""}` : null,
     po: inv.deal.customerPo,

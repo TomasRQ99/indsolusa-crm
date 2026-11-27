@@ -205,6 +205,13 @@ model Account {
   region     String?
   city       String?
   postalCode String?
+  // The address above is the billing one. Where the goods go: the same address (shipSame), or the ship* columns.
+  shipSame       Boolean @default(true)
+  shipAddress    String?
+  shipCountry    String?
+  shipRegion     String?
+  shipCity       String?
+  shipPostalCode String?
   ownerId    String
   owner      User      @relation(fields: [ownerId], references: [id])
   createdAt  DateTime  @default(now())

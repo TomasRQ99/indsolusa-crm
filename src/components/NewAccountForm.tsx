@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { ShippingBlock } from "@/components/AddressFields";
 import { COUNTRIES, DIAL_CODES, countryOf, dvMismatch, looksLikeEmail, splitTaxId, tidyWebsite } from "@/lib/customer-fields";
 
 type Fields = { name?: string; tradeName?: string; taxId?: string; address?: string; city?: string; department?: string; phone?: string; email?: string; ciiu?: string };
@@ -148,7 +149,7 @@ export function NewAccountForm({ action, lang }: { action: (fd: FormData) => voi
         <label>{t("Sitio web", "Website")}<input name="website" inputMode="url" autoCapitalize="none" placeholder="www.empresa.com" value={web} onChange={(e) => setWeb(e.currentTarget.value)} onBlur={() => setWeb((v) => (tidyWebsite(v) ?? "").replace(/^https:\/\//, ""))} /><span className="src">{t("Escríbelo como lo conozcas, por ejemplo www.empresa.com. SOLU lo acomoda.", "Type it as you know it, for example www.company.com. SOLU tidies it.")}</span></label>
       </div>
 
-      <p className="nac-h">{t("Ubicación", "Location")}</p>
+      <p className="nac-h">{t("Dirección de facturación", "Billing address")}</p>
       <div className="nac-grid">
         <label>{t("País", "Country")}
           <select name="country" value={country} onChange={(e) => pickCountry(e.currentTarget.value)}>
@@ -161,6 +162,8 @@ export function NewAccountForm({ action, lang }: { action: (fd: FormData) => voi
         <label>{t("Código postal", "Postal code")}<input name="postalCode" maxLength={12} /></label>
         <label className="wide"><span className="nac-l">{t("Dirección", "Address")}{tag("address")}</span><input name="address" placeholder={t("Calle y número, sin la ciudad", "Street and number, without the city")} onInput={clearTag("address")} /></label>
       </div>
+
+      <div className="adr nac-ship"><ShippingBlock lang={lang} /></div>
 
       <p className="nac-h">{t("Teléfono y correo de la empresa", "Company phone and email")}</p>
       <div className="nac-grid">

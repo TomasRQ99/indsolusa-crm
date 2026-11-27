@@ -20,6 +20,7 @@ import { getPayRules } from "@/lib/pay-behavior";
 import { EmailComposer } from "@/components/EmailComposer";
 import { Popovers } from "@/components/Popovers";
 import { COUNTRIES, DIAL_CODES, countryOf, placeLine } from "@/lib/customer-fields";
+import { ShippingBlock } from "@/components/AddressFields";
 import { setPromoOptIn } from "../../contacts/actions";
 import { fmtStat, loadCustomerStats, monthOf, monthRange, periodOf, prevYear, statDef } from "@/lib/customer-stats";
 import { Delta } from "@/components/Viz";
@@ -367,11 +368,13 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
                   <label>{t("Industria", "Industry")}<input name="industry" defaultValue={a.industry ?? ""} /></label>
                   <label>{t("Sitio web", "Website")}<input name="website" inputMode="url" placeholder="www.empresa.com" defaultValue={a.website ?? ""} /></label>
                   <label>{t("Teléfono (con indicativo, p. ej. +57 601…)", "Phone (with country code, e.g. +57 601…)")}<input name="phone" type="tel" defaultValue={a.phone ?? ""} /></label>
+                  <b className="adr-h">{t("Dirección de facturación", "Billing address")}</b>
                   <label>{t("País", "Country")}<select name="country" defaultValue={a.country ?? ""}><option value="">{t("— sin definir —", "— not set —")}</option>{COUNTRIES.map((c) => <option key={c.code} value={c.code}>{i.es ? c.es : c.en}</option>)}</select></label>
                   <label>{t("Departamento / Estado", "State / Department")}<input name="region" defaultValue={a.region ?? ""} /></label>
                   <label>{t("Ciudad", "City")}<input name="city" defaultValue={a.city ?? ""} /></label>
                   <label>{t("Código postal", "Postal code")}<input name="postalCode" maxLength={12} defaultValue={a.postalCode ?? ""} /></label>
                   <label>{t("Dirección", "Address")}<textarea name="address" defaultValue={a.address ?? ""} /></label>
+                  <div className="adr"><ShippingBlock lang={i.es ? "ES" : "EN"} same={a.shipSame} shipping={{ address: a.shipAddress, city: a.shipCity, region: a.shipRegion, postalCode: a.shipPostalCode, country: a.shipCountry }} /></div>
                   {users.length > 0 && <label>{t("Responsable", "Owner")}<select name="ownerId" defaultValue={a.ownerId}>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</select></label>}
                   <button type="submit">{t("Guardar", "Save")}</button>
                 </form>

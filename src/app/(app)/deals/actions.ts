@@ -18,6 +18,7 @@ import { partKey } from "@/lib/parts";
 import { addWorkingDays } from "@/lib/holidays";
 import { AI_MODEL } from "@/lib/ai";
 import { cleanCountry } from "@/lib/customer-fields";
+import { canEdit } from "@/lib/permissions";
 
 const stage = z.enum(["LEAD", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON", "LOST"]);
 const money = z.coerce.number().min(0).max(1e12);
@@ -495,22 +496,30 @@ export async function createNeed(fd: FormData) {
   let accountId = String(fd.get("accountId") ?? "");
   const title = txt(fd, "title", 150);
   if (!accountId || !title) redirect("/deals?err=nueva");
-  // The customer's postal address, typed or read by the AI from the email signature: it prints on the quote
-  // (BILL TO / SHIP TO). Optional, and it never replaces an address the customer already has.
-  const place = { address: txt(fd, "custAddress", 200), city: txt(fd, "custCity", 80), region: txt(fd, "custRegion", 80), postalCode: txt(fd, "custPostalCode", 20), country: cleanCountry(fd.get("custCountry")) };
-  const anyPlace = !!(place.address || place.city || place.region || place.postalCode);
+  // The customer's two addresses, typed or read by the AI from the email signature: billing (Account.address …) and
+  // shipping (same as billing, or its own). They print on the quote and the invoice (BILL TO / SHIP TO).
+  const placeOf = (p: string) => ({ address: txt(fd, `${p}Address`, 300), city: txt(fd, `${p}City`, 120), region: txt(fd, `${p}Region`, 120), postalCode: txt(fd, `${p}PostalCode`, 20), country: cleanCountry(fd.get(`${p}Country`)) });
+  const placeForm = fd.get("placeForm") === "1";
+  const bill = placeOf("bill");
+  const ship = placeOf("ship");
+  const ownShip = fd.get("shipSame") !== "1" && !!(ship.address || ship.city);
+  const shipData = ownShip ? { shipSame: false, shipAddress: ship.address, shipCity: ship.city, shipRegion: ship.region, shipPostalCode: ship.postalCode, shipCountry: ship.country } : { shipSame: true };
   // "+ Crear cliente nuevo": the customer is created here, with its name and, when known, its address (the rest is completed in Clientes).
   // A customer that already has that same name is used instead of making a second one.
   if (accountId === "__new") {
     const name = txt(fd, "newAccountName", 200);
     if (!name) redirect("/deals?err=cliente-nuevo");
     const same = await db.account.findFirst({ where: { internal: false, name: { equals: name!, mode: "insensitive" } }, select: { id: true } });
-    accountId = same?.id ?? (await db.account.create({ data: { name: name!, website: txt(fd, "newAccountWebsite", 200), ownerId: user.id }, select: { id: true } })).id;
+    accountId = same?.id ?? (await db.account.create({ data: { name: name!, website: txt(fd, "newAccountWebsite", 200), ownerId: user.id, ...(placeForm ? { ...bill, ...shipData } : {}) }, select: { id: true } })).id;
   }
-  const account = await db.account.findFirst({ where: { id: accountId, internal: false }, select: { id: true, address: true, city: true, region: true, postalCode: true, country: true } });
+  const account = await db.account.findFirst({ where: { id: accountId, internal: false }, select: { id: true, ownerId: true, address: true, city: true, region: true, postalCode: true, country: true, shipSame: true, shipAddress: true } });
   if (!account) redirect("/deals?err=nueva");
-  if (anyPlace && !account.address?.trim() && !account.city?.trim() && !account.region?.trim() && !account.postalCode?.trim()) {
-    await db.account.update({ where: { id: account.id }, data: { address: place.address, city: place.city, region: place.region, postalCode: place.postalCode, ...(place.country && !account.country ? { country: place.country } : {}) } });
+  if (placeForm) {
+    // A registered customer: whoever may edit it saves what was typed; anyone else only fills what was empty.
+    const may = canEdit(user, account.ownerId);
+    const fill = Object.fromEntries((Object.entries(bill) as [keyof typeof bill, string | null][]).filter(([k, v]) => v && v !== account[k] && (may || !account[k]?.trim())));
+    const shipFill = ownShip ? (may || (account.shipSame && !account.shipAddress?.trim()) ? shipData : {}) : may && !account.shipSame ? shipData : {};
+    if (Object.keys(fill).length || Object.keys(shipFill).length) await db.account.update({ where: { id: account.id }, data: { ...fill, ...shipFill } });
   }
   const contactId = String(fd.get("contactId") ?? "");
   let contact: { id: string } | null = null;

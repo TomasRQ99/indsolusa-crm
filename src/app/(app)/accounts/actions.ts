@@ -22,6 +22,13 @@ const accountSchema = z.object({
   ownerId: optionalId,
 });
 
+/** The shipping address sent by the "Dirección de envío" block: same as billing, or its own five boxes. */
+function shipData(fd: FormData) {
+  const v = (k: string, max: number) => String(fd.get(k) ?? "").trim().slice(0, max) || null;
+  const own = { shipAddress: v("shipAddress", 300), shipCity: v("shipCity", 120), shipRegion: v("shipRegion", 120), shipPostalCode: v("shipPostalCode", 20), shipCountry: cleanCountry(fd.get("shipCountry")) };
+  return fd.get("shipSame") !== "1" && (own.shipAddress || own.shipCity) ? { shipSame: false, ...own } : { shipSame: true };
+}
+
 /** Same NIT whether typed "900.123.456-7", "900123456-7" or "9001234567". */
 const nitKey = (s: string) => s.replace(/\D/g, "").slice(0, 9);
 
@@ -59,7 +66,7 @@ export async function createAccount(formData: FormData) {
       .find((a) => a.taxId && nitKey(a.taxId) === key);
     if (same) redirect(`/accounts?err=${encodeURIComponent(same.id)}`);
   }
-  const account = await db.account.create({ data: { ...data, website: tidyWebsite(data.website), phone, country, taxId, billingContact, ownerId: user.id } });
+  const account = await db.account.create({ data: { ...data, website: tidyWebsite(data.website), phone, country, taxId, billingContact, ...shipData(formData), ownerId: user.id } });
   // Optional: the person who receives our news and promotions, with their permission on record.
   const txt = (k: string, max = 120) => String(formData.get(k) ?? "").trim().slice(0, max);
   // Nothing typed here stops the registration: an incomplete email is kept as written, and only a complete one can carry the permission.
@@ -117,7 +124,7 @@ export async function updateAccount(id: string, formData: FormData) {
   const { ownerId, ...data } = parseForm(accountSchema, formData);
   // Only managers and admins may reassign ownership.
   const newOwner = canManageAll(user) && ownerId ? ownerId : existing.ownerId;
-  await db.account.update({ where: { id }, data: { ...data, website: tidyWebsite(data.website), country: cleanCountry(formData.get("country")), ownerId: newOwner } });
+  await db.account.update({ where: { id }, data: { ...data, website: tidyWebsite(data.website), country: cleanCountry(formData.get("country")), ...shipData(formData), ownerId: newOwner } });
   refreshApp();
 }
 

@@ -127,6 +127,19 @@ export const looksLikeEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.tes
 
 export type Place = { address?: string | null; city?: string | null; region?: string | null; postalCode?: string | null; country?: string | null };
 
+export type ShipFields = { shipSame?: boolean | null; shipAddress?: string | null; shipCity?: string | null; shipRegion?: string | null; shipPostalCode?: string | null; shipCountry?: string | null };
+
+/** The customer's address fields are the billing address. This is where the goods go: the customer's own
+ *  shipping address, or the billing one when it is the same (or when no shipping address was written). */
+export function shipPlace(a: Place & ShipFields): Place {
+  if (a.shipSame !== false || !(a.shipAddress?.trim() || a.shipCity?.trim())) return a;
+  return { address: a.shipAddress, city: a.shipCity, region: a.shipRegion, postalCode: a.shipPostalCode, country: a.shipCountry };
+}
+
+/** What an address needs to bill or ship: country, state, city and street. The postal code is asked but not needed. */
+export const PLACE_NEEDED = ["country", "region", "city", "address"] as const;
+export const placeMissing = (p: Place) => PLACE_NEEDED.filter((k) => !p[k]?.trim());
+
 /** Second line of a postal address: "Bogotá, Cundinamarca 110111, Colombia". Empty when nothing is known. */
 export function placeLine(p: Place, es: boolean) {
   const region = p.region && p.region !== p.city ? p.region : null;

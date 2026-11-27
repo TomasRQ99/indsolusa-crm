@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AiNeedButton, type NeedAiFill } from "@/components/AiNeedButton";
-import { COUNTRIES } from "@/lib/customer-fields";
+import { AddressFields } from "@/components/AddressFields";
+import { fullAddress, placeMissing, shipPlace, type Place, type ShipFields } from "@/lib/customer-fields";
 
 // The first step of every order: a customer asks for something. Modelled on the team's own "Nueva Solicitud":
 // customer and contact, what they need, the product or spare part (picked from what is already registered, so it
 // is not typed again), the customer's machine, notes for internal use, photos, the date of the next contact, and
 // the email that tells the customer we received the request.
 
-/** noAddr: the customer has no postal address registered yet (the quote would print only its name). */
-type Opt = { id: string; name: string; noAddr?: boolean };
+/** A customer on the list, with its billing address and where its goods are shipped. */
+type Opt = { id: string; name: string } & Place & ShipFields;
 type Contact = { id: string; accountId: string; name: string; email: string | null };
 type PartOpt = { code: string; name: string };
 type Machine = { accountId: string; name: string };
@@ -43,27 +44,33 @@ export function NewNeedForm({ lang, action, accounts, contacts, parts, machines,
     setCode(r.draft.itemCode ?? ""); setDesc(r.draft.itemDescription ?? "");
   };
   const g = ai?.draft;
-  // The customer's address prints on the quote (BILL TO / SHIP TO): asked for a new customer, and for a registered
-  // one that has none yet. Never required: a missing address must not stop the Need.
-  const askAddr = accountId === NEW || (!!accountId && !!accounts.find((a) => a.id === accountId)?.noAddr);
-  const addrBox = askAddr && (
+  // Billing and shipping address are two separate pieces, both needed (they print on the quote and the invoice,
+  // BILL TO / SHIP TO): asked for a new customer, and for a registered one whose billing address is incomplete.
+  // "Same as billing" repeats it. What the AI read from the email fills the empty boxes.
+  const account = accounts.find((a) => a.id === accountId) ?? null;
+  const read: Place = { address: g?.customerAddress, city: g?.customerCity, region: g?.customerRegion, postalCode: g?.customerPostalCode, country: g?.customerCountry };
+  const lacks = account ? placeMissing(account) : [];
+  const lackWord = { country: t("el país", "the country"), region: t("el estado, provincia o departamento", "the state, province or department"), city: t("la ciudad", "the city"), address: t("la dirección", "the address") };
+  const ownShip = !!account && account.shipSame === false && shipPlace(account) !== account;
+  const addrBox = accountId === NEW ? (
     <div className="nn-new nn-addr" id="direccion-cliente">
-      <b className="src">{t("Dirección del cliente (sale en la cotización, en «Bill to» y «Ship to»)", "Customer's address (it prints on the quote, under “Bill to” and “Ship to”)")}</b>
-      <label>{t("Dirección", "Address")}<input name="custAddress" maxLength={200} defaultValue={g?.customerAddress ?? ""} placeholder={t("Calle, número, oficina o bodega", "Street, number, suite or building")} /></label>
-      <div className="nn-row">
-        <label style={{ flex: "2 1 150px" }}>{t("Ciudad", "City")}<input name="custCity" maxLength={80} defaultValue={g?.customerCity ?? ""} /></label>
-        <label style={{ flex: "1 1 110px" }}>{t("Estado o departamento", "State or province")}<input name="custRegion" maxLength={80} defaultValue={g?.customerRegion ?? ""} /></label>
-        <label style={{ flex: "1 1 90px" }}>{t("Código postal", "ZIP / postal code")}<input name="custPostalCode" maxLength={20} defaultValue={g?.customerPostalCode ?? ""} /></label>
-      </div>
-      <label>{t("País", "Country")}
-        <select name="custCountry" defaultValue={g?.customerCountry ?? ""}>
-          <option value="">{t("Sin definir", "Not set")}</option>
-          {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{lang === "EN" ? c.en : c.es}</option>)}
-        </select>
-      </label>
-      <span className="src">{accountId === NEW ? t("Opcional. Suele venir en la firma del correo del cliente; si no la tienes, pídesela y complétala después en Clientes.", "Optional. It is usually in the customer's email signature; if you do not have it, ask for it and complete it later in Customers.") : t("Este cliente todavía no tiene dirección registrada. Opcional: si la escribes aquí, queda guardada en el cliente.", "This customer has no address registered yet. Optional: if you type it here, it is saved on the customer.")}</span>
+      <input type="hidden" name="placeForm" value="1" />
+      <AddressFields lang={lang} need billing={{ ...read, country: read.country ?? "CO" }} />
+      <span className="src">{t("Las dos direcciones salen en la cotización y en la factura, en «Bill to» y «Ship to». Suelen venir en la firma del correo del cliente.", "Both addresses print on the quote and the invoice, under “Bill to” and “Ship to”. They are usually in the customer's email signature.")}</span>
     </div>
-  );
+  ) : account && lacks.length ? (
+    <div className="nn-new nn-addr" id="direccion-cliente" key={account.id}>
+      <span className="adr-miss" role="status"><b>{t("Falta en este cliente:", "Missing on this customer:")}</b> {lacks.map((k) => lackWord[k]).join(", ")}. {t("Escríbelo aquí: queda guardado en el cliente y no se vuelve a pedir.", "Type it here: it is saved on the customer and is not asked again.")}</span>
+      <input type="hidden" name="placeForm" value="1" />
+      <AddressFields lang={lang} need billing={{ address: account.address || read.address, city: account.city || read.city, region: account.region || read.region, postalCode: account.postalCode || read.postalCode, country: account.country || read.country }} shipping={ownShip ? shipPlace(account) : null} same={!ownShip} />
+    </div>
+  ) : account ? (
+    <div className="adr-have" id="direccion-cliente">
+      <span><b>{t("Dirección de facturación:", "Billing address:")}</b> {fullAddress(account, lang !== "EN", ", ")}</span>
+      <span><b>{t("Dirección de envío:", "Shipping address:")}</b> {ownShip ? fullAddress(shipPlace(account), lang !== "EN", ", ") : t("igual a la de facturación", "same as billing")}</span>
+      <Link href={`/accounts/${account.id}`}>{t("Cambiar las direcciones en la ficha del cliente", "Change the addresses on the customer's page")}</Link>
+    </div>
+  ) : null;
   const bullets = (head: string, xs: string[]) => (xs.length ? [`${head}:`, ...xs.map((x) => `- ${x}`)].join("\n") : null);
   const aiNotes = g ? [g.internalNotes, bullets(t("Falta preguntar al cliente", "Still to ask the customer"), g.missing), bullets(t("Propuesta de SOLU (IA)", "SOLU's proposal (AI)"), g.plan)].filter(Boolean).join("\n\n").slice(0, 2000) : "";
   const mine = useMemo(() => contacts.filter((c) => c.accountId === accountId), [contacts, accountId]);

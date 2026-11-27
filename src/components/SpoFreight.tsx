@@ -1,4 +1,4 @@
-import { fullAddress } from "@/lib/customer-fields";
+import { fullAddress, shipPlace } from "@/lib/customer-fields";
 import { db } from "@/lib/db";
 import { today, dayInput } from "@/lib/domain";
 import { makeI18n } from "@/lib/i18n";
@@ -16,7 +16,7 @@ import { addFreightQuote, chooseFreightQuote, saveFreight } from "@/app/(app)/co
 export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lang: "ES" | "EN"; editable: boolean }) {
   const i = makeI18n(lang);
   const { t } = i;
-  const spo = await db.supplierPO.findUnique({ where: { id: spoId }, select: { id: true, dealId: true, supplierId: true, shipBy: true, incoterm: true, currency: true, amount: true, lines: { select: { code: true } }, supplier: { select: { country: true } }, deal: { select: { promisedDate: true, account: { select: { address: true, city: true, region: true, postalCode: true, country: true } } } }, freight: { include: { quotes: { orderBy: { cost: "asc" } } } } } });
+  const spo = await db.supplierPO.findUnique({ where: { id: spoId }, select: { id: true, dealId: true, supplierId: true, shipBy: true, incoterm: true, currency: true, amount: true, lines: { select: { code: true } }, supplier: { select: { country: true } }, deal: { select: { promisedDate: true, account: { select: { address: true, city: true, region: true, postalCode: true, country: true, shipSame: true, shipAddress: true, shipCity: true, shipRegion: true, shipPostalCode: true, shipCountry: true } } } }, freight: { include: { quotes: { orderBy: { cost: "asc" } } } } } });
   if (!spo) return null;
   const T = today();
   const codes = spo.lines.map((l) => l.code).filter((c): c is string => !!c);
@@ -28,7 +28,7 @@ export async function SpoFreight({ spoId, lang, editable }: { spoId: string; lan
   const f = spo.freight;
   const international = !isDomestic(spo.supplier);
   const v = { // saved values, or what SOLU already knows (never re-typed)
-    origin: f?.origin ?? opt?.origin ?? spo.supplier.country ?? "", pickupAddress: f?.pickupAddress ?? opt?.pickup ?? "", pickupContact: f?.pickupContact ?? "", pickupHours: f?.pickupHours ?? "", destination: f?.destination ?? fullAddress(spo.deal.account, true, ", "),
+    origin: f?.origin ?? opt?.origin ?? spo.supplier.country ?? "", pickupAddress: f?.pickupAddress ?? opt?.pickup ?? "", pickupContact: f?.pickupContact ?? "", pickupHours: f?.pickupHours ?? "", destination: f?.destination ?? fullAddress(shipPlace(spo.deal.account), true, ", "),
     readyDate: f?.readyDate ?? spo.shipBy ?? null, packages: f?.packages ?? opt?.packages ?? null, netKg: f?.netKg != null ? Number(f.netKg) : null, grossKg: f?.grossKg != null ? Number(f.grossKg) : opt?.grossKg != null ? Number(opt.grossKg) : null,
     dims: f?.dims ?? opt?.dims ?? "", packagingType: f?.packagingType ?? "", incoterm: f?.incoterm ?? spo.incoterm ?? opt?.incoterm ?? "",
   };

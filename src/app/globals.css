@@ -3211,6 +3211,17 @@ p.pj-table { margin: 0 0 8px; }
 .ai-need-reply { white-space: pre-wrap; margin: 8px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--ai-soft); }
 .nn-ai { margin: 0 0 12px; }
 .nn-new { display: grid; gap: 8px; padding: 10px 12px; border-radius: 8px; background: var(--ai-soft); border: 1px dashed var(--ai); }
+/* Billing and shipping address, asked apart (Nueva Necesidad, Nuevo cliente, customer page). */
+.adr { display: grid; gap: 8px; }
+.adr-h { display: block; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--ink); margin-top: 4px; }
+.adr .adr-h + label, .adr-h { padding-top: 0; }
+.adr-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.adr label, .adr-row label { display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; color: var(--ink-2); min-width: 0; }
+.adr input:not([type="checkbox"]), .adr select, .adr-row input, .adr-row select { width: 100%; min-width: 0; }
+.adr label.adr-same, label.adr-same { display: flex; flex-direction: row; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); font-weight: 600; }
+.adr-miss { font-size: 13px; color: var(--risk); }
+.adr-have { display: grid; gap: 3px; font-size: 13px; color: var(--ink-2); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); }
+@media (max-width: 520px) { .adr-row { grid-template-columns: minmax(0, 1fr); } }
 .ci-ai { margin: 0 0 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .ci-ai .ai-need-btn { color: var(--ai); border-color: var(--ai); background: var(--ai-soft); flex: none; }
 .ci-ai .src { flex: 1 1 260px; }
