@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AiNeedButton, type NeedAiFill } from "@/components/AiNeedButton";
+import { COUNTRIES } from "@/lib/customer-fields";
 
 // The first step of every order: a customer asks for something. Modelled on the team's own "Nueva Solicitud":
 // customer and contact, what they need, the product or spare part (picked from what is already registered, so it
 // is not typed again), the customer's machine, notes for internal use, photos, the date of the next contact, and
 // the email that tells the customer we received the request.
 
-type Opt = { id: string; name: string };
+/** noAddr: the customer has no postal address registered yet (the quote would print only its name). */
+type Opt = { id: string; name: string; noAddr?: boolean };
 type Contact = { id: string; accountId: string; name: string; email: string | null };
 type PartOpt = { code: string; name: string };
 type Machine = { accountId: string; name: string };
@@ -41,6 +43,27 @@ export function NewNeedForm({ lang, action, accounts, contacts, parts, machines,
     setCode(r.draft.itemCode ?? ""); setDesc(r.draft.itemDescription ?? "");
   };
   const g = ai?.draft;
+  // The customer's address prints on the quote (BILL TO / SHIP TO): asked for a new customer, and for a registered
+  // one that has none yet. Never required: a missing address must not stop the Need.
+  const askAddr = accountId === NEW || (!!accountId && !!accounts.find((a) => a.id === accountId)?.noAddr);
+  const addrBox = askAddr && (
+    <div className="nn-new nn-addr" id="direccion-cliente">
+      <b className="src">{t("Dirección del cliente (sale en la cotización, en «Bill to» y «Ship to»)", "Customer's address (it prints on the quote, under “Bill to” and “Ship to”)")}</b>
+      <label>{t("Dirección", "Address")}<input name="custAddress" maxLength={200} defaultValue={g?.customerAddress ?? ""} placeholder={t("Calle, número, oficina o bodega", "Street, number, suite or building")} /></label>
+      <div className="nn-row">
+        <label style={{ flex: "2 1 150px" }}>{t("Ciudad", "City")}<input name="custCity" maxLength={80} defaultValue={g?.customerCity ?? ""} /></label>
+        <label style={{ flex: "1 1 110px" }}>{t("Estado o departamento", "State or province")}<input name="custRegion" maxLength={80} defaultValue={g?.customerRegion ?? ""} /></label>
+        <label style={{ flex: "1 1 90px" }}>{t("Código postal", "ZIP / postal code")}<input name="custPostalCode" maxLength={20} defaultValue={g?.customerPostalCode ?? ""} /></label>
+      </div>
+      <label>{t("País", "Country")}
+        <select name="custCountry" defaultValue={g?.customerCountry ?? ""}>
+          <option value="">{t("Sin definir", "Not set")}</option>
+          {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{lang === "EN" ? c.en : c.es}</option>)}
+        </select>
+      </label>
+      <span className="src">{accountId === NEW ? t("Opcional. Suele venir en la firma del correo del cliente; si no la tienes, pídesela y complétala después en Clientes.", "Optional. It is usually in the customer's email signature; if you do not have it, ask for it and complete it later in Customers.") : t("Este cliente todavía no tiene dirección registrada. Opcional: si la escribes aquí, queda guardada en el cliente.", "This customer has no address registered yet. Optional: if you type it here, it is saved on the customer.")}</span>
+    </div>
+  );
   const bullets = (head: string, xs: string[]) => (xs.length ? [`${head}:`, ...xs.map((x) => `- ${x}`)].join("\n") : null);
   const aiNotes = g ? [g.internalNotes, bullets(t("Falta preguntar al cliente", "Still to ask the customer"), g.missing), bullets(t("Propuesta de SOLU (IA)", "SOLU's proposal (AI)"), g.plan)].filter(Boolean).join("\n\n").slice(0, 2000) : "";
   const mine = useMemo(() => contacts.filter((c) => c.accountId === accountId), [contacts, accountId]);
@@ -81,9 +104,10 @@ export function NewNeedForm({ lang, action, accounts, contacts, parts, machines,
               <label>{t("Sitio web (opcional)", "Website (optional)")}
                 <input name="newAccountWebsite" maxLength={200} defaultValue={g?.customerWebsite ?? ""} />
               </label>
-              <span className="src">{t("Se crea junto con la Necesidad, a tu nombre. Si ya existe un cliente con ese mismo nombre, SOLU usa ese. El resto de sus datos (NIT, dirección) se completa después en Clientes.", "It is created together with the Need, under your name. If a customer with that same name already exists, SOLU uses that one. The rest of its data (tax ID, address) is completed later in Customers.")}</span>
+              <span className="src">{t("Se crea junto con la Necesidad, a tu nombre. Si ya existe un cliente con ese mismo nombre, SOLU usa ese. El resto de sus datos (NIT, condiciones) se completa después en Clientes.", "It is created together with the Need, under your name. If a customer with that same name already exists, SOLU uses that one. The rest of its data (tax ID, terms) is completed later in Customers.")}</span>
             </div>
           ) : <span className="src">{t("¿No está en la lista? Elige «+ Crear cliente nuevo», o ", "Not on the list? Choose “+ Create new customer”, or ")}<Link href="/accounts">{t("créalo con todos sus datos en Clientes", "create it with all its data in Customers")}</Link></span>}
+          {addrBox}
           <label>{t("Contacto principal", "Main contact")}
             <select name="contactId" value={contactId} onChange={(e) => setContactId(e.target.value)} disabled={!accountId}>
               <option value="">{!accountId ? t("Elige primero el cliente", "Pick the customer first") : mine.length ? t("Elegir…", "Choose…") : t("Sin contacto", "No contact")}</option>

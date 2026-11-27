@@ -17,6 +17,7 @@ import { remindQuoteAdjust } from "@/lib/quote-reminder";
 import { partKey } from "@/lib/parts";
 import { addWorkingDays } from "@/lib/holidays";
 import { AI_MODEL } from "@/lib/ai";
+import { cleanCountry } from "@/lib/customer-fields";
 
 const stage = z.enum(["LEAD", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON", "LOST"]);
 const money = z.coerce.number().min(0).max(1e12);
@@ -494,7 +495,11 @@ export async function createNeed(fd: FormData) {
   let accountId = String(fd.get("accountId") ?? "");
   const title = txt(fd, "title", 150);
   if (!accountId || !title) redirect("/deals?err=nueva");
-  // "+ Crear cliente nuevo": the customer is created here, with only its name (the rest is completed in Clientes).
+  // The customer's postal address, typed or read by the AI from the email signature: it prints on the quote
+  // (BILL TO / SHIP TO). Optional, and it never replaces an address the customer already has.
+  const place = { address: txt(fd, "custAddress", 200), city: txt(fd, "custCity", 80), region: txt(fd, "custRegion", 80), postalCode: txt(fd, "custPostalCode", 20), country: cleanCountry(fd.get("custCountry")) };
+  const anyPlace = !!(place.address || place.city || place.region || place.postalCode);
+  // "+ Crear cliente nuevo": the customer is created here, with its name and, when known, its address (the rest is completed in Clientes).
   // A customer that already has that same name is used instead of making a second one.
   if (accountId === "__new") {
     const name = txt(fd, "newAccountName", 200);
@@ -502,8 +507,11 @@ export async function createNeed(fd: FormData) {
     const same = await db.account.findFirst({ where: { internal: false, name: { equals: name!, mode: "insensitive" } }, select: { id: true } });
     accountId = same?.id ?? (await db.account.create({ data: { name: name!, website: txt(fd, "newAccountWebsite", 200), ownerId: user.id }, select: { id: true } })).id;
   }
-  const account = await db.account.findFirst({ where: { id: accountId, internal: false }, select: { id: true } });
+  const account = await db.account.findFirst({ where: { id: accountId, internal: false }, select: { id: true, address: true, city: true, region: true, postalCode: true, country: true } });
   if (!account) redirect("/deals?err=nueva");
+  if (anyPlace && !account.address?.trim() && !account.city?.trim() && !account.region?.trim() && !account.postalCode?.trim()) {
+    await db.account.update({ where: { id: account.id }, data: { address: place.address, city: place.city, region: place.region, postalCode: place.postalCode, ...(place.country && !account.country ? { country: place.country } : {}) } });
+  }
   const contactId = String(fd.get("contactId") ?? "");
   let contact: { id: string } | null = null;
   if (contactId === "__new") {

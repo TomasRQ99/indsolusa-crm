@@ -66,6 +66,7 @@ export function AiNeedButton({ lang, configured, onUse, seed }: { lang: "ES" | "
   const rows: [string, string | null][] = d ? [
     [t("Cliente", "Customer"), res!.accountName ?? (d.customerName ? t(`${d.customerName} · cliente nuevo: se crea al crear la Necesidad`, `${d.customerName} · new customer: created when the Need is created`) : null)],
     [t("Contacto", "Contact"), d.contactName || d.contactEmail ? `${[d.contactName, d.contactTitle, d.contactEmail, d.contactPhone].filter(Boolean).join(" · ")}${res!.contactId ? "" : t(" · contacto nuevo", " · new contact")}` : null],
+    [t("Dirección del cliente", "Customer's address"), [d.customerAddress, [d.customerCity, [d.customerRegion, d.customerPostalCode].filter(Boolean).join(" ")].filter(Boolean).join(", "), d.customerCountry].filter(Boolean).join(" · ") || (res!.noAddress ? t("No venía en el correo: SOLU la pide al cliente en la respuesta", "Not in the email: SOLU asks the customer for it in the reply") : null)],
     [t("Asunto", "Subject"), d.title || null],
     [t("Resultado que busca", "Result they want"), d.desiredResult],
     [t("Detalle", "Detail"), d.needSpecs],

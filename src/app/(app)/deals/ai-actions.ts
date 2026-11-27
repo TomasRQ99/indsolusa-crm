@@ -5,7 +5,7 @@ import { AiError } from "@/lib/ai";
 import { draftNeed, type NeedDraft } from "@/lib/need-ai";
 
 export type NeedAiResult =
-  | { ok: true; draft: NeedDraft; accountId: string | null; accountName: string | null; contactId: string | null }
+  | { ok: true; draft: NeedDraft; accountId: string | null; accountName: string | null; contactId: string | null; noAddress: boolean }
   | { ok: false; error: "CORTO" | AiError["code"] };
 
 /** "Crear Necesidad con IA": reads the case the person told and returns the fields for the "Nueva Necesidad" form.
