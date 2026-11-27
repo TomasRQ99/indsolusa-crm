@@ -581,9 +581,9 @@
    "m": "comercial",
    "t": "Excepciones de Eságara",
    "path": "COMERCIAL → Excepciones de Eságara",
-   "why": "Una cotización con Eságara debajo del 20 % no se presenta sin una excepción aprobada.",
+   "why": "El 20 % de Eságara es una referencia. Una cotización por debajo se puede presentar igual: es una decisión de quien cotiza. La excepción queda para cuando quieras dejar la aprobación por escrito.",
    "steps": [
-    "En una cotización bajo 20 %, pide la excepción y escribe las razones.",
+    "Opcional: en una cotización bajo 20 %, pide la excepción y escribe las razones.",
     "Director Comercial o Gerencia la revisa en esta pestaña, con el contexto de crédito y pago del cliente.",
     "Aprueba o rechaza con una nota."
    ],

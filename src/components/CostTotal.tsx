@@ -120,7 +120,7 @@ export function CostTotal({ lang, sale, pct, lines, threshold, fixed, saved, not
                     ? t("Este precio es el que tienen hoy los productos. Escribe la Eságara que quieres y SOLU calcula el precio.", "This is the price the products have today. Type the Eságara you want and SOLU calculates the price.")
                     : t("Precio = costo total ÷ (1 − Eságara).", "Price = total cost ÷ (1 − Eságara).")}
             </span>
-            {low && <span className="attn-t">{t(`Por debajo de ${threshold} %: la cotización solo se presenta con una excepción aprobada.`, `Below ${threshold} %: the quote is presented only with an approved exception.`)}</span>}
+            {low && <span className="src">{t(`Por debajo de la referencia de ${threshold} %. Se puede presentar así: es tu decisión.`, `Below the ${threshold} % reference. It can be presented like this: it is your decision.`)}</span>}
             {v.noRate && <span className="risk-t">{t("Falta la tasa de la moneda del proveedor.", "The supplier currency rate is missing.")}</span>}
           </>
         )}

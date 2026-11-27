@@ -330,9 +330,9 @@
  },
  "esagara-exc": {
   "t": "Eságara exceptions",
-  "why": "A quote with Eságara under 20% is not presented without an approved exception.",
+  "why": "The 20% Eságara is a reference. A quote below it can still be presented: it is the decision of whoever quotes. The exception stays for when you want the approval in writing.",
   "steps": [
-   "On a quote under 20%, request the exception and write the reasons.",
+   "Optional: on a quote under 20%, request the exception and write the reasons.",
    "The Commercial Director or Management reviews it on this tab, with the customer's credit and payment context.",
    "Approve or reject with a note."
   ],

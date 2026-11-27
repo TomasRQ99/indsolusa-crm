@@ -414,7 +414,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
               <><b className="tv">{money(Number(q.protEsagra))}</b><span className="tsub">{i.pct((Number(q.protEsagra) / Number(q.protSale)) * 100)} {t("de", "of")} {money(Number(q.protSale))}</span><span className="src">{t(`Fijada el ${i.day(q.presentedAt)} · política v${q.protPolicy ?? "—"}`, `Fixed on ${i.day(q.presentedAt)} · policy v${q.protPolicy ?? "—"}`)}</span></>
             )}
           </div>
-          <div className={`qv-box cur${B.econAlert || B.belowFloor ? " alert" : ""}`}>
+          <div className="qv-box cur">
             <span className="k">{t("Economía esperada actual", "Current expected economics")}</span>
             <b className="tv">{money(draft ? B.esagra : B.curEsagra)}</b>
             <span className="tsub">{i.pct(draft ? B.pct : B.curPct)} {t("de", "of")} {money(draft ? B.sale : B.curSale)}</span>
@@ -423,7 +423,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
           <div className="qv-box pol">
             <span className="k">{t("Política comercial", "Commercial policy")}</span>
             <b className="tv">≥ {i.pct2(policy.threshold)}</b>
-            <span className="src">{t(`Umbral de Eságara · política v${policy.version}. Por debajo se presenta solo con una excepción aprobada.`, `Eságara threshold · policy v${policy.version}. Below it, it's presented only with an approved exception.`)}{policy.floorPct < policy.threshold && ` ${t(`Con la excepción aprobada, esta versión se cubre hasta ${i.pct2(policy.floorPct)}.`, `With the approved exception, this version is covered down to ${i.pct2(policy.floorPct)}.`)}`}</span>
+            <span className="src">{t(`Referencia de Eságara · política v${policy.version}. Por debajo también se puede presentar: es una decisión de quien cotiza.`, `Eságara reference · policy v${policy.version}. Below it the quote can still be presented: it is the decision of whoever quotes.`)}{policy.floorPct < policy.threshold && ` ${t(`Con la excepción aprobada, esta versión se cubre hasta ${i.pct2(policy.floorPct)}.`, `With the approved exception, this version is covered down to ${i.pct2(policy.floorPct)}.`)}`}</span>
           </div>
         </div>
         {canSheet && <Sheet />}

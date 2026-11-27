@@ -34,9 +34,9 @@ export const EXC_ERR = (t: T): Record<string, string> => ({
 });
 export const EXC_OK = (t: T): Record<string, string> => ({
   "exc-pedida": t("Solicitud enviada para decisión con la economía de esta versión. Te avisamos cuando decidan.", "Request sent for decision with this version's economics. You'll be told when they decide."),
-  "exc-approved": t("Excepción aprobada. La cotización ya puede presentarse con esta Eságara.", "Exception approved. The quote can now be presented with this Eságara."),
+  "exc-approved": t("Excepción aprobada: queda por escrito para esta Eságara.", "Exception approved: it is on record for this Eságara."),
   "exc-returned": t("Devuelta con tu pregunta. Quien pidió la ve en su cotización.", "Returned with your question. The requester sees it on their quote."),
-  "exc-rejected": t("Rechazada con tu comentario. La cotización sigue sin poder presentarse por debajo del umbral.", "Rejected with your comment. The quote still can't be presented below the threshold."),
+  "exc-rejected": t("Rechazada con tu comentario. Queda por escrito; presentar la cotización sigue siendo decisión de quien cotiza.", "Rejected with your comment. It is on record; presenting the quote is still the decision of whoever quotes."),
   "exc-respondida": t("Respuesta enviada. La solicitud volvió a quien decide con la economía actual.", "Answer sent. The request went back to the approver with the current economics."),
   "pol-guardada": t("Política guardada como nueva versión. Las decisiones pasadas conservan la versión que usaron.", "Policy saved as a new version. Past decisions keep the version they used."),
   "pol-igual": t("Sin cambios: la política ya tenía esos valores.", "No changes: the policy already had those values."),
