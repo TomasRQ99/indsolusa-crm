@@ -21,7 +21,7 @@ const L = {
     quote: "QUOTE", invoice: "COMMERCIAL INVOICE", date: "Date", quoteNo: "Quote Nº", invoiceNo: "Invoice Nº", exp: "Expiration Date", srcQuote: "Quote Nº",
     rep: "Sales Rep.", po: "P.O. #", billTo: "Bill to", shipTo: "Ship to", qty: "Qty.", code: "Code", desc: "Description", unit: "Unit Price", total: "Total",
     totalUsd: "Total USD", balance: "Balance to pay USD", lead: "Lead Time", ship: "Shipping Terms", pay: "Payment Due", instr: "Payment instructions",
-    validity: "Validity", condition: "Condition for all", includes: "Price includes", thanks: "Thank you.", draft: "DRAFT - NOT VALID AS AN OFFER", rev: "Rev.",
+    validity: "Validity", condition: "Condition for all", includes: "Price includes", thanks: "Thank you.", rev: "Rev.",
     validityText: (days: number, until: string) => `${days} days from date of this quote (until ${until})`,
     payText: (days: number, by: string) => `Net ${days} days from invoice date (by ${by})`,
     instrPending: "Please confirm payment instructions by phone at (305) 307 0051 before paying. Industry Solutions USA never changes bank details by email.",
@@ -33,7 +33,7 @@ const L = {
     quote: "COTIZACIÓN", invoice: "FACTURA COMERCIAL", date: "Fecha", quoteNo: "Cotización Nº", invoiceNo: "Factura Nº", exp: "Fecha de vencimiento", srcQuote: "Cotización Nº",
     rep: "Asesor comercial", po: "Orden de compra Nº", billTo: "Facturar a", shipTo: "Enviar a", qty: "Cant.", code: "Código", desc: "Descripción", unit: "Precio unitario", total: "Total",
     totalUsd: "Total USD", balance: "Saldo por pagar USD", lead: "Tiempo de entrega", ship: "Términos de entrega", pay: "Condiciones de pago", instr: "Instrucciones de pago",
-    validity: "Validez", condition: "Condición", includes: "El precio incluye", thanks: "Gracias.", draft: "BORRADOR - NO VÁLIDO COMO OFERTA", rev: "Rev.",
+    validity: "Validez", condition: "Condición", includes: "El precio incluye", thanks: "Gracias.", rev: "Rev.",
     validityText: (days: number, until: string) => `${days} días desde la fecha de esta cotización (hasta ${until})`,
     payText: (days: number, by: string) => `${days} días desde la fecha de factura (a más tardar ${by})`,
     instrPending: "Confirme las instrucciones de pago por teléfono al (305) 307 0051 antes de pagar. Industry Solutions USA nunca cambia sus datos bancarios por correo.",
@@ -266,18 +266,13 @@ export async function renderDoc(rawDoc: QuoteDoc | InvoiceDoc): Promise<Buffer> 
     term(T.instr, `${T.instrPending}\n${T.ref(doc.number)}`);
   }
 
-  // ---- Draft watermark + footer on every page ----
+  // ---- Footer on every page ----
+  // No "DRAFT" watermark on a quote that has not been presented yet (owner, 2026-11-27: by then the price is
+  // already confirmed in the cost settlement). The quote page and the email screen still say it is a draft.
   const range = pdf.bufferedPageRange();
   for (let p = range.start; p < range.start + range.count; p++) {
     pdf.switchToPage(p);
     pdf.page.margins.bottom = 0; // writing in the footer zone must not open a new page
-    if (doc.kind === "quote" && doc.draft) {
-      pdf.save();
-      pdf.rotate(-30, { origin: [W / 2, pdf.page.height / 2] });
-      font(true).fontSize(40).fillColor("#d33").opacity(0.12).text(T.draft, 0, pdf.page.height / 2 - 20, { width: W, align: "center", lineBreak: false });
-      pdf.restore();
-      pdf.opacity(1);
-    }
     const fy = pdf.page.height - 46;
     pdf.moveTo(left, fy - 6).lineTo(right, fy - 6).lineWidth(0.6).strokeColor(RULE).stroke();
     font(true).fontSize(9).fillColor(INK).text(`${T.thanks} DON'T STOP`, left, fy, { lineBreak: false });

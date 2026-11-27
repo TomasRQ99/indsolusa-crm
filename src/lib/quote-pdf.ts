@@ -26,4 +26,4 @@ export async function quotePdf(id: string, langOverride?: DocLang | null): Promi
   return { name: quotePdfName(q), data: Buffer.from(pdf), draft: q.status === "DRAFT" };
 }
 
-export const quotePdfName = (q: { number: string | number; rev: number; status: string }) => `Quote-${q.number}${q.rev ? `-Rev${q.rev}` : ""}${q.status === "DRAFT" ? "-DRAFT" : ""}.pdf`;
+export const quotePdfName = (q: { number: string | number; rev: number; status: string }) => `Quote-${q.number}${q.rev ? `-Rev${q.rev}` : ""}.pdf`;
