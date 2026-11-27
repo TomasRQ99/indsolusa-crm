@@ -13,7 +13,7 @@ export type DocLang = "EN" | "ES";
 
 export const ISSUER = {
   name: "Industry Solutions USA LLC",
-  lines: ["11402 NW 41 ST STREET STE 211-619", "Doral, FL 33178", "(305) 307 0050"],
+  lines: ["11402 NW 41 ST STREET STE 211-619", "Doral, FL 33178", "(305) 307 0051"],
 };
 
 const L = {
@@ -24,7 +24,7 @@ const L = {
     validity: "Validity", condition: "Condition for all", includes: "Price includes", thanks: "Thank you.", draft: "DRAFT - NOT VALID AS AN OFFER", rev: "Rev.",
     validityText: (days: number, until: string) => `${days} days from date of this quote (until ${until})`,
     payText: (days: number, by: string) => `Net ${days} days from invoice date (by ${by})`,
-    instrPending: "Please confirm payment instructions by phone at (305) 307 0050 before paying. Industry Solutions USA never changes bank details by email.",
+    instrPending: "Please confirm payment instructions by phone at (305) 307 0051 before paying. Industry Solutions USA never changes bank details by email.",
     ref: (n: string) => `Reference: Invoice Nº ${n}`,
     subtotal: "Subtotal", iva: (p: number) => `IVA ${p} %`, ivaExempt: "IVA: exempt", noIva: "IVA not applicable",
     page: (a: number, b: number) => `Page ${a} of ${b}`,
@@ -36,7 +36,7 @@ const L = {
     validity: "Validez", condition: "Condición", includes: "El precio incluye", thanks: "Gracias.", draft: "BORRADOR - NO VÁLIDO COMO OFERTA", rev: "Rev.",
     validityText: (days: number, until: string) => `${days} días desde la fecha de esta cotización (hasta ${until})`,
     payText: (days: number, by: string) => `${days} días desde la fecha de factura (a más tardar ${by})`,
-    instrPending: "Confirme las instrucciones de pago por teléfono al (305) 307 0050 antes de pagar. Industry Solutions USA nunca cambia sus datos bancarios por correo.",
+    instrPending: "Confirme las instrucciones de pago por teléfono al (305) 307 0051 antes de pagar. Industry Solutions USA nunca cambia sus datos bancarios por correo.",
     ref: (n: string) => `Referencia: Factura Nº ${n}`,
     subtotal: "Subtotal", iva: (p: number) => `IVA ${p} %`, ivaExempt: "IVA: exento", noIva: "No aplica IVA",
     page: (a: number, b: number) => `Página ${a} de ${b}`,
