@@ -51,7 +51,9 @@ type AiLogistics = { transportRestricted: string; transportNote: string | null; 
 type AiReport = { understood: { partNumber: string | null; brand: string | null; what: string }; alternates: { code: string; note: string }[]; summary: string; questions: string[]; logistics: AiLogistics; sources: AiSource[] };
 
 const NUL = (t: string) => ({ type: [t, "null"] });
-const REPORT_SCHEMA = {
+/** The API refuses a strict tool schema with more than this many nullable fields ("union types"). */
+export const NULLABLE_LIMIT = 16;
+export const REPORT_SCHEMA = {
   type: "object", additionalProperties: false, required: ["understood", "alternates", "summary", "questions", "logistics", "sources"],
   properties: {
     understood: {
@@ -65,11 +67,13 @@ const REPORT_SCHEMA = {
       type: "object", additionalProperties: false,
       required: ["transportRestricted", "transportNote", "importRestricted", "importNote", "weightKg", "lengthCm", "widthCm", "heightCm", "sizeBasis", "sizeNote", "hsCode", "hsNote"],
       properties: {
-        transportRestricted: { type: "string", enum: ["YES", "NO", "UNKNOWN"] }, transportNote: NUL("string"),
-        importRestricted: { type: "string", enum: ["YES", "NO", "UNKNOWN"] }, importNote: NUL("string"),
-        weightKg: NUL("number"), lengthCm: NUL("number"), widthCm: NUL("number"), heightCm: NUL("number"),
-        sizeBasis: { type: "string", enum: ["STATED", "ESTIMATED", "UNKNOWN"] }, sizeNote: NUL("string"),
-        hsCode: NUL("string"), hsNote: NUL("string"),
+        // Not nullable on purpose: the API allows at most 16 nullable fields in a strict tool schema, and the
+        // sellers already use 11. An empty string or a 0 means "not known".
+        transportRestricted: { type: "string", enum: ["YES", "NO", "UNKNOWN"] }, transportNote: { type: "string" },
+        importRestricted: { type: "string", enum: ["YES", "NO", "UNKNOWN"] }, importNote: { type: "string" },
+        weightKg: { type: "number" }, lengthCm: { type: "number" }, widthCm: { type: "number" }, heightCm: { type: "number" },
+        sizeBasis: { type: "string", enum: ["STATED", "ESTIMATED", "UNKNOWN"] }, sizeNote: { type: "string" },
+        hsCode: { type: "string" }, hsNote: { type: "string" },
       },
     },
     sources: {
@@ -107,8 +111,8 @@ The buyer will act on what you report, so accuracy matters more than volume:
 The buyer also has to move the piece to the delivery country, so fill "logistics" for ONE unit of the piece. These are indications for a person to confirm with the carrier and the customs broker, so say plainly what you know and what you assume:
 - transportRestricted: YES when a single unit is, or contains, something carriers restrict or handle as dangerous goods: lithium or other batteries, gas or pressurized containers, aerosols, flammable or corrosive liquids, oils and chemicals, strong magnets, radioactive sources, explosive parts such as airbag or squib charges, mercury. Also YES when it is too heavy or long for courier and must go as cargo. NO when it is ordinary dry goods (most mechanical and electrical spares). UNKNOWN when you cannot tell what it contains. transportNote: one or two sentences with the reason and what it means in practice (for example the UN number or class if you are sure of it, "air cargo only", "needs a safety data sheet"). Capacitors, sensors and electronic modules without batteries are normally not restricted; say so instead of inventing a risk.
 - importRestricted: whether bringing this kind of product into the DELIVERY COUNTRY usually needs a permit, registration, certificate or prior licence, or is prohibited (for Colombia: for example a prior import licence for used or remanufactured goods, RETIE or other technical regulations for certain electrical products, INVIMA for medical or food-contact items, controlled chemicals, dual-use items). Also mention an export restriction of the likely country of origin when it clearly applies (export-controlled or dual-use goods). importNote: one or two sentences naming the requirement and who grants it, or saying that nothing special is known for this kind of product. UNKNOWN when you are not sure: do not guess a requirement.
-- weightKg and lengthCm, widthCm, heightCm: of one unit, packed if the page says so. sizeBasis STATED when a page or data sheet you saw gives them (say which in sizeNote), ESTIMATED when you estimate from the kind and size of piece (say in sizeNote that it is an estimate and from what), UNKNOWN with nulls when you cannot estimate responsibly. One search for the data sheet is worth it when the first results do not show the weight.
-- hsCode: the most likely Harmonized System heading, six digits written like 8532.25, for this piece by what it is and what it is for. hsNote: the heading's name in a few words, and when two headings are plausible name the other one and what decides between them. The national subheading (ten digits in Colombia) is decided by the customs broker: never invent those extra digits. Null when you cannot tell what the piece is.
+- weightKg and lengthCm, widthCm, heightCm: of one unit, packed if the page says so. sizeBasis STATED when a page or data sheet you saw gives them (say which in sizeNote), ESTIMATED when you estimate from the kind and size of piece (say in sizeNote that it is an estimate and from what), UNKNOWN with 0 in the four numbers when you cannot estimate responsibly; a 0 always means "not known", never a real measurement. One search for the data sheet is worth it when the first results do not show the weight.
+- hsCode: the most likely Harmonized System heading, six digits written like 8532.25, for this piece by what it is and what it is for. hsNote: the heading's name in a few words, and when two headings are plausible name the other one and what decides between them. The national subheading (ten digits in Colombia) is decided by the customs broker: never invent those extra digits. An empty string when you cannot tell what the piece is. In this "logistics" block nothing is null: a note you have nothing to say in is an empty string.
 
 A seller the buyer cannot reach is of little use. For each seller you are going to report without an email or a phone, open their contact page, or run one search for the seller's name with "contact", "email" or "phone", before you finish. You may also open a few pages to confirm that the number is really there. When you are done, call the report_sources tool once. Do not write the findings as text.`;
 
