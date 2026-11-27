@@ -390,7 +390,7 @@
     "Haz clic en [[Buscar en internet]]. Tarda de 1 a 3 minutos; puedes dejar la página abierta o irte y volver después.",
     "Lee «LO QUE SOLU ENTENDIÓ» y «TRANSPORTE E IMPORTACIÓN» (restricciones de transporte y de ingreso al país de entrega, peso y dimensiones aproximados y posible posición arancelaria), y después los vendedores, de «CONFIANZA ALTA» a «CONFIANZA BAJA». Cada uno dice por qué tiene esa confianza y trae «Enlace directo» y «Contacto»: correo, teléfono o formulario de contacto.",
     "En el vendedor que te sirva, elige la Necesidad en «Guardar en la Necesidad» y haz clic en [[Guardar opción]]. Si ya decidiste seguir con él, haz clic en [[Guardar y usar como fuente]].",
-    "Para pedirle precio a un vendedor, haz clic en [[Enviar un correo con la solicitud]], la tercera opción junto a «Guardar opción» y «Guardar y usar como fuente»: se abre el correo «Solicitud de precio a un vendedor», ya escrito con la plantilla de la empresa, la pieza, la cantidad y el enlace donde la vimos. Si hay una Necesidad elegida en la lista, el vendedor queda guardado en ella. Arriba, en «ESCRIBIR COMO», elige si el correo sale como Industry Solutions USA o como IndSolUSA. Revisa «Para», el asunto y el texto (con «Reescribir con IA» le pides cambios), marca las fotos que quieras adjuntar y haz clic en [[Enviar correo]].",
+    "Para pedirle precio a un vendedor, haz clic en [[Enviar un correo con la solicitud]], la tercera opción junto a «Guardar opción» y «Guardar y usar como fuente»: se abre el correo «Solicitud de precio a un vendedor», ya escrito con la plantilla de la empresa, la pieza, la cantidad y el enlace donde la vimos. Si hay una Necesidad elegida en la lista, el vendedor queda guardado en ella. Arriba, en «ESCRIBIR COMO», el correo viene como IndSolUSA; ahí lo cambias a Industry Solutions USA si hace falta. La descripción de cada pieza sale en el idioma del correo. Revisa «Para», el asunto y el texto (con «Reescribir con IA» le pides cambios), marca las fotos que quieras adjuntar y haz clic en [[Enviar correo]].",
     "SOLU entrega los 5 mejores vendedores. Si necesitas más, baja hasta el final de la lista y haz clic en [[Buscar 5 vendedores más]]: busca otros distintos y los agrega a esta misma lista.",
     "Si SOLU dejó «PREGUNTAS QUE AFINARÍAN LA BÚSQUEDA», responde las que sepas y haz clic en [[Buscar otra vez con estas respuestas]]."
    ],
@@ -1727,7 +1727,7 @@
     "Cambia un nombre escribiéndolo y haciendo clic en [[Guardar nombre]]. Quita una firma con [[Quitar]].",
     "Al enviar un correo de plantilla, debajo del mensaje, en «Firma», elige cuál va, o «Sin imagen de firma»."
    ],
-   "expect": "La imagen sale dentro del correo, debajo del texto. Solo tú ves y usas tus firmas. La primera que subes queda como la de siempre. Puedes tener hasta 8. Si quitas la de siempre, la más antigua que quede toma su lugar."
+   "expect": "La imagen sale dentro del correo, debajo del texto. Solo tú ves y usas tus firmas. La primera que subes queda como la de siempre. Puedes tener hasta 8. Si quitas la de siempre, la más antigua que quede toma su lugar. El teléfono que sale debajo de tu nombre en los correos se escribe en el recuadro «Teléfono de mi firma» de Mi perfil; vacío, sale el de la empresa."
   },
   {
    "id": "modo-prueba",

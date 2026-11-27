@@ -2,7 +2,8 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { OutlookNote } from "@/components/OutlookNote";
 import { PasswordForm } from "./PasswordForm";
-import { connectOutlook, disconnectOutlook, setGuide, setName, setTestMode, setWorkday } from "./actions";
+import { connectOutlook, disconnectOutlook, setGuide, setName, setSignaturePhone, setTestMode, setWorkday } from "./actions";
+import { COMPANIES, DEFAULT_COMPANY } from "@/lib/company";
 import { canManageAll } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { saveProjectAlerts } from "../proyectos/actions";
@@ -13,7 +14,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const { cal, ok, err } = await searchParams;
   const user = await requireUser();
   const signatures = await mySignatures(user.id);
-  const pj = await db.user.findUnique({ where: { id: user.id }, select: { projectAlerts: true, projectAsks: true } });
+  const pj = await db.user.findUnique({ where: { id: user.id }, select: { projectAlerts: true, projectAsks: true, signaturePhone: true } });
   const i = makeI18n(user.lang);
   const { t } = i;
   return (
@@ -31,6 +32,17 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             <button type="submit" className="sm" style={{ alignSelf: "flex-start" }}>{t("Guardar nombre", "Save name")}</button>
           </form>
           <p className="src" style={{ marginTop: 8 }}>{t("El correo con el que ingresas y tu rol no cambian. Lo que ya quedó registrado con tu nombre anterior lo conserva.", "The email you sign in with and your role do not change. What was already recorded under your earlier name keeps it.")}</p>
+        </div>
+        <div className="card" id="telefono">
+          <h2>{t("Teléfono de mi firma", "Phone in my signature")}</h2>
+          {ok === "telefono" && <p className="small"><span className="sig ok">{t("Teléfono guardado.", "Phone saved.")}</span></p>}
+          {err === "telefono" && <p className="note risk" role="alert">{t("Ese teléfono no se pudo leer. Escríbelo con su indicativo, por ejemplo +1 (647) 613-6456.", "That phone could not be read. Type it with its country code, for example +1 (647) 613-6456.")}</p>}
+          <p className="small muted" style={{ marginBottom: 10 }}>{t("Es el teléfono que sale debajo de tu nombre en los correos que envías desde SOLU.", "It is the phone shown under your name in the emails you send from SOLU.")}</p>
+          <form action={setSignaturePhone} className="qa-form">
+            <label>{t("Teléfono", "Phone")}<input name="phone" type="text" inputMode="tel" defaultValue={pj?.signaturePhone ?? ""} maxLength={40} autoComplete="tel" placeholder={COMPANIES[DEFAULT_COMPANY].phone} /></label>
+            <button type="submit" className="sm" style={{ alignSelf: "flex-start" }}>{t("Guardar teléfono", "Save phone")}</button>
+          </form>
+          <p className="src" style={{ marginTop: 8 }}>{t(`Si lo dejas vacío, tus correos salen con el teléfono de la empresa: ${COMPANIES[DEFAULT_COMPANY].phone}.`, `If you leave it empty, your emails go out with the company phone: ${COMPANIES[DEFAULT_COMPANY].phone}.`)}</p>
         </div>
         <div className="card" id="pendientes">
           <h2>{t("Pendientes por aprobar", "Pending approvals")}</h2>

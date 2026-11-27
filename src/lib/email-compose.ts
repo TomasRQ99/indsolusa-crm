@@ -13,6 +13,7 @@ import { journeyUrgency } from "./urgency";
 import { quotePdfName } from "./quote-pdf";
 import { asCompany, rfqMail, progressMail, ackMail, deliveryMail, followUpMail, negotiateMail, offerMail, paymentMail, type Mail, type MailLang, type TemplateKey } from "./email-templates";
 import { linesTotal } from "./money";
+import { piecesIn } from "./piece-translate";
 
 export type ComposeCtx = { tpl: TemplateKey; id: string; lang?: MailLang | null; co?: CompanyKey | string | null };
 export type Composed = {
@@ -32,7 +33,8 @@ const pickLang = (forced: MailLang | null | undefined, auto: MailLang): MailLang
 
 /** Builds the email written as the company name the person picked ("Industry Solutions USA" unless told otherwise). */
 export function composeFrom(ctx: ComposeCtx, user: SessionUser, from: string): Promise<Composed | null> {
-  return asCompany(companyKey(ctx.co), () => composeInner(ctx, user, from));
+  return db.user.findUnique({ where: { id: user.id }, select: { signaturePhone: true } })
+    .then((u) => asCompany(companyKey(ctx.co), () => composeInner(ctx, user, from), u?.signaturePhone));
 }
 
 async function composeInner(ctx: ComposeCtx, user: SessionUser, from: string): Promise<Composed | null> {
@@ -139,7 +141,7 @@ async function composeInner(ctx: ComposeCtx, user: SessionUser, from: string): P
     const lang = pickLang(ctx.lang, spanishCountry(l.country) ? "ES" : "EN");
     const und = (l.hunt.understood ?? {}) as { partNumber?: string | null; brand?: string | null; what?: string };
     const qty = Math.max(1, Math.round(Number(String((l.hunt.answers as { qty?: string } | null)?.qty ?? "").replace(/[^\d.]/g, "")) || 1));
-    const searched = [{ qty, code: l.mpnSeen ?? und.partNumber ?? "", brand: und.brand ?? null, description: (und.what || l.hunt.query).slice(0, 160) }];
+    const searched = [{ qty, code: l.mpnSeen ?? und.partNumber ?? "", brand: und.brand ?? null, description: (und.what || l.hunt.query).slice(0, 400) }];
     // The seller gets the whole specification (the company template carries long descriptions), and the brand the
     // search understood goes on the piece that was searched (the Need's items have no brand of their own).
     const flat = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -147,6 +149,9 @@ async function composeInner(ctx: ComposeCtx, user: SessionUser, from: string): P
     const items = d && d.items.length
       ? d.items.map((x) => ({ qty: x.qty, code: x.code ?? "", brand: und.brand && (d.items.length === 1 || wanted.some((w) => flat(x.code).includes(w) || (!!flat(x.code) && w.includes(flat(x.code))))) ? und.brand : null, description: x.description.slice(0, 1500) }))
       : searched;
+    // The descriptions go in the language of the email: a seller abroad cannot read a Spanish description.
+    const said = await piecesIn(l.hunt.id, lang, items.map((x) => x.description), user.name);
+    items.forEach((x, n) => { x.description = said[n] || x.description; });
     const code = d?.code ?? `W-${l.id.slice(-6).toUpperCase()}`;
     const notes = lang === "EN" ? `We saw this item listed on your website: ${l.url}` : `Vimos este producto publicado en su sitio web: ${l.url}`;
     const hasMail = emailOk(l.email);

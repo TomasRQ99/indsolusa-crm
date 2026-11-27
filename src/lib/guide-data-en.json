@@ -206,7 +206,7 @@
    "Click [[Buscar en internet]]. It takes 1 to 3 minutes; you can leave the page open or go and come back later.",
    "Read “WHAT SOLU UNDERSTOOD” and “TRANSPORT AND IMPORT” (transport restrictions and restrictions to enter the delivery country, approximate weight and size, and possible tariff heading), and then the sellers, from “HIGH CONFIDENCE” to “LOW CONFIDENCE”. Each one says why it has that confidence and brings “Direct link” and “Contact”: email, phone or contact form.",
    "On the seller that suits you, pick the Need under “Save on the Need” and click [[Guardar opción]]. If you have already decided to go ahead with them, click [[Guardar y usar como fuente]].",
-   "To ask a seller for a price, click [[Enviar un correo con la solicitud]], the third option beside “Save option” and “Save and use as source”: the email “Price request to a seller” opens, already written with the company template, the piece, the quantity and the link where we saw it. If a Need is picked in the list, the seller is saved on it. At the top, under “WRITE AS”, pick whether the email goes out as Industry Solutions USA or as IndSolUSA. Check “To”, the subject and the text (with “Rewrite with AI” you ask for changes), tick the photos you want attached and click [[Enviar correo]].",
+   "To ask a seller for a price, click [[Enviar un correo con la solicitud]], the third option beside “Save option” and “Save and use as source”: the email “Price request to a seller” opens, already written with the company template, the piece, the quantity and the link where we saw it. If a Need is picked in the list, the seller is saved on it. At the top, under “WRITE AS”, the email comes as IndSolUSA; change it there to Industry Solutions USA if needed. Each piece's description goes in the language of the email. Check “To”, the subject and the text (with “Rewrite with AI” you ask for changes), tick the photos you want attached and click [[Enviar correo]].",
    "SOLU hands back the 5 best sellers. If you need more, go down to the end of the list and click [[Buscar 5 vendedores más]]: it looks for different ones and adds them to this same list.",
    "If SOLU left “QUESTIONS THAT WOULD SHARPEN THE SEARCH”, answer the ones you know and click [[Buscar otra vez con estas respuestas]]."
   ],
@@ -1202,7 +1202,7 @@
    "Change a name by typing it and clicking [[Guardar nombre]]. Remove a signature with [[Quitar]].",
    "When sending a template email, below the message, under “Signature”, choose which one goes, or “No signature picture”."
   ],
-  "expect": "The picture goes inside the email, below the text. Only you see and use your signatures. The first one you upload becomes the usual one. You can keep up to 8. If you remove the usual one, the oldest one left takes its place."
+  "expect": "The picture goes inside the email, below the text. Only you see and use your signatures. The first one you upload becomes the usual one. You can keep up to 8. If you remove the usual one, the oldest one left takes its place. The phone shown under your name in the emails is typed in the “Phone in my signature” box of My profile; left empty, the company phone is used."
  },
  "modo-prueba": {
   "t": "Test mode: show or hide the test information",

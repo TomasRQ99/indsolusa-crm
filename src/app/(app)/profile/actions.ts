@@ -59,6 +59,17 @@ export async function setName(formData: FormData) {
   redirect("/profile?ok=nombre#nombre");
 }
 
+/** The phone under the person's name in the emails they send from SOLU. Empty = the company's phone. */
+export async function setSignaturePhone(formData: FormData) {
+  const user = await requireUser();
+  const phone = String(formData.get("phone") ?? "").replace(/\s+/g, " ").trim();
+  const digits = phone.replace(/\D/g, "");
+  if (phone && (!/^[+\d(][\d\s().\-/x]{5,38}$/i.test(phone) || digits.length < 7 || digits.length > 16)) redirect("/profile?err=telefono#telefono");
+  await db.user.update({ where: { id: user.id }, data: { signaturePhone: phone || null } });
+  refreshApp();
+  redirect("/profile?ok=telefono#telefono");
+}
+
 /** On-screen guide (training) on or off, for this person only. */
 export async function setGuide(formData: FormData) {
   const user = await requireUser();

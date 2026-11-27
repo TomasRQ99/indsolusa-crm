@@ -4,7 +4,8 @@
 export const COMPANY = {
   legalName: "INDUSTRY SOLUTIONS USA LLC",
   shortName: "Industry Solutions USA",
-  phone: "+1 (305) 307-0050",
+  // The phone in the signature of an email (owner, 2026-11-27). The BILL TO / SHIP TO blocks keep the office phone.
+  phone: "+1 (647) 613-6456",
   web: "industrysolutionsusa.com",
   billTo: {
     name: "INDUSTRY SOLUTIONS USA LLC",
@@ -25,7 +26,7 @@ export const COMPANY = {
 const INDSOL = {
   legalName: "IndSolUSA LLC",
   shortName: "IndSolUSA",
-  phone: "+1 (305) 307-0050",
+  phone: "+1 (647) 613-6456",
   web: "indsolusa.com",
   billTo: {
     name: "Indsolusa",
@@ -45,8 +46,10 @@ const INDSOL = {
 export type CompanyKey = "IND" | "INDSOL";
 export type CompanyInfo = { legalName: string; shortName: string; phone: string; web: string; billTo: { name: string; lines: readonly string[]; phone: string; email: string }; shipTo: { name: string; lines: readonly string[]; phone: string }; supplierPayment: { EN: string; ES: string } };
 export const COMPANIES: Record<CompanyKey, CompanyInfo> = { IND: COMPANY, INDSOL };
-export const COMPANY_PICK: Record<CompanyKey, string> = { IND: "Industry Solutions USA", INDSOL: "IndSolUSA" };
-export const companyKey = (v: unknown): CompanyKey => (v === "INDSOL" ? "INDSOL" : "IND");
+export const COMPANY_PICK: Record<CompanyKey, string> = { INDSOL: "IndSolUSA", IND: "Industry Solutions USA" };
+/** The name and details emails go out under unless the person picks the other one (owner, 2026-11-27: IndSolUSA). */
+export const DEFAULT_COMPANY: CompanyKey = "INDSOL";
+export const companyKey = (v: unknown): CompanyKey => (v === "IND" || v === "INDSOL" ? v : DEFAULT_COMPANY);
 
 /** Spanish for Latin America and Spain; simple English for everyone else. */
 export const spanishCountry = (c: string | null | undefined) =>

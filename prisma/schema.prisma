@@ -74,6 +74,8 @@ model User {
   testMode           Boolean               @default(true)
   // Length of a normal working day, used by Mi Plan to size capacity.
   workdayMinutes     Int                   @default(570)
+  /// the phone under this person's name in the emails they send from SOLU; empty = the company's
+  signaturePhone     String?
   /// Authorisation level of the person (company ranges by level): EMPRENDEDOR | JUNIOR | SENIOR, or null when not set
   authLevel          String?
   teamsLed           Team[]                @relation("TeamLeader")

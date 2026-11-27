@@ -5,13 +5,15 @@
 // English otherwise. Never: bank details (only from the verified profile), customer name or our
 // margin in supplier emails.
 import { AsyncLocalStorage } from "node:async_hooks";
-import { COMPANIES, type CompanyKey } from "./company";
+import { COMPANIES, DEFAULT_COMPANY, type CompanyKey } from "./company";
 
 // Which of the two company names an email is written as (owner, 2026-11-26: "una opción donde puedo escoger… si quiero
 // enviarlo desde Industry o desde indsolusa"). It is set around the building of one email and read by every template.
-const voice = new AsyncLocalStorage<CompanyKey>();
-export const asCompany = <T>(key: CompanyKey, fn: () => T): T => voice.run(key, fn);
-const co = () => COMPANIES[voice.getStore() ?? "IND"];
+const voice = new AsyncLocalStorage<{ key: CompanyKey; phone: string | null }>();
+/** `phone`: the sender's own phone for the signature, when they wrote one in Mi perfil. */
+export const asCompany = <T>(key: CompanyKey, fn: () => T, phone?: string | null): T => voice.run({ key, phone: phone?.trim() || null }, fn);
+const co = () => COMPANIES[voice.getStore()?.key ?? DEFAULT_COMPANY];
+const sigPhone = () => voice.getStore()?.phone ?? co().phone;
 
 export type MailLang = "EN" | "ES";
 export type ItemRow = { qty: number; code: string; brand?: string | null; description: string; unitPrice?: number | null };
@@ -79,7 +81,7 @@ function render(blocks: Block[], lang: MailLang): { text: string; html: string }
 }
 
 function signature(lang: MailLang, sender: string, from: string): Block[] {
-  return [{ p: lang === "EN" ? "Best regards," : "Saludos cordiales," }, { p: `${sender}\n${co().legalName}\n${from} · ${co().phone}` }];
+  return [{ p: lang === "EN" ? "Best regards," : "Saludos cordiales," }, { p: `${sender}\n${co().legalName}\n${from} · ${sigPhone()}` }];
 }
 const sigFix = (r: { text: string; html: string }) => ({ text: r.text, html: r.html.replace(/\n/g, "<br>") });
 const more = (items: ItemRow[]) => (items.length > 1 ? ` +${items.length - 1}` : "");

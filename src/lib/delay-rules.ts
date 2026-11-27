@@ -1,4 +1,5 @@
-import { COMPANY } from "./company";
+import { COMPANIES, DEFAULT_COMPANY } from "./company";
+const COMPANY = COMPANIES[DEFAULT_COMPANY];
 
 // AVISO DE RETRASO (owner, 2026-11-23): when a delivery passes its promised date, SOLU asks what caused the delay
 // (tags the administrator defines), proposes what to tell the customer and a new date, and builds the email.
