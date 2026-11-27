@@ -42,8 +42,8 @@ type DealForPr = {
   promisedDate: Date | null;
   promiseText: string | null;
   customerPo: string | null;
-  items: { qty: number; code: string | null; description: string }[];
-  quotes: { status: string; number: string; rev: number; supplyPrimary: string | null; supplyAlt: string | null; supplierCost: Prisma.Decimal; supplierSrc: string | null; costCurrency: string; fxRate: Prisma.Decimal | null; lines: { qty: number; code: string | null; description: string; unitPrice: Prisma.Decimal }[] }[];
+  items: { qty: number; code: string | null; description: string; unitCost?: Prisma.Decimal | null }[];
+  quotes: { status: string; number: string; rev: number; supplyPrimary: string | null; supplyAlt: string | null; supplierCost: Prisma.Decimal; supplierSrc: string | null; costCurrency: string; fxRate: Prisma.Decimal | null; lines: { qty: number; code: string | null; description: string; unitPrice: Prisma.Decimal; unitCost?: Prisma.Decimal | null }[] }[];
 };
 
 /** Customs clearance only applies to suppliers outside the company's country. */
@@ -53,7 +53,7 @@ export const isDomestic = (s: { country: string | null } | null | undefined) => 
 /** Purchase Requirement: derived from the Deal (accepted quote + customer promise). Nobody types it. */
 export function purchaseRequirement(deal: DealForPr, domestic = false) {
   const quote = deal.quotes.find((q) => q.status === "ACCEPTED") ?? deal.quotes[0] ?? null;
-  const lines = quote ? quote.lines.map((l) => ({ qty: l.qty, code: l.code, description: l.description, sale: lineAmount(l.qty, l.unitPrice) })) : deal.items.map((l) => ({ qty: l.qty, code: l.code, description: l.description, sale: 0 }));
+  const lines = quote ? quote.lines.map((l) => ({ qty: l.qty, code: l.code, description: l.description, sale: lineAmount(l.qty, l.unitPrice), unitCost: l.unitCost != null && Number(l.unitCost) > 0 ? money2(l.unitCost) : null })) : deal.items.map((l) => ({ qty: l.qty, code: l.code, description: l.description, sale: 0, unitCost: l.unitCost != null && Number(l.unitCost) > 0 ? money2(l.unitCost) : null }));
   const clearance = domestic ? 0 : CLEARANCE_DAYS;
   const atDestinationBy = deal.promisedDate ? addDays(deal.promisedDate, -(clearance + LAST_MILE_DAYS)) : null;
   return {

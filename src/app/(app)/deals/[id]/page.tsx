@@ -47,7 +47,8 @@ import { lineAmount, linesTotal, subMoney } from "@/lib/money";
 import { CostTotal } from "@/components/CostTotal";
 import { CostFxFields } from "@/components/CostFxFields";
 import { stepNeeds } from "@/lib/step-needs";
-import { COST_LINES, costDetail, esagaraPctOf } from "@/lib/cost-lines";
+import { COST_LINES, costDetail, esagaraPctOf, productsCost, seedUnitCosts } from "@/lib/cost-lines";
+import { ProductRows } from "@/components/ProductRows";
 import { quoteAdjustPending } from "@/lib/quote-reminder";
 import type { NeedContext } from "@/lib/need-handoff";
 import MarketContext from "@/components/MarketContext";
@@ -814,12 +815,25 @@ export default async function JourneyPage({
             <div className="liq-sheet in-form" id="costos">
               <div className="liq-head">
                 <b>{t("Liquidación de costos", "Cost settlement")}</b>
-                <span className="src">{t("La primera cuenta de lo que cuesta traerlo, en USD. Escribe cada costo en su fila; lo que no sepas todavía se deja en 0. Abajo escribes la Eságara que quieres ganar y SOLU calcula el precio de venta. Al preparar la cotización, esta hoja pasa completa y allá se afina (moneda del proveedor, de dónde sale cada valor).", "The first estimate of what it costs to bring it, in USD. Type each cost on its row; leave at 0 what you don't know yet. Below you type the Eságara you want to earn and SOLU calculates the sale price. When the quote is prepared, this sheet carries over and is refined there (supplier currency, where each amount comes from).")}</span>
+                <span className="src">{t("La primera cuenta de lo que cuesta traerlo, en USD. Primero los productos, uno por fila, con lo que cobra el proveedor por cada uno; después los costos de traerlos. Lo que no sepas todavía se deja en 0. Abajo escribes la Eságara que quieres ganar y SOLU calcula el precio de venta. Al preparar la cotización, esta hoja pasa completa y allá se afina (moneda del proveedor, de dónde sale cada valor).", "The first estimate of what it costs to bring it, in USD. First the products, one per row, with what the supplier charges for each; then the costs of bringing them. Leave at 0 what you don't know yet. Below you type the Eságara you want to earn and SOLU calculates the sale price. When the quote is prepared, this sheet carries over and is refined there (supplier currency, where each amount comes from).")}</span>
               </div>
+              {(() => {
+                // One row per product: what the supplier charges for each. Products saved with only a total get it spread.
+                const seed = seedUnitCosts(deal.items, deal.costCurrency !== "USD" && deal.supplierCostNative != null ? deal.supplierCostNative : deal.supplierCost);
+                const rows = deal.items.map((it, n) => ({ id: it.id, qty: it.qty, code: it.code, description: it.description, unitCost: seed.costs[n], unitPrice: Number(it.unitPrice), locked: it.deliveryLines.length > 0 }));
+                const legacy = deal.items.length === 0 ? (deal.costCurrency !== "USD" && deal.supplierCostNative != null ? Number(deal.supplierCostNative) : Number(deal.supplierCost)) : 0;
+                return (
+                  <>
+                    <ProductRows lang={user.lang} what="need" items={legacy > 0 ? [{ id: "", qty: 1, code: null, description: deal.title, unitCost: legacy, unitPrice: Number(deal.amount) }] : rows} seeded={seed.seeded} fixed={!!deal.quoteSentAt || deal.stage === "WON" || deal.stage === "LOST"} />
+                    <div className="liq-grid two">
+                      <span className="liq-th">{t("Concepto", "Item")}</span><span className="liq-th r">{t("Valor USD", "Amount USD")}</span>
+                      <label htmlFor="dl-supplierCost" className="liq-name">{t("Productos", "Products")}<small>{t("lo que cobra el proveedor por todos: la suma de las filas de arriba", "what the supplier charges for all of them: the sum of the rows above")}</small></label>
+                      <input id="dl-supplierCost" className="liq-val" name="supplierCost" type="number" readOnly tabIndex={-1} defaultValue={legacy > 0 ? legacy : productsCost(rows)} />
+                    </div>
+                  </>
+                );
+              })()}
               <div className="liq-grid two">
-                <span className="liq-th">{t("Concepto", "Item")}</span><span className="liq-th r">{t("Valor USD", "Amount USD")}</span>
-                <label htmlFor="dl-supplierCost" className="liq-name">{t("Producto", "Product")}<small>{t("lo que cobra el proveedor", "what the supplier charges")}</small></label>
-                <input id="dl-supplierCost" className="liq-val" name="supplierCost" type="number" min="0" step="0.01" defaultValue={deal.costCurrency !== "USD" && deal.supplierCostNative != null ? Number(deal.supplierCostNative) : Number(deal.supplierCost)} />
                 <div className="liq-wide"><CostFxFields lang={user.lang} currency={deal.costCurrency} rate={deal.costFxRate ? Number(deal.costFxRate) : null} source={deal.costFxSource} /></div>
                 <label htmlFor="dl-freightCost" className="liq-name">{t("Envío", "Shipping")}<small>{t("transporte hasta el cliente", "transport to the customer")}</small></label>
                 <input id="dl-freightCost" className="liq-val" name="freightCost" type="number" min="0" step="0.01" defaultValue={Number(deal.freightCost)} />
@@ -913,18 +927,18 @@ export default async function JourneyPage({
         <p className="quiet-p">{t("Por qué esta solución, rutas posibles, valor para el cliente con evidencia, si conviene presentarla y la propuesta para su comité (sin costos internos).", "Why this solution, possible routes, customer value with evidence, whether to present it, and the proposal for their committee (no internal costs).")}</p>
       </section>
       <section className="jblock" id="productos">
-        <div className="jbh"><b>{t("PRODUCTOS", "PRODUCTS")}</b><span className="grow" /><span className="src">{t("Entregado", "Delivered")} {J.delivered} / {J.ordered}</span></div>
+        <div className="jbh"><b>{t("PRODUCTOS", "PRODUCTS")} · {deal.items.length}</b><span className="grow" /><span className="src">{t("Entregado", "Delivered")} {J.delivered} / {J.ordered}</span></div>
         {deal.items.length === 0 ? <p className="quiet-p">{t("Sin productos todavía.", "No products yet.")}</p> : (
           <div className="tscroll">
             <table>
-              <thead><tr><th>{t("Cant.", "Qty")}</th><th>{t("Código", "Code")}</th><th>{t("Descripción", "Description")}</th><th className="n">{t("Precio unit.", "Unit price")}</th><th className="n">Total</th><th /></tr></thead>
+              <thead><tr><th>{t("Cant.", "Qty")}</th><th>{t("Código", "Code")}</th><th>{t("Descripción", "Description")}</th><th className="n">{t("Costo unit.", "Unit cost")}{deal.costCurrency !== "USD" ? ` ${deal.costCurrency}` : ""}</th><th className="n">{t("Precio unit.", "Unit price")}</th><th className="n">Total</th><th /></tr></thead>
               <tbody>
                 {deal.items.map((it) => {
                   const d = it.deliveryLines.reduce((s, l) => s + l.qty, 0);
                   return (
                     <tr key={it.id}>
                       <td className="val">{it.qty}</td><td className="mono small">{it.code ?? "—"}</td><td>{it.description}</td>
-                      <td className="n val">{i.n2(it.unitPrice)}</td><td className="n val">{i.n2(lineAmount(it.qty, it.unitPrice))}</td>
+                      <td className="n val">{it.unitCost != null ? i.n2(it.unitCost) : <Link className="attn-t small" href={`${self}?tab=source#productos-costo`}>{t("sin costo", "no cost")}</Link>}</td><td className="n val">{i.n2(it.unitPrice)}</td><td className="n val">{i.n2(lineAmount(it.qty, it.unitPrice))}</td>
                       <td>{editable && d === 0 && <form action={removeItem.bind(null, deal.id, it.id)}><button className="link small" type="submit">{t("Quitar", "Remove")}</button></form>}</td>
                     </tr>
                   );

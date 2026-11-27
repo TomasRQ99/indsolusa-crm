@@ -14,7 +14,7 @@ import { scopeState } from "@/lib/scope";
 import { costDrops } from "@/lib/esagara-rules";
 import { makeI18n } from "@/lib/i18n";
 import { money2, mulMoney, sumMoney } from "@/lib/money";
-import { esagaraPctOf, otherTotal, priceForEsagara, repriceLines } from "@/lib/cost-lines";
+import { allCosted, esagaraPctOf, otherTotal, priceForEsagara, productRows, productsCost, repriceByCost } from "@/lib/cost-lines";
 import { syncItemPrices } from "@/lib/item-prices";
 import { clearQuoteAdjust } from "@/lib/quote-reminder";
 import { COST_STATUS } from "@/lib/proposal-rules";
@@ -86,7 +86,7 @@ export async function createQuote(dealId: string) {
         billTo: [deal.account.name, fullAddress(deal.account, deal.account.docLang !== "EN")].filter(Boolean).join("\n"),
         shipTo: [deal.account.name, fullAddress(deal.account, deal.account.docLang !== "EN")].filter(Boolean).join("\n"),
         promiseText: deal.promiseText,
-        lines: { create: deal.items.map((it, n) => ({ position: n, qty: it.qty, code: it.code, description: it.description, unitPrice: it.unitPrice })) },
+        lines: { create: deal.items.map((it, n) => ({ position: n, qty: it.qty, code: it.code, description: it.description, unitPrice: it.unitPrice, unitCost: it.unitCost })) },
       },
     });
   });
@@ -125,7 +125,12 @@ export async function completeQuote(id: string, fd: FormData) {
   const cost = num(fd, "supplierCost");
   if (cost && cost > 0 && !(Number(q.supplierCost) > 0) && q.costCurrency === BASE_CURRENCY) data.supplierCost = money2(cost);
   if (Object.keys(data).length) await db.quote.update({ where: { id }, data });
-  const lines = await db.quoteLine.findMany({ where: { quoteId: id }, select: { id: true, unitPrice: true } });
+  const lines = await db.quoteLine.findMany({ where: { quoteId: id }, select: { id: true, qty: true, unitPrice: true, unitCost: true } });
+  // The cost typed here is the cost of the quote's only product: it stays on that product too (when it divides to the cent).
+  if (data.supplierCost != null && lines.length === 1 && lines[0].unitCost == null && lines[0].qty > 0) {
+    const unit = money2((Number(data.supplierCost) / lines[0].qty).toFixed(6));
+    if (money2((unit * lines[0].qty).toFixed(6)) === money2(data.supplierCost)) await db.quoteLine.update({ where: { id: lines[0].id }, data: { unitCost: unit } });
+  }
   for (const l of lines) {
     const p = num(fd, `price_${l.id}`);
     if (p && p > 0 && !(Number(l.unitPrice) > 0)) await db.quoteLine.update({ where: { id: l.id }, data: { unitPrice: money2(p) } });
@@ -175,7 +180,9 @@ export async function saveCosts(id: string, fd: FormData) {
   // Eságara Gate §49: a known cost can't go down silently to lift the Eságara — it needs a reason (and stays audited).
   // The supplier's cost is compared in dollars (its amount × its rate), so changing currency is neither a false
   // drop nor a hidden one. Same amount, same currency and a rate that follows the market is the market moving, not a person.
-  const newSupplier = num(fd, "supplierCost") ?? 0;
+  // One row per product (owner, 2026-11-27): the supplier's total is the sum of the rows, never the box on screen.
+  const rows = productRows(fd);
+  const newSupplier = rows ? productsCost(rows) : num(fd, "supplierCost") ?? 0;
   const usdBefore = q.fxRate ? mulMoney(q.supplierCost, q.fxRate) : money2(q.supplierCost);
   let usdAfter = fxRate ? mulMoney(newSupplier, fxRate) : money2(newSupplier);
   if (fxRate && cur === q.costCurrency && money2(newSupplier) === money2(q.supplierCost) && usdAfter < usdBefore) {
@@ -200,12 +207,26 @@ export async function saveCosts(id: string, fd: FormData) {
   // The Eságara the person typed decides the price (owner, 2026-11-19): price = total cost ÷ (1 − Eságara %).
   // The box comes filled with the Eságara the prices already leave, so a sheet saved without touching it and
   // without changing a cost changes no price; a cost that moves keeps the Eságara and moves the price.
-  const lines = await db.quoteLine.findMany({ where: { quoteId: id }, orderBy: { position: "asc" }, select: { id: true, qty: true, unitPrice: true } });
+  // The quote's products follow the rows of the sheet: each keeps its cost, new rows are new products (their price
+  // comes from the Eságara below), and a product whose row was removed leaves the document.
+  if (rows) {
+    const had = await db.quoteLine.findMany({ where: { quoteId: id }, select: { id: true } });
+    const known = new Set(had.map((l) => l.id));
+    const kept = new Set(rows.map((r) => r.id).filter((x): x is string => !!x && known.has(x)));
+    await db.$transaction([
+      db.quoteLine.deleteMany({ where: { quoteId: id, id: { notIn: [...kept] } } }),
+      ...rows.map((r, n) => (r.id && known.has(r.id)
+        ? db.quoteLine.update({ where: { id: r.id, quoteId: id }, data: { position: n, qty: r.qty, code: r.code, description: r.description, unitCost: r.unitCost } })
+        : db.quoteLine.create({ data: { quoteId: id, position: n, qty: r.qty, code: r.code, description: r.description, unitCost: r.unitCost, unitPrice: 0 } }))),
+    ]);
+  }
+  const lines = await db.quoteLine.findMany({ where: { quoteId: id }, orderBy: { position: "asc" }, select: { id: true, qty: true, unitPrice: true, unitCost: true } });
   const newCost = sumMoney([fxRate ? mulMoney(newSupplier, fxRate) : money2(newSupplier), num(fd, "freightCost") ?? 0, otherCosts]);
   const wantPct = num(fd, "esagaraPct");
   const target = priceForEsagara(newCost, wantPct);
-  const reprice = target != null && lines.length > 0 && esagaraPctOf(saleOf(lines), newCost) !== Math.round(wantPct! * 100) / 100;
-  const prices = reprice ? repriceLines(lines, target!) : [];
+  // The price also moves when a product has no price yet (a product just added) and every product has its cost.
+  const reprice = target != null && lines.length > 0 && (esagaraPctOf(saleOf(lines), newCost) !== Math.round(wantPct! * 100) / 100 || (allCosted(lines) && lines.some((l) => !(Number(l.unitPrice) > 0))));
+  const prices = reprice ? repriceByCost(lines, target!) : [];
   await db.$transaction(lines.flatMap((l, n) => (reprice && prices[n] !== Number(l.unitPrice) ? [db.quoteLine.update({ where: { id: l.id }, data: { unitPrice: prices[n] } })] : [])));
   await db.quote.update({
     where: { id },

@@ -7,7 +7,7 @@ import type { Prisma } from "@prisma/client";
 import { db } from "./db";
 
 type Tx = Prisma.TransactionClient | typeof db;
-type Line = { code: string | null; description: string; qty: number; unitPrice: unknown };
+type Line = { code: string | null; description: string; qty: number; unitPrice: unknown; unitCost?: unknown };
 const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
 
 /** Bring the prices of `lines` (a quote's or a customer PO's) to the Need's products.
@@ -17,7 +17,7 @@ export async function syncItemPrices(tx: Tx, dealId: string, lines: Line[], mode
   const items = await tx.dealItem.findMany({ where: { dealId }, orderBy: { id: "asc" } });
   if (items.length === 0) {
     // A Need that was quoted without products of its own: its products are what was quoted.
-    await tx.dealItem.createMany({ data: lines.filter((l) => l.qty > 0).map((l) => ({ dealId, qty: l.qty, code: l.code, description: l.description, unitPrice: Number(l.unitPrice) || 0 })) });
+    await tx.dealItem.createMany({ data: lines.filter((l) => l.qty > 0).map((l) => ({ dealId, qty: l.qty, code: l.code, description: l.description, unitPrice: Number(l.unitPrice) || 0, ...(l.unitCost != null ? { unitCost: Number(l.unitCost) } : {}) })) });
     return lines.length;
   }
   const used = new Set<number>();
@@ -29,11 +29,23 @@ export async function syncItemPrices(tx: Tx, dealId: string, lines: Line[], mode
     if (k < 0) k = pick((l) => norm(l.description) === norm(it.description));
     if (k < 0 && items.length === lines.length && !used.has(n)) { k = n; used.add(n); }
     if (k < 0) continue;
+    // What the supplier charges for it comes along (quote lines carry it; a customer PO does not).
+    const cost = lines[k].unitCost == null ? null : Number(lines[k].unitCost);
+    if (cost != null && cost > 0 && Number(it.unitCost ?? -1) !== cost && (mode === "set" || it.unitCost == null)) await tx.dealItem.update({ where: { id: it.id }, data: { unitCost: cost } });
     const price = Number(lines[k].unitPrice) || 0;
     if (price <= 0 || Number(it.unitPrice) === price) continue;
     if (mode === "fill" && Number(it.unitPrice) > 0) continue;
     await tx.dealItem.update({ where: { id: it.id }, data: { unitPrice: price } });
     changed++;
+  }
+  // A product added on the quote (a second, a third…) that the Need does not have yet: the Need gets it, so the
+  // delivery and the invoice have every product. Only as many as the document has more than the Need.
+  let extra = lines.length - items.length;
+  for (let k = 0; k < lines.length && extra > 0; k++) {
+    if (used.has(k) || !(lines[k].qty > 0)) continue;
+    const l = lines[k];
+    await tx.dealItem.create({ data: { dealId, qty: l.qty, code: l.code, description: l.description, unitPrice: Number(l.unitPrice) || 0, ...(l.unitCost != null ? { unitCost: Number(l.unitCost) } : {}) } });
+    extra--; changed++;
   }
   return changed;
 }

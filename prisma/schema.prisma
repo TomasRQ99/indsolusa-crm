@@ -838,13 +838,15 @@ model AiDraft {
 }
 
 model DealItem {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   dealId      String
-  deal        Deal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  deal        Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
   qty         Int
   code        String?
   description String
-  unitPrice   Decimal @db.Decimal(14, 2)
+  unitPrice   Decimal  @db.Decimal(14, 2)
+  /// What the supplier charges per unit, in the supplier currency of the cost sheet. Null = not typed yet.
+  unitCost    Decimal? @db.Decimal(14, 2)
 
   deliveryLines DeliveryLine[]
 
@@ -1494,14 +1496,16 @@ model Quote {
 }
 
 model QuoteLine {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   quoteId     String
-  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  position    Int     @default(0)
+  quote       Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  position    Int      @default(0)
   qty         Int
   code        String?
   description String
-  unitPrice   Decimal @db.Decimal(14, 2)
+  unitPrice   Decimal  @db.Decimal(14, 2)
+  /// What the supplier charges per unit, in the quote's costCurrency. Null = not typed yet.
+  unitCost    Decimal? @db.Decimal(14, 2)
 }
 
 model QuoteScenario {

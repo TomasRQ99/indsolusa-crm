@@ -9,7 +9,7 @@ import { optionalDate, optionalId, optionalText, parseForm, requiredText } from 
 import { refreshApp } from "@/lib/revalidate";
 import { nextCode, today } from "@/lib/domain";
 import { CAUSE_KEYS } from "@/lib/causes";
-import { esagaraPctOf, otherTotal, priceForEsagara, repriceLines } from "@/lib/cost-lines";
+import { allCosted, esagaraPctOf, otherTotal, priceForEsagara, productRows, productsCost, repriceByCost } from "@/lib/cost-lines";
 import { linesTotal, sumMoney, money2, mulMoney } from "@/lib/money";
 import { BASE_CURRENCY, cleanCurrency } from "@/lib/currencies";
 import { marketRate, rateSourceText } from "@/lib/fx-market";
@@ -289,7 +289,9 @@ export async function saveSourcing(id: string, fd: FormData) {
   // Same rule as the quote's sheet (cotizaciones/actions.ts saveCosts). Never once the price is with the customer.
   // The supplier's price may be typed in the supplier's currency (owner, 2026-11-25): it is kept as typed, with the
   // rate used, and its USD value goes where the rest of SOLU reads the cost. A rate left empty takes the market's.
-  let supplierUsd = num(fd, "supplierCost");
+  // One row per product (owner, 2026-11-27): the supplier's total is the sum of the rows, never the box on screen.
+  const rows = productRows(fd);
+  let supplierUsd = rows ? productsCost(rows) : num(fd, "supplierCost");
   let fx: { costCurrency: string; supplierCostNative: number | null; costFxRate: number | null; costFxSource: string | null } | null = null;
   if (fd.has("costCurrency") && supplierUsd !== undefined) {
     const code = cleanCurrency(fd.get("costCurrency"));
@@ -301,13 +303,52 @@ export async function saveSourcing(id: string, fd: FormData) {
       supplierUsd = mulMoney(supplierUsd, rate!);
     }
   }
-  const cur = await db.deal.findUniqueOrThrow({ where: { id }, select: { amount: true, supplierCost: true, freightCost: true, otherCosts: true, quoteSentAt: true, stage: true, items: { orderBy: { id: "asc" }, select: { id: true, qty: true, unitPrice: true } } } });
+  const itemSel = { orderBy: { id: "asc" }, select: { id: true, qty: true, code: true, description: true, unitPrice: true, unitCost: true, _count: { select: { deliveryLines: true } } } } as const;
+  let cur = await db.deal.findUniqueOrThrow({ where: { id }, select: { amount: true, supplierCost: true, freightCost: true, otherCosts: true, quoteSentAt: true, stage: true, items: itemSel } });
+  const committed = !!cur.quoteSentAt || cur.stage === "WON" || cur.stage === "LOST";
+  let productsChanged = false;
+  if (rows) {
+    // The Need's products follow the rows: each keeps its cost; new rows are new products; a product whose row was
+    // removed goes away. Once the price is with the customer only the costs change here (products change by a
+    // revision of the quote), and a product with deliveries keeps its quantity and is never removed.
+    const byId = new Map(cur.items.map((it) => [it.id, it]));
+    const kept = new Set<string>();
+    const firstAlone = cur.items.length === 0 && rows.length === 1 && Number(cur.amount) > 0;
+    await db.$transaction(async (tx) => {
+      for (const r of rows) {
+        const it = r.id ? byId.get(r.id) : undefined;
+        if (it) {
+          kept.add(it.id);
+          const locked = committed || it._count.deliveryLines > 0;
+          const data = { unitCost: r.unitCost, ...(locked ? {} : { qty: r.qty }), ...(committed ? {} : { code: r.code, description: r.description }) };
+          if ((data.qty ?? it.qty) !== it.qty || (!committed && (r.code !== it.code || r.description !== it.description))) productsChanged = true;
+          await tx.dealItem.update({ where: { id: it.id }, data });
+        } else if (!committed) {
+          productsChanged = true;
+          // The only product of a Need that already had a sale value takes that value as its price.
+          await tx.dealItem.create({ data: { dealId: id, qty: r.qty, code: r.code, description: r.description, unitCost: r.unitCost, unitPrice: firstAlone ? money2((Number(cur.amount) / r.qty).toFixed(6)) : 0 } });
+        }
+      }
+      if (!committed) {
+        const gone = cur.items.filter((it) => !kept.has(it.id) && it._count.deliveryLines === 0).map((it) => it.id);
+        if (gone.length) { productsChanged = true; await tx.dealItem.deleteMany({ where: { id: { in: gone }, dealId: id } }); }
+      }
+    });
+    cur = { ...cur, items: await db.dealItem.findMany({ where: { dealId: id }, ...itemSel }) };
+    // What is saved is what the products add up to (a locked quantity may differ from the one on screen).
+    const native = productsCost(cur.items);
+    supplierUsd = fx && fx.costFxRate ? mulMoney(native, fx.costFxRate) : native;
+    if (fx && fx.costFxRate) fx.supplierCostNative = native;
+  }
   const newCost = sumMoney([supplierUsd ?? cur.supplierCost, num(fd, "freightCost") ?? cur.freightCost, sheet ? otherTotal(parts) : num(fd, "otherCosts") ?? cur.otherCosts]);
   const rawPct = String(fd.get("esagaraPct") ?? "").trim().replace(",", ".");
   const wantPct = rawPct === "" ? null : Number(rawPct);
-  const target = cur.quoteSentAt || cur.stage === "WON" || cur.stage === "LOST" ? null : priceForEsagara(newCost, wantPct);
-  const reprice = target != null && esagaraPctOf(cur.amount, newCost) !== Math.round(wantPct! * 100) / 100;
-  const prices = reprice ? repriceLines(cur.items, target!) : [];
+  const target = committed ? null : priceForEsagara(newCost, wantPct);
+  // The price also moves when a product has no price yet (a product just added) and every product has its cost.
+  const itemsSale = linesTotal(cur.items, (l) => l.qty, (l) => l.unitPrice);
+  const saleNow = itemsSale > 0 ? itemsSale : Number(cur.amount);
+  const reprice = target != null && (esagaraPctOf(saleNow, newCost) !== Math.round(wantPct! * 100) / 100 || (allCosted(cur.items) && cur.items.some((it) => !(Number(it.unitPrice) > 0))));
+  const prices = reprice ? repriceByCost(cur.items, target!) : [];
   const newAmount = reprice ? (cur.items.length ? linesTotal(cur.items.map((it, n) => ({ qty: it.qty, p: prices[n] })), (l) => l.qty, (l) => l.p) : target!) : null;
   if (reprice) await db.$transaction(cur.items.flatMap((it, n) => (prices[n] !== Number(it.unitPrice) ? [db.dealItem.update({ where: { id: it.id }, data: { unitPrice: prices[n] } })] : [])));
   await db.deal.update({
@@ -324,7 +365,7 @@ export async function saveSourcing(id: string, fd: FormData) {
     },
   });
   // A quote already open as a draft does not follow the Need: leave the person a reminder to adjust it there.
-  if (reprice || newCost !== sumMoney([cur.supplierCost, cur.freightCost, cur.otherCosts])) await remindQuoteAdjust(id, user.lang === "EN" ? "EN" : "ES");
+  if (reprice || productsChanged || newCost !== sumMoney([cur.supplierCost, cur.freightCost, cur.otherCosts])) await remindQuoteAdjust(id, user.lang === "EN" ? "EN" : "ES");
   jback(id, fd, "source");
 }
 

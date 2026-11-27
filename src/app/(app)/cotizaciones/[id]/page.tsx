@@ -28,9 +28,10 @@ import { BASE_CURRENCY, rateGapPct, rateText } from "@/lib/currencies";
 import { marketRate, rateSourceText } from "@/lib/fx-market";
 import { CostFxFields } from "@/components/CostFxFields";
 import { CostTotal } from "@/components/CostTotal";
+import { ProductRows } from "@/components/ProductRows";
 import { Info } from "@/components/Info";
 import { OpenOnLand } from "@/components/OpenOnLand";
-import { COST_LINES, costDetail, esagaraPctOf, priceIncludes } from "@/lib/cost-lines";
+import { COST_LINES, costDetail, esagaraPctOf, priceIncludes, productsCost, seedUnitCosts } from "@/lib/cost-lines";
 import { COST_STATUS, costStatusOf, quoteDiff, weakest, type QV } from "@/lib/proposal-rules";
 
 export default async function QuotePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; cmp?: string; abrir?: string }> }) {
@@ -233,7 +234,8 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
         {(count > 0 || optCount > 0) && (
           <form action={completeQuote.bind(null, q.id)} className="cq-form">
             {noPrice.map((l) => <label key={l.id} className="req-miss"><span className="fname">{t("Precio de venta por unidad (USD)", "Selling price per unit (USD)")}: {l.description.slice(0, 60)} <Info lang={user.lang} {...HELP.price} /> <Req /></span><input name={`price_${l.id}`} type="number" min="0" step="0.01" placeholder={HELP.price.example} /></label>)}
-            {m.cost && usd && <label className="req-miss"><span className="fname">{t("Costo del producto (USD)", "Product cost (USD)")} <Info lang={user.lang} {...HELP.supplierCost} /> <Req /></span><input name="supplierCost" type="number" min="0" step="0.01" placeholder={HELP.supplierCost.example} /></label>}
+            {m.cost && usd && q.lines.length > 1 && <p className="small req-miss" style={{ margin: 0 }}><span className="fname">{t(`Costo de cada producto (son ${q.lines.length})`, `Cost of each product (there are ${q.lines.length})`)} <Req /></span> <a className="btn secondary sm" href="#productos-costo">{t("Escribirlo en la hoja de costos, una fila por producto", "Type it on the cost sheet, one row per product")} ↓</a></p>}
+            {m.cost && usd && q.lines.length <= 1 && <label className="req-miss"><span className="fname">{t("Costo del producto (USD)", "Product cost (USD)")} <Info lang={user.lang} {...HELP.supplierCost} /> <Req /></span><input name="supplierCost" type="number" min="0" step="0.01" placeholder={HELP.supplierCost.example} /></label>}
             {m.cost && !usd && <p className="cq-note wide">{t(`El costo del producto está en ${q.costCurrency}: escríbelo abajo, en «Liquidación de costos».`, `The product's cost is in ${q.costCurrency}: type it below, under “Cost settlement”.`)} <a href="#costos">{t("Ir a la hoja de costos", "Go to the cost sheet")} →</a></p>}
             {m.lead && (
               <div className="cq-pair">
@@ -347,17 +349,23 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     const canSheet = editable && draft;
     const showTable = !canSheet || showVersions;
     const srcLabel = t("De dónde sale", "Where it is from");
+    const prodSeed = seedUnitCosts(q.lines, q.supplierCost);
+    // A cost typed before any product existed becomes the first row, so the total is not lost.
+    const prodRows = q.lines.length === 0 && Number(q.supplierCost) > 0
+      ? [{ id: "", qty: 1, code: null as string | null, description: q.deal.title, unitCost: Number(q.supplierCost) as number | null, unitPrice: 0 }]
+      : q.lines.map((l, n) => ({ id: l.id, qty: l.qty, code: l.code, description: l.description, unitCost: prodSeed.costs[n], unitPrice: Number(l.unitPrice) }));
     const Sheet = () => (
       <form action={saveCosts.bind(null, q.id)} className="liq-sheet" id="costos">
         <div className="liq-head">
           <b>{t("Liquidación de costos", "Cost settlement")}</b>
-          <span className="src">{t("Escribe cada costo en su fila; lo que no aplique se deja en 0. Abajo escribes la Eságara que quieres ganar y SOLU calcula el precio de venta mientras escribes.", "Type each cost on its row; leave at 0 what doesn't apply. Below you type the Eságara you want to earn and SOLU calculates the sale price as you type.")}</span>
+          <span className="src">{t("Primero los productos, uno por fila, con lo que cobra el proveedor por cada uno; después los costos de traerlos, cada uno en su fila (lo que no aplique se deja en 0). Abajo escribes la Eságara que quieres ganar y SOLU calcula el precio de venta mientras escribes.", "First the products, one per row, with what the supplier charges for each; then the costs of bringing them, each on its row (leave at 0 what doesn't apply). Below you type the Eságara you want to earn and SOLU calculates the sale price as you type.")}</span>
         </div>
+        <ProductRows lang={user.lang} what="quote" items={prodRows} seeded={prodSeed.seeded} />
         <div className="liq-grid">
           <span className="liq-th">{t("Concepto", "Item")}</span><span className="liq-th r">{t("Valor", "Amount")}</span><span className="liq-th">{t("¿De dónde sale?", "Where is it from?")}</span>
 
-          <label htmlFor="lq-supplierCost" className="liq-name">{t("Producto", "Product")}<small>{t("lo que cobra el proveedor, en su moneda", "what the supplier charges, in its currency")}</small></label>
-          <input id="lq-supplierCost" className="liq-val" name="supplierCost" type="number" step="0.01" min="0" defaultValue={Number(q.supplierCost)} />
+          <label htmlFor="lq-supplierCost" className="liq-name">{t("Productos", "Products")}<small>{t("lo que cobra el proveedor por todos, en su moneda: la suma de las filas de arriba", "what the supplier charges for all of them, in its currency: the sum of the rows above")}</small></label>
+          <input id="lq-supplierCost" className="liq-val" name="supplierCost" type="number" readOnly tabIndex={-1} defaultValue={productsCost(prodRows)} />
           <input className="liq-src" name="supplierSrc" maxLength={200} defaultValue={q.supplierSrc ?? ""} aria-label={`${srcLabel}: ${t("producto", "product")}`} placeholder={t("Proforma, correo del proveedor…", "Proforma, supplier email…")} />
           <div className="liq-wide"><CostFxFields lang={user.lang} currency={q.costCurrency} rate={q.fxRate ? Number(q.fxRate) : null} source={q.fxSource} /></div>
 
@@ -387,7 +395,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
         <CostTotal lang={user.lang} sale={B.sale} pct={B.cost > 0 ? esagaraPctOf(B.sale, B.cost) : null} lines={q.lines.length} threshold={policy.threshold} saved={{ supplier: cur.supplier, freight: cur.freight, other: otherGross }} note={q.changeNote} askAlways={q.rev > 0} />
         <div className="liq-foot">
           <button type="submit">{t("Guardar costos", "Save costs")}</button>
-          <span className="src">{t("Al guardar, SOLU pone el precio de venta en los productos según la Eságara que escribiste.", "On save, SOLU puts the sale price on the products from the Eságara you typed.")}</span>
+          <span className="src">{t("Al guardar, SOLU guarda los productos de las filas y le pone a cada uno su precio de venta según la Eságara que escribiste.", "On save, SOLU saves the products of the rows and gives each one its sale price from the Eságara you typed.")}</span>
         </div>
         <p className="small" style={{ margin: 0 }}>{t("En el PDF del cliente", "On the customer's PDF")}: <b>{t("El precio incluye", "Price includes")}:</b> {priceIncludes(q, user.lang === "EN" ? "EN" : "ES")}. <span className="src">{t("Sale de los costos de esta hoja que tienen valor. El cliente ve los nombres, nunca nuestros costos ni la Eságara.", "It comes from the costs on this sheet that have an amount. The customer sees the names, never our costs or the Eságara.")}</span></p>
       </form>
@@ -561,14 +569,15 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   // ---------- Lines ----------
   const Lines = () => (
     <section className="jblock" id="lineas">
-      <div className="jbh"><b>{t("PRODUCTOS EN EL DOCUMENTO", "PRODUCTS ON THE DOCUMENT")}</b><span className="grow" /><span className="src">Total USD {i.n2(B.sale)}</span></div>
+      <div className="jbh"><b>{t("PRODUCTOS EN EL DOCUMENTO", "PRODUCTS ON THE DOCUMENT")} · {q.lines.length}</b><span className="grow" /><span className="src">Total USD {i.n2(B.sale)}</span></div>
       <div className="tscroll">
         <table>
-          <thead><tr><th>{t("Cant.", "Qty")}</th><th>{t("Código", "Code")}</th><th>{t("Descripción", "Description")}</th><th className="n">{t("Precio unit.", "Unit price")}</th><th className="n">Total</th>{editable && draft && <th />}</tr></thead>
+          <thead><tr><th>{t("Cant.", "Qty")}</th><th>{t("Código", "Code")}</th><th>{t("Descripción", "Description")}</th><th className="n">{t("Costo unit. (interno)", "Unit cost (internal)")}{q.costCurrency !== "USD" ? ` ${q.costCurrency}` : ""}</th><th className="n">{t("Precio unit.", "Unit price")}</th><th className="n">Total</th>{editable && draft && <th />}</tr></thead>
           <tbody>
             {q.lines.map((l) => (
               <tr key={l.id}>
                 <td className="val">{l.qty}</td><td className="mono small">{l.code ?? "—"}</td><td>{l.description}</td>
+                <td className="n val">{l.unitCost != null ? i.n2(l.unitCost) : draft ? <a className="attn-t small" href="#productos-costo">{t("sin costo", "no cost")}</a> : "—"}</td>
                 <td className={`n val${Number(l.unitPrice) <= 0 ? " attn-t" : ""}`}>{Number(l.unitPrice) > 0 ? i.n2(l.unitPrice) : t("sin precio", "no price")}</td>
                 <td className="n val">{i.n2(lineAmount(l.qty, l.unitPrice))}</td>
                 {editable && draft && (

@@ -1820,6 +1820,31 @@ button.linkish { background: none; border: 0; padding: 0; color: var(--brand); f
   .liq-src { grid-column: 1 / -1; }
   .liq-span { grid-row: auto; }
 }
+/* Cost settlement: one row per product (count, quantity, unit cost, its own sale price). */
+.liq-prod { display: flex; flex-direction: column; gap: 6px; background: var(--bg, #f6f8fb); border-radius: 8px; padding: 12px; scroll-margin-top: 90px; }
+.liq-prod-h { display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
+.liq-prod-h b { font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.liq-count { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: var(--brand); color: #fff; font-size: 13px; font-variant-numeric: tabular-nums; }
+.liq-prow { display: grid; grid-template-columns: 22px 70px 120px minmax(150px, 1fr) 120px 110px 120px 52px; gap: 6px 8px; align-items: center; font-size: 13px; }
+.liq-prow.head { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.liq-prow input { width: 100%; min-width: 0; }
+.liq-prow .r { text-align: right; font-variant-numeric: tabular-nums; }
+.liq-prow input.miss { border-color: var(--attn); }
+.liq-prow input[readonly] { background: transparent; color: var(--ink-2); }
+.liq-n { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.liq-lt.calc { color: var(--brand); font-weight: 600; }
+.liq-prod-f { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+.liq-prod-f .grow { flex: 1; }
+.liq-sum { font-size: 13px; }
+input.liq-val[readonly] { background: var(--bg, #f6f8fb); color: var(--ink); font-weight: 600; }
+@media (max-width: 860px) {
+  .liq-prow.head { display: none; }
+  .liq-prow { grid-template-columns: 22px 70px minmax(0, 1fr) minmax(0, 1fr); border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+  .liq-prow input[name="pi_desc"] { grid-column: 2 / -1; }
+  .liq-prow input[name="pi_cost"] { grid-column: 2 / 4; }
+  .liq-lt::before { content: attr(data-l) ": "; font-family: inherit; font-size: 11px; color: var(--ink-2); font-weight: 400; }
+  .liq-lt { grid-column: 2 / -1; text-align: left !important; }
+}
 .qv-cost tr.sub td:first-child { padding-left: 22px; color: var(--ink-2); }
 .emf-fx { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 

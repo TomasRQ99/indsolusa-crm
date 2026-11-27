@@ -11,7 +11,7 @@ import { ESAGARA_MAX_PCT, priceForEsagara } from "@/lib/cost-lines";
 
 const OTHER = ["taxCost", "customsCost", "packingCost", "wireCost", "miscCost"];
 
-type Live = { cost: number; noRate: boolean; drop: boolean; pct: number | null; pctBad: boolean };
+type Live = { cost: number; noRate: boolean; drop: boolean; pct: number | null; pctBad: boolean; rows: number | null; costed: boolean };
 
 export function CostTotal({ lang, sale, pct, lines, threshold, fixed, saved, note, askAlways }: {
   /** The price is already committed with the customer: the Eságara is shown as a result, not asked. */
@@ -54,8 +54,15 @@ export function CostTotal({ lang, sale, pct, lines, threshold, fixed, saved, not
       const rawPct = String((form.elements.namedItem("esagaraPct") as HTMLInputElement | null)?.value ?? "").trim().replace(",", ".");
       const p = rawPct === "" ? null : Number(rawPct);
       const pctBad = p != null && !(Number.isFinite(p) && p >= 0 && p <= ESAGARA_MAX_PCT);
-      const next: Live = { cost: (sup + fre + oth - c(val("creditAmount"))) / 100, noRate: cur !== "USD" && !rate, drop: lower(sup, supplier) || lower(fre, freight) || lower(oth, other), pct: pctBad ? null : p, pctBad };
-      setV((o) => (o && o.cost === next.cost && o.noRate === next.noRate && o.drop === next.drop && o.pct === next.pct && o.pctBad === next.pctBad ? o : next));
+      // With one row per product on the sheet (ProductRows), the count and "each has its cost" are read live.
+      const costs = [...form.querySelectorAll<HTMLInputElement>('.liq-prod input[name="pi_cost"]')];
+      const descs = [...form.querySelectorAll<HTMLInputElement>('.liq-prod input[name="pi_desc"]')];
+      const ids = [...form.querySelectorAll<HTMLInputElement>('.liq-prod input[name="pi_id"]')];
+      const real = costs.map((el, n) => ({ c: Number(String(el.value).replace(",", ".")) || 0, on: !!(ids[n]?.value || descs[n]?.value.trim() || Number(el.value) > 0) })).filter((r) => r.on);
+      const rows = form.querySelector(".liq-prod") ? real.length : null;
+      const costed = real.length > 0 && real.every((r) => r.c > 0);
+      const next: Live = { cost: (sup + fre + oth - c(val("creditAmount"))) / 100, noRate: cur !== "USD" && !rate, drop: lower(sup, supplier) || lower(fre, freight) || lower(oth, other), pct: pctBad ? null : p, pctBad, rows, costed };
+      setV((o) => (o && o.cost === next.cost && o.noRate === next.noRate && o.drop === next.drop && o.pct === next.pct && o.pctBad === next.pctBad && o.rows === next.rows && o.costed === next.costed ? o : next));
     };
     read();
     form.addEventListener("input", read);
@@ -66,6 +73,8 @@ export function CostTotal({ lang, sale, pct, lines, threshold, fixed, saved, not
   }, [supplier, freight, other]);
 
   // The Eságara typed decides the price; with none typed, the price is what the products have today.
+  const n = v?.rows ?? lines;
+  const how = v?.costed ? t(", cada uno según su costo", ", each one by its cost") : null;
   const fromPct = v ? priceForEsagara(v.cost, v.pct) : null;
   const price = fromPct ?? sale;
   const es = v ? Math.round((price - v.cost) * 100) / 100 : 0;
@@ -97,11 +106,11 @@ export function CostTotal({ lang, sale, pct, lines, threshold, fixed, saved, not
             <span className="src" id="liq-es-how">
               {fromPct != null
                 ? <>{t(`Costo total ${nf(v.cost)} ÷ (1 − ${nf(v.pct ?? 0)} %) = ${nf(fromPct)}.`, `Total cost ${nf(v.cost)} ÷ (1 − ${nf(v.pct ?? 0)} %) = ${nf(fromPct)}.`)}{" "}
-                    {moves && (lines === 0
+                    {moves && (n === 0
                       ? t("Todavía no hay productos: agrega uno para que tome este precio.", "There are no products yet: add one so it takes this price.")
                       : sale > 0
-                        ? t(`Hoy ${lines === 1 ? "el producto vale" : `los ${lines} productos suman`} USD ${nf(sale)}: al guardar ${lines === 1 ? "pasa" : "pasan"} a USD ${nf(fromPct)}${lines > 1 ? ", en la misma proporción de sus precios" : ""}.`, `Today the ${lines === 1 ? "product is" : `${lines} products add up to`} USD ${nf(sale)}: on save ${lines === 1 ? "it becomes" : "they become"} USD ${nf(fromPct)}${lines > 1 ? ", in the same proportion as their prices" : ""}.`)
-                        : t(`Al guardar, SOLU pone este precio en ${lines === 1 ? "el producto" : `los ${lines} productos, repartido por unidades`}.`, `On save, SOLU puts this price on ${lines === 1 ? "the product" : `the ${lines} products, split by units`}.`))}
+                        ? t(`Hoy los productos suman USD ${nf(sale)}: al guardar ${n === 1 ? "el producto pasa" : `los ${n} productos pasan`} a USD ${nf(fromPct)}${n > 1 ? how ?? ", en la misma proporción de sus precios" : ""}.`, `Today the products add up to USD ${nf(sale)}: on save the ${n === 1 ? "product becomes" : `${n} products become`} USD ${nf(fromPct)}${n > 1 ? how ?? ", in the same proportion as their prices" : ""}.`)
+                        : t(`Al guardar, SOLU pone este precio en ${n === 1 ? "el producto" : `los ${n} productos${how ?? ", repartido por unidades"}`}.`, `On save, SOLU puts this price on ${n === 1 ? "the product" : `the ${n} products${how ?? ", split by units"}`}.`))}
                   </>
                 : v.pct != null && !(v.cost > 0)
                   ? t("Escribe primero los costos: el precio sale del costo total y de la Eságara.", "Type the costs first: the price comes from the total cost and the Eságara.")

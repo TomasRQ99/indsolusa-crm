@@ -50,7 +50,11 @@ export async function prepareSpo(dealId: string, fd?: FormData) {
   const pr = purchaseRequirement(deal, isDomestic(supplier));
   const saleTotal = sumMoney(pr.lines.map((l) => l.sale));
   const target = pr.targetCost ?? 0;
+  // Each product is ordered at the cost typed for it on the quote's sheet. Only quotes from before that (one total
+  // for everything) still spread the total in proportion to the sale.
+  const perProduct = pr.lines.length > 0 && pr.lines.every((l) => l.unitCost != null);
   const lines = pr.lines.map((l, n) => {
+    if (perProduct) return { position: n, qty: l.qty, code: l.code, description: l.description, unitCost: l.unitCost! };
     const share = saleTotal > 0 ? l.sale / saleTotal : 1 / pr.lines.length;
     return { position: n, qty: l.qty, code: l.code, description: l.description, unitCost: mulMoney(target, share / l.qty) };
   });
