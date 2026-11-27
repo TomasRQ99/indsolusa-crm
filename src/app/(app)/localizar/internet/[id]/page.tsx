@@ -5,11 +5,11 @@ import { requireUser } from "@/lib/auth";
 import { makeI18n } from "@/lib/i18n";
 import { canManageAll } from "@/lib/permissions";
 import { aiConfigured, aiSpentThisMonth, monthlyCap } from "@/lib/ai";
-import { HUNT_STALE_MS, contactNote, confidenceLabel, failText, leadsMailedAt, needsToSaveOn, type HuntAnswers, type Understood } from "@/lib/web-hunt";
+import { HUNT_STALE_MS, LEADS_MAX, LEADS_PER_ROUND, contactNote, confidenceLabel, failText, flagLabel, huntStart, leadsMailedAt, needsToSaveOn, sizeText, type Flag, type HuntAnswers, type Understood } from "@/lib/web-hunt";
 import { HuntWaiting } from "@/components/HuntWaiting";
 import { HuntForm } from "@/components/HuntForm";
 import { LeadMailLink, MAIL_LABEL, WebLeadCard, mailHint } from "@/components/WebLeadCard";
-import { saveLead, startHunt } from "../actions";
+import { moreLeads, saveLead, startHunt } from "../actions";
 
 export default async function HuntPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; err?: string; l?: string; n?: string }> }) {
   const user = await requireUser();
@@ -32,10 +32,18 @@ export default async function HuntPage({ params, searchParams }: { params: Promi
   const aiState = !aiConfigured() ? "OFF" : spent.usd + 0.1 > cap ? "CAP" : "ON";
   const answers = (hunt.answers ?? {}) as HuntAnswers;
   const und = hunt.understood as Understood | null;
+
   const questions = (Array.isArray(hunt.questions) ? hunt.questions : []) as string[];
-  const stale = hunt.status === "RUNNING" && Date.now() - hunt.createdAt.getTime() > HUNT_STALE_MS;
-  const status = stale ? "FAILED" : hunt.status;
-  const failCode = stale ? "STALE" : hunt.failCode;
+  const started = huntStart(hunt);
+  const stale = hunt.status === "RUNNING" && Date.now() - started.getTime() > HUNT_STALE_MS;
+  const hasLeads = hunt.leads.length > 0;
+  // A round for more sellers that was cut off, or failed, never hides the sellers already found.
+  const status = stale ? (hasLeads ? "DONE" : "FAILED") : hunt.status;
+  const failCode = stale ? (hasLeads ? "MORE_STALE" : "STALE") : hunt.failCode;
+  const moreRunning = status === "RUNNING" && hasLeads;
+  const lg = und?.logistics ?? null;
+  const size = lg ? sizeText(lg, i.n2, t) : null;
+  const TONE: Record<Flag, string> = { YES: "attn", NO: "ok", UNKNOWN: "wait" };
   const back = `/localizar?${new URLSearchParams({ q: hunt.query, ...(hunt.dealId ? { deal: hunt.dealId } : {}) })}`;
   const asked = [
     answers.brand ? t(`marca ${answers.brand}`, `brand ${answers.brand}`) : null,
@@ -82,7 +90,8 @@ export default async function HuntPage({ params, searchParams }: { params: Promi
 
       {status === "RUNNING" && (
         <section className="jblock">
-          <HuntWaiting startedAt={hunt.createdAt.toISOString()} lang={user.lang === "EN" ? "EN" : "ES"} />
+          {moreRunning && <p style={{ margin: "0 0 8px" }}><b>{t(`Buscando hasta ${LEADS_PER_ROUND} vendedores más.`, `Searching for up to ${LEADS_PER_ROUND} more sellers.`)}</b> {t("Los que ya tenías siguen abajo.", "The ones you already had are still below.")}</p>}
+          <HuntWaiting startedAt={started.toISOString()} lang={user.lang === "EN" ? "EN" : "ES"} />
           <p className="src" style={{ marginTop: 8 }}>{t("Puedes dejar esta página abierta o irte y volver después: la búsqueda sigue sola y el resultado queda guardado aquí.", "You can leave this page open or go and come back later: the search carries on by itself and the result is kept here.")}</p>
         </section>
       )}
@@ -94,7 +103,7 @@ export default async function HuntPage({ params, searchParams }: { params: Promi
         </section>
       )}
 
-      {status === "DONE" && (
+      {(status === "DONE" || moreRunning) && (
         <>
           <section className="jblock">
             <div className="jbh"><b>{t("LO QUE SOLU ENTENDIÓ", "WHAT SOLU UNDERSTOOD")}</b></div>
@@ -107,6 +116,25 @@ export default async function HuntPage({ params, searchParams }: { params: Promi
               {hunt.summary && <><dt>{t("Resumen", "Summary")}</dt><dd>{hunt.summary}</dd></>}
             </dl>
           </section>
+
+          {lg ? (
+            <section className="jblock loc-sec" id="transporte">
+              <div className="jbh"><b>{t("TRANSPORTE E IMPORTACIÓN", "TRANSPORT AND IMPORT")}</b><span className="grow" /><span className="src">{t("orientación de la IA para una unidad: confírmala antes de cotizar", "AI guidance for one unit: confirm it before quoting")}</span></div>
+              <dl className="qv-dl">
+                <dt>{t("Restricción de transporte", "Transport restriction")}</dt>
+                <dd><span className={`sig ${TONE[lg.transport]}`}>{flagLabel(lg.transport, t)}</span>{lg.transportNote ? <> {lg.transportNote}</> : null}</dd>
+                <dt>{t(`Restricción de ingreso a ${lg.country}`, `Restriction to enter ${lg.country}`)}</dt>
+                <dd><span className={`sig ${TONE[lg.importRule]}`}>{flagLabel(lg.importRule, t)}</span>{lg.importNote ? <> {lg.importNote}</> : null}</dd>
+                <dt>{t("Peso y dimensiones aproximados", "Approximate weight and size")}</dt>
+                <dd>{size ? <><b>{size}</b> <span className="loc-chip">{lg.sizeBasis === "STATED" ? t("dato publicado", "published figure") : t("estimado por la IA", "estimated by the AI")}</span></> : <span className="muted">{t("No se pudo estimar: pídelos al vendedor.", "Could not be estimated: ask the seller.")}</span>}{lg.sizeNote ? <span className="src block">{lg.sizeNote}</span> : null}</dd>
+                <dt>{t("Posible posición arancelaria", "Possible tariff heading")}</dt>
+                <dd>{lg.hsCode ? <b className="mono">{lg.hsCode}</b> : <span className="muted">{t("No se pudo proponer una.", "None could be proposed.")}</span>}{lg.hsNote ? <> {lg.hsNote}</> : null}{lg.hsCode ? <span className="src block">{t("Son los primeros dígitos del Sistema Armonizado. La subpartida completa del país la define el agente de aduana.", "These are the first digits of the Harmonized System. The country's full subheading is set by the customs broker.")}</span> : null}</dd>
+              </dl>
+              <p className="src" style={{ margin: "8px 0 0" }}>{t(`Esto lo propone la IA a partir de qué es la pieza; SOLU no lo comprobó. Las restricciones de ingreso son para ${lg.country}, el país de entrega de esta búsqueda: para otro país, busca otra vez cambiando el país. El peso y las dimensiones sirven para estimar el flete; el vendedor confirma los reales.`, `This is proposed by the AI from what the piece is; SOLU did not check it. The entry restrictions are for ${lg.country}, this search's delivery country: for another country, search again changing the country. Weight and size are for estimating freight; the seller confirms the real ones.`)}</p>
+            </section>
+          ) : status === "DONE" && hasLeads ? (
+            <p className="note" style={{ marginTop: 12 }}>{t(`Esta búsqueda es anterior a «TRANSPORTE E IMPORTACIÓN» (restricciones, peso, dimensiones y posición arancelaria). Si haces clic abajo en «Buscar ${LEADS_PER_ROUND} vendedores más», también lo trae.`, `This search predates “TRANSPORT AND IMPORT” (restrictions, weight, size and tariff heading). If you click “Search ${LEADS_PER_ROUND} more sellers” below, it brings that too.`)}</p>
+          ) : null}
 
           {hunt.leads.length === 0 ? (
             <section className="jblock">
@@ -158,6 +186,22 @@ export default async function HuntPage({ params, searchParams }: { params: Promi
                   </div>
                 </section>
               ))}
+              <section className="jblock loc-sec" id="mas">
+                {failCode === "MORE_NONE" && <p className="note" role="status">{t("SOLU buscó más y no encontró vendedores distintos a los que ya tienes.", "SOLU searched for more and found no sellers other than the ones you already have.")}</p>}
+                {failCode?.startsWith("MORE_") && failCode !== "MORE_NONE" && <p className="note attn" role="alert">{t("La búsqueda de más vendedores no se pudo completar", "The search for more sellers could not be completed")}: {failText(failCode.slice(5), t)} {t("Los vendedores que ya tenías siguen aquí. Puedes intentarlo otra vez.", "The sellers you already had are still here. You can try again.")}</p>}
+                {sp.err === "mas-apagada" && <p className="note attn" role="alert">{failText("OFF", t)}</p>}
+                {sp.err === "mas-tope" && <p className="note attn" role="alert">{failText("CAP", t)}</p>}
+                {moreRunning ? null : hunt.leads.length >= LEADS_MAX ? (
+                  <p className="src">{t(`Esta búsqueda ya tiene ${hunt.leads.length} vendedores, el máximo. Para seguir, busca otra vez cambiando las respuestas.`, `This search already has ${hunt.leads.length} sellers, the maximum. To go on, search again with different answers.`)}</p>
+                ) : aiState !== "ON" ? (
+                  <p className="src">{aiState === "OFF" ? failText("OFF", t) : failText("CAP", t)} {t("Por eso no se pueden pedir más vendedores ahora.", "That is why more sellers cannot be requested now.")}</p>
+                ) : (
+                  <form action={moreLeads.bind(null, hunt.id)} className="wl-more">
+                    <button type="submit" className="secondary">{t(`Buscar ${LEADS_PER_ROUND} vendedores más`, `Search ${LEADS_PER_ROUND} more sellers`)}</button>
+                    <span className="src">{t(`SOLU entrega los ${LEADS_PER_ROUND} mejores vendedores cada vez. Si necesitas más, este botón busca otros distintos y los agrega a esta misma lista. Tarda de 1 a 3 minutos y usa la IA otra vez (unos centavos de dólar).`, `SOLU hands back the ${LEADS_PER_ROUND} best sellers each time. If you need more, this button looks for different ones and adds them to this same list. It takes 1 to 3 minutes and uses the AI again (a few US cents).`)}</span>
+                  </form>
+                )}
+              </section>
             </>
           )}
 

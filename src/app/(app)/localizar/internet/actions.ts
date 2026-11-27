@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { canEdit } from "@/lib/permissions";
 import { refreshApp } from "@/lib/revalidate";
 import { aiGate } from "@/lib/ai";
-import { launchHunt, siteContacts, type HuntAnswers } from "@/lib/web-hunt";
+import { HUNT_STALE_MS, LEADS_MAX, huntStart, launchHunt, siteContacts, type HuntAnswers } from "@/lib/web-hunt";
 
 const txt = (fd: FormData, k: string, max = 300) => {
   const v = String(fd.get(k) ?? "").trim().slice(0, max);
@@ -39,6 +39,22 @@ export async function startHunt(fd: FormData) {
   const hunt = await db.webHunt.create({ data: { query: q!, answers, lang: user.lang === "EN" ? "EN" : "ES", dealId: deal?.id ?? null, partId: part?.id ?? null, userId: user.id, userName: user.name } });
   launchHunt(hunt.id);
   redirect(`/localizar/internet/${hunt.id}`);
+}
+
+/** "Buscar 5 vendedores más": the same search goes out again for sellers it does not have yet. What was already
+ *  found stays where it is; the new ones are added to the same result. */
+export async function moreLeads(huntId: string) {
+  await requireUser();
+  const h = await db.webHunt.findUniqueOrThrow({ where: { id: huntId }, select: { id: true, status: true, createdAt: true, answers: true, _count: { select: { leads: true } } } });
+  const here = `/localizar/internet/${h.id}`;
+  // A double click, or going back and pressing again, must not pay for the same round twice.
+  if (h.status === "RUNNING" && Date.now() - huntStart(h).getTime() < HUNT_STALE_MS) redirect(`${here}#mas`);
+  if (h._count.leads >= LEADS_MAX) redirect(`${here}?err=mas-lleno#mas`);
+  const gate = await aiGate();
+  if (!gate.ok) redirect(`${here}?err=mas-${gate.reason === "OFF" ? "apagada" : "tope"}#mas`);
+  await db.webHunt.update({ where: { id: h.id }, data: { status: "RUNNING", failCode: null, failNote: null, answers: { ...((h.answers ?? {}) as HuntAnswers), moreAt: new Date().toISOString() } } });
+  launchHunt(h.id);
+  redirect(`${here}#mas`);
 }
 
 const backOf = (l: { id: string; huntId: string; dealId: string | null }, fd: FormData, q: string) => {

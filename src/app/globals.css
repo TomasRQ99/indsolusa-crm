@@ -3226,6 +3226,12 @@ p.pj-table { margin: 0 0 8px; }
 .wl-save label { flex: 1 1 260px; min-width: 0; }
 .wl-save .grow { flex: 1; }
 .wl-save .wl-hint { flex: 1 1 100%; }
+.wl-more { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.wl-more .src { flex: 1 1 320px; min-width: 0; }
+#transporte .qv-dl { grid-template-columns: 220px minmax(0, 1fr); }
+#transporte .qv-dl dd .sig { margin-right: 4px; }
+#transporte { margin-top: 14px; }
+@media (max-width: 760px) { #transporte .qv-dl { grid-template-columns: minmax(0, 1fr); } }
 /* "Escribir como": which of the two company names an email goes out under */
 .co-pick { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px; }
 .co-opt { flex: 1 1 240px; min-width: 0; display: grid; gap: 2px; padding: 10px 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: inherit; text-decoration: none; }

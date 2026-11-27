@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { aiConfigured, aiSpentThisMonth, monthlyCap } from "@/lib/ai";
 import { LeadMailLink, WebLeadCard } from "@/components/WebLeadCard";
 import { HuntForm } from "@/components/HuntForm";
-import { HUNT_STALE_MS, contactNote, leadsMailedAt } from "@/lib/web-hunt";
+import { HUNT_STALE_MS, contactNote, huntStart, leadsMailedAt } from "@/lib/web-hunt";
 import { leadAsSource, unsaveLead } from "@/app/(app)/localizar/internet/actions";
 
 type T = (es: string, en: string) => string;
@@ -16,14 +16,15 @@ export async function NeedWebLeads({ dealId, t, n2, day, editable, tab, searchFo
 }) {
   const [leads, hunts, spent] = await Promise.all([
     db.webLead.findMany({ where: { dealId }, orderBy: [{ sourceAt: { sort: "desc", nulls: "last" } }, { savedAt: "asc" }], include: { supplier: { select: { id: true, name: true } } } }),
-    db.webHunt.findMany({ where: { dealId, status: { in: ["DONE", "RUNNING"] } }, orderBy: { createdAt: "desc" }, take: 5, select: { id: true, query: true, status: true, userName: true, createdAt: true, _count: { select: { leads: true } } } }),
+    db.webHunt.findMany({ where: { dealId, status: { in: ["DONE", "RUNNING"] } }, orderBy: { createdAt: "desc" }, take: 5, select: { id: true, query: true, status: true, userName: true, createdAt: true, answers: true, _count: { select: { leads: true } } } }),
     aiSpentThisMonth(),
   ]);
   const cNote = contactNote(ok, err, n, t);
   const mailed = await leadsMailedAt(leads.map((l) => l.id));
   const cap = monthlyCap();
   const aiState = !aiConfigured() ? "OFF" : spent.usd + 0.1 > cap ? "CAP" : "ON";
-  const live = hunts.filter((h) => h.status === "DONE" || Date.now() - h.createdAt.getTime() < HUNT_STALE_MS);
+  // A search cut off while it looked for more sellers still has the ones it had: it is listed as finished.
+  const live = hunts.map((h) => (h.status === "RUNNING" && Date.now() - huntStart(h).getTime() >= HUNT_STALE_MS && h._count.leads > 0 ? { ...h, status: "DONE" } : h)).filter((h) => h.status === "DONE" || Date.now() - huntStart(h).getTime() < HUNT_STALE_MS);
   return (
     <section className="jblock" id="internet">
       <div className="jbh"><b>{t("BUSCAR LA PIEZA EN INTERNET", "SEARCH THE INTERNET FOR THE PIECE")}</b><span className="grow" /><span className="src">{t("quién la vende hoy, con enlace directo y contacto", "who sells it today, with direct link and contact")}</span></div>
