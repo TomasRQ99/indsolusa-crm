@@ -408,7 +408,7 @@
     "Revisa los cuatro bloques: «QUÉ PEDIMOS», «A QUIÉN» (marca los proveedores), «QUÉ LE PREGUNTAMOS» y «DETALLES».",
     "Haz clic en [[Enviar solicitud]]. Sigue las respuestas en MI DÍA → Respuestas."
    ],
-   "expect": "Sale un correo por proveedor desde sales@. La solicitud queda registrada y las respuestas llegan solas a Respuestas. Si lo vas a pedir por teléfono o WhatsApp, usa «Solo crear pendiente» en lugar del correo."
+   "expect": "Sale un correo por proveedor desde sales@. La solicitud queda registrada y las respuestas llegan solas a Respuestas. Si lo vas a pedir por teléfono o WhatsApp, usa «Solo crear pendiente» en lugar del correo. La descripción de cada pieza sale completa y en el idioma del correo de cada proveedor: si no hay una descripción en inglés escrita en el repuesto, SOLU la traduce."
   },
   {
    "id": "productos",

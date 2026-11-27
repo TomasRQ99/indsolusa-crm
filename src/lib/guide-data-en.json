@@ -221,7 +221,7 @@
    "Review the four blocks: “WHAT WE ASK FOR”, “To whom” (tick the suppliers), “WHAT WE ASK” and “DETAILS”.",
    "Click [[Enviar solicitud]]. Follow the replies in MY DAY → Replies."
   ],
-  "expect": "One email per supplier goes out from sales@. The request is recorded and the replies arrive in Replies by themselves. If you will ask by phone or WhatsApp, use “Just create a to-do” instead of the email."
+  "expect": "One email per supplier goes out from sales@. The request is recorded and the replies arrive in Replies by themselves. If you will ask by phone or WhatsApp, use “Just create a to-do” instead of the email. Each piece's description goes whole and in the language of each supplier's email: when the part has no English description typed in, SOLU translates it."
  },
  "productos": {
   "t": "Products and Product 360",

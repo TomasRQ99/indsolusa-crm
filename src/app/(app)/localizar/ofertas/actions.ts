@@ -12,6 +12,7 @@ import { brandIn, categoryIn } from "@/lib/part-lexicon";
 import { partKey } from "@/lib/parts";
 import { MAX_SUPPLIER_DOC_BYTES, bankCheck, parseLead, parseMoney, readSupplierDoc } from "@/lib/supplier-doc";
 import { isUsCountry, rfqEmail, type RfqItem } from "@/lib/rfq";
+import { rfqItemsIn } from "@/lib/piece-translate";
 import { spanishCountry } from "@/lib/company";
 import { sendTracked } from "@/lib/mail-replies";
 import { randomUUID } from "node:crypto";
@@ -196,7 +197,10 @@ export async function createRfq(fd: FormData) {
   const askKeys = [...new Set(fd.getAll("ask").map(String))].filter((k): k is AskKey => k in RFQ_ASKS);
   const skipWeight = fd.get("skipWeight") === "1";
   const asked = askKeys.map((key) => { const l = String(fd.get(`lvl_${key}`) ?? ""); return { key, level: l in ASK_LEVEL ? l : "OPTIONAL" }; });
-  const preview = rfqEmail({ code: "RFQ", lang: langPref === "ES" ? "ES" : "EN", supplierName: "—", items, neededBy, notes, urgent, senderName: user.name, from, extra: askLines(askKeys, langPref === "ES" ? "ES" : "EN"), skipWeight });
+  // Each supplier reads the pieces in the language of their email: the descriptions are translated once per language.
+  const inLang = { EN: null as RfqItem[] | null, ES: null as RfqItem[] | null };
+  const itemsFor = async (lang: "EN" | "ES") => (inLang[lang] ??= await rfqItemsIn(lang, items, user.name));
+  const preview = rfqEmail({ code: "RFQ", lang: langPref === "ES" ? "ES" : "EN", supplierName: "—", items: await itemsFor(langPref === "ES" ? "ES" : "EN"), neededBy, notes, urgent, senderName: user.name, from, extra: askLines(askKeys, langPref === "ES" ? "ES" : "EN"), skipWeight });
   // One key per RFQ form: a double click or resubmit opens the RFQ already created instead of sending again.
   const key = String(fd.get("idem") ?? "").trim();
   const idemKey = /^[A-Za-z0-9-]{16,64}$/.test(key) ? `rfq:${key}` : null;
@@ -214,7 +218,7 @@ export async function createRfq(fd: FormData) {
   // One separate email per supplier (they never see each other). Language: chosen, or by country (Colombia → Spanish).
   for (const s of withEmail) {
     const lang = langPref === "ES" || langPref === "EN" ? langPref : spanishCountry(s.country) ? "ES" : "EN";
-    const mail = rfqEmail({ code: rfq.code, lang, supplierName: s.name, items, neededBy, notes, urgent, senderName: user.name, from, extra: askLines(askKeys, lang), skipWeight });
+    const mail = rfqEmail({ code: rfq.code, lang, supplierName: s.name, items: await itemsFor(lang), neededBy, notes, urgent, senderName: user.name, from, extra: askLines(askKeys, lang), skipWeight });
     const rr = await db.rfqRecipient.create({ data: { rfqId: rfq.id, supplierId: s.id, email: s.email!, status: "SENDING" } });
     const r = await sendTracked({ template: "RFQ", refKind: "RFQR", refId: rr.id, refCode: rfq.code, partyKind: "SUPPLIER", supplierId: s.id, dealId: deal?.id ?? null, toAddr: s.email!, toName: s.name, subject: mail.subject, text: mail.text, html: mail.html, senderName: user.name, idemKey: `rfqr:${rr.id}` });
     // UNCERTAIN = no answer from Microsoft: SOLU checks Sent Items before anyone may retry.
@@ -242,7 +246,7 @@ export async function resendRecipient(recipientId: string) {
   const r = await db.rfqRecipient.findUniqueOrThrow({ where: { id: recipientId }, include: { rfq: true, supplier: { select: { name: true, email: true, country: true } } } });
   const email = r.supplier.email ?? r.email;
   const lang = r.rfq.lang === "ES" || r.rfq.lang === "EN" ? r.rfq.lang : spanishCountry(r.supplier.country) ? "ES" : "EN";
-  const mail = rfqEmail({ code: r.rfq.code, lang, supplierName: r.supplier.name, items: r.rfq.items as RfqItem[], neededBy: r.rfq.neededBy, notes: r.rfq.notes, urgent: r.rfq.urgent, senderName: user.name, from: mailConfig().from ?? "sales@indsolusa.com" });
+  const mail = rfqEmail({ code: r.rfq.code, lang, supplierName: r.supplier.name, items: await rfqItemsIn(lang, r.rfq.items as RfqItem[], user.name), neededBy: r.rfq.neededBy, notes: r.rfq.notes, urgent: r.rfq.urgent, senderName: user.name, from: mailConfig().from ?? "sales@indsolusa.com" });
   // Retry only what is known NOT to have gone out (FAILED). Claiming FAILED → SENDING in one step means
   // two clicks (or two people) can't both send. UNCERTAIN is never retried: SOLU checks Sent Items first.
   const claimed = await db.rfqRecipient.updateMany({ where: { id: r.id, status: "FAILED" }, data: { status: "SENDING", error: null } });

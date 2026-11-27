@@ -6,6 +6,7 @@ import { makeI18n } from "@/lib/i18n";
 import { mailConfig } from "@/lib/mail";
 import { evidenceFor, partKey } from "@/lib/parts";
 import { rfqEmail } from "@/lib/rfq";
+import { rfqItemsIn } from "@/lib/piece-translate";
 import { fold } from "@/lib/part-lexicon";
 import { journeyUrgency } from "@/lib/urgency";
 import { createRfq } from "../../ofertas/actions";
@@ -47,7 +48,7 @@ export default async function NewRfq({ searchParams }: { searchParams: Promise<{
   // C4 (§7): extra questions by context, each with its reason; what we already know is not asked again.
   const { ctx: askCtx, asks } = await rfqAskContext(parts.map((p) => p.id), deal?.id ?? null, !!urg);
   const defaultAsk = asks.filter((a) => a.ask).map((a) => a.key);
-  const preview = parts.length ? rfqEmail({ code: "RFQ-…", lang: "EN", supplierName: t("[proveedor]", "[supplier]"), items: parts.map((p) => ({ partId: p.id, mpn: p.mpn, name: p.name, nameEn: p.nameEn, brand: p.brand, qty: qtyFor(p) })), neededBy: null, notes: null, urgent: !!urg, senderName: user.name, from: cfg.from ?? "sales@indsolusa.com", extra: askLines(defaultAsk, "EN"), skipWeight: !!askCtx.known.PACKAGES }) : null;
+  const preview = parts.length ? rfqEmail({ code: "RFQ-…", lang: "EN", supplierName: t("[proveedor]", "[supplier]"), items: await rfqItemsIn("EN", parts.map((p) => ({ partId: p.id, mpn: p.mpn, name: p.name, nameEn: p.nameEn, brand: p.brand, qty: qtyFor(p) })), user.name), neededBy: null, notes: null, urgent: !!urg, senderName: user.name, from: cfg.from ?? "sales@indsolusa.com", extra: askLines(defaultAsk, "EN"), skipWeight: !!askCtx.known.PACKAGES }) : null;
   const errs: Record<string, string> = {
     partes: t("Elige al menos una parte.", "Pick at least one part."),
     proveedores: t("Elige al menos un proveedor.", "Pick at least one supplier."),

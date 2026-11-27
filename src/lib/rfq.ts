@@ -11,7 +11,7 @@ export function rfqEmail(o: { code: string; lang: "EN" | "ES"; supplierName: str
   const en = o.lang === "EN";
   const mail = rfqMail({
     lang: o.lang, code: o.code, urgent: !!o.urgent, extra: o.extra, skipWeight: o.skipWeight, neededBy: o.neededBy, notes: o.notes, sender: o.senderName, from: o.from,
-    items: o.items.map((it) => ({ qty: it.qty, code: it.mpn, brand: it.brand, description: (en ? it.nameEn ?? it.name : it.name).slice(0, 160) })),
+    items: o.items.map((it) => ({ qty: it.qty, code: it.mpn, brand: it.brand, description: (en ? it.nameEn ?? it.name : it.name).slice(0, 1500) })),
   });
   return { subject: mail.subjects[0].slice(0, 250), text: mail.text, html: mail.html, subjects: mail.subjects };
 }

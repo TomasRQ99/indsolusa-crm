@@ -13,7 +13,7 @@ import { journeyUrgency } from "./urgency";
 import { quotePdfName } from "./quote-pdf";
 import { asCompany, rfqMail, progressMail, ackMail, deliveryMail, followUpMail, negotiateMail, offerMail, paymentMail, type Mail, type MailLang, type TemplateKey } from "./email-templates";
 import { linesTotal } from "./money";
-import { piecesIn } from "./piece-translate";
+import { itemsIn, rfqItemsIn } from "./piece-translate";
 
 export type ComposeCtx = { tpl: TemplateKey; id: string; lang?: MailLang | null; co?: CompanyKey | string | null };
 export type Composed = {
@@ -41,12 +41,16 @@ async function composeInner(ctx: ComposeCtx, user: SessionUser, from: string): P
   const sender = user.name;
   const ui = user.lang === "EN"; // warnings shown to the person in their own language
   const replyBy = workingDaysAhead(2);
+  // Every description goes in the language of the email (owner, 2026-11-27), whole for a supplier and at a
+  // readable length for a customer.
+  const said = <T extends { description: string }>(lang: MailLang, rows: T[]) => itemsIn(lang, rows, user.name);
+  const cut = (s: string, max: number) => (s.length <= max ? s : `${s.slice(0, max).replace(/\s+\S*$/, "")}…`);
 
   if (ctx.tpl === "FOLLOWUP") {
     const r = await db.rfqRecipient.findUnique({ where: { id: ctx.id }, include: { supplier: { select: { name: true, email: true, country: true } }, rfq: { select: { id: true, code: true, items: true, lang: true, urgent: true, dealId: true, deal: { select: { accountId: true } } } } } });
     if (!r) return null;
     const lang = pickLang(ctx.lang, r.rfq.lang === "ES" || r.rfq.lang === "EN" ? r.rfq.lang : spanishCountry(r.supplier.country) ? "ES" : "EN");
-    const items = (r.rfq.items as RfqItem[]).map((it) => ({ qty: it.qty, code: it.mpn, brand: it.brand, description: (lang === "EN" ? it.nameEn ?? it.name : it.name).slice(0, 160) }));
+    const items = (await rfqItemsIn(lang, r.rfq.items as RfqItem[], user.name)).map((it) => ({ qty: it.qty, code: it.mpn, brand: it.brand, description: (lang === "EN" ? it.nameEn ?? it.name : it.name).slice(0, 1500) }));
     return {
       mail: followUpMail({ lang, code: r.rfq.code, items, sentAt: r.sentAt, replyBy, sender, from, urgent: r.rfq.urgent }), lang,
       to: r.supplier.email ?? r.email, toName: r.supplier.name, about: `${r.rfq.code} · ${r.supplier.name}`,
@@ -59,7 +63,7 @@ async function composeInner(ctx: ComposeCtx, user: SessionUser, from: string): P
     const o = await db.supplierOffer.findUnique({ where: { id: ctx.id }, include: { supplier: { select: { name: true, email: true, country: true } }, part: { select: { id: true, name: true, nameEn: true, brand: true } }, doc: { select: { reference: true } } } });
     if (!o) return null;
     const lang = pickLang(ctx.lang, spanishCountry(o.supplier.country) ? "ES" : "EN");
-    const items = [{ qty: o.qty ?? 1, code: o.codeAsQuoted, brand: o.part.brand, description: (o.description ?? (lang === "EN" ? o.part.nameEn ?? o.part.name : o.part.name)).slice(0, 160), unitPrice: Number(o.unitPrice) }];
+    const items = await said(lang, [{ qty: o.qty ?? 1, code: o.codeAsQuoted, brand: o.part.brand, description: (o.description ?? (lang === "EN" ? o.part.nameEn ?? o.part.name : o.part.name)).slice(0, 1500), unitPrice: Number(o.unitPrice) }]);
     return {
       mail: negotiateMail({ lang, theirRef: o.doc?.reference ?? null, items, currency: o.currency, asks: { price: true, lead: true, payment: false }, target: null, replyBy, sender, from }), lang,
       to: o.supplier.email, toName: o.supplier.name, about: `${o.codeAsQuoted} · ${o.supplier.name}`,
@@ -71,7 +75,7 @@ async function composeInner(ctx: ComposeCtx, user: SessionUser, from: string): P
     const p = await db.supplierPO.findUnique({ where: { id: ctx.id }, include: { supplier: { select: { name: true, email: true, country: true } }, lines: { orderBy: { position: "asc" } }, deal: { select: { id: true, accountId: true } } } });
     if (!p) return null;
     const lang = pickLang(ctx.lang, spanishCountry(p.supplier.country) ? "ES" : "EN");
-    const items = p.lines.map((l) => ({ qty: l.qty, code: l.code ?? "", description: l.description.slice(0, 160) }));
+    const items = await said(lang, p.lines.map((l) => ({ qty: l.qty, code: l.code ?? "", description: l.description.slice(0, 1500) })));
     return {
       mail: deliveryMail({ lang, poCode: p.code, proformaRef: p.proformaRef, items: items.length ? items : [{ qty: 1, code: p.code, description: "—" }], promised: p.shipBy ?? p.eta, issue: null, replyBy, sender, from, urgent: !!(await journeyUrgency(p.deal.id)) }), lang,
       to: p.supplier.email, toName: p.supplier.name, about: `${p.code} · ${p.supplier.name}`,
@@ -85,7 +89,7 @@ async function composeInner(ctx: ComposeCtx, user: SessionUser, from: string): P
     if (!q) return null;
     const lang = pickLang(ctx.lang, q.lang === "ES" ? "ES" : "EN");
     const c = q.deal.contact?.email ? q.deal.contact : q.deal.account.contacts[0] ?? null;
-    const items = q.lines.map((l) => ({ qty: l.qty, code: l.code ?? "", description: l.description.slice(0, 160), unitPrice: Number(l.unitPrice) }));
+    const items = await said(lang, q.lines.map((l) => ({ qty: l.qty, code: l.code ?? "", description: cut(l.description, 600), unitPrice: Number(l.unitPrice) })));
     const total = linesTotal(items, (l) => l.qty, (l) => l.unitPrice ?? 0);
     const validUntil = addDays(q.presentedAt ?? q.issuedAt ?? q.createdAt, q.validityDays);
     const lead = q.leadMinDays != null && q.leadMaxDays != null ? (lang === "EN" ? `${q.leadMinDays}–${q.leadMaxDays} days after your P.O.` : `${q.leadMinDays}–${q.leadMaxDays} días después de su orden de compra`) : null;
@@ -106,7 +110,7 @@ async function composeInner(ctx: ComposeCtx, user: SessionUser, from: string): P
     // This first email goes in the language the person works in (they are talking to this customer), unless they switch it.
     const lang = pickLang(ctx.lang, user.lang === "EN" ? "EN" : "ES");
     const c = d.contact?.email ? d.contact : d.contact ?? d.account.contacts[0] ?? null;
-    const items = d.items.map((l) => ({ qty: l.qty, code: l.code ?? "", description: l.description.slice(0, 160) }));
+    const items = await said(lang, d.items.map((l) => ({ qty: l.qty, code: l.code ?? "", description: cut(l.description, 600) })));
     return {
       mail: ackMail({ lang, code: d.code, contactName: c ? c.firstName : null, customer: d.account.name, need: d.title, items, machine: d.machine, followUp: d.nextMoveDate && d.nextMoveDate >= today() ? d.nextMoveDate : null, sender, from }), lang,
       to: c?.email ?? null, toName: c ? `${c.firstName} ${c.lastName}`.trim() : d.account.name, about: `${d.code ?? ""} · ${d.account.name}`.replace(/^ · /, ""),
@@ -120,7 +124,7 @@ async function composeInner(ctx: ComposeCtx, user: SessionUser, from: string): P
     if (!d) return null;
     const lang = pickLang(ctx.lang, user.lang === "EN" ? "EN" : "ES");
     const c = d.contact?.email ? d.contact : d.contact ?? d.account.contacts[0] ?? null;
-    const items = d.items.map((l) => ({ qty: l.qty, code: l.code ?? "", description: l.description.slice(0, 160) }));
+    const items = await said(lang, d.items.map((l) => ({ qty: l.qty, code: l.code ?? "", description: cut(l.description, 600) })));
     const sourced = !!d.sourcingNote || Number(d.supplierCost) > 0 || d._count.supplierPos > 0;
     const stage = d.quotes.some((q) => q.status === "PRESENTED" || q.status === "ACCEPTED") ? "QUOTED" as const : sourced ? "PRICING" as const : d.locatedAt ? "SOURCING" as const : "LOCATING" as const;
     return {
@@ -146,12 +150,11 @@ async function composeInner(ctx: ComposeCtx, user: SessionUser, from: string): P
     // search understood goes on the piece that was searched (the Need's items have no brand of their own).
     const flat = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
     const wanted = [l.mpnSeen, und.partNumber, l.hunt.query].map(flat).filter((x) => x.length >= 3);
-    const items = d && d.items.length
+    const rows = d && d.items.length
       ? d.items.map((x) => ({ qty: x.qty, code: x.code ?? "", brand: und.brand && (d.items.length === 1 || wanted.some((w) => flat(x.code).includes(w) || (!!flat(x.code) && w.includes(flat(x.code))))) ? und.brand : null, description: x.description.slice(0, 1500) }))
       : searched;
     // The descriptions go in the language of the email: a seller abroad cannot read a Spanish description.
-    const said = await piecesIn(l.hunt.id, lang, items.map((x) => x.description), user.name);
-    items.forEach((x, n) => { x.description = said[n] || x.description; });
+    const items = await said(lang, rows);
     const code = d?.code ?? `W-${l.id.slice(-6).toUpperCase()}`;
     const notes = lang === "EN" ? `We saw this item listed on your website: ${l.url}` : `Vimos este producto publicado en su sitio web: ${l.url}`;
     const hasMail = emailOk(l.email);

@@ -6235,3 +6235,11 @@ model SalesBudgetSite {
 
   @@unique([budgetId, plantId])
 }
+
+/// A piece description already translated for an email (key = language + hash of the original text),
+/// kept so the AI is asked once per text and language.
+model PieceText {
+  key       String   @id
+  text      String
+  createdAt DateTime @default(now())
+}

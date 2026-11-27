@@ -4,19 +4,19 @@
 export const COMPANY = {
   legalName: "INDUSTRY SOLUTIONS USA LLC",
   shortName: "Industry Solutions USA",
-  // The phone in the signature of an email (owner, 2026-11-27). The BILL TO / SHIP TO blocks keep the office phone.
+  // The phone in the signature of an email (owner, 2026-11-27). The BILL TO / SHIP TO blocks carry the office phone, +1 (305) 307-0051 (owner, same day).
   phone: "+1 (647) 613-6456",
   web: "industrysolutionsusa.com",
   billTo: {
     name: "INDUSTRY SOLUTIONS USA LLC",
     lines: ["11402 NW 41st Street, Suite 211-619", "Doral, FL. 33178 | USA"],
-    phone: "+1 (305) 307-0050",
+    phone: "+1 (305) 307-0051",
     email: "purchases@industrysolutionsusa.com",
   },
   shipTo: {
     name: "INDUSTRY SOLUTIONS USA",
     lines: ["8435 NW 74TH Street", "Miami, FL, 33166 | USA"],
-    phone: "+1 (305) 307-0050",
+    phone: "+1 (305) 307-0051",
   },
   /** Supplier payment policy stated in every RFQ. */
   supplierPayment: { EN: "Pay in Advance", ES: "pago anticipado" },
@@ -31,13 +31,13 @@ const INDSOL = {
   billTo: {
     name: "Indsolusa",
     lines: ["11402 NW 41st Street, Suite 211-619", "Doral, FL. 33178 | USA"],
-    phone: "+1 (305) 307-0050",
+    phone: "+1 (305) 307-0051",
     email: "Sales@indsolusa.com",
   },
   shipTo: {
     name: "Indsolusa",
     lines: ["8435 NW 74TH Street", "Miami, FL, 33166 | USA"],
-    phone: "+1 (305) 307-0050",
+    phone: "+1 (305) 307-0051",
   },
   supplierPayment: COMPANY.supplierPayment,
 } as const;
